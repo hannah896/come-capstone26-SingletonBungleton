@@ -18,9 +18,6 @@ public class Managers : Singleton<Managers>
     public static readonly AssetManager Asset = new();
     public static readonly SceneManager Scene = new();
 
-    public static readonly WaveManager Wave = new();
-    public static readonly HouseManager House = new();
-
     protected override void Awake()
     {
         base.Awake();
