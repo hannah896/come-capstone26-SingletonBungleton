@@ -20,6 +20,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9970d44de5554e341ae2127826775a49
+    m_Address: '[AudioManager]'
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: a8cfad4b27ea0b14b9a7b46eee690fc2
     m_Address: SO_AudioOption
     m_ReadOnly: 0

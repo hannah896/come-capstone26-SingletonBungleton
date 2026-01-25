@@ -7,12 +7,124 @@
       "dependencies": {},
       "url": "https://packages.unity.com"
     },
+    "com.ayellowpaper.serializedcollections": {
+      "version": "https://github.com/ActionFitGames/SerializedDictionary.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "d71f9d2a2a98b5560e78eebc2d1c996a7a696dfd"
+    },
+    "com.brogrammist.jsam": {
+      "version": "https://github.com/jackyyang09/Simple-Unity-Audio-Manager.git#master",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "a28f36e6548045e9af1936bebe35b59b6134d8e6"
+    },
+    "com.coffee.softmask-for-ugui": {
+      "version": "https://github.com/mob-sakai/SoftMaskForUGUI.git?path=Packages/src",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.ugui": "1.0.0"
+      },
+      "hash": "9a7535a3fad66ebec5458a8b22f6ad023c960fd3"
+    },
+    "com.coffee.ui-effect": {
+      "version": "5.9.5",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.ugui": "1.0.0"
+      },
+      "url": "https://package.openupm.com"
+    },
+    "com.coffee.ui-particle": {
+      "version": "4.11.2",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.ugui": "1.0.0",
+        "com.unity.modules.particlesystem": "1.0.0"
+      },
+      "url": "https://package.openupm.com"
+    },
     "com.cysharp.unitask": {
       "version": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
       "depth": 0,
       "source": "git",
       "dependencies": {},
       "hash": "73a63b7f672b88f7e9992f6917eb458a8cbb6fa9"
+    },
+    "com.google.external-dependency-manager": {
+      "version": "1.2.186",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://package.openupm.com"
+    },
+    "com.google.firebase.analytics": {
+      "version": "https://github.com/GameWorkstore/com.google.firebase.analytics.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.google.firebase.app": "12.10.1"
+      },
+      "hash": "7c70b1e925c47cb827e3512d20bf1ee021b57f5e"
+    },
+    "com.google.firebase.app": {
+      "version": "https://github.com/GameWorkstore/com.google.firebase.app.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.google.external-dependency-manager": "1.2.186"
+      },
+      "hash": "ffddbfcc9806588a3d74dda9e28ea1a051130fe3"
+    },
+    "com.google.firebase.auth": {
+      "version": "https://github.com/GameWorkstore/com.google.firebase.auth.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.google.firebase.app": "12.10.1"
+      },
+      "hash": "1b0dfc9258db999ac65948b775ca3baf4da58206"
+    },
+    "com.google.firebase.crashlytics": {
+      "version": "https://github.com/GameWorkstore/com.google.firebase.crashlytics.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.google.firebase.app": "12.10.1"
+      },
+      "hash": "848517c6e610a9a9844265de67273bfc02bf1b22"
+    },
+    "com.google.firebase.messaging": {
+      "version": "https://github.com/GameWorkstore/com.google.firebase.messaging.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.google.firebase.app": "12.10.1"
+      },
+      "hash": "8b56db2669b11756db782c43dba6ce9ad2fe7db3"
+    },
+    "com.google.firebase.remote-config": {
+      "version": "https://github.com/GameWorkstore/com.google.firebase.remote-config.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.google.firebase.app": "12.10.1"
+      },
+      "hash": "e8334dff994f556b574d6803eafca9b6c9f9aa16"
+    },
+    "com.shlifedev.ugs": {
+      "version": "https://github.com/shlifedev/uni-google-sheets.git?path=src/",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.nuget.newtonsoft-json": "2.0.0"
+      },
+      "hash": "35d97f3719cf9aaafb4e4b30135e8edd478686fc"
     },
     "com.unity.2d.animation": {
       "version": "10.2.2",
@@ -304,6 +416,16 @@
       },
       "url": "https://packages.unity.com"
     },
+    "com.unity.localization": {
+      "version": "1.5.9",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.addressables": "1.25.0",
+        "com.unity.nuget.newtonsoft-json": "3.0.2"
+      },
+      "url": "https://packages.unity.com"
+    },
     "com.unity.mathematics": {
       "version": "1.3.2",
       "depth": 2,
@@ -322,6 +444,13 @@
     "com.unity.nuget.mono-cecil": {
       "version": "1.11.5",
       "depth": 3,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.nuget.newtonsoft-json": {
+      "version": "3.2.2",
+      "depth": 0,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
