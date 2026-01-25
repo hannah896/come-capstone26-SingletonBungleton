@@ -9,9 +9,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dea69d41f90c6ea4fa55c27c1d60c145, type: 3}
-  m_Name: AddressableAssetGroupSortSettings
+  m_Script: {fileID: 11500000, guid: e100f1500ed86a841b269590ea44cd8b, type: 3}
+  m_Name: Biome_04_Savannah
   m_EditorClassIdentifier: 
-  sortOrder:
-  - a577ec05f705a7648963d44735520b0f
-  - 1355e2feab16e06409f202acb6043666
+  id: 
+  debugColor: {r: 0.9924528, g: 0.46519136, b: 0, a: 1}
+  groundPrefab: {fileID: 0}
+  spawnableObjects: []
