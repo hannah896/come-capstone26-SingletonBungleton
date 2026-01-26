@@ -10,29 +10,25 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
-  m_Name: Common
+  m_Name: Prefabs_Setting
   m_EditorClassIdentifier: 
-  m_GroupName: Common
-  m_GUID: 1355e2feab16e06409f202acb6043666
+  m_GroupName: Prefabs_Setting
+  m_GUID: b12d49502b3b34740a6c65761b98730e
   m_SerializeEntries:
-  - m_GUID: 2c50d873c029ef243a017465c51035ba
-    m_Address: Canvas_View
+  - m_GUID: 3fa0fb369653a4a4c8e7cf459a132d9d
+    m_Address: FontsSo
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 9970d44de5554e341ae2127826775a49
-    m_Address: AudioManager
+  - m_GUID: a8eada0de9a664fa7a5c4d233a78c3ea
+    m_Address: EventSystem
     m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: e24ef0f7a1a9c21498e652acf7681e1c
-    m_Address: Canvas_Popup
-    m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - EveryScene
     FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: d49714acbe7dc4846b65422625851c9a, type: 2}
   m_SchemaSet:
     m_Schemas:
-    - {fileID: 11400000, guid: ca371cc7281936f4d8e00a083d92644a, type: 2}
-    - {fileID: 11400000, guid: 7af76564af48a2647ac468bfdae2aae9, type: 2}
+    - {fileID: 11400000, guid: f0239dfd95f88564b87b79ff977464f9, type: 2}
+    - {fileID: 11400000, guid: 37e472bf0f9e7eb489226c890441a28a, type: 2}

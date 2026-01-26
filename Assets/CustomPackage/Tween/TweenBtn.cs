@@ -24,7 +24,6 @@ public class TweenBtn : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     };
 
     [SerializeField] private bool isClickSound = true;
-    [SerializeField] private bool isHaptic = true;
     
     public void OnPointerDown(PointerEventData eventData)
     {
@@ -44,7 +43,6 @@ public class TweenBtn : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
             .SetEase(_upTweenData.Ease)
             .SetRelative(_upTweenData.IsRelative)
             .SetSpeedBased(_upTweenData.IsSpeedBased);
-
         if (isClickSound)
         {
             // Main.JSAM.PlaySFX(AudioLibrarySounds.Pop1);

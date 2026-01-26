@@ -8,7 +8,6 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.ResourceManagement.ResourceLocations;
 
 
-
 /// <summary>
 /// 어드레서블로 데이터를 불러와 캐싱해두는 매니저
 /// </summary>
@@ -99,7 +98,7 @@ public class ResourceManager : CoreManager
         CancellationToken ct = default) where T : UnityEngine.Object
     {
         if (string.IsNullOrEmpty(key)) key = typeof(T).Name;
-    
+
         var handle = await LoadHandleAsync(key, cacheType, ct);
         if (!handle.IsValid()) return null;
 

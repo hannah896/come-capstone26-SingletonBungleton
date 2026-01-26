@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Prefbas_InGame
+  m_EditorClassIdentifier: 
+  m_GroupName: Prefbas_InGame
+  m_GUID: f28e60ca077d15d429bb4019dac08cc5
+  m_SerializeEntries:
+  - m_GUID: 58dcd7b64d1ff40a080ad1d4f20f9efb
+    m_Address: MainCameraObject
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - EveryScene
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: d49714acbe7dc4846b65422625851c9a, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: c7b78118abb53ad48840f717b32b3523, type: 2}
+    - {fileID: 11400000, guid: e124353a00867e04e902ca83fbd9f5c1, type: 2}
