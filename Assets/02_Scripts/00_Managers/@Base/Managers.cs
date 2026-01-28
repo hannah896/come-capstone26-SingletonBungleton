@@ -14,7 +14,7 @@ public class Managers : MonoBehaviour
     public static TimeManager Time { get; private set; }
     public static PoolManager Pool { get; private set; }
     public static SceneLoader Scene { get; private set; }
-
+    public static ItemManager Item { get; private set; }
 
     private void Awake()
     {
@@ -40,6 +40,7 @@ public class Managers : MonoBehaviour
         Time = new TimeManager();
         Pool = new PoolManager();
         Scene = new SceneLoader();
+        Item = new ItemManager();
 
         await Resource.Init();
         await Audio.Init(transform);
@@ -47,5 +48,6 @@ public class Managers : MonoBehaviour
 
         Input.Init();
         await Scene.Init();
+        await Item.Init(Resource);
     }
 }
