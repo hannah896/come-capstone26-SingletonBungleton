@@ -1,8 +1,9 @@
 using System;
+using UnityEngine;
 
 public class StateMachine<T> where T : StateBase
 {
-    protected static T currentState;
+    protected T currentState;
     public virtual T CurrentState { get => currentState; protected set => currentState = value; }
 
     public Action Update;
@@ -19,11 +20,20 @@ public class StateMachine<T> where T : StateBase
 
     public virtual void ChangeState(T Nextstate)
     {
+        ExitCurrentState();
         Debug.Log($"State Change : {CurrentState?.GetType().Name} -> {Nextstate?.GetType().Name}");
+        EnterNextState(Nextstate);
+    }
+
+    protected void ExitCurrentState()
+    {
         CurrentState?.OnExit();
         Update -= CurrentState.Update;
         FixedUpdate -= CurrentState.FixedUpdate;
+    }
 
+    protected void EnterNextState(T Nextstate)
+    {
         CurrentState = Nextstate;
         CurrentState?.OnEnter();
         Update += CurrentState.Update;

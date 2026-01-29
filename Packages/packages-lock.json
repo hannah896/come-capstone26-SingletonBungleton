@@ -31,7 +31,7 @@
       "hash": "9a7535a3fad66ebec5458a8b22f6ad023c960fd3"
     },
     "com.coffee.ui-effect": {
-      "version": "5.9.5",
+      "version": "5.10.8",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -40,7 +40,7 @@
       "url": "https://package.openupm.com"
     },
     "com.coffee.ui-particle": {
-      "version": "4.11.2",
+      "version": "4.11.4",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -390,7 +390,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ide.rider": {
-      "version": "3.0.38",
+      "version": "3.0.39",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -399,11 +399,11 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ide.visualstudio": {
-      "version": "2.0.23",
+      "version": "2.0.26",
       "depth": 0,
       "source": "registry",
       "dependencies": {
-        "com.unity.test-framework": "1.1.9"
+        "com.unity.test-framework": "1.1.33"
       },
       "url": "https://packages.unity.com"
     },

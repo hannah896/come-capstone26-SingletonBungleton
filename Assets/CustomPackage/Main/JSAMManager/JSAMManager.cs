@@ -73,6 +73,7 @@ public class JSAMManager : ContentManager
         if (!SetSFX) return;
         int randomIndex = Random.Range(0, clip.Length);
         PlaySFX(clip[randomIndex], vol);
+        Main.JSAM.PlaySFX(clip[randomIndex], vol);
     }
 
     public void StopBGM()
