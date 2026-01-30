@@ -2,6 +2,9 @@ using UnityEngine;
 
 public class PlayerStateBase : StateBase
 {
+    public PlayerStateBase(StateMachine<StateBase> stateMachine) : base(stateMachine)
+    {
+    }
 
     public override void OnEnter()
     {

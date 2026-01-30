@@ -12,6 +12,7 @@ using UnityEngine;
 /// </summary>
 public class LoopManager : CoreManager
 {
+    // 등록할 액션들은 매개변수가 실제로 필요없더라도 float deltaTime을 받도록 통일.
     public event Action<float> OnUpdate;
     public event Action<float> OnGameUpdate;
     private float GameSpeed { get; set; } = 1f;

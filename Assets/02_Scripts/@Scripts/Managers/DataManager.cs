@@ -8,6 +8,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
+/// 보드 매니저(역직렬화)
+/// 데이터매니저(직렬화) 에서 설치되어있는 데이터를 저장함
 /// 게임의 스테이지 데이터를 관리해주는 매니저
 /// </summary>
 public class DataManager : CoreManager

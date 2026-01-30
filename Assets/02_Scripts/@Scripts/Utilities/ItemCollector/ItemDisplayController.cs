@@ -41,7 +41,7 @@ public class ItemDisplayController {
         Appear(targetPosition, () => {
             MoveTo(curveHeight, duration, direction, () => {
                 _isMoving = false;
-                _display.Destroy();
+                //_display.Destroy();
                 cbOnCompleted?.Invoke();
             });
         });
@@ -106,8 +106,8 @@ public abstract class ItemDisplay : Entity {
         Item = item;
     }
 
-    public void Destroy() {
-        Main.Object.Destroy(this);
-    }
+    //public void Destroy() {
+    //    Main.Object.Destroy(this);
+    //}
 
 }
