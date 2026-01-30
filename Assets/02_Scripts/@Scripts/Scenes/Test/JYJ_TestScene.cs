@@ -1,16 +1,18 @@
 using Cysharp.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
 
 public class JYJ_TestScene : SceneBase
 {
-    public override UniTask EnterScene(CancellationToken token)
+
+    public override async UniTask EnterScene(CancellationToken token)
     {
-        throw new System.NotImplementedException();
+        var go = new GameObject("ItemTest", typeof(ItemTest));
     }
 
     public override void ExitScene()
     {
-        throw new System.NotImplementedException();
+
     }
 }
