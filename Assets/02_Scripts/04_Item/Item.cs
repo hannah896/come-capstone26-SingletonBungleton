@@ -13,6 +13,11 @@ public abstract class Item : MonoBehaviour
 
     private float _createdTime;        // 생성 시점 (신선도 계산용)
 
+    private void Awake()
+    {
+        Init();
+    }
+
     /// 아이템 생성 및 초기화
     protected virtual void Init(ItemDataSO data)
     {
@@ -20,6 +25,15 @@ public abstract class Item : MonoBehaviour
         stackCount = Mathf.Min(0, data.maxStack);
     }
 
+    protected virtual void Init()
+    {
+        if (itemData == null)
+        {
+            Debug.Log($"[Item] {gameObject.name} 프리펩 내에 SO 데이터가 존재하지 않습니다. ");
+            return;
+        }
+        stackCount = Mathf.Min(0, itemData.maxStack);
+    }
 
     protected virtual void ApplySurvivalEffects()
     {
