@@ -1,5 +1,7 @@
+using System;
 using System.Diagnostics;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 public class Debug
 {
@@ -45,5 +47,12 @@ public class Debug
     public static void LogError(string message, Object context)
     {
         UnityEngine.Debug.Log(message, context);
+    }
+
+    [Conditional(DEBUG_SYMBOL)]
+    [HideInCallstack]
+    public static void LogException(Exception message)
+    {
+        UnityEngine.Debug.LogException(message);
     }
 }

@@ -51,6 +51,7 @@ public class UI_Utility_SafeArea : MonoBehaviour
     {
         Rect safeArea = Screen.safeArea;
 
+        if (_safeAreaPanel == null) return;
         if (safeArea == lastSafeArea) return;
 
         Vector2 anchorMin = safeArea.position;

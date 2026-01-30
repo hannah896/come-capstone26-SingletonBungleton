@@ -1,11 +1,22 @@
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
+using UnityEngine;
 using UnityEngine.Events;
 
 public class UI_Popup : UI_Base
 {
+    protected Canvas Canvas;
     public UnityEvent OnDestroyEvent = new();
     public PopupAnimationType AnimationType = PopupAnimationType.None;
+
+    public override bool Initialize()
+    {
+        if (!base.Initialize()) return false;
+
+        Canvas = GetComponentInParent<Canvas>();
+        
+        return true;
+    }
 
     protected override void Start()
     {
@@ -23,9 +34,9 @@ public class UI_Popup : UI_Base
         base.Close();
         await this.PlayClose();
 
-        if (Managers.Instance != null && Managers.UI != null)
+        if (Main.Instance != null && Main.UI != null)
         {
-            Managers.UI.ClosePopup(this);
+            Main.UI.ClosePopup(this);
         }
         else
         {

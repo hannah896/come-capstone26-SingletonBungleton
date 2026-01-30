@@ -1,6 +1,18 @@
 {
   "dependencies": {
+    "com.ayellowpaper.serializedcollections": "https://github.com/ActionFitGames/SerializedDictionary.git",
+    "com.brogrammist.jsam": "https://github.com/jackyyang09/Simple-Unity-Audio-Manager.git#master",
+    "com.coffee.softmask-for-ugui": "https://github.com/mob-sakai/SoftMaskForUGUI.git?path=Packages/src",
+    "com.coffee.ui-effect": "5.10.8",
+    "com.coffee.ui-particle": "4.11.4",
     "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
+    "com.google.firebase.analytics": "https://github.com/GameWorkstore/com.google.firebase.analytics.git",
+    "com.google.firebase.app": "https://github.com/GameWorkstore/com.google.firebase.app.git",
+    "com.google.firebase.auth": "https://github.com/GameWorkstore/com.google.firebase.auth.git",
+    "com.google.firebase.crashlytics": "https://github.com/GameWorkstore/com.google.firebase.crashlytics.git",
+    "com.google.firebase.messaging": "https://github.com/GameWorkstore/com.google.firebase.messaging.git",
+    "com.google.firebase.remote-config": "https://github.com/GameWorkstore/com.google.firebase.remote-config.git",
+    "com.shlifedev.ugs": "https://github.com/shlifedev/uni-google-sheets.git?path=src/",
     "com.unity.addressables": "2.7.6",
     "com.unity.ai.navigation": "2.0.9",
     "com.unity.collab-proxy": "2.9.3",
@@ -9,10 +21,13 @@
     "com.unity.feature.cinematic": "1.0.0",
     "com.unity.feature.gameplay-storytelling": "1.0.0",
     "com.unity.feature.worldbuilding": "1.0.1",
-    "com.unity.ide.rider": "3.0.38",
-    "com.unity.ide.visualstudio": "2.0.23",
+    "com.unity.ide.rider": "3.0.39",
+    "com.unity.ide.visualstudio": "2.0.26",
     "com.unity.inputsystem": "1.14.2",
+    "com.unity.localization": "1.5.9",
     "com.unity.multiplayer.center": "1.0.0",
+    "com.unity.nuget.mono-cecil": "1.10.2",
+    "com.unity.nuget.newtonsoft-json": "3.2.2",
     "com.unity.render-pipelines.universal": "17.0.4",
     "com.unity.test-framework": "1.6.0",
     "com.unity.timeline": "1.8.10",
@@ -49,5 +64,19 @@
     "com.unity.modules.vr": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
     "com.unity.modules.xr": "1.0.0"
-  }
+  },
+  "scopedRegistries": [
+    {
+      "name": "package.openupm.com",
+      "url": "https://package.openupm.com/",
+      "scopes": [
+        "com.cysharp",
+        "com.google",
+        "com.gameanalytics",
+        "jp.hadashikick",
+        "com.coffee",
+        "com.google.external-dependency-manager"
+      ]
+    }
+  ]
 }

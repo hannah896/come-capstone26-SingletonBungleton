@@ -1,0 +1,14 @@
+UGS 데이터 시트 
+
+구글 스크립트 URL
+https://script.google.com/macros/s/AKfycbx01SuBtS6s-FIgXFG3-OlpKV-rGx5mQnucT_YGfQYGlbf2lXboBqNSx0ikVS0zHEo4xA/exec
+
+스크립트 password = 
+default
+
+구글폴더 ID 
+1O__4HKT1cg9iBCUk5OhEzu7rxtjJEfvM
+
+Generate Options > 
+경로 둘다 
+Assets/05_Datas/UGS 로 Set Directory 하기

@@ -19,4 +19,8 @@ public static class Define
 
     public const float ANIM_DURATION = 0.25f;
     #endregion
+
+    #region Time
+    public const float DEFAULT_FIXED_DELTA = 0.02f;
+    #endregion
 }
