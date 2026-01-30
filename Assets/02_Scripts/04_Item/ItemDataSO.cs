@@ -12,7 +12,7 @@ public class ItemDataSO : ScriptableObject
     public string itemName = "";
 
     [Tooltip("아이템 대분류")]
-    public ItemType itemType = ItemType.Material;
+    public ItemType itemType = ItemType.Gatherables;
 
 
     // ===== 세부 타입 (도구/무기일 때만 사용) =====
