@@ -47,7 +47,6 @@ public class Item_Food : Item, IValidityPeriod
             Debug.Log($"[Item] {itemData.itemName}이(가) 부패했습니다.");
     }
 
-    public float GetFreshnessPercent() => itemData.hasFreshness ? (CurrentFreshness / itemData.maxFreshness) * 100f : 100f;
 
 
     /// 아이템 소비 (음식 타입 전용)
@@ -59,6 +58,28 @@ public class Item_Food : Item, IValidityPeriod
         stackCount--;
         ApplySurvivalEffects();
         return true;
+    }
+
+    public override bool CanStackWith(Item other)
+    {
+        var _food = other as Item_Food;
+        base.CanStackWith(other);
+
+        if (_food == null) 
+            return true;
+
+        // 음식은 신선도 차이가 적을 때만 합침 (예: 5분 이내)
+        if (itemData.hasFreshness && Mathf.Abs(_currentFreshness - _food.CurrentFreshness) > 300f)
+            return false;
+
+        return true;
+    }
+
+    public override string ToString()
+    {
+        string info = base.ToString();
+        if (itemData.hasFreshness) info += $" [신선도: {_currentFreshness:F0}%]";
+        return info;
     }
     #endregion
 }

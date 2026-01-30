@@ -8,7 +8,7 @@ public class ItemTest : MonoBehaviour
 
     async void Start()
     {
-        await UniTask.WaitUntil(() => Managers.Item != null);
+        await UniTask.WaitUntil(() => Item != null);
 
         Debug.Log("   아이템 시스템 테스트 시작");
 

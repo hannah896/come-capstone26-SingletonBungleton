@@ -10,7 +10,6 @@ public abstract class Item : MonoBehaviour
     // === 데이터 및 상태 ===
     public ItemDataSO itemData;        // 원본 데이터(설계도)
     public int stackCount;             // 현재 수량
-    public int currentDurability;      // 현재 내구도 (도구/무기)
 
     private float _createdTime;        // 생성 시점 (신선도 계산용)
 
@@ -19,11 +18,10 @@ public abstract class Item : MonoBehaviour
     {
         itemData = data;
         stackCount = Mathf.Min(0, data.maxStack);
-        currentDurability = data.maxDurability;
     }
 
 
-    private void ApplySurvivalEffects()
+    protected virtual void ApplySurvivalEffects()
     {
         // TODO: Survival Manager 연동
         if (itemData.hungerRestore > 0) Debug.Log($"배고픔 +{itemData.hungerRestore}");
@@ -39,9 +37,7 @@ public abstract class Item : MonoBehaviour
         if (other == null || other.itemData != this.itemData) return false;
         if (!itemData.isStackable || stackCount >= itemData.maxStack) return false;
 
-        // 음식은 신선도 차이가 적을 때만 합침 (예: 5분 이내)
-        if (itemData.hasFreshness && Mathf.Abs(currentFreshness - other.currentFreshness) > 300f)
-            return false;
+        
 
         return true;
     }
@@ -63,42 +59,11 @@ public abstract class Item : MonoBehaviour
         return toRemove;
     }
 
-    // === 내구도 및 유효성 ===
 
-    public void UseDurability(int amount = 1)
-    {
-        if (!itemData.hasDurability) return;
-
-        currentDurability = Mathf.Max(0, currentDurability - amount);
-        if (currentDurability <= 0) Debug.Log($"{itemData.itemName} 파손됨.");
-    }
-
-    public float GetDurabilityPercent() => itemData.hasDurability ? ((float)currentDurability / itemData.maxDurability) * 100f : 100f;
-
-    public virtual bool IsUsable()
-    {
-        if (itemData.hasDurability && currentDurability <= 0) return false;
-        if (itemData.hasFreshness && currentFreshness <= 0) return false;
-        return stackCount > 0;
-    }
-
-    /// 아이템 복제 (분할 기능 등에 사용)
-    public virtual Item Clone(int count)
-    {
-        Item newItem = new Item(itemData, count)
-        {
-            currentDurability = this.currentDurability,
-            currentFreshness = this.currentFreshness,
-            _createdTime = this._createdTime
-        };
-        return newItem;
-    }
 
     public override string ToString()
     {
         string info = $"{itemData.itemName} x{stackCount}";
-        if (itemData.hasDurability) info += $" [내구도: {GetDurabilityPercent():F0}%]";
-        if (itemData.hasFreshness) info += $" [신선도: {GetFreshnessPercent():F0}%]";
         return info;
     }
 }
