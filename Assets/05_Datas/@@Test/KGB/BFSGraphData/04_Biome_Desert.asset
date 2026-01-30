@@ -10,9 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e100f1500ed86a841b269590ea44cd8b, type: 3}
-  m_Name: Biome_03_Forest
+  m_Name: 04_Biome_Desert
   m_EditorClassIdentifier: 
-  id: 
-  debugColor: {r: 0, g: 0.4415095, b: 0.16236098, a: 1}
+  id: 04_Biome_Desert
+  tier: 4
+  debugColor: {r: 1, g: 0.97346646, b: 0, a: 1}
   groundPrefab: {fileID: 0}
-  spawnableObjects: []
+  coreSpawnableObjects: []
+  randomSpaawnableObjects: []
+  spawnableResource: []

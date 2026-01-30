@@ -62,6 +62,7 @@ MonoBehaviour:
   m_GroupAssets:
   - {fileID: 11400000, guid: e6ccef0b5b2540943a9c90cbdb1c304d, type: 2}
   - {fileID: 11400000, guid: 4b1198fe0765bb74ea6677eb482e0585, type: 2}
+  - {fileID: 11400000, guid: 728499ce405acad43aa1381747728d00, type: 2}
   m_BuildSettings:
     m_LogResourceManagerExceptions: 1
     m_BundleBuildPath: Temp/com.unity.addressables/AssetBundles
@@ -102,7 +103,9 @@ MonoBehaviour:
     m_LabelNames:
     - default
     - BiomeData
-    - Biomes
+    - TestMapSettings
+    - TestWorldSettings
+    - RoomData
   m_SchemaTemplates: []
   m_GroupTemplateObjects:
   - {fileID: 11400000, guid: e7ab815488528f64289e35f404d2c676, type: 2}
