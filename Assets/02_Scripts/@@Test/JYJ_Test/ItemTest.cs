@@ -6,9 +6,9 @@ public class ItemTest : MonoBehaviour
 {
     private Item test_Food;
 
-    async void Start()
+    private async void Start()
     {
-        test_Food = await Extensions.LoadAssetAsync<Item_Food>("Test_Food");
+        test_Food = await Extensions.LoadAssetAsync<Item_Food>("Food_Test");
 
         Debug.Log("   아이템 시스템 테스트 시작");
 
@@ -26,7 +26,7 @@ public class ItemTest : MonoBehaviour
     //    Debug.Log($"재료: {test_Food.}");
     //}
 
-    void TestItemStacking()
+    private void TestItemStacking()
     {
         Debug.Log("━━━ [테스트 2] 중첩 ━━━");
 
@@ -37,7 +37,7 @@ public class ItemTest : MonoBehaviour
         }
     }
 
-    void TestItemSplit()
+    private void TestItemSplit()
     {
         Debug.Log("━━━ [테스트 3] 분할 ━━━");
         int value = test_Food.stackCount;
