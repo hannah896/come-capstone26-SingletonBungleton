@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
+  m_Name: Item_Bow
+  m_EditorClassIdentifier: 
+  itemID: bow
+  itemName: "\uD65C"
+  itemType: 3
+  toolType: 0
+  weaponType: 0
+  icon: {fileID: 0}
+  isStackable: 1
+  maxStack: 999
+  hasDurability: 0
+  maxDurability: 100
+  hasFreshness: 0
+  maxFreshness: 0
+  hungerRestore: 0
+  healthRestore: 0
+  sanityRestore: 0
+  equipSlot: 0
+  attackDamage: 0
+  defense: 0
+  description: 

@@ -15,8 +15,28 @@ MonoBehaviour:
   m_GroupName: Common
   m_GUID: 1355e2feab16e06409f202acb6043666
   m_SerializeEntries:
+  - m_GUID: 1040de833c653814cbcea6b8764451dc
+    m_Address: Item_Sword
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 2c50d873c029ef243a017465c51035ba
     m_Address: Canvas_View
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3e816c2635c4be24d9accaaf06f5c695
+    m_Address: Food_Test
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5d69ee7bdaedb6e44a8da1e377a4d210
+    m_Address: Item_Stone
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 616ca56aa7890e949b4e0092bd714b95
+    m_Address: Item_CookedMeat
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -25,8 +45,23 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c804574cf954db24b8af209e536501c6
+    m_Address: Item_Wood
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d422b3c6d6af2e94c9ae5a211d0b10f1
+    m_Address: Test_Tool
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e24ef0f7a1a9c21498e652acf7681e1c
     m_Address: Canvas_Popup
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f2b0090b82e668d4ea98af655caa8966
+    m_Address: Item_Bow
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
