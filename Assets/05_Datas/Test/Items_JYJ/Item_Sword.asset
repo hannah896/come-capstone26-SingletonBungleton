@@ -12,22 +12,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
   m_Name: Item_Sword
   m_EditorClassIdentifier: 
-  itemID: Item_Wood
-  itemName: "\uB098\uBB34"
-  itemType: 0
-  toolType: 0
+  itemID: 1
+  itemName: "\uCE7C"
+  itemType: 2
+  toolType: 1
   weaponType: 0
   icon: {fileID: 0}
   isStackable: 1
   maxStack: 999
-  hasDurability: 0
+  hasDurability: 1
   maxDurability: 100
   hasFreshness: 0
   maxFreshness: 0
   hungerRestore: 0
   healthRestore: 0
   sanityRestore: 0
-  equipSlot: 0
-  attackDamage: 0
+  equipSlot: 3
+  attackDamage: 100
   defense: 0
   description: 
