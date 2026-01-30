@@ -1,22 +1,14 @@
 using UnityEngine;
 
 // 1. 아이템 대분류
-public enum ItemType
-{
-    Material,   // 재료
-    Food,       // 음식
-    Tool,       // 도구
-    Weapon,     // 무기
-    Armor,      // 방어구
-    Recipe      // 레시피
-}
 
 // 2. 도구 세부 분류
 public enum ToolType
 {
     None,
     Pickaxe,    // 곡괭이
-    Axe         // 도끼
+    Axe,         // 도끼
+    Shovels     
 }
 
 // 3. 무기 세부 분류
