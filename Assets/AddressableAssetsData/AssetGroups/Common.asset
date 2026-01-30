@@ -25,6 +25,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3e816c2635c4be24d9accaaf06f5c695
+    m_Address: Food_Test
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 5d69ee7bdaedb6e44a8da1e377a4d210
     m_Address: Item_Stone
     m_ReadOnly: 0

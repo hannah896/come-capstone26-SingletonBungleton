@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
   m_Name: Item_Bow
   m_EditorClassIdentifier: 
-  itemID: 
-  itemName: 
-  itemType: 0
+  itemID: bow
+  itemName: "\uD65C"
+  itemType: 3
   toolType: 0
   weaponType: 0
   icon: {fileID: 0}
