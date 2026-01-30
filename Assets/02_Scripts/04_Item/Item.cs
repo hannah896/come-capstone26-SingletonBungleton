@@ -1,59 +1,27 @@
+using UnityEditor.Localization.Plugins.XLIFF.V12;
 using UnityEngine;
+using UnityEngine.Splines;
 
 /// 게임 내에 실제로 존재하는 아이템 인스턴스 (데이터 실체)
 
 [System.Serializable]
-public class Item
+public abstract class Item : MonoBehaviour
 {
     // === 데이터 및 상태 ===
     public ItemDataSO itemData;        // 원본 데이터(설계도)
     public int stackCount;             // 현재 수량
     public int currentDurability;      // 현재 내구도 (도구/무기)
-    public float currentFreshness;     // 현재 신선도 (음식)
+
     private float _createdTime;        // 생성 시점 (신선도 계산용)
 
     /// 아이템 생성 및 초기화
-    public Item(ItemDataSO data, int count = 1)
+    protected virtual void Init(ItemDataSO data)
     {
         itemData = data;
-        stackCount = Mathf.Min(count, data.maxStack);
+        stackCount = Mathf.Min(0, data.maxStack);
         currentDurability = data.maxDurability;
-
-        if (data.hasFreshness)
-        {
-            currentFreshness = data.maxFreshness;
-            _createdTime = Time.time;
-        }
     }
 
-    // === 음식 및 신선도 로직 ===
-
-
-    /// 경과 시간에 따른 신선도 갱신 (인벤토리에서 호출)
-    public void UpdateFreshness()
-    {
-        if (!itemData.hasFreshness) return;
-
-        float elapsedTime = Time.time - _createdTime;
-        currentFreshness = Mathf.Max(0, itemData.maxFreshness - elapsedTime);
-
-        if (currentFreshness <= 0)
-            Debug.Log($"[Item] {itemData.itemName}이(가) 부패했습니다.");
-    }
-
-    public float GetFreshnessPercent() => itemData.hasFreshness ? (currentFreshness / itemData.maxFreshness) * 100f : 100f;
-
-
-    /// 아이템 소비 (음식 타입 전용)
-    public bool Consume()
-    {
-        if (itemData.itemType != ItemType.Food || stackCount <= 0) return false;
-        if (itemData.hasFreshness && currentFreshness <= 0) return false;
-
-        stackCount--;
-        ApplySurvivalEffects();
-        return true;
-    }
 
     private void ApplySurvivalEffects()
     {
@@ -66,7 +34,7 @@ public class Item
     // === 스택 및 수량 관리 ===
 
     /// 대상 아이템과 겹치기가 가능한지 확인
-    public bool CanStackWith(Item other)
+    public virtual bool CanStackWith(Item other)
     {
         if (other == null || other.itemData != this.itemData) return false;
         if (!itemData.isStackable || stackCount >= itemData.maxStack) return false;
@@ -107,7 +75,7 @@ public class Item
 
     public float GetDurabilityPercent() => itemData.hasDurability ? ((float)currentDurability / itemData.maxDurability) * 100f : 100f;
 
-    public bool IsUsable()
+    public virtual bool IsUsable()
     {
         if (itemData.hasDurability && currentDurability <= 0) return false;
         if (itemData.hasFreshness && currentFreshness <= 0) return false;
@@ -115,7 +83,7 @@ public class Item
     }
 
     /// 아이템 복제 (분할 기능 등에 사용)
-    public Item Clone(int count)
+    public virtual Item Clone(int count)
     {
         Item newItem = new Item(itemData, count)
         {
