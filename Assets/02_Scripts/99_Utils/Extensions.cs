@@ -11,52 +11,39 @@ public static class Extensions
     #region Resource
     public static async UniTask<T> LoadAssetAsync<T>(string key, AssetCacheType cacheType = AssetCacheType.NonRequired, CancellationToken token = default) where T : UnityEngine.Object
     {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(token, Managers.Scene.CurrentToken);
-        return await Managers.Resource.LoadAssetAsync<T>(key, cacheType, cts.Token);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(token, Main.Scene.CurrentToken);
+        return await Main.Resource.LoadAssetAsync<T>(key, cacheType, cts.Token);
     }
 
     public static async UniTask<List<T>> LoadAssetsByLabelAsync<T>(string label, AssetCacheType cacheType = AssetCacheType.NonRequired, CancellationToken token = default) where T : UnityEngine.Object
     {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(token, Managers.Scene.CurrentToken);
-        return await Managers.Resource.LoadAssetsByLabelAsync<T>(label, cacheType, cts.Token);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(token, Main.Scene.CurrentToken);
+        return await Main.Resource.LoadAssetsByLabelAsync<T>(label, cacheType, cts.Token);
     }
 
-    public static void Release(string key) => Managers.Resource.Release(key);
-    public static void ReleaseLabel(string key) => Managers.Resource.ReleaseLabel(key);
-    #endregion
-
-    #region Input
-    public static bool IsPointerOverUI() => Managers.Input.IsPointerOverUI();
-    public static bool IsPointerPressed() => Managers.Input.IsPointerPressed();
-    public static Vector2 GetPointerPosition() => Managers.Input.GetPointerPosition();
-
-    public static void Bind(this InputAction action, Action<InputAction.CallbackContext> started = null, Action<InputAction.CallbackContext> performed = null, Action<InputAction.CallbackContext> canceled = null)
-        => Managers.Input.BindAction(action, started, performed, canceled);
-
-    public static void Unbind(this InputAction action, Action<InputAction.CallbackContext> started = null, Action<InputAction.CallbackContext> performed = null, Action<InputAction.CallbackContext> canceled = null)
-        => Managers.Input.UnBindAction(action, started, performed, canceled);
-
-    public static void InputClear() => Managers.Input.ClearAll();
+    public static void Release(string key) => Main.Resource.Release(key);
+    public static void ReleaseLabel(string key) => Main.Resource.ReleaseLabel(key);
     #endregion
 
     #region Instantiate & Pool
 
     public static async UniTask<GameObject> SpawnAsync(
         string address, 
+        Transform ts = null,
         CancellationToken token = default)
     {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(token, Managers.Scene.CurrentToken);
-        return await Managers.Pool.SpawnAsync(address, cts.Token);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(token, Main.Scene.CurrentToken);
+        return await Main.Pool.SpawnAsync(address, cts.Token);
     }
 
     public static async UniTask<T> Instantiate<T>(string key,
         AssetCacheType casheType = AssetCacheType.NonRequired ,
         CancellationToken token = default) where T : Component
     {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(token, Managers.Scene.CurrentToken);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(token, Main.Scene.CurrentToken);
         var ct = cts.Token;
 
-        GameObject prefab = await Managers.Resource.LoadAssetAsync<GameObject>(key, casheType, ct);
+        GameObject prefab = await Main.Resource.LoadAssetAsync<GameObject>(key, casheType, ct);
         if (prefab == null) return null;
 
         GameObject newObj = UnityEngine.Object.Instantiate(prefab);
@@ -66,9 +53,9 @@ public static class Extensions
     public static void Destroy(GameObject go)
     {
         if (go == null) return;
-        if (Managers.Pool.InstanceToAddress.ContainsKey(go))
+        if (Main.Pool.InstanceToAddress.ContainsKey(go))
         {
-            Managers.Pool.Despawn(go);
+            Main.Pool.Despawn(go);
         }
         else
         {
@@ -81,17 +68,16 @@ public static class Extensions
     #region ChangeScene
     private static void RunStandardSceneCleanupTask()
     {
-        if (Managers.Audio != null) Managers.Audio.ClearSFX();
-        if (Managers.UI != null) Managers.UI.ClearAll();
-        if (Managers.Input != null) Managers.Input.ClearAll();
-        if (Managers.Time != null) Managers.Time.Clear();
-        if (Managers.Pool != null) Managers.Pool.ClearAllPool();
-        if (Managers.Resource != null) Managers.Resource.ClearNonRequired();
+        if (Main.UI != null) Main.UI.ClearAll();
+        if (Main.Input != null) Main.Input.SetInputActions(InputActionType.None);
+        if (Main.Time != null) Main.Time.Clear();
+        if (Main.Pool != null) Main.Pool.ClearAllPool();
+        if (Main.Resource != null) Main.Resource.ClearNonRequired();
     }
 
     public static void ChangeScene(string sceneName, Func<UniTask> before = null, Func<UniTask> after = null, bool effect = true)
     {
-        Managers.Scene.ChangeSceneAsync(sceneName, async () => {
+        Main.Scene.ChangeSceneAsync(sceneName, async () => {
             RunStandardSceneCleanupTask();
             if (before != null) await before();
         }, after, effect).Forget();
@@ -101,21 +87,20 @@ public static class Extensions
     #region UI
     public static async UniTask<T> ShowView<T>(string key, CancellationToken token = default) where T : UI_View
     {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(token, Managers.Scene.CurrentToken);
-        return await Managers.UI.ShowView<T>(key, cts.Token);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(token, Main.Scene.CurrentToken);
+        return await Main.UI.ShowView<T>(key, cts.Token);
     }
 
-    public static async UniTask<T> ShowPopup<T>(string key, bool clickGuard = false, float clickGuardAlpha = -1f, bool clickClose = false, CancellationToken token = default) where T : UI_Popup
+    public static async UniTask<T> ShowPopup<T>(string key = null, bool clickGuard = false, float clickGuardAlpha = -1f, bool clickClose = false, CancellationToken token = default) where T : UI_Popup
     {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(token, Managers.Scene.CurrentToken);
-        return await Managers.UI.ShowPopup<T>(key, clickGuard, clickGuardAlpha, clickClose, cts.Token);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(token, Main.Scene.CurrentToken);
+        return await Main.UI.ShowPopup<T>(key, clickGuard, clickGuardAlpha, clickClose, cts.Token);
     }
     #endregion
 
     #region Sound
-    public static void PlayBGM(string key) => Managers.Audio.PlayBgmAsync(key).Forget();
-    public static void PlaySFX(string key) => Managers.Audio.PlaySfxAsync(key).Forget();
-    public static void PlayOneShot(string key) => Managers.Audio.PlaySfxAsync(key, false).Forget();
+    public static void PlayBGM(AudioLibraryMusic key) => Main.JSAM.PlayBGM(key);
+    public static void PlaySFX(AudioLibrarySounds key) => Main.JSAM.PlaySFX(key);
 
     #endregion
 
@@ -123,8 +108,14 @@ public static class Extensions
 
     public static async UniTask SceneDelay(int milliseconds, CancellationToken token = default)
     {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(token, Managers.Scene.CurrentToken);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(token, Main.Scene.CurrentToken);
         await UniTask.Delay(milliseconds, cancellationToken: cts.Token);
     }
+    public static T GetOrAddComponent<T>(this GameObject obj) where T : Component => Utilities.GetOrAddComponent<T>(obj);
+    public static T FindChild<T>(this GameObject obj, string name = null) where T : Component => Utilities.FindChild<T>(obj, name);
+    public static T FindChildDirect<T>(this GameObject obj, string name = null) where T : Component => Utilities.FindChildDirect<T>(obj, name);
+    public static GameObject FindChild(this GameObject obj, string name = null) => Utilities.FindChild(obj, name);
+    public static GameObject FindChildDirect(this GameObject obj, string name = null) => Utilities.FindChildDirect(obj, name);
+
     #endregion
 }

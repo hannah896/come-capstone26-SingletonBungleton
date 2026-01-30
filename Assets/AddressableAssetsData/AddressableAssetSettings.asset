@@ -15,7 +15,7 @@ MonoBehaviour:
   m_DefaultGroup: 1355e2feab16e06409f202acb6043666
   m_currentHash:
     serializedVersion: 2
-    Hash: 00000000000000000000000000000000
+    Hash: 4789fa8aa546af1b310e1a1c2dd8de09
   m_OptimizeCatalogSize: 0
   m_BuildRemoteCatalog: 0
   m_CatalogRequestsTimeout: 0
@@ -61,8 +61,9 @@ MonoBehaviour:
   m_overridePlayerVersion: '[UnityEditor.PlayerSettings.bundleVersion]'
   m_GroupAssets:
   - {fileID: 11400000, guid: e6ccef0b5b2540943a9c90cbdb1c304d, type: 2}
-  - {fileID: 11400000, guid: 4b1198fe0765bb74ea6677eb482e0585, type: 2}
-  - {fileID: 11400000, guid: 728499ce405acad43aa1381747728d00, type: 2}
+  - {fileID: 11400000, guid: 3ca174560c64618448f1a1c619c2b170, type: 2}
+  - {fileID: 11400000, guid: f7160eebd0276e047beb889697b07f5c, type: 2}
+  - {fileID: 11400000, guid: 641a3730c42739f498f31a108caa5ea3, type: 2}
   m_BuildSettings:
     m_LogResourceManagerExceptions: 1
     m_BundleBuildPath: Temp/com.unity.addressables/AssetBundles
@@ -102,10 +103,7 @@ MonoBehaviour:
   m_LabelTable:
     m_LabelNames:
     - default
-    - BiomeData
-    - TestMapSettings
-    - TestWorldSettings
-    - RoomData
+    - EveryScene
   m_SchemaTemplates: []
   m_GroupTemplateObjects:
   - {fileID: 11400000, guid: e7ab815488528f64289e35f404d2c676, type: 2}

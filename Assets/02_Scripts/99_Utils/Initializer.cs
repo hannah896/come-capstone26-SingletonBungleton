@@ -1,45 +1,15 @@
-using Cysharp.Threading.Tasks;
 using UnityEngine;
 
-public class Initializer : MonoBehaviour
+public class Initializer
 {
-    public static Initializer Instance { get; private set; }
-
-    private async void Awake()
-    {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
-
-        await InitializeAsync();
-        await InitializeManagersAsync();
-    }
-
-    #region Create
+    /// <summary>
+    /// 아무것도 없는 상태에서 실행하면 제일 먼저 실행되면서 Main 오브젝트를 생성한다.
+    /// 씬이 로드가 다되기 전에 실행된다.
+    /// </summary>
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-    private static void CreateInitializer()
+    private static void InitializeManagersAsync()
     {
-        if (Object.FindAnyObjectByType<Initializer>() != null) return;
-        GameObject obj = new GameObject("[Initializer]", typeof(Initializer));
-        Object.DontDestroyOnLoad(obj);
-    }
-
-    public async UniTask InitializeManagersAsync()
-    {
-        var managersObj = Utility.GetOrCreateObjectOfType<Managers>();
-        managersObj.name = "[Managers]";
-        await managersObj.Init();
-
-        managersObj.transform.SetAsFirstSibling();
-        transform.SetSiblingIndex(1);
-    }
-    #endregion
-
-    private async UniTask InitializeAsync()
-    {
-        await UniTask.CompletedTask;
+        Main main = Main.Instance;
+        main.transform.SetAsFirstSibling(); // 하이어라키 계층 최상단으로 옮긴다.
     }
 }

@@ -13,12 +13,72 @@ public class UI_Base : MonoBehaviour
     public UnityEvent OnCloseEvent = new UnityEvent();
 
     protected bool _onClose = false;
-    protected const float ANIM_DURATION = 0.2f;
+    
+    public RectTransform Rect { get; private set; }
+    private bool _isInitialized;
+    
+    
+    protected virtual void Awake() { Initialize(); }
 
     protected virtual void Start()
     {
         OnOpenEvent?.Invoke();
     }
+
+    public virtual bool Initialize() {
+        if (_isInitialized) return false;
+
+        Rect = this.GetComponent<RectTransform>();
+
+        _isInitialized = true;
+        return true;
+    }
+    
+    #region Rect
+
+    public UI_Base SetRectAnchor(Vector2 anchorMin, Vector2 anchorMax) {
+        Initialize();
+
+        Rect.anchorMin = anchorMin;
+        Rect.anchorMax = anchorMax;
+
+        return this;
+    }
+
+    public UI_Base SetRectPivot(Vector2 pivot) {
+        Initialize();
+
+        Rect.pivot = pivot;
+
+        return this;
+    }
+
+    public UI_Base SetRectAnchoredPosition(Vector2 position) {
+        Initialize();
+
+        Rect.anchoredPosition = position;
+
+        return this;
+    }
+
+    public UI_Base SetSize(Vector2 size) {
+        Initialize();
+
+        Rect.sizeDelta = size;
+
+        return this;
+    }
+
+    public UI_Base SetOffset(Vector2 offsetMin, Vector2 offsetMax) {
+        Initialize();
+
+        Rect.offsetMin = offsetMin;
+        Rect.offsetMax = offsetMax;
+
+        return this;
+    }
+    
+    #endregion
 
     public virtual void Close()
     {
@@ -28,6 +88,7 @@ public class UI_Base : MonoBehaviour
         OnCloseEvent?.Invoke();
     }
     #region EditorSetting
+    
 #if UNITY_EDITOR
     private void OnValidate()
     {
@@ -60,20 +121,21 @@ public class UI_Base : MonoBehaviour
 
             field.SetValue(this, component.gameObject);
         }
-    }
-
-    private Component FindComponent(Type type, string name)
-    {
-        var components = GetComponentsInChildren(type, true);
-        foreach (var component in components)
+        
+        Component FindComponent(Type type, string name)
         {
-            if (component.name == name)
-                return component;
-        }
+            var components = GetComponentsInChildren(type, true);
+            foreach (var component in components)
+            {
+                if (component.name == name)
+                    return component;
+            }
 
-        return null;
+            return null;
+        }
     }
 #endif
+    
     #endregion
 }
 
