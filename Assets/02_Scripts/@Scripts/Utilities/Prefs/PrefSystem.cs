@@ -49,6 +49,7 @@ namespace Blossom.Preference {
         #endregion
         
     }
+
     
     internal static class PrefSystem {
 

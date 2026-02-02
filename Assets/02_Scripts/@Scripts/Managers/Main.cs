@@ -11,15 +11,12 @@ using UnityEngine.SceneManagement;
 
 public class Main : MonoBehaviour
 {
-    #region Initializer
-
-    // Initializer.cs참고
-
-    #endregion
-
     #region Singleton
 
     private static Main _instance;
+
+    // 초기화 완료 여부
+    private static bool _initialized;
 
     public static Main Instance
     {
@@ -32,15 +29,16 @@ public class Main : MonoBehaviour
 
     #endregion
 
-    #region Properties
-    // Primary
+    #region Static Properties - Primary Managers
+
     public static ResourceManager Resource => Instance?._resource;
     public static DataManager Data => Instance?._data;
     public static UIManager UI => Instance?._ui;
     public static JSAMManager JSAM => Instance?._jsam;
+    #endregion
 
+    #region Static Properties - Core Managers
 
-    // Core.
     public static PoolManager Pool => Instance?._pool;
     public static ScreenManager Screen => Instance?._screen;
     public static LoopManager Loop => Instance?._loop;
@@ -49,8 +47,7 @@ public class Main : MonoBehaviour
     public static LoadingManager Loading => Instance?._loading;
     public static InputManager Input => Instance?._input;
     public static TextManager Text => Instance?._text;
-
-
+    #endregion
     // Content.
     public static BoardManager Board => Instance?._board;
     public static SceneManagerEx Scene => Instance?._scene;
@@ -83,7 +80,6 @@ public class Main : MonoBehaviour
     private readonly BoardManager _board = new();
     private readonly SceneManagerEx _scene = new();
 
-    private static bool _initialized;
     private static readonly List<PrimaryManager> PrimaryManagers = new();
     private static readonly List<CoreManager> CoreManagers = new();
     private static readonly List<ContentManager> ContentManagers = new();
@@ -129,6 +125,7 @@ public class Main : MonoBehaviour
             }
         }
 
+        // 우선순위 맞춰서 매니저 초기화
         var primaryTasks = PrimaryManagers
             .Select(task => task.Initialize())
             .ToArray();

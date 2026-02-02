@@ -1,313 +1,450 @@
 using Cysharp.Threading.Tasks;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.Pool;
+using Object = UnityEngine.Object;
 
+#region Interfaces
+
+/// <summary>
+/// 풀링 가능한 오브젝트 인터페이스.
+/// </summary>
 public interface IPoolable
 {
+    /// <summary>
+    /// 풀에서 꺼내질 때 호출됩니다.
+    /// </summary>
     void OnSpawn();
+
+    /// <summary>
+    /// 풀로 반환될 때 호출됩니다.
+    /// </summary>
     void OnDespawn();
 }
 
 /// <summary>
-/// 오브젝트 풀링을 총괄해주는 매니저
+/// 스폰 후 추가 초기화가 필요한 오브젝트 인터페이스.
 /// </summary>
-public class PoolManager : CoreManager
+public interface IAfterSpawn
 {
-    public class PoolData
+    /// <summary>
+    /// 스폰 직후 호출됩니다.
+    /// </summary>
+    void AfterSpawn();
+}
+
+#endregion
+
+/// <summary>
+/// 게임 오브젝트 풀링을 관리하는 매니저.
+/// 어드레서블 기반 프리팹을 로드하고 풀링하여 성능을 최적화합니다.
+/// </summary>
+public sealed class PoolManager : CoreManager
+{
+    #region Nested Classes
+
+    // 단일 프리팹에 대한 풀 관리
+    private sealed class GameObjectPool : IDisposable
     {
-        public readonly Queue<GameObject> InactiveQueue = new();
-        public readonly HashSet<GameObject> AllMembers = new();
-        public Transform PoolParent;
-        public readonly SemaphoreSlim CreateLock = new(1, 1);
-    }
+        #region Fields
 
-    public readonly Dictionary<string, PoolData> Pools = new();
-    public readonly Dictionary<GameObject, string> InstanceToAddress = new();
-    private readonly Dictionary<GameObject, int> InstanceToGeneration = new();
+        // 원본 프리팹
+        private readonly GameObject _prefab;
 
-    private GameObject _root;
+        // 풀 루트 트랜스폼
+        private readonly Transform _root;
 
-    private int _generation = 0;
+        // Unity 오브젝트 풀
+        private readonly IObjectPool<GameObject> _pool;
 
-    private void EnsureRoot()
-    {
-        if (_root != null) Object.Destroy(_root);
-    }
+        // 풀에 속한 모든 오브젝트
+        private readonly HashSet<GameObject> _allMembers = new();
 
-    public GameObject Spawn(string address)
-    {
-        if (string.IsNullOrEmpty(address)) return null;
+        // IPoolable 컴포넌트 캐시
+        private readonly Dictionary<GameObject, IPoolable> _poolableCache = new();
 
-        EnsureRoot();
-        var pool = GetOrCreatePool(address);
+        // IAfterSpawn 컴포넌트 캐시
+        private readonly Dictionary<GameObject, IAfterSpawn> _afterSpawnCache = new();
 
-        var go = DequeueValidCurrentGeneration(pool);
-        if (go == null)
+        // 오브젝트 파괴 시 콜백
+        private readonly Action<GameObject> _onDestroyed;
+
+        #endregion
+
+        #region Constructor
+        // 생성자
+        public GameObjectPool(string address, GameObject prefab, Transform parent, Action<GameObject> onDestroyed)
         {
-            go = Main.Data.GetData<GameObject>(address).Instantiate();
+            _prefab = prefab;
+            _onDestroyed = onDestroyed;
+
+            _root = new GameObject($"Pool_{address}").transform;
+            _root.SetParent(parent, false);
+
+            _pool = new ObjectPool<GameObject>(
+                createFunc: CreateFunc,
+                actionOnGet: OnGet,
+                actionOnRelease: OnRelease,
+                actionOnDestroy: OnDestroyFunc,
+                collectionCheck: false,
+                defaultCapacity: 10,
+                maxSize: 1000
+            );
         }
 
-        if (go.TryGetComponent<IPoolable>(out var p))
+        #endregion
+
+        #region Pool Callbacks
+
+        // 새 인스턴스 생성
+        private GameObject CreateFunc()
         {
-            p.OnSpawn();
-        }
-        return go;
-    }
+            var inst = Object.Instantiate(_prefab, _root);
+            inst.SetActive(false);
 
-    public T Spawn<T>(string address)
-    {
-        GameObject go = Spawn(address);
-        if (go == null) return default;
-        
-        T result = go.GetComponent<T>();
-        if (result == null)
-        {
-            Debug.LogError($"Pool \"{address}\" could not be spawned on {typeof(T)}");
-            return default;
-        }
-        
-        return result;
-    }
+            _allMembers.Add(inst);
 
-    public async UniTask<GameObject> SpawnAsync(string address, CancellationToken token = default)
-    {
-        if (string.IsNullOrEmpty(address)) return null;
+            var poolable = inst.GetComponent<IPoolable>();
+            if (poolable != null) _poolableCache[inst] = poolable;
 
-        EnsureRoot();
-        var pool = GetOrCreatePool(address);
+            var afterSpawn = inst.GetComponent<IAfterSpawn>();
+            if (afterSpawn != null) _afterSpawnCache[inst] = afterSpawn;
 
-        var go = DequeueValidCurrentGeneration(pool);
-        if (go == null)
-        {
-            go = Main.Data.GetData<GameObject>(address).Instantiate();
+            return inst;
         }
 
-        if (go.TryGetComponent<IPoolable>(out var p))
+        // 풀에서 꺼낼 때
+        private void OnGet(GameObject go)
         {
-            p.OnSpawn();
+            if (go == null) return;
+
+            go.SetActive(true);
+
+            if (_poolableCache.TryGetValue(go, out var p))
+            {
+                try { p.OnSpawn(); } catch { }
+            }
         }
-        return go;
-    }
 
-    public async UniTask<GameObject> SpawnAsync(
-        string address,
-        Transform parent = null,
-        CancellationToken token = default)
-    {
-        if (string.IsNullOrEmpty(address)) return null;
-
-        EnsureRoot();
-        var pool = GetOrCreatePool(address);
-
-        var go = DequeueValidCurrentGeneration(pool);
-        if (go != null)
+        // 풀로 반환할 때
+        private void OnRelease(GameObject go)
         {
-            Activate(go, pool, parent);
+            if (go == null) return;
+
+            if (_poolableCache.TryGetValue(go, out var p))
+            {
+                try { p.OnDespawn(); } catch { }
+            }
+
+            go.SetActive(false);
+            go.transform.SetParent(_root, false);
+        }
+
+        // 오브젝트 파괴 시
+        private void OnDestroyFunc(GameObject go)
+        {
+            if (go == null) return;
+
+            _poolableCache.Remove(go);
+            _afterSpawnCache.Remove(go);
+            _allMembers.Remove(go);
+
+            _onDestroyed?.Invoke(go);
+
+            Object.Destroy(go);
+        }
+
+        #endregion
+
+        #region Public Methods
+
+        // 풀에서 오브젝트 가져오기
+        public GameObject Get(Transform parent)
+        {
+            var go = _pool.Get();
+            if (go == null) return null;
+
+            if (parent != null) go.transform.SetParent(parent, false);
             return go;
         }
 
-        await pool.CreateLock.WaitAsync(token);
-        try
+        // AfterSpawn 콜백 실행 시도
+        public bool TryAfterSpawn(GameObject go)
         {
-            go = DequeueValidCurrentGeneration(pool);
-            if (go == null)
-                go = await CreateNewInstance(address, pool, token);
-        }
-        finally
-        {
-            pool.CreateLock.Release();
+            if (go == null) return false;
+
+            if (_afterSpawnCache.TryGetValue(go, out var a))
+            {
+                try { a.AfterSpawn(); } catch { }
+                return true;
+            }
+
+            return false;
         }
 
+        // 풀로 반환
+        public void Release(GameObject go)
+        {
+            if (go == null) return;
+            _pool.Release(go);
+        }
+
+        // 풀 정리
+        public void Dispose()
+        {
+            foreach (var go in _allMembers)
+            {
+                if (go == null) continue;
+                _onDestroyed?.Invoke(go);
+                Object.Destroy(go);
+            }
+
+            _allMembers.Clear();
+            _poolableCache.Clear();
+            _afterSpawnCache.Clear();
+
+            if (_root != null) Object.Destroy(_root.gameObject);
+        }
+
+        #endregion
+    }
+
+    #endregion
+
+    #region Fields
+
+    // 주소별 풀 캐시
+    private readonly Dictionary<string, GameObjectPool> _pools = new();
+
+    // 인스턴스 → 풀 매핑
+    private readonly Dictionary<GameObject, GameObjectPool> _instanceToPool = new();
+
+    // 로딩 중인 풀 태스크
+    private readonly Dictionary<string, UniTask<GameObjectPool>> _loadingTasks = new();
+
+    // 풀 루트 오브젝트
+    private GameObject _root;
+
+    #endregion
+
+    #region Spawn
+
+    /// <summary>
+    /// 풀에서 게임 오브젝트를 스폰합니다.
+    /// </summary>
+    public async UniTask<GameObject> SpawnAsync(string address, Transform parent = null, CancellationToken token = default)
+    {
+        if (string.IsNullOrEmpty(address)) return null;
+
+        var pool = _pools.TryGetValue(address, out var cached) ? cached : await GetOrLoadPool(address, token);
+        if (pool == null) return null;
+
+        await UniTask.SwitchToMainThread(token);
+
+        var go = pool.Get(parent);
         if (go == null) return null;
 
-        Activate(go, pool, parent);
+        _instanceToPool[go] = pool;
+
+        pool.TryAfterSpawn(go);
+
         return go;
     }
 
-    public async UniTask<T> SpawnAsync<T>(
-        string address,
-        Transform parent = null,
-        bool worldPositionStays = false,
-        bool resetLocal = true,
-        CancellationToken token = default) where T : Component
+    /// <summary>
+    /// 풀에서 특정 컴포넌트가 있는 게임 오브젝트를 스폰합니다.
+    /// </summary>
+    public async UniTask<T> SpawnAsync<T>(string address, Transform parent = null, CancellationToken token = default) where T : Component
     {
         var go = await SpawnAsync(address, parent, token);
         if (go == null) return null;
 
-        if (go.TryGetComponent<T>(out var comp))
-            return comp;
-
-        Despawn(go);
-        return null;
+        if (go.TryGetComponent<T>(out var comp)) return comp;
+        return go.GetComponent<T>();
     }
 
+    #endregion
+
+    #region Despawn
+
+    /// <summary>
+    /// 게임 오브젝트를 풀로 반환합니다.
+    /// </summary>
     public void Despawn(GameObject go)
     {
         if (go == null) return;
 
-        if (InstanceToGeneration.TryGetValue(go, out var gen) && gen != _generation)
+        if (!PlayerLoopHelper.IsMainThread)
         {
-            SafeUnregister(go);
-            Object.Destroy(go);
+            DespawnAsync(go).Forget();
             return;
         }
 
-        if (!InstanceToAddress.TryGetValue(go, out var address) || !Pools.TryGetValue(address, out var pool))
-        {
-            SafeUnregister(go);
-            Object.Destroy(go);
-            return;
-        }
-
-        if (!go.activeSelf) return;
-
-        if (go.TryGetComponent<IPoolable>(out var p))
-        {
-            try { p.OnDespawn(); }
-            catch { }
-        }
-
-        go.SetActive(false);
-        go.transform.SetParent(pool.PoolParent, false);
-        pool.InactiveQueue.Enqueue(go);
+        DespawnInternal(go);
     }
 
-    public void ClearPool(string address)
+    // 비동기 디스폰 처리
+    private async UniTaskVoid DespawnAsync(GameObject go)
     {
-        if (string.IsNullOrEmpty(address)) return;
-        if (!Pools.TryGetValue(address, out var pool)) return;
-
-        _generation++;
-
-        foreach (var go in pool.AllMembers)
-        {
-            if (go == null) continue;
-            SafeUnregister(go);
-            Object.Destroy(go);
-        }
-
-        pool.AllMembers.Clear();
-        pool.InactiveQueue.Clear();
-
-        if (pool.PoolParent != null)
-            Object.Destroy(pool.PoolParent.gameObject);
-
-        Pools.Remove(address);
-        Main.Resource.Release(address);
+        await UniTask.SwitchToMainThread();
+        DespawnInternal(go);
     }
 
-    public void ClearAllPool()
-    {
-        _generation++;
-
-        foreach (var key in new List<string>(Pools.Keys))
-            ClearPoolInternal_NoGenBump(key); 
-
-        Pools.Clear();
-        InstanceToAddress.Clear();
-        InstanceToGeneration.Clear();
-
-        if (_root != null) Object.Destroy(_root);
-        _root = null;
-    }
-
-    private void ClearPoolInternal_NoGenBump(string address)
-    {
-        if (!Pools.TryGetValue(address, out var pool)) return;
-
-        foreach (var go in pool.AllMembers)
-        {
-            if (go == null) continue;
-            SafeUnregister(go);
-            Object.Destroy(go);
-        }
-
-        pool.AllMembers.Clear();
-        pool.InactiveQueue.Clear();
-
-        if (pool.PoolParent != null)
-            Object.Destroy(pool.PoolParent.gameObject);
-
-        Pools.Remove(address);
-        Main.Resource.Release(address);
-    }
-
-    private void Activate(GameObject go, PoolData pool, Transform parent)
-    {
-        var targetParent = parent != null ? parent : pool.PoolParent;
-        go.transform.SetParent(targetParent);
-
-        go.SetActive(true);
-
-        if (go.TryGetComponent<IPoolable>(out var p))
-        {
-            try { p.OnSpawn(); }
-            catch { }
-        }
-    }
-
-    private GameObject DequeueValidCurrentGeneration(PoolData pool)
-    {
-        while (pool.InactiveQueue.Count > 0)
-        {
-            var go = pool.InactiveQueue.Dequeue();
-            if (go == null) continue;
-
-            if (InstanceToGeneration.TryGetValue(go, out var gen) && gen == _generation)
-                return go;
-
-            SafeUnregister(go);
-            Object.Destroy(go);
-        }
-
-        return null;
-    }
-
-    private async UniTask<GameObject> CreateNewInstance(string address, PoolData pool, CancellationToken token)
-    {
-        var prefab = await Main.Resource.LoadAssetAsync<GameObject>(address, AssetCacheType.Required, token);
-        if (prefab == null) return null;
-
-        var go = Object.Instantiate(prefab, pool.PoolParent);
-        go.SetActive(false);
-
-        InstanceToAddress[go] = address;
-        InstanceToGeneration[go] = _generation;
-        pool.AllMembers.Add(go);
-
-        return go;
-    }
-
-    private PoolData GetOrCreatePool(string address)
-    {
-        if (Pools.TryGetValue(address, out var pool))
-            return pool;
-
-        EnsureRoot();
-
-        pool = new PoolData();
-        var parentGO = new GameObject($"Pool_{address}");
-        parentGO.transform.SetParent(_root.transform, false);
-        pool.PoolParent = parentGO.transform;
-
-        Pools[address] = pool;
-        return pool;
-    }
-
-    private void SafeUnregister(GameObject go)
+    // 디스폰 내부 로직
+    private void DespawnInternal(GameObject go)
     {
         if (go == null) return;
 
-        if (InstanceToAddress.TryGetValue(go, out var address))
+        if (_instanceToPool.TryGetValue(go, out var pool) && pool != null)
         {
-            InstanceToAddress.Remove(go);
-
-            if (Pools.TryGetValue(address, out var pool))
-                pool.AllMembers.Remove(go);
+            pool.Release(go);
+            return;
         }
 
-        InstanceToGeneration.Remove(go);
+        Object.Destroy(go);
     }
 
+    #endregion
+
+    #region Pool Management
+
+    // 풀 로드 또는 가져오기
+    private async UniTask<GameObjectPool> GetOrLoadPool(string address, CancellationToken token)
+    {
+        if (_pools.TryGetValue(address, out var existing)) return existing;
+
+        if (_loadingTasks.TryGetValue(address, out var loadingTask))
+            return await loadingTask;
+
+        var task = LoadInternal(address, token);
+        _loadingTasks[address] = task;
+
+        try
+        {
+            var pool = await task;
+
+            if (_root == null)
+            {
+                pool?.Dispose();
+                return null;
+            }
+
+            if (pool != null) _pools[address] = pool;
+            return pool;
+        }
+        catch (OperationCanceledException)
+        {
+            return null;
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+            return null;
+        }
+        finally
+        {
+            _loadingTasks.Remove(address);
+        }
+    }
+
+    // 프리팹 로드 및 풀 생성
+    private async UniTask<GameObjectPool> LoadInternal(string address, CancellationToken token)
+    {
+        GameObject prefab = null;
+
+        try
+        {
+            prefab = await Main.Resource.LoadAssetAsync<GameObject>(address, ct: token);
+        }
+        catch (OperationCanceledException)
+        {
+            return null;
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+            return null;
+        }
+
+        if (prefab == null) return null;
+
+        await UniTask.SwitchToMainThread(token);
+
+        EnsureRoot();
+
+        return new GameObjectPool(address, prefab, _root.transform, go => _instanceToPool.Remove(go));
+    }
+
+    // 루트 오브젝트 생성 보장
+    private void EnsureRoot()
+    {
+        if (_root == null) _root = new GameObject("@Pool_Root");
+    }
+
+    /// <summary>
+    /// 특정 주소의 풀을 정리합니다.
+    /// </summary>
+    public void ClearPool(string address)
+    {
+        if (string.IsNullOrEmpty(address)) return;
+
+        if (!PlayerLoopHelper.IsMainThread)
+        {
+            ClearPoolAsync(address).Forget();
+            return;
+        }
+
+        if (_pools.TryGetValue(address, out var pool))
+        {
+            pool.Dispose();
+            _pools.Remove(address);
+            Main.Resource.Release(address);
+        }
+    }
+
+    // 비동기 풀 정리
+    private async UniTaskVoid ClearPoolAsync(string address)
+    {
+        await UniTask.SwitchToMainThread();
+        ClearPool(address);
+    }
+
+    #endregion
+
+    #region Cleanup
+
+    public override void Clear()
+    {
+        if (!PlayerLoopHelper.IsMainThread)
+        {
+            ClearAsync().Forget();
+            return;
+        }
+
+        foreach (var pool in _pools.Values)
+        {
+            pool.Dispose();
+        }
+
+        _pools.Clear();
+        _instanceToPool.Clear();
+        _loadingTasks.Clear();
+
+        if (_root != null)
+        {
+            Object.Destroy(_root);
+            _root = null;
+        }
+    }
+
+    // 비동기 정리
+    private async UniTaskVoid ClearAsync()
+    {
+        await UniTask.SwitchToMainThread();
+        Clear();
+    }
+
+    #endregion
 }

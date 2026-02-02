@@ -12,23 +12,70 @@ using UnityEngine;
 /// </summary>
 public class LoopManager : CoreManager
 {
-    // 등록할 액션들은 매개변수가 실제로 필요없더라도 float deltaTime을 받도록 통일.
-    public event Action<float> OnUpdate;
-    public event Action<float> OnGameUpdate;
-    private float GameSpeed { get; set; } = 1f;
-    private List<Sequence> _listSequence = new ();
+    #region Fields
 
+    // 게임 시퀀스 리스트
+    private List<Sequence> _listSequence = new();
+
+    // 슬로우 모션 취소 토큰
+    private CancellationTokenSource _slowMotionCTS;
+
+    // 슬로우 모션 이전 타임스케일
+    private float _lastTimeScale = 1f;
+
+    #endregion
+
+    #region Constants
+
+    // 기본 고정 델타 타임
+    private const float DEFAULT_FIXED_DELTA = 0.02f;
+
+    #endregion
+
+    #region Properties
+
+    // 현재 게임 속도
+    private float GameSpeed { get; set; } = 1f;
+
+    #endregion
+
+    #region Events
+    // 등록할 액션들은 매개변수가 실제로 필요없더라도 float deltaTime을 받도록 통일.
+
+    // 매 프레임 호출되는 이벤트
+    public event Action<float> OnUpdate;
+
+    // 게임 속도가 적용된 업데이트 이벤트
+    public event Action<float> OnGameUpdate;
+
+    #endregion
+
+    #region Update
+
+    /// <summary>
+    /// 매 프레임 업데이트를 실행합니다.
+    /// </summary>
     public void Update(float deltaTime)
     {
         OnUpdate?.Invoke(deltaTime);
     }
 
+    /// <summary>
+    /// 게임 속도가 적용된 업데이트를 실행합니다.
+    /// </summary>
     public void GameUpdate(float deltaTime)
     {
         if (GameScene.GameProcessing != GameProcessing.Processing) return;
         OnGameUpdate?.Invoke(deltaTime * GameSpeed);
     }
 
+    #endregion
+
+    #region Time Control
+
+    /// <summary>
+    /// 게임 속도에 맞춰 동작하는 시퀀스를 생성합니다.
+    /// </summary>
     public Sequence GetGameSequence()
     {
         Sequence seq = DOTween.Sequence();
@@ -37,6 +84,9 @@ public class LoopManager : CoreManager
         return seq;
     }
 
+    /// <summary>
+    /// 게임 속도를 설정합니다.
+    /// </summary>
     public void SetTimeScale(float timeScale)
     {
         GameSpeed = timeScale;
@@ -46,16 +96,9 @@ public class LoopManager : CoreManager
         }
     }
 
-    public void ResetGameEvent()
-    {
-        OnGameUpdate = null;
-    }
-
-    private float _lastTimeScale = 1f;
-    private const float DEFAULT_FIXED_DELTA = 0.02f;
-
-    private CancellationTokenSource _slowMotionCTS;
-
+    /// <summary>
+    /// 슬로우 모션 효과를 비동기로 적용합니다.
+    /// </summary>
     public async UniTaskVoid DoSlowMotion(float targetScale, float duration)
     {
         CancelSlowMotion();
@@ -78,7 +121,7 @@ public class LoopManager : CoreManager
             }
             UpdateTimeScale(targetScale);
         }
-        catch (System.OperationCanceledException)
+        catch (OperationCanceledException)
         {
         }
         finally
@@ -88,6 +131,11 @@ public class LoopManager : CoreManager
         }
     }
 
+    #endregion
+
+    #region Internal Methods
+
+    // 타임스케일 업데이트
     private void UpdateTimeScale(float timeScale, bool fixedDeltaTime = false)
     {
         if (timeScale < 0f) timeScale = 0f;
@@ -98,6 +146,7 @@ public class LoopManager : CoreManager
             Time.fixedDeltaTime = DEFAULT_FIXED_DELTA * Time.timeScale;
     }
 
+    // 슬로우 모션 취소
     private void CancelSlowMotion()
     {
         if (_slowMotionCTS != null)
@@ -107,4 +156,19 @@ public class LoopManager : CoreManager
             _slowMotionCTS = null;
         }
     }
+
+    #endregion
+
+    #region Cleanup
+
+    /// <summary>
+    /// 게임 업데이트 이벤트를 초기화합니다.
+    /// </summary>
+    public void ResetGameEvent()
+    {
+        OnGameUpdate = null;
+    }
+
+    #endregion
 }
+

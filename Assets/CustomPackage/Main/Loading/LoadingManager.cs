@@ -1,73 +1,59 @@
+using Cysharp.Threading.Tasks;
 using System;
 using System.Collections.Generic;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using Object = UnityEngine.Object;
-
-public enum LoadingType
-{
-    Transition,
-    Ads,
-    Iap
-}
 
 /// <summary>
-/// 로딩, 화면전환 등을 관리해주는 매니저
+/// SDK 초기화 및 로딩 화면을 관리하는 매니저.
+/// 여러 SDK의 비동기 초기화를 조율합니다.
 /// </summary>
-public class LoadingManager : ContentManager
+public class LoadingManager : CoreManager
 {
-    #region Consts.
+    #region Constants
 
+    // SDK 초기화 타임아웃 (초)
     private const float RetryTimeout = 3f;
 
     #endregion
 
-    public bool IsLoadingSDK => _isLoadingSDK;
+    #region Fields
 
-    #region Member
-
-    private UI_Loader _loader;
-    private UI_LoadingCanvas _loadingCanvas;
-    private bool _isProcessing;
+    // SDK 로딩 완료 여부
     private bool _isLoadingSDK;
 
-    public HashSet<LoadingSDK> LoadingSDKs = new();
-    
     #endregion
+
+    #region Properties
+
+    // SDK 로딩 완료 여부
+    public bool IsLoadingSDK => _isLoadingSDK;
+
+    // 초기화할 SDK 목록
+    public HashSet<LoadingSDK> LoadingSDKs { get; } = new();
+
+    #endregion
+
+    #region Initialization
 
     protected override async UniTask OnInitializeAsync()
     {
         await base.OnInitializeAsync();
+
         if (Main.IsEditorMode) return;
-        
-        _loader = Object.FindFirstObjectByType<UI_Loader>();
-        if (!_loader)
-        {
-            GameObject go = await Main.Resource.LoadAssetAsync<GameObject>(nameof(UI_Loader));
-            _loader = await Main.Resource.LoadAssetAsync<UI_Loader>();
-            _loader = Object.Instantiate(_loader);
-            _loader.gameObject.name = "UI_Loader";
-            if(!_loader) Debug.LogError("Could not find UI_Loader");
-        }
-        
-        _loadingCanvas = Object.FindFirstObjectByType<UI_LoadingCanvas>();
+
+        var _loadingCanvas = UnityEngine.Object.FindFirstObjectByType<UI_LoadingCanvas>();
         if (!_loadingCanvas)
         {
             _loadingCanvas = await Extensions.ShowPopup<UI_LoadingCanvas>();
             if (!_loadingCanvas) Debug.LogError("Could not find UI_LoadingCanvas");
         }
-            
-        if (Object.FindFirstObjectByType<EventSystem>() == null)
-        {
-            EventSystem eventSystem = await Main.Resource.LoadAssetAsync<EventSystem>("EventSystem");
-            if (!eventSystem) Debug.LogError($"Could not find EventSystem.");
-        }
-        
-        if(_loadingCanvas) _loadingCanvas.Set();
+        _loadingCanvas.Set();
     }
 
-    public async void InitializeSDK()
+    /// <summary>
+    /// 모든 등록된 SDK를 비동기로 초기화합니다.
+    /// </summary>
+    public async void InitializeSDKsAsync()
     {
         foreach (LoadingSDK loadingSDK in LoadingSDKs)
         {
@@ -77,59 +63,52 @@ public class LoadingManager : ContentManager
             }
             catch (Exception e)
             {
-                Debug.LogError($"SDKInitialized Failed: {e.Message}");
+                Debug.LogError($"SDK Initialized Start Failed: {e.Message}");
             }
         }
-        
+
         foreach (LoadingSDK loadingSDK in LoadingSDKs)
         {
             try
             {
-                if (!await WaitUntilWithTimeout(loadingSDK.IsInitializedSDK, loadingSDK.GetType().ToString()))
-                    Debug.LogError($"{loadingSDK.GetType()} initialization failed or timed out.");
-                Debug.Log($"{loadingSDK.GetType()} initialized successfully.");
+                bool success = await WaitUntilWithTimeout(() => loadingSDK.IsInitializedSDK(), loadingSDK.GetType().Name);
+
+                if (!success)
+                {
+                    Debug.LogWarning($"{loadingSDK.GetType().Name} initialization timed out.");
+                }
             }
             catch (Exception ex)
             {
-                Debug.LogError($"SDKInitializer FlowAsync Exception: {ex.Message}");
+                Debug.LogError($"SDKInitializer Flow Exception: {ex.Message}");
             }
         }
+
         _isLoadingSDK = true;
     }
 
-    public void Show(LoadingType loadingType, Action onLoadingComplete = null)
+    #endregion
+
+    #region Internal Methods
+
+    // 타임아웃과 함께 조건 대기
+    private async UniTask<bool> WaitUntilWithTimeout(Func<bool> condition, string sdkName)
     {
-        if (_isProcessing) return;
-        _isProcessing = true;
-
-        _loader.Set(loadingType, onLoadingComplete);
-        _loader.Show();
-    }
-
-    public void Hide(float minWaitSec)
-    {
-        if (!_isProcessing) return;
-        _isProcessing = false;
-        _loader.Hide(minWaitSec);
-    }
-
-    public void Hide() => Hide(0);
-
-    // 타임아웃 기능만 
-    private async UniTask<bool> WaitUntilWithTimeout(Func<bool> initialized, string sdkName)
-    {
-        float startTimer = 0f;
-        while (!initialized())
+        try
         {
-            await UniTask.NextFrame();
-            startTimer += Time.deltaTime;
-            if (startTimer > RetryTimeout)
-            {
-                Debug.LogError($"Timeout {sdkName} : Over {RetryTimeout} seconds");
-                return false;
-            }
+            await UniTask.WaitUntil(condition).Timeout(TimeSpan.FromSeconds(RetryTimeout));
+            return true;
         }
-
-        return true;
+        catch (TimeoutException)
+        {
+            Debug.LogError($"[Timeout] {sdkName} : Failed to initialize within {RetryTimeout}s");
+            return false;
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
     }
+
+    #endregion
 }
