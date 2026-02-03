@@ -59,13 +59,14 @@ public static class Extensions
     /// <param name="token">캔슬 토큰</param>
     /// <typeparam name="T">가져올 타입</typeparam>
     public static async UniTask<T> Instantiate<T>(
-        string key,
-        AssetCacheType casheType = AssetCacheType.NonRequired,
+        string key = null,
+        AssetCacheType casheType = AssetCacheType.NonRequired ,
         CancellationToken token = default) where T : Component
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(token, Main.Scene.CurrentToken);
         var ct = cts.Token;
-
+        if (string.IsNullOrEmpty(key)) key = typeof(T).Name;
+        
         GameObject prefab = await Main.Resource.LoadAssetAsync<GameObject>(key, casheType, ct);
         if (prefab == null)
         {
@@ -79,7 +80,7 @@ public static class Extensions
             return newObj.GetComponent<T>();
         }
     }
-
+    
     /// <summary>
     /// 풀에서 오브젝트를 스폰합니다.
     /// </summary>
@@ -118,7 +119,7 @@ public static class Extensions
     /// </summary>
     public static async UniTask<T> ShowHud<T>(
         string key = null,
-        CancellationToken token = default) where T : UI_Panel_Hud
+        CancellationToken token = default) where T : UI_Hud
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(token, Main.Scene.CurrentToken);
         return await Main.UI.ShowHud<T>(key, cts.Token);
@@ -141,7 +142,7 @@ public static class Extensions
         bool clickGuard = false,
         float clickGuardAlpha = -1f,
         bool clickClose = false,
-        CancellationToken token = default) where T : UI_Panel_Popup
+        CancellationToken token = default) where T : UI_Popup
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(token, Main.Scene.CurrentToken);
         return await Main.UI.ShowPopup<T>(key, clickGuard, clickGuardAlpha, clickClose, cts.Token);
@@ -150,7 +151,7 @@ public static class Extensions
     /// <summary>
     /// 특정 팝업을 닫습니다.
     /// </summary>
-    public static void ClosePopup(UI_Panel_Popup popup) => Main.UI.ClosePopup(popup);
+    public static void ClosePopup(UI_Popup popup) => Main.UI.ClosePopup(popup);
 
     /// <summary>
     /// 가장 위의 팝업을 닫습니다.
@@ -336,13 +337,13 @@ public static class Extensions
     /// <summary>
     /// 게임 속도를 설정합니다.
     /// </summary>
-    public static void SetTimeScale(float timeScale) => Main.Loop.SetTimeScale(timeScale);
+    public static void SetTimeScale(float timeScale) => Main.Loop.SetGameSpeed(timeScale);
 
     /// <summary>
     /// 슬로우 모션 효과를 적용합니다.
     /// </summary>
     public static void DoSlowMotion(float targetScale, float duration)
-        => Main.Loop.DoSlowMotion(targetScale, duration).Forget();
+        => Main.Loop.DoFadeGameSpeed(targetScale, duration).Forget();
 
     #endregion
 

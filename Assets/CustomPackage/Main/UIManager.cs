@@ -1,47 +1,53 @@
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
 
-public struct PopupData
-{
-    public UI_Popup Popup;
-    public bool IsClickGuard;
-    public float ClickGuardAlpha;
-    public bool ClickClose;
-
-    public PopupData(UI_Popup popup, bool isClickGuard, float clickGuardAlpha, bool clickClose)
-    {
-        Popup = popup;
-        IsClickGuard = isClickGuard;
-        ClickGuardAlpha = clickGuardAlpha;
-        ClickClose = isClickGuard && clickClose;
-    }
-}
+#region Enums
 
 /// <summary>
-/// UI들을 관리해주는 매니저.
-/// 오픈 및 클로즈 시 생성 및 파괴하는 방식으로 작동함.
+/// 화면 효과 타입.
 /// </summary>
-public class UIManager : CoreManager
+public enum ScreenEffectType
 {
-    private readonly List<UI_View> _views = new();
-    private readonly List<PopupData> _popups = new();
+    None,
+    Fade,
+    Transition,
+    Ads,
+    Iap
+}
 
-    private const float GUARD_DURATION = 0.2f;
-    private const float FADE_DURATION = 0.3f;
-    private const float BASE_PANEL_ALPHA = 0.6f;
+#endregion
 
+/// <summary>
+/// UI 시스템을 관리하는 매니저.
+/// Hud, Popup, Screen 세 가지 레이어를 통해 UI를 표시합니다.
+/// </summary>
+public class UIManager : PrimaryManager
+{
+    #region Fields
+
+    // 이벤트 시스템
     private EventSystem _eventSystem;
-    private Canvas _viewRoot;
-    private Canvas _popupRoot;
-    private Image _popupPanel;
-    private Button _popupPanelButton;
-    private CanvasGroup _sceneGroup;
+
+    // Hud 레이어 (전체 화면 UI)
+    private HudLayer _huds;
+
+    // Popup 레이어 (모달 팝업)
+    private PopupLayer _popups;
+
+    // Screen 레이어 (로딩/전환 화면)
+    private ScreenLayer _screen;
+
+    #endregion
+
+    #region Initialization
 
     protected override async UniTask OnInitializeAsync()
     {
@@ -49,64 +55,87 @@ public class UIManager : CoreManager
         await Init();
     }
 
+    // UI 시스템 초기화
     private async UniTask Init()
     {
-        Transform tr = Main.Instance.transform;
-        InitEventSystem(tr);
+        var go = new GameObject("@UI");
+        var tr = go.transform;
+        GameObject.DontDestroyOnLoad(tr);
 
-        var viewGo = await CreateCanvas("Canvas_View", tr);
-        _viewRoot = viewGo.GetComponent<Canvas>();
-        _viewRoot.sortingOrder = 10;
+        EnsureEventSystem(tr);
 
-        var popupGo = await CreateCanvas("Canvas_Popup", tr);
-        _popupRoot = popupGo.GetComponent<Canvas>();
-        _popupRoot.sortingOrder = 20;
+        var hudRoot = await CreateCanvas("Canvas_Hud", sortingOrder: 10, tr);
+        var popupRoot = await CreateCanvas("Canvas_Popup", sortingOrder: 20, tr);
+        var sceneRoot = await CreateCanvas("Canvas_Scene", sortingOrder: 1000, tr);
 
-        _sceneGroup = CreateSceneCanvas("Canvas_Scene", tr);
+        _huds = new HudLayer(hudRoot);
+        _popups = new PopupLayer(popupRoot);
+        _screen = new ScreenLayer(sceneRoot);
 
-        _popupPanel = CreatePanel();
-        _popupPanel.gameObject.SetActive(false);
-
-        _popupPanelButton = _popupPanel.gameObject.GetOrAddComponent<Button>();
-        _popupPanelButton.transition = Selectable.Transition.None;
-        _popupPanelButton.onClick.AddListener(OnClickPanel);
+        tr.SetSiblingIndex(1);
     }
 
-    public async UniTask<T> ShowView<T>(string key = null, CancellationToken ct = default) where T : UI_View
+    // 이벤트 시스템 존재 보장
+    private void EnsureEventSystem(Transform parent)
     {
-        await UniTask.WaitUntil(() => IsInitialized, cancellationToken: ct);
+        _eventSystem = Object.FindAnyObjectByType<EventSystem>();
+        if (_eventSystem != null) return;
 
-        var prefab = await Main.Resource.LoadAssetAsync<T>(key, AssetCacheType.NonRequired, ct);
-        if (prefab == null) return null;
+        var go = new GameObject("EventSystem");
+        _eventSystem = go.AddComponent<EventSystem>();
 
-        T go = Object.Instantiate(prefab, _viewRoot.transform);
-        if (!go.TryGetComponent<T>(out var comp))
+#if ENABLE_INPUT_SYSTEM
+        go.AddComponent<InputSystemUIInputModule>();
+#else
+        go.AddComponent<StandaloneInputModule>();
+#endif
+        go.transform.SetParent(parent, false);
+    }
+
+    // 캔버스 프리팹 로드 및 생성
+    private async UniTask<Canvas> CreateCanvas(string key, int sortingOrder, Transform parent)
+    {
+        var prefabGo = await Main.Resource.LoadAssetAsync<GameObject>(key);
+        if (prefabGo == null) return null;
+
+        var instance = Object.Instantiate(prefabGo, parent, false);
+        instance.name = key;
+
+        if (!instance.TryGetComponent<Canvas>(out var canvas))
         {
-            Object.Destroy(go);
+            Object.Destroy(instance.gameObject);
             return null;
         }
 
-        _views.Add(comp);
-        return comp;
+        canvas.sortingOrder = sortingOrder;
+        return canvas;
     }
 
-    public void CloseView(UI_View view)
+    #endregion
+
+    #region Hud
+
+    /// <summary>
+    /// Hud UI를 표시합니다.
+    /// </summary>
+    public async UniTask<T> ShowHud<T>(string key = null, CancellationToken ct = default) where T : UI_Hud
     {
-        if (view == null) return;
-        if (_views.Remove(view))
-            Object.Destroy(view.gameObject);
+        await UniTask.WaitUntil(() => IsInitialized, cancellationToken: ct);
+        return await _huds.Show<T>(key, ct);
     }
 
-    public void ClearAllViews()
-    {
-        var tempViews = new List<UI_View>(_views);
-        foreach (var view in tempViews)
-        {
-            if (view != null) view.Close();
-        }
-        _views.Clear();
-    }
+    /// <summary>
+    /// 현재 Hud를 닫습니다.
+    /// </summary>
+    public void CloseHud() => _huds.Close();
 
+    #endregion
+
+    #region Popup
+
+    /// <summary>
+    /// 팝업 UI를 표시합니다.
+    /// </summary>
     public async UniTask<T> ShowPopup<T>(
         string key = null,
         bool clickGuard = false,
@@ -115,239 +144,457 @@ public class UIManager : CoreManager
         CancellationToken ct = default) where T : UI_Popup
     {
         await UniTask.WaitUntil(() => IsInitialized, cancellationToken: ct);
-
-        var prefab = await Main.Resource.LoadAssetAsync<T>(key, AssetCacheType.NonRequired, ct);
-        if (prefab == null) return null;
-
-        var go = Object.Instantiate(prefab, _popupRoot.transform);
-        if (!go.TryGetComponent<T>(out var comp))
-        {
-            Object.Destroy(go);
-            return null;
-        }
-
-        float alpha = (clickGuardAlpha < 0) ? BASE_PANEL_ALPHA : clickGuardAlpha;
-        _popups.Add(new PopupData(comp, clickGuard, alpha, clickToClose));
-
-        RefreshPanelState();
-
-        return comp;
+        return await _popups.Show<T>(key, clickGuard, clickGuardAlpha, clickToClose, ct);
     }
 
-    public void ClosePopup(UI_Popup popup)
+    /// <summary>
+    /// 특정 팝업을 닫습니다.
+    /// </summary>
+    public void ClosePopup(UI_Popup popup) => _popups.Close(popup);
+
+    /// <summary>
+    /// 가장 위의 팝업을 닫습니다.
+    /// </summary>
+    public void CloseTopPopup(bool withAnimation = true) => _popups.CloseTop(withAnimation);
+
+    /// <summary>
+    /// 모든 팝업을 닫습니다.
+    /// </summary>
+    public void CloseAllPopups(bool withAnimation = false) => _popups.ClearAll(withAnimation);
+
+    #endregion
+
+    #region Screen
+
+    /// <summary>
+    /// 화면 효과를 표시합니다.
+    /// </summary>
+    public void ShowScreen(ScreenEffectType type, Action act = null, CancellationToken tk = default) => ShowScreenAsync(type, act, tk).Forget();
+
+    /// <summary>
+    /// 화면 효과를 숨깁니다.
+    /// </summary>
+    public void HideScreen(float time = 3f) => HideScreenAsync(time).Forget();
+
+    /// <summary>
+    /// 화면 효과를 비동기로 표시합니다.
+    /// </summary>
+    public async UniTask ShowScreenAsync(ScreenEffectType type, Action act = null, CancellationToken tk = default) => await _screen.Show(type, act, tk);
+
+    /// <summary>
+    /// 화면 효과를 비동기로 숨깁니다.
+    /// </summary>
+    public async UniTask HideScreenAsync(float time = 3f) => await _screen.Hide(time);
+
+    #endregion
+
+    #region Cleanup
+
+    public override void Clear()
     {
-        int idx = _popups.FindIndex(p => p.Popup == popup);
-        if (idx >= 0)
+        CloseHud();
+        CloseAllPopups(false);
+    }
+
+    #endregion
+
+    #region Nested Classes
+
+    // Hud 레이어 관리
+    private sealed class HudLayer
+    {
+        #region Fields
+
+        // 루트 캔버스
+        private readonly Canvas _root;
+
+        // 현재 활성화된 Hud
+        private UI_Hud _current;
+
+        #endregion
+
+        #region Constructor
+
+        public HudLayer(Canvas root)
         {
+            if (root == null) return;
+            _root = root;
+        }
+
+        #endregion
+
+        #region Public Methods
+
+        // Hud 표시
+        public async UniTask<T> Show<T>(string key, CancellationToken ct) where T : UI_Hud
+        {
+            if (_root == null)
+            {
+                try
+                {
+                    await UniTask.WaitUntil(() => _root != null, cancellationToken: ct)
+                                 .Timeout(TimeSpan.FromSeconds(1));
+                }
+                catch (TimeoutException)
+                {
+                    return null;
+                }
+                catch (OperationCanceledException)
+                {
+                    return null;
+                }
+            }
+
+            var prefab = await Main.Resource.LoadAssetAsync<T>(key, AssetCacheType.NonRequired, ct);
+            if (prefab == null) return null;
+
+            var instance = Object.Instantiate(prefab, _root.transform);
+            if (!instance.TryGetComponent<T>(out var comp))
+            {
+                Object.Destroy(instance.gameObject);
+                return null;
+            }
+
+            if (_current != null)
+                _current.Close();
+
+            _current = comp;
+            return comp;
+        }
+
+        // 현재 Hud 닫기
+        public void Close()
+        {
+            if (_current == null) return;
+
+            Object.Destroy(_current.gameObject);
+            _current = null;
+        }
+
+        #endregion
+    }
+
+    // Popup 레이어 관리
+    private sealed class PopupLayer
+    {
+        #region Nested Types
+
+        // 팝업 데이터
+        private struct PopupData
+        {
+            public UI_Popup Popup;
+            public bool IsClickGuard;
+            public float ClickGuardAlpha;
+            public bool ClickClose;
+
+            public PopupData(UI_Popup popup, bool isClickGuard, float clickGuardAlpha, bool clickClose)
+            {
+                Popup = popup;
+                IsClickGuard = isClickGuard;
+                ClickGuardAlpha = clickGuardAlpha;
+                ClickClose = isClickGuard && clickClose;
+            }
+        }
+
+        #endregion
+
+        #region Constants
+
+        // 가드 애니메이션 지속 시간
+        private const float GUARD_DURATION = 0.2f;
+
+        // 기본 패널 알파값
+        private const float BASE_PANEL_ALPHA = 0.6f;
+
+        #endregion
+
+        #region Fields
+
+        // 루트 캔버스
+        private readonly Canvas _root;
+
+        // 팝업 스택
+        private readonly List<PopupData> _popups = new();
+
+        // 클릭 가드 패널
+        private Image _panel;
+
+        // 클릭 가드 버튼
+        private Button _panelButton;
+
+        #endregion
+
+        #region Constructor
+
+        public PopupLayer(Canvas root)
+        {
+            if (root == null) return;
+            _root = root;
+
+            _panel = CreatePanel(_root.transform);
+            _panel.gameObject.SetActive(false);
+
+            _panelButton = _panel.gameObject.GetOrAddComponent<Button>();
+            _panelButton.transition = Selectable.Transition.None;
+            _panelButton.onClick.AddListener(OnClickPanel);
+        }
+
+        #endregion
+
+        #region Public Methods
+
+        // 팝업 표시
+        public async UniTask<T> Show<T>(
+            string key,
+            bool clickGuard,
+            float clickGuardAlpha,
+            bool clickToClose,
+            CancellationToken ct) where T : UI_Popup
+        {
+            if (_root == null)
+            {
+                try
+                {
+                    await UniTask.WaitUntil(() => _root != null, cancellationToken: ct)
+                                 .Timeout(TimeSpan.FromSeconds(1));
+                }
+                catch (TimeoutException)
+                {
+                    return null;
+                }
+                catch (OperationCanceledException)
+                {
+                    return null;
+                }
+            }
+
+            var prefab = await Main.Resource.LoadAssetAsync<T>(key, AssetCacheType.NonRequired, ct);
+            if (prefab == null) return null;
+
+            var instance = Object.Instantiate(prefab, _root.transform);
+            if (!instance.TryGetComponent<T>(out var comp))
+            {
+                Object.Destroy(instance.gameObject);
+                return null;
+            }
+
+            float alpha = (clickGuardAlpha < 0) ? BASE_PANEL_ALPHA : clickGuardAlpha;
+            _popups.Add(new PopupData(comp, clickGuard, alpha, clickToClose));
+
+            RefreshPanelState();
+            return comp;
+        }
+
+        // 특정 팝업 닫기
+        public void Close(UI_Popup popup)
+        {
+            if (popup == null) return;
+
+            int idx = _popups.FindIndex(p => p.Popup == popup);
+            if (idx < 0) return;
+
             _popups.RemoveAt(idx);
             Object.Destroy(popup.gameObject);
             RefreshPanelState();
         }
-    }
 
-    public void CloseTopPopup(bool withAnimation = true)
-    {
-        CleanupNullPopups();
-        if (_popups.Count == 0) return;
-
-        var popup = _popups[^1].Popup;
-        if (popup == null) return;
-
-        if (withAnimation) popup.Close();
-        else ClosePopup(popup);
-    }
-
-    public void ClearAllPopups(bool withAnimation = false)
-    {
-        CleanupNullPopups();
-
-        if (withAnimation)
+        // 최상위 팝업 닫기
+        public void CloseTop(bool withAnimation = true)
         {
-            var tempPopups = new List<UI_Popup>();
-            foreach (var data in _popups)
-            {
-                if (data.Popup != null) tempPopups.Add(data.Popup);
-            }
+            CleanupNullPopups();
+            if (_popups.Count == 0) return;
 
-            foreach (var popup in tempPopups)
+            var popup = _popups[^1].Popup;
+            if (popup == null) return;
+
+            if (withAnimation) popup.Close();
+            else Close(popup);
+        }
+
+        // 모든 팝업 닫기
+        public void ClearAll(bool withAnimation = false)
+        {
+            CleanupNullPopups();
+
+            if (withAnimation)
             {
-                popup.Close();
+                var temp = new List<UI_Popup>();
+                foreach (var data in _popups)
+                    if (data.Popup != null) temp.Add(data.Popup);
+
+                foreach (var p in temp) p.Close();
+            }
+            else
+            {
+                foreach (var data in _popups)
+                    if (data.Popup != null) Object.Destroy(data.Popup.gameObject);
+
+                _popups.Clear();
+                RefreshPanelState();
             }
         }
-        else
+
+        #endregion
+
+        #region Internal Methods
+
+        // 패널 클릭 처리
+        private void OnClickPanel()
         {
-            foreach (var data in _popups)
-            {
-                if (data.Popup != null) Object.Destroy(data.Popup.gameObject);
-            }
-            _popups.Clear();
-            RefreshPanelState();
+            int targetIndex = FindTopClickGuardPopupIndex();
+            if (targetIndex < 0) return;
+
+            var data = _popups[targetIndex];
+            if (data.ClickClose && data.Popup != null)
+                data.Popup.Close();
         }
-    }
 
-    public void ClearAll(bool withAnimation = false)
-    {
-        ClearAllViews();
-        ClearAllPopups(withAnimation);
-    }
-
-    public async UniTask SceneFadeAsync(float from, float to, CancellationToken token)
-    {
-        if (_sceneGroup == null) return;
-
-        _sceneGroup.blocksRaycasts = true;
-        _sceneGroup.alpha = from;
-
-        await _sceneGroup.DOFade(to, FADE_DURATION)
-            .SetEase(Ease.Linear)
-            .SetUpdate(true)
-            .WithCancellation(token);
-
-        if (to <= 0.0001f)
-            _sceneGroup.blocksRaycasts = false;
-    }
-
-    private void RefreshPanelState()
-    {
-        if (_popupPanel == null) return;
-        CleanupNullPopups();
-
-        int targetIndex = FindTopClickGuardPopupindex();
-
-        if (targetIndex == -1)
+        // 패널 상태 갱신
+        private void RefreshPanelState()
         {
-            _popupPanel.DOKill();
-            if (_popupPanel.gameObject.activeSelf)
+            if (_panel == null) return;
+
+            CleanupNullPopups();
+            int guardIndex = FindTopClickGuardPopupIndex();
+
+            if (guardIndex == -1)
             {
-                _popupPanel.DOFade(0f, GUARD_DURATION)
-                    .SetUpdate(true)
-                    .OnComplete(() => _popupPanel.gameObject.SetActive(false));
+                _panel.DOKill();
+                if (_panel.gameObject.activeSelf)
+                {
+                    _panel.DOFade(0f, GUARD_DURATION)
+                        .SetUpdate(true)
+                        .OnComplete(() => _panel.gameObject.SetActive(false));
+                }
+
+                for (int i = 0; i < _popups.Count; i++)
+                    if (_popups[i].Popup != null)
+                        _popups[i].Popup.transform.SetSiblingIndex(i);
+
+                return;
             }
+
+            _panel.gameObject.SetActive(true);
+            _panel.DOKill();
+            _panel.DOFade(_popups[guardIndex].ClickGuardAlpha, GUARD_DURATION).SetUpdate(true);
+
+            int sibling = 0;
             for (int i = 0; i < _popups.Count; i++)
             {
+                if (i == guardIndex)
+                    _panel.transform.SetSiblingIndex(sibling++);
+
                 if (_popups[i].Popup != null)
-                    _popups[i].Popup.transform.SetSiblingIndex(i);
+                    _popups[i].Popup.transform.SetSiblingIndex(sibling++);
             }
-            return;
         }
 
-        _popupPanel.gameObject.SetActive(true);
-        _popupPanel.DOKill();
-        _popupPanel.DOFade(_popups[targetIndex].ClickGuardAlpha, GUARD_DURATION).SetUpdate(true);
-
-        int currentSiblingIndex = 0;
-        for (int i = 0; i < _popups.Count; i++)
+        // 클릭 가드가 있는 최상위 팝업 인덱스 찾기
+        private int FindTopClickGuardPopupIndex()
         {
-            if (i == targetIndex)
+            for (int i = _popups.Count - 1; i >= 0; i--)
+                if (_popups[i].Popup != null && _popups[i].IsClickGuard) return i;
+            return -1;
+        }
+
+        // null 팝업 정리
+        private void CleanupNullPopups() => _popups.RemoveAll(p => p.Popup == null);
+
+        // 클릭 가드 패널 생성
+        private static Image CreatePanel(Transform parent)
+        {
+            var panelGo = new GameObject("[PopupPanel]");
+            panelGo.transform.SetParent(parent, false);
+
+            var img = panelGo.AddComponent<Image>();
+            img.color = new Color(0, 0, 0, 0);
+
+            var rt = img.rectTransform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.sizeDelta = Vector2.zero;
+
+            return img;
+        }
+
+        #endregion
+    }
+
+    // Screen 레이어 관리
+    private sealed class ScreenLayer
+    {
+        #region Fields
+
+        // 루트 캔버스
+        private readonly Canvas _root;
+
+        // 타입별 스크린 캐시
+        private readonly Dictionary<ScreenEffectType, UI_Loading> _screens = new();
+
+        // 현재 활성화된 스크린
+        private UI_Loading _currentActive;
+
+        // 표시 시작 시간
+        private float _showStartTime;
+
+        #endregion
+
+        #region Constructor
+
+        public ScreenLayer(Canvas root)
+        {
+            if (root == null) return;
+            _root = root;
+        }
+
+        #endregion
+
+        #region Public Methods
+
+        // 스크린 표시
+        public async UniTask Show(ScreenEffectType type, Action onComplete = null, CancellationToken ct = default)
+        {
+            if (type == ScreenEffectType.None) return;
+            if (_root == null) return;
+
+            if (!_screens.TryGetValue(type, out var loading))
             {
-                _popupPanel.transform.SetSiblingIndex(currentSiblingIndex++);
+                string key = $"UI_Screen_{type}";
+                var prefab = await Main.Resource.LoadAssetAsync<GameObject>(key, AssetCacheType.NonRequired, ct);
+                if (prefab == null) return;
+
+                var instance = Object.Instantiate(prefab, _root.transform);
+                instance.name = key;
+
+                if (instance.TryGetComponent<UI_Loading>(out loading))
+                {
+                    _screens.Add(type, loading);
+                }
             }
 
-            if (_popups[i].Popup != null)
+            if (_currentActive == loading) return;
+            loading.Set(onComplete);
+
+            _currentActive = loading;
+            _showStartTime = Time.time;
+            _currentActive.FadeInLoading();
+        }
+
+        // 스크린 숨기기
+        public async UniTask Hide(float minWaitSec = 0f)
+        {
+            if (_currentActive == null) return;
+
+            float elapsed = Time.time - _showStartTime;
+            if (elapsed < minWaitSec)
             {
-                _popups[i].Popup.transform.SetSiblingIndex(currentSiblingIndex++);
+                await UniTask.Delay(TimeSpan.FromSeconds(minWaitSec - elapsed));
             }
+            _currentActive.FadeOutLoading();
         }
+
+        #endregion
     }
 
-    private void OnClickPanel()
-    {
-        int targetIndex = FindTopClickGuardPopupindex();
-        if (targetIndex < 0) return;
-
-        var data = _popups[targetIndex];
-        if (data.ClickClose && data.Popup != null)
-        {
-            data.Popup.Close();
-        }
-    }
-
-    private int FindTopClickGuardPopupindex()
-    {
-        for (int i = _popups.Count - 1; i >= 0; i--)
-        {
-            if (_popups[i].Popup != null && _popups[i].IsClickGuard) return i;
-        }
-        return -1;
-    }
-
-    private void CleanupNullPopups()
-    {
-        _popups.RemoveAll(p => p.Popup == null);
-    }
-
-    private void InitEventSystem(Transform ts = null)
-    {
-        _eventSystem = Object.FindAnyObjectByType<EventSystem>();
-
-        if (_eventSystem == null)
-        {
-            var go = new GameObject("EventSystem");
-            _eventSystem = go.AddComponent<EventSystem>();
-
-#if ENABLE_INPUT_SYSTEM
-            go.AddComponent<InputSystemUIInputModule>();
-#else
-        go.AddComponent<StandaloneInputModule>();
-#endif
-
-            if (ts != null) go.transform.SetParent(ts);
-            else Object.DontDestroyOnLoad(go);
-        }
-    }
-    private async UniTask<GameObject> CreateCanvas(string key, Transform ts = null)
-    {
-        var prefab = await Main.Resource.LoadAssetAsync<GameObject>(key);
-        var instance = Object.Instantiate(prefab);
-        instance.name = key;
-        if (ts != null) instance.transform.SetParent(ts, false);
-        else Object.DontDestroyOnLoad(instance);
-        return instance;
-    }
-
-    private Image CreatePanel()
-    {
-        var panelGo = new GameObject("[PopupPanel]");
-        panelGo.transform.SetParent(_popupRoot.transform, false);
-        var img = panelGo.AddComponent<Image>();
-        img.color = new Color(0, 0, 0, 0);
-
-        var rt = img.rectTransform;
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.sizeDelta = Vector2.zero;
-
-        return img;
-    }
-
-    private CanvasGroup CreateSceneCanvas(string key = null, Transform ts = null)
-    {
-        var name = key ?? "Canvas_Scene";
-        var go = new GameObject(name);
-        var canvas = go.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 1000;
-
-        go.AddComponent<CanvasScaler>();
-
-        var group = go.AddComponent<CanvasGroup>();
-        group.alpha = 0f;
-        group.blocksRaycasts = false;
-
-        var imageGo = new GameObject("FadeImage");
-        imageGo.transform.SetParent(go.transform, false);
-
-        var image = imageGo.AddComponent<Image>();
-        image.color = Color.black;
-        var rt = image.rectTransform;
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.offsetMin = Vector2.zero;
-        rt.offsetMax = Vector2.zero;
-
-        if (ts != null) go.transform.SetParent(ts, false);
-        else Object.DontDestroyOnLoad(go);
-
-        return group;
-    }
+    #endregion
 }

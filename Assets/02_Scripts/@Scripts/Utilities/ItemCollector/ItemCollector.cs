@@ -22,12 +22,12 @@ public static class ItemCollector {
             case CollectorItemType.Currency:
                 prefs.Currency.Value += amount;
                 break;
-            case CollectorItemType.UnlimitedLives:
-                //Main.Lives.AddUnlimitedTime(amount);
-                break;
-            case CollectorItemType.MaxLives:
-                //Main.Lives.AddBonusLives();
-                break;
+            //case CollectorItemType.UnlimitedLives:
+            //    Main.Lives.AddUnlimitedTime(amount);
+            //    break;
+            //case CollectorItemType.MaxLives:
+            //    Main.Lives.AddBonusLives();
+            //    break;
             // case CollectorItemType.Clock:
             //     prefs.Clock.Value += amount;
             //     break;
@@ -77,8 +77,8 @@ public static class ItemCollector {
 
             CollectorItem item = new(type, amount);
             //ItemDisplayObject displayObject = Main.Object.Instantiate<ItemDisplayObject>();
-            //ItemDisplayUI displayObject = Main.Object.Instantiate<ItemDisplayUI>();
-            //displayObject.Set(item, startPosition);
+            ItemDisplayUI displayObject = new GameObject("BoardObject").AddComponent<ItemDisplayUI>();
+            displayObject.Set(item, startPosition);
 
             float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
             float radius = Random.Range(0f, 0.4f);
@@ -86,17 +86,17 @@ public static class ItemCollector {
             float curveHeight = Random.Range(1f, 2f);
             //float duration = 0.5f;
             float duration = 0.5f;
-            //ItemDisplayController controller = new(displayObject);
+            ItemDisplayController controller = new(displayObject);
 
             flags.Add(false);
             int index = i;
-            //controller.MoveTo(startPosition, offset, duration, curveHeight, direction, () => {
-            //    flags[index] = true;
+            controller.MoveTo(startPosition, offset, duration, curveHeight, direction, () => {
+                flags[index] = true;
                 
-            //    // TODO::
-            //    //Haptic.Weak();
-            //    //if (type == CollectorItemType.Currency) Main.Audio.PlaySFX(SFX.Coin);
-            //});
+                // TODO::
+                //Haptic.Weak();
+                //if (type == CollectorItemType.Currency) Main.Audio.PlaySFX(SFX.Coin);
+            });
 
             //float delay = Mathf.Max(0, 0.2f + Random.Range(-0.1f, 0.1f));
             float delay = Mathf.Max(0, 0.075f + Random.Range(-0.05f, 0.05f));

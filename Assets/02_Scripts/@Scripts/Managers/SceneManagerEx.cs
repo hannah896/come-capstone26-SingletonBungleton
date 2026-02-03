@@ -1,22 +1,50 @@
 using Cysharp.Threading.Tasks;
 using System;
-using System.Collections;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// 씬의 이동 및 초기화를 관리해주는 매니저
+/// 씬의 기본 추상 클래스.
+/// 씬 진입/퇴장 로직을 정의합니다.
 /// </summary>
-public class SceneManagerEx : CoreManager {
+public abstract class SceneBase
+{
+    public abstract UniTask EnterScene(CancellationToken token);
+    public abstract void ExitScene();
+}
 
-    public SceneBase Current { get; set; }
-    public UI_Scene SceneUI { get; set; }
-    private CancellationTokenSource _cts = new();
-    public CancellationToken CurrentToken => _cts.Token;
+/// <summary>
+/// 씬 전환 및 관리를 담당하는 매니저.
+/// 비동기 씬 로딩과 전환 애니메이션을 처리합니다.
+/// </summary>
+public class SceneManagerEx : ContentManager
+{
+    #region Fields
+
+    // 현재 활성화된 씬
     private SceneBase _currentScene;
+
+    // 씬 전환용 취소 토큰 소스
+    private CancellationTokenSource _cts = new();
+
+    // 씬 전환 중 여부
     private bool _isTransitioning = false;
-    
+
+    #endregion
+
+    #region Properties
+
+    // 현재 씬
+    public SceneBase Current => _currentScene;
+
+    // 현재 취소 토큰
+    public CancellationToken CurrentToken => _cts.Token;
+
+    #endregion
+
+    #region Initialization
+
     protected override async UniTask OnInitializeAsync()
     {
         await base.OnInitializeAsync();
@@ -24,128 +52,115 @@ public class SceneManagerEx : CoreManager {
         await CreateAndEnterScene(sceneName, _cts.Token);
     }
 
+    #endregion
 
-    public void Load(string sceneName) {
-        Main.Clear();
-        SceneManager.LoadScene(sceneName);
+    #region Scene Loading
+
+    /// <summary>
+    /// 모든 매니저를 정리합니다.
+    /// </summary>
+    public void Cleanup() => Main.Clear();
+
+    /// <summary>
+    /// 지정된 씬을 로드합니다.
+    /// </summary>
+    public void Load(string sceneName) => ChangeScene(sceneName);
+
+    /// <summary>
+    /// 현재 씬을 다시 로드합니다.
+    /// </summary>
+    public void Reload() => ChangeScene(SceneManager.GetActiveScene().name);
+
+    /// <summary>
+    /// 씬을 변경합니다.
+    /// </summary>
+    public void ChangeScene(string sceneName, Func<UniTask> before = null, Func<UniTask> after = null)
+    {
+        ChangeSceneAsync(sceneName, before, after).Forget();
     }
 
-    public void SwitchAsync(string sceneName, bool isTransition = true) {
-        if(isTransition) Main.StartCoroutine(SwitchSceneAsync(sceneName));
-        else Main.StartCoroutine(LoadSceneAsync(sceneName));
-    }
-    
-    public void Reload() {
-        Main.Clear();
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-    }
-
-    public IEnumerator LoadSceneAsync(string sceneName, Action<float> onProgress = null) {
-        AsyncOperation operation = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
-        operation.allowSceneActivation = false;
-
-        while (operation.progress < 0.9f) {
-            onProgress?.Invoke(operation.progress / 0.9f);
-            yield return null;
-        }
-        onProgress?.Invoke(1f);
-
-        void OnLoaded(Scene scene, LoadSceneMode mode) {
-            if (scene.name != sceneName) return;
-            SceneManager.SetActiveScene(scene);
-            SceneManager.sceneLoaded -= OnLoaded;
-        }
-        SceneManager.sceneLoaded += OnLoaded;
-        
-        operation.allowSceneActivation = true;
-        while (!operation.isDone) yield return null;
-    }
-
-    private IEnumerator SwitchSceneAsync(string sceneName, Action<float> onProgress = null) {
-        // #1. 로딩 보이기.
-        Main.Loading.Show(LoadingType.Transition);
-        yield return new WaitForSeconds(0.2f);
-        
-        // #2. 클리어.
-        Main.Clear();
-        
-        // #3. 새 씬 로드.
-        yield return LoadSceneAsync(sceneName, onProgress);
-        SceneManager.SetActiveScene(SceneManager.GetSceneByName(sceneName));
-        
-        // #4. 이전 씬 언로드.
-        for (int i = 0; i < SceneManager.sceneCount; i++) {
-            Scene scene = SceneManager.GetSceneAt(i);
-            if (scene.name == sceneName) continue;
-            yield return SceneManager.UnloadSceneAsync(scene);
-        }
-        
-        // #5. 로딩 숨기기.
-        Main.Loading.Hide();
-    }
-
+    /// <summary>
+    /// 씬을 비동기로 변경합니다.
+    /// </summary>
     public async UniTask ChangeSceneAsync(
         string sceneName,
         Func<UniTask> onBeforeLoad = null,
-        Func<UniTask> onAfterLoad = null,
-        bool useEffect = false)
+        Func<UniTask> onAfterLoad = null)
     {
         if (_isTransitioning || string.IsNullOrEmpty(sceneName)) return;
         _isTransitioning = true;
 
-        _cts.Cancel();
-        _cts.Dispose();
+        _cts?.Cancel(); // 이전 유니테스크 작업들 모두 취소
+        _cts?.Dispose(); // 테스크 메모리 해제
         _cts = new CancellationTokenSource();
         var token = _cts.Token;
 
         try
         {
-            await Main.UI.SceneFadeAsync(0f, 1f, token);
+            await Main.UI.ShowScreenAsync(ScreenEffectType.Transition);
+            await UniTask.Delay(200, cancellationToken: token);
 
-            if (onBeforeLoad != null)
-                await onBeforeLoad().AttachExternalCancellation(token);
-
+            Cleanup();
+            if (onBeforeLoad != null) await onBeforeLoad().AttachExternalCancellation(token);
             _currentScene?.ExitScene();
 
-            await SceneManager.LoadSceneAsync(sceneName).ToUniTask(cancellationToken: token);
+            var op = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
+            op.allowSceneActivation = false;
 
-            if (onAfterLoad != null)
-                await onAfterLoad().AttachExternalCancellation(token);
+            while (op.progress < 0.9f)
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
+            }
 
+            op.allowSceneActivation = true;
+            await op.ToUniTask(cancellationToken: token);
+
+            Scene loadedScene = SceneManager.GetSceneByName(sceneName);
+            if (loadedScene.IsValid()) SceneManager.SetActiveScene(loadedScene);
+
+            await UnloadOldScenes(sceneName, token);
+
+            if (onAfterLoad != null) await onAfterLoad().AttachExternalCancellation(token);
             await CreateAndEnterScene(sceneName, token);
-
-            await Main.UI.SceneFadeAsync(1f, 0f, token);
         }
-        catch (OperationCanceledException)
-        {
-            Debug.Log($"[Scene] {sceneName} transition canceled.");
-        }
+        catch (OperationCanceledException) { }
         finally
         {
             _isTransitioning = false;
+            Main.UI.HideScreenAsync();
         }
     }
 
+    #endregion
+
+    #region Internal Methods
+
+    // 이전 씬들을 언로드
+    private async UniTask UnloadOldScenes(string currentSceneName, CancellationToken token)
+    {
+        int sceneCount = SceneManager.sceneCount;
+        for (int i = 0; i < sceneCount; i++)
+        {
+            Scene scene = SceneManager.GetSceneAt(i);
+            if (scene.name == currentSceneName || scene.name == "InitScene") continue;
+
+            if (scene.isLoaded)
+            {
+                await SceneManager.UnloadSceneAsync(scene).ToUniTask(cancellationToken: token);
+            }
+        }
+    }
+
+    // 씬 객체 생성 및 진입
     private async UniTask CreateAndEnterScene(string sceneName, CancellationToken token)
     {
         Type sceneType = Type.GetType(sceneName);
         if (sceneType != null && typeof(SceneBase).IsAssignableFrom(sceneType))
         {
             _currentScene = Activator.CreateInstance(sceneType) as SceneBase;
-            if (_currentScene != null)
-            {
-                await _currentScene.EnterScene(token);
-            }
-        }
-        else
-        {
-            Debug.LogWarning($"[Scene] No ISceneBase implementation found for: {sceneName}");
+            if (_currentScene != null) await _currentScene.EnterScene(token);
         }
     }
-}
 
-public abstract class SceneBase
-{
-    public abstract UniTask EnterScene(CancellationToken token);
-    public abstract void ExitScene();
+    #endregion
 }

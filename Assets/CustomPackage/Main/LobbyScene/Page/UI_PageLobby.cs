@@ -41,11 +41,11 @@ public class UI_PageLobby : UI_Page
         //if (Main.Lives.UseHeart)
         //{
         //    LobbyScene.LobbyState = LobbyState.Start;
-        //    Main.Scene.SwitchAsync("GameScene");
+        //    Main.Scene.ChangeScene("GameScene");
         //}
         //else
         //{
-        //     Main.UI.OpenPopup<UI_Popup_LobbyRefillHeart>().Set();
+        //    // Main.UI.OpenPopup<UI_Popup_LobbyRefillHeart>().Set();
         //}
     }
 }

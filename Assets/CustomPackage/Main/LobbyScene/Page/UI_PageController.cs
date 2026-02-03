@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class UI_PageController : UI_Base
+public class UI_PageController : UI_Panel
 {
     #region Fields
     

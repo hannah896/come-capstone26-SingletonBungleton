@@ -15,30 +15,30 @@ MonoBehaviour:
   customAllSymbols:
   - gameanalytics_max_enabled
   - gameanalytics_admob_enabled
-  - Arrows_RainBowCat
   - DOTWEEN
+  - UNITASK_DOTWEEN_SUPPORT
   allPlatformSymbols:
   - gameanalytics_max_enabled
   - gameanalytics_admob_enabled
   - DOTWEEN
-  - Arrows_RainBowCat
+  - UNITASK_DOTWEEN_SUPPORT
   windowPlatformSymbols:
   - gameanalytics_max_enabled
   - gameanalytics_admob_enabled
   - DOTWEEN
-  - Arrows_RainBowCat
+  - UNITASK_DOTWEEN_SUPPORT
   macPlatformSymbols:
   - gameanalytics_max_enabled
   - gameanalytics_admob_enabled
   - DOTWEEN
-  - Arrows_RainBowCat
+  - UNITASK_DOTWEEN_SUPPORT
   aosPlatformSymbols:
   - gameanalytics_max_enabled
   - gameanalytics_admob_enabled
   - DOTWEEN
-  - Arrows_RainBowCat
+  - UNITASK_DOTWEEN_SUPPORT
   iosPlatformSymbols:
   - gameanalytics_max_enabled
   - gameanalytics_admob_enabled
   - DOTWEEN
-  - Arrows_RainBowCat
+  - UNITASK_DOTWEEN_SUPPORT

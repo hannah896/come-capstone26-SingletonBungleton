@@ -4,7 +4,7 @@ using Blossom.Preference;
 using TMPro;
 using UnityEngine;
 
-public class UI_Editor : UI_Base {
+public class UI_Editor : UI_Panel {
 
     #region Const
 
@@ -193,23 +193,23 @@ public class UI_Editor : UI_Base {
     private void OnEnterClose() => IsActiveEditor = false;
     private void OnEnterCameraMove()
     {
-        Main.Input.ToggleInputAction(InputActionType.CameraMove);
-        bool isActive = Main.Input.IsActiveAction(InputActionType.CameraMove);
+        // Main.Input.ToggleInputAction(InputActionType.CameraMove);
+        // bool isActive = Main.Input.IsActiveAction(InputActionType.CameraMove);
         StringBuilder sb = new();
         sb.AppendLine("Camera");
         sb.AppendLine("Move");
-        sb.Append($"{GetActiveString(isActive)}");
+        // sb.Append($"{GetActiveString(isActive)}");
         _txtCameraMove.Text = sb.ToString();
     }
 
     private void OnEnterCameraZoom()
     {
-        Main.Input.ToggleInputAction(InputActionType.CameraZoom);
-        bool isActive = Main.Input.IsActiveAction(InputActionType.CameraZoom);
+        // Main.Input.ToggleInputAction(InputActionType.CameraZoom);
+        // bool isActive = Main.Input.IsActiveAction(InputActionType.CameraZoom);
         StringBuilder sb = new();
         sb.AppendLine("Camera");
         sb.AppendLine("Zoom");
-        sb.Append($"{GetActiveString(isActive)}");
+        // sb.Append($"{GetActiveString(isActive)}");
         _txtCameraZoom.Text = sb.ToString();
     }
 

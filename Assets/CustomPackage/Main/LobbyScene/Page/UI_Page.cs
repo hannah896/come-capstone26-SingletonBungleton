@@ -2,7 +2,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 
-public abstract class UI_Page : UI_Base
+public abstract class UI_Page : UI_Panel
 {
     #region Fields
 

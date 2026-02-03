@@ -4,9 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-/// <summary>
-/// 인 게임 내의 그리드에서 좌표값의 데이터
-/// </summary>
 public class Board {
 
     #region Const.
@@ -54,9 +51,24 @@ public class Board {
         Center = (Min + Max) * ArrowSize * 0.5f;
     }
 
-    public void GenerateObject() {
-        Object = new GameObject("Board").AddComponent<BoardObject>();
-        Object.Set(this);
+    public void GenerateObject() 
+    {
+        async void _()
+        {
+            Object = await Extensions.Instantiate<BoardObject>("BoardObject");
+            Object.Set(this);
+        }
+        _();
+    }
+
+    #endregion
+
+    #region Get / Validation
+    
+    public bool IsAllClear()
+    {
+        // TODO: 나중에 게임 클리어 조건 추가
+        return true;
     }
 
     #endregion

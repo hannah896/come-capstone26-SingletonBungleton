@@ -1,7 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public class UI_Image : UI_Base 
+[RequireComponent(typeof(Image))]
+public class UI_Image : UI
 {
 
     #region Properties

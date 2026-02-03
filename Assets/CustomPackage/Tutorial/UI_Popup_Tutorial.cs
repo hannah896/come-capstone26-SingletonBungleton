@@ -4,6 +4,7 @@ using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.InputSystem;
 
 public class UI_Popup_Tutorial : UI_Popup
 {
@@ -25,8 +26,8 @@ public class UI_Popup_Tutorial : UI_Popup
     {
         _sequence?.Kill();
         _onUpdateAction = null;
-        GameScene.GameState = GameState.Ready;
-        Main.Input.SetInputActions(InputActionType.GameScenePlay);
+        //GameScene.GameState = GameState.Ready;
+        // Main.Input.SetInputActions(InputActionType.GameScenePlay);
     }
 
     protected void Update()
@@ -38,8 +39,9 @@ public class UI_Popup_Tutorial : UI_Popup
 
     #region Initialize / Set
 
-    public bool Initialize()
+    public override bool Initialize()
     {
+        base.Initialize();
         _btnMask = gameObject.FindChild<UI_Button>("Btn_Mask");
         _cgMask = gameObject.FindChild<CanvasGroup>("Mask");
         _cgCharacter = gameObject.FindChild<CanvasGroup>("Img_Character");
@@ -55,7 +57,7 @@ public class UI_Popup_Tutorial : UI_Popup
         _cgMask.alpha = 1;
         _cgCharacter.alpha = 1;
         GameScene.GameState = GameState.InTutorial;
-        Main.Input.SetInputActions(InputActionType.None);
+        // Main.Input.SetInputActions(InputActionType.None);
         
         CheckSetTutorial(type);
     }
@@ -89,25 +91,10 @@ public class UI_Popup_Tutorial : UI_Popup
         // });
         _onUpdateAction += SelectTrObj;
     }
-
-    protected override void Awake()
-    {
-        base.Awake();
-    }
-
-    protected override void Start()
-    {
-        base.Start();
-    }
-
-    public override void Close()
-    {
-        base.Close();
-    }
 }
 
-public enum TutorialLevelType
-{
-    None = 0,
-    Tutorial1 = 1,
-}
+//public enum TutorialLevelType
+//{
+//    None = 0,
+//    Tutorial1 = 1,
+//}

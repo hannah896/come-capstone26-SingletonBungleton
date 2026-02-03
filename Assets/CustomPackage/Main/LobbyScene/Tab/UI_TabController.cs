@@ -4,7 +4,7 @@ using System.Linq;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
-public class UI_TabController : UI_Base
+public class UI_TabController : UI_Panel
 {
     #region Fields
     

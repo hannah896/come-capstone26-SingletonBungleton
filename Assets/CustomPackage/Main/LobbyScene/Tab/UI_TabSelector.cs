@@ -2,7 +2,7 @@
 using DG.Tweening;
 using UnityEngine;
 
-public class UI_TabSelector : UI_Base
+public class UI_TabSelector : UI_Panel
 {
     #region Fields & Properties
 

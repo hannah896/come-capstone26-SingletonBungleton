@@ -4,23 +4,59 @@ using DG.Tweening;
 using UnityEngine;
 
 /// <summary>
-/// 카메라의 이동, 크기 등을 관리해주는 매니저
+/// 카메라의 이동, 크기 등을 관리해주는 매니저.
+/// 게임 화면 비율에 맞춰 카메라를 조정합니다.
 /// </summary>
 public class ScreenManager : CoreManager
 {
-    #region Const.
+    #region Constants
+
+    // 카메라 배경색
     private static readonly Color CameraColorBG = new Color(1, 1, 1, 1);
+
+    // 카메라 Y 버퍼
     private static float CameraYBuffer = 10f;
+
+    #endregion
+
+    #region Fields
+
+    // 메인 카메라 래퍼
+    private MainCamera _mainCamera;
+
+    // 줌인 애니메이션 설정
+    private float _targetZoomInSize = 0;
+    private float _targetZoomInDuration = 0.5f;
+    private float _targetZoomInDelay = 0.5f;
+    private float _targetZoomOutSize = 0;
+    private float _targetZoomOutDuration = 0.5f;
+
+    // 카메라 줌 시퀀스
+    private Sequence _seqCameraZoom;
+
+    // 최대 카메라 크기
+    private float MaxCameraSize;
+
     #endregion
 
     #region Properties
+
+    // 참조 해상도
     public Vector2 ReferenceResolution => new(1080f, 1920f);
 
+    // 카메라 크기
     public Vector2 CameraSize { get; private set; }
+
+    // 카메라 위치
     public Vector3 CameraPosition { get; private set; }
+
+    // 화면 비율
     public float Aspect { get; private set; }
+
+    // 역 화면 비율
     public float ReverseAspect { get; private set; }
 
+    // 메인 카메라
     public MainCamera MainCamera
     {
         get
@@ -34,13 +70,19 @@ public class ScreenManager : CoreManager
         }
     }
 
+    // Unity 카메라
     public Camera Camera => MainCamera.Camera;
-    // private SpriteRenderer _background;
+
+    // 카메라 직교 크기
+    private float CameraOrthographicSize
+    {
+        get => Camera.orthographicSize;
+        set => Camera.orthographicSize = value;
+    }
+
     #endregion
 
-    #region Fields
-    private MainCamera _mainCamera;
-    #endregion
+    #region Initialization
 
     protected override async UniTask OnInitializeAsync()
     {
@@ -55,18 +97,26 @@ public class ScreenManager : CoreManager
 
     public override void Clear() { base.Clear(); }
 
+    #endregion
+
+    #region Camera Setup
+
+    /// <summary>
+    /// 카메라를 설정합니다.
+    /// </summary>
     public void SetCamera()
     {
         if (Main.Scene.Current is GameScene)
         {
-            UI_GameScene sceneUI = (Main.Scene.Current as GameScene)?.SceneUI;
-            float topUIRatio = sceneUI.TopUIRatio;
-            float bottomUIRatio = sceneUI.BottomUIRatio;
+            UI_Hud_Game uiHud = (Main.Scene.Current as GameScene)?.UIHud;
+            float topUIRatio = uiHud.TopUIRatio;
+            float bottomUIRatio = uiHud.BottomUIRatio;
             SetGameCamera(topUIRatio, bottomUIRatio);
             Main.Screen.MainCamera.SetColorCameraBG(CameraColorBG);
         }
     }
 
+    // 게임 카메라 설정
     private void SetGameCamera(float topUIRatio = 0, float bottomUIRatio = 0)
     {
         // #1. 게임 보드 크기 받아오기.
@@ -95,26 +145,22 @@ public class ScreenManager : CoreManager
         Camera.transform.position = CameraPosition;
     }
 
+    /// <summary>
+    /// 월드 좌표를 스크린 좌표로 변환합니다.
+    /// </summary>
     public Vector3 GetScreenPos(Vector3 worldPos) => Camera.WorldToScreenPoint(worldPos);
 
+    #endregion
+
     #region Animation
-    private float _targetZoomInSize = 0;
-    private float _targetZoomInDuration = 0.5f;
-    private float _targetZoomInDelay = 0.5f;
-    private float _targetZoomOutSize = 0;
-    private float _targetZoomOutDuration = 0.5f;
-    private Sequence _seqCameraZoom;
 
-    private float CameraOrthographicSize
-    {
-        get => Camera.orthographicSize;
-        set => Camera.orthographicSize = value;
-    }
-
+    /// <summary>
+    /// 게임 시작 카메라 애니메이션을 실행합니다.
+    /// </summary>
     public void StartGameCameraAnimation(Action onCompleteAnimation = null)
     {
         float startCameraSize = Camera.orthographicSize;
-        float maxCameraSize = InputActions_CameraZoom.MaxZoom;
+        float maxCameraSize = MaxCameraSize;
         Camera.orthographicSize = maxCameraSize;
         _seqCameraZoom.Kill();
         _seqCameraZoom = DOTween.Sequence();
@@ -138,5 +184,6 @@ public class ScreenManager : CoreManager
             _targetZoomInSize, _targetZoomInDuration));
         _seqCameraZoom.OnComplete(() => onCompleteAnimation?.Invoke());
     }
-  #endregion
+
+    #endregion
 }

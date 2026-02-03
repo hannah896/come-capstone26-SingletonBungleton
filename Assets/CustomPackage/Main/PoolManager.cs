@@ -74,7 +74,7 @@ public sealed class PoolManager : CoreManager
         #endregion
 
         #region Constructor
-        // 생성자
+
         public GameObjectPool(string address, GameObject prefab, Transform parent, Action<GameObject> onDestroyed)
         {
             _prefab = prefab;

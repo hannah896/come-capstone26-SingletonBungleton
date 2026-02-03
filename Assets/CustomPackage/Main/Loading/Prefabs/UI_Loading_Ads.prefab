@@ -88,6 +88,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3613e9f726bca481f830099d3b8f40fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_Image
+  OnOpenEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  OnCloseEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &3851738176010710494
 GameObject:
   m_ObjectHideFlags: 0
@@ -156,8 +162,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\uAD11 \uACE0 \uB97C \uBCFC \uCC28 \uB840 \uB2E4 . . ."
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 42d275b5c6ceb42b580d6bb6f2d2faf3, type: 2}
-  m_sharedMaterial: {fileID: 2100000, guid: da3bb1e31a0914b8b999d2f6359aa658, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -181,7 +187,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 91.6
+  m_fontSize: 105.5
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -237,9 +243,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4741ce3b72af84726a937f18f53b5c74, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_Text
+  OnOpenEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  OnCloseEvent:
+    m_PersistentCalls:
+      m_Calls: []
   isResizeText: 0
   resizePadding: 0
   localeName: 0
+  outLineColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &6237442860809793012
 GameObject:
   m_ObjectHideFlags: 0

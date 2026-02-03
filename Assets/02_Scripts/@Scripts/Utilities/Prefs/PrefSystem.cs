@@ -49,7 +49,6 @@ namespace Blossom.Preference {
         #endregion
         
     }
-
     
     internal static class PrefSystem {
 
@@ -63,9 +62,7 @@ namespace Blossom.Preference {
         {
             nameof(PlayPrefs),
             nameof(CurrencyPrefs),
-            //nameof(AdditionalPrefs),
             nameof(SettingPrefs),
-            //nameof(SupportPrefs),
         };
 
         #endregion
