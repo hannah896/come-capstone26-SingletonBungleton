@@ -29,8 +29,14 @@ public class NetworkManager : CoreManager
 
     #region Fields (Fusion)
 
+    // 플레이어 데이터 프리팹 Addressable 키
+    private const string PLAYER_DATA_PREFAB_KEY = "NetworkPlayerData";
+
     // Fusion NetworkRunner 인스턴스
     private NetworkRunner _runner;
+
+    // 플레이어 입장 시 스폰할 NetworkPlayerData 프리팹 (GameObject로 보관하여 IL Weaver 충돌 방지)
+    private GameObject _playerDataPrefab;
 
     // 접속 중인 플레이어 데이터
     private readonly Dictionary<PlayerRef, NetworkPlayerData> _players = new();
@@ -122,6 +128,18 @@ public class NetworkManager : CoreManager
         await base.OnInitializeAsync();
 
         State = NetworkState.Disconnected;
+
+#if PHOTON_FUSION
+        // Addressables에서 NetworkPlayerData 프리팹 로드
+        _playerDataPrefab = await Main.Resource.LoadAssetAsync<GameObject>(PLAYER_DATA_PREFAB_KEY, AssetCacheType.Required);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (_playerDataPrefab == null)
+        {
+            Debug.LogError($"[NetworkManager] Failed to load player data prefab: {PLAYER_DATA_PREFAB_KEY}");
+        }
+#endif
+#endif
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[NetworkManager] Initialized");
@@ -356,13 +374,20 @@ public class NetworkManager : CoreManager
     {
         if (runner.IsServer)
         {
-            var prefab = runner.Config.Simulation.DefaultPlayers;
+            if (_playerDataPrefab == null)
+            {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.LogError($"[NetworkManager] PlayerData prefab is not loaded. Cannot spawn for: {player}");
+#endif
+                return;
+            }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[NetworkManager] Spawning PlayerData for: {player}");
 #endif
 
-            var obj = runner.Spawn(prefab, inputAuthority: player);
+            var networkObj = _playerDataPrefab.GetComponent<NetworkObject>();
+            var obj = runner.Spawn(networkObj, inputAuthority: player);
             if (obj.TryGetComponent<NetworkPlayerData>(out var playerData))
             {
                 playerData.OwnerRef = player;
@@ -502,6 +527,8 @@ public class NetworkManager : CoreManager
 
 #if PHOTON_FUSION
         CleanupRunner().Forget();
+        _playerDataPrefab = null;
+        Main.Resource?.Release(PLAYER_DATA_PREFAB_KEY);
 #endif
 
         State = NetworkState.Disconnected;

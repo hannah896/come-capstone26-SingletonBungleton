@@ -221,7 +221,7 @@ public class CommandManager : CoreManager
             TargetPos = command.TargetPos,
             IntParam = command.IntParam,
             FloatParam = command.FloatParam,
-            TargetIds = command.TargetIds
+            TargetIds = NetworkTargetIds.FromFixedArray(command.TargetIds)
         };
 #endif
 

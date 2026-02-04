@@ -27,7 +27,7 @@ public class UI_Popup : UI_Panel
     public override void Close()
     {
         CloseTask().Forget();
-    }
+    } 
 
     private async UniTask CloseTask()
     {
@@ -37,7 +37,7 @@ public class UI_Popup : UI_Panel
         if (Main.Instance != null && Main.UI != null)
         {
             Main.UI.ClosePopup(this);
-        }
+        } 
         else
         {
             Destroy(gameObject);
