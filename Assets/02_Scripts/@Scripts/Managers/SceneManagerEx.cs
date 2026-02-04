@@ -90,14 +90,14 @@ public class SceneManagerEx : ContentManager
         if (_isTransitioning || string.IsNullOrEmpty(sceneName)) return;
         _isTransitioning = true;
 
-        _cts?.Cancel(); // 이전 유니테스크 작업들 모두 취소
-        _cts?.Dispose(); // 테스크 메모리 해제
+        _cts?.Cancel();
+        _cts?.Dispose();
         _cts = new CancellationTokenSource();
         var token = _cts.Token;
 
         try
         {
-            await Main.UI.ShowScreenAsync(ScreenEffectType.Transition);
+            await Main.UI.ShowScreenAsync<UI_Screen_Transition>();
             await UniTask.Delay(200, cancellationToken: token);
 
             Cleanup();

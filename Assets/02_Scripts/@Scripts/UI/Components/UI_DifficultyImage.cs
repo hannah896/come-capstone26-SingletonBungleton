@@ -16,4 +16,5 @@ public class UI_DifficultyImage : UI_Image {
     }
 
     #endregion
+    
 }

@@ -38,13 +38,13 @@ public class Main : MonoBehaviour
     public static DataManager Data => Instance?._data;
     public static UIManager UI => Instance?._ui;
     public static JSAMManager JSAM => Instance?._jsam;
-
     #endregion
 
     #region Static Properties - Core Managers
 
     public static PoolManager Pool => Instance?._pool;
     public static ScreenManager Screen => Instance?._screen;
+    public static LoadingAnalyticsSDK AnalyticsSDK => Instance?._analyticsSDK;
     public static LoopManager Loop => Instance?._loop;
     public static LocalizationManager Local => Instance?._local;
     public static TimeManager Time => Instance?._time;
@@ -58,7 +58,7 @@ public class Main : MonoBehaviour
     #endregion
 
     #region Static Properties - Content Managers
-    public static BoardManager Board => Instance?._board;
+    public static GameManager Game => Instance?._game;
     public static SceneManagerEx Scene => Instance?._scene;
 
     #endregion
@@ -77,6 +77,7 @@ public class Main : MonoBehaviour
     // Core Managers
     private readonly PoolManager _pool = new();
     private readonly ScreenManager _screen = new();
+    private readonly LoadingAnalyticsSDK _analyticsSDK = new();
     private readonly LoopManager _loop = new();
     private readonly LocalizationManager _local = new();
     private readonly TimeManager _time = new();
@@ -88,7 +89,7 @@ public class Main : MonoBehaviour
     private readonly NetworkManager _network = new();
 
     // Content Managers
-    private readonly BoardManager _board = new();
+    private readonly GameManager _game = new();
     private readonly SceneManagerEx _scene = new();
 
     // 매니저 리스트 (초기화 순서 관리용)

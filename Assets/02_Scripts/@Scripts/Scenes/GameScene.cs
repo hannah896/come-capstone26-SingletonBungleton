@@ -140,7 +140,7 @@ public class GameScene : SceneBase
         Main.Loop.ResetGameEvent();
         GameProcessing = GameProcessing.Stopping;
         RefillHeart();
-        Main.Board.Clear();
+        Main.Game.Clear();
     }
 
     public void RefillHeart() => HeartCount = MaxHeartCount;
@@ -157,10 +157,10 @@ public class GameScene : SceneBase
         }
 
         // #2. 개체 생성.
-        Main.Board.GenerateBoard(CurrentStage);
+        Main.Game.GenerateBoard(CurrentStage);
 
         // #3. 개체 오브젝트 생성.
-        Main.Board.GenerateBoardObject();
+        Main.Game.GenerateBoardObject();
 
         // #5. UI 생성.
         UIHud = Object.FindFirstObjectByType<UI_Hud_Game>();

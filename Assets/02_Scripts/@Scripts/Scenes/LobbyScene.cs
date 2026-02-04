@@ -94,8 +94,8 @@ public class LobbyScene : SceneBase
         // UI 초기화
         HudLobbyUIHud.Initialize();
         
-        // 홈페이지로 즉시 설정 (애니메이션 없이)
-        HudLobbyUIHud.Nav.NavigateTo(PageType.Lobby, immediate: true);
+        //// 홈페이지로 즉시 설정 (애니메이션 없이)
+        //HudLobbyUIHud.Nav.NavigateTo(PageType.Lobby, immediate: true);
         
         // 한 프레임 대기하여 UI가 완전히 설정되도록 함
         await UniTask.NextFrame();

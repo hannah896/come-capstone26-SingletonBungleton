@@ -6,21 +6,13 @@ public class UI_Hud_Lobby : UI_Hud
 
     public LobbyScene Scene { get; private set; }
 
-    private UI_TabController _tabController;
-    private UI_PageController _pageController;
-    private NavigationMediator _navigationMediator;
     private UI_CurrencyInfo _currencyInfo;
     private UI_Button _infoGold;
-    //private UI_LivesInfo _livesInfo;
     private UI_Editor _uiEditor;
 
     private GraphicRaycaster _grTop;
     private GraphicRaycaster _grPage;
     private GraphicRaycaster _grTab;
-    
-    public UI_TabController Tab => _tabController;
-    public UI_PageController Page => _pageController;
-    public NavigationMediator Nav => _navigationMediator;
 
     #endregion
 
@@ -31,8 +23,8 @@ public class UI_Hud_Lobby : UI_Hud
         if (base.Initialize()) return false;
         
         _infoGold = gameObject.FindChild<UI_Button>("Btn_GoldIconPlus");
-        _tabController = gameObject.FindChild<UI_TabController>("UI_TabController");
-        _pageController = gameObject.FindChild<UI_PageController>("UI_Pages");
+        //_tabController = gameObject.FindChild<UI_TabController>("UI_TabController");
+        //_pageController = gameObject.FindChild<UI_PageController>("UI_Pages");
         //_livesInfo = gameObject.FindChild<UI_LivesInfo>("UI_LivesInfo");
         _currencyInfo =  gameObject.FindChild<UI_CurrencyInfo>("UI_CurrencyInfo");
         _uiEditor = gameObject.FindChild<UI_Editor>("UI_Editor");
@@ -42,7 +34,7 @@ public class UI_Hud_Lobby : UI_Hud
         gameObject.FindChild<UI_Button>("Btn_Editor").SetEvent(_uiEditor.OnClickEditor);
 
         // NavigationMediator 생성 시 기본 페이지를 Lobby로 설정
-        _navigationMediator = new NavigationMediator(_tabController, _pageController);
+        //_navigationMediator = new NavigationMediator(_tabController, _pageController);
 
         return true;
     }
@@ -53,10 +45,10 @@ public class UI_Hud_Lobby : UI_Hud
         Scene = scene;
         ReadyGame();
         //Main.Scene.SceneUI = this;
-        _infoGold.SetEvent(() => _pageController.NavigateToPage(PageType.Shop));
+        //_infoGold.SetEvent(() => _pageController.NavigateToPage(PageType.Shop));
 
-        _tabController.Set(Nav);
-        _pageController.Set(Nav);
+        //_tabController.Set(Nav);
+        //_pageController.Set(Nav);
         //_livesInfo.Set();
         Scene.OnLobbyStart += StartGame;
         Scene.OnLobbyReady += ReadyGame;
@@ -66,7 +58,6 @@ public class UI_Hud_Lobby : UI_Hud
 
     private void OnDestroy()
     {
-        _navigationMediator?.Dispose();
         Scene.OnLobbyStart -= StartGame;
         Scene.OnLobbyReady -= ReadyGame;
     }
@@ -85,7 +76,8 @@ public class UI_Hud_Lobby : UI_Hud
         _grTab.enabled = true;
     }
     
-    private void ApplySafeArea() {
+    private void ApplySafeArea() 
+    {
         // Rect safe = Screen.safeArea;
         // Vector2 anchorMin = safe.position;
         // Vector2 anchorMax = safe.position + safe.size;

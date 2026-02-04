@@ -23,6 +23,11 @@ public class CommandManager : CoreManager
     // 명령 검증 델리게이트
     private Func<GameCommand, bool> _commandValidator;
 
+#if PHOTON_FUSION
+    // 현재 프레임의 입력 데이터 (Fusion OnInput에서 수집됨)
+    private NetworkInputData _currentInput;
+#endif
+
     #endregion
 
     #region Properties
@@ -207,14 +212,26 @@ public class CommandManager : CoreManager
     // 서버로 명령 전송
     private void RouteToServer(GameCommand command)
     {
+#if PHOTON_FUSION
+        // Fusion Input System을 통해 명령을 전달
+        _currentInput = new NetworkInputData
+        {
+            CommandType = command.Type,
+            CommandFlags = command.Flags,
+            TargetPos = command.TargetPos,
+            IntParam = command.IntParam,
+            FloatParam = command.FloatParam,
+            TargetIds = command.TargetIds
+        };
+#endif
+
+        // 클라이언트 예측 처리
         if (UseClientPrediction)
         {
             command.Tick = Main.Simulation?.CurrentTick ?? 0;
             _predictedCommands.Add(command);
             _executionQueue.Enqueue(command);
         }
-
-        Main.Network?.SendCommand(command);
     }
 
     /// <summary>
@@ -279,6 +296,25 @@ public class CommandManager : CoreManager
     }
 
     #endregion
+
+#if PHOTON_FUSION
+
+    #region Fusion Input
+
+    /// <summary>
+    /// NetworkManager.OnInput() 콜백에서 호출됩니다.
+    /// 현재 프레임에 수집된 입력 데이터를 반환하고 초기화합니다.
+    /// </summary>
+    public NetworkInputData CollectInput()
+    {
+        var input = _currentInput;
+        _currentInput = default;
+        return input;
+    }
+
+    #endregion
+
+#endif
 
     #region Cleanup
 

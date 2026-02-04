@@ -81,7 +81,7 @@ public class LocalizationManager : CoreManager
     public async void ChangeLocale(LocalizedCountryType localizedCountryType = LocalizedCountryType.None)
     {
         LocalizedCountryType inputCountryType = localizedCountryType;
-        if (inputCountryType != LocalizedCountryType.None) Main.UI.ShowScreenAsync(ScreenEffectType.Fade);
+        if (inputCountryType != LocalizedCountryType.None) Main.UI.ShowScreenAsync<UI_Screen_Fade>();
         if (localizedCountryType == LocalizedCountryType.None) localizedCountryType = (LocalizedCountryType)_settingPrefs.Language.Value;
         AsyncOperationHandle<LocalizationSettings> initOp = LocalizationSettings.InitializationOperation;
         await UniTask.WaitUntil(() => initOp.IsDone);

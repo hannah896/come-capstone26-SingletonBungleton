@@ -7,6 +7,25 @@ using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.ResourceManagement.ResourceLocations;
 
+#region Enums
+
+/// <summary>
+/// 에셋 캐시 타입.
+/// </summary>
+public enum AssetCacheType
+{
+    /// <summary>
+    /// 필수 에셋. 명시적으로 해제하기 전까지 유지됩니다.
+    /// </summary>
+    Required,
+
+    /// <summary>
+    /// 비필수 에셋. 씬 변경 시 해제될 수 있습니다.
+    /// </summary>
+    NonRequired
+}
+
+#endregion
 
 /// <summary>
 /// 어드레서블로 데이터를 불러와 캐싱해두는 매니저.

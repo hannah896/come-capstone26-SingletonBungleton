@@ -14,7 +14,7 @@ public class UI_Popup : UI_Panel
         if (!base.Initialize()) return false;
 
         Canvas = GetComponentInParent<Canvas>();
-
+        
         return true;
     }
 

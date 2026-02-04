@@ -41,13 +41,7 @@ public class LoadingManager : CoreManager
 
         if (Main.IsEditorMode) return;
 
-        var _loadingCanvas = UnityEngine.Object.FindFirstObjectByType<UI_LoadingCanvas>();
-        if (!_loadingCanvas)
-        {
-            _loadingCanvas = await Extensions.ShowPopup<UI_LoadingCanvas>();
-            if (!_loadingCanvas) Debug.LogError("Could not find UI_LoadingCanvas");
-        }
-        _loadingCanvas.Set();
+        Extensions.ShowScreen<UI_Screen_StartLoading>();
     }
 
     /// <summary>

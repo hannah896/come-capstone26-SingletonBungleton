@@ -120,7 +120,7 @@ public class ScreenManager : CoreManager
     private void SetGameCamera(float topUIRatio = 0, float bottomUIRatio = 0)
     {
         // #1. 게임 보드 크기 받아오기.
-        Board board = Main.Board.Current;
+        Board board = Main.Game.Current;
         Vector2 center = board.Center;
         Vector2 size = board.Size;
 

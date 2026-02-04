@@ -26,7 +26,7 @@ public class UI_Popup_Tutorial : UI_Popup
     {
         _sequence?.Kill();
         _onUpdateAction = null;
-        //GameScene.GameState = GameState.Ready;
+        GameScene.GameState = GameState.Ready;
         // Main.Input.SetInputActions(InputActionType.GameScenePlay);
     }
 
@@ -93,8 +93,8 @@ public class UI_Popup_Tutorial : UI_Popup
     }
 }
 
-//public enum TutorialLevelType
-//{
-//    None = 0,
-//    Tutorial1 = 1,
-//}
+public enum TutorialLevelType
+{
+    None = 0,
+    Tutorial1 = 1,
+}

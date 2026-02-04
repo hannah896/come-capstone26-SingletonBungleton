@@ -222,7 +222,12 @@ public class SimulationManager : CoreManager
     {
         if (!IsRunning || IsPaused) return;
 
-        _tickAccumulator += deltaTime;
+        // 멀티플레이어에서는 고정 틱 레이트 유지, 싱글에서는 게임 속도 반영
+        var speed = Main.Command != null && Main.Command.IsMultiplayer
+            ? 1f
+            : (Main.Loop?.GameSpeed ?? 1f);
+
+        _tickAccumulator += deltaTime * speed;
 
         while (_tickAccumulator >= TickDuration)
         {

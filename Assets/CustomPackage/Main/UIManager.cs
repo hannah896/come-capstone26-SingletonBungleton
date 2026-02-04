@@ -9,22 +9,6 @@ using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
-#region Enums
-
-/// <summary>
-/// 화면 효과 타입.
-/// </summary>
-public enum ScreenEffectType
-{
-    None,
-    Fade,
-    Transition,
-    Ads,
-    Iap
-}
-
-#endregion
-
 /// <summary>
 /// UI 시스템을 관리하는 매니저.
 /// Hud, Popup, Screen 세 가지 레이어를 통해 UI를 표시합니다.
@@ -167,22 +151,35 @@ public class UIManager : PrimaryManager
     #region Screen
 
     /// <summary>
-    /// 화면 효과를 표시합니다.
+    /// 스크린 UI를 표시합니다.
     /// </summary>
-    public void ShowScreen(ScreenEffectType type, Action act = null, CancellationToken tk = default) => ShowScreenAsync(type, act, tk).Forget();
+    /// <typeparam name="T">표시할 UI_Screen 타입</typeparam>
+    /// <param name="key">Addressable 에셋 키 (null이면 타입 이름 사용)</param>
+    /// <param name="act">로딩 완료 콜백</param>
+    /// <param name="tk">취소 토큰</param>
+    public void ShowScreen<T>(string key = null, Action act = null, CancellationToken tk = default) where T : UI_Screen
+        => ShowScreenAsync<T>(key, act, tk).Forget();
 
     /// <summary>
-    /// 화면 효과를 숨깁니다.
+    /// 현재 스크린 UI를 숨깁니다.
     /// </summary>
     public void HideScreen(float time = 3f) => HideScreenAsync(time).Forget();
 
     /// <summary>
-    /// 화면 효과를 비동기로 표시합니다.
+    /// 스크린 UI를 비동기로 표시합니다.
     /// </summary>
-    public async UniTask ShowScreenAsync(ScreenEffectType type, Action act = null, CancellationToken tk = default) => await _screen.Show(type, act, tk);
+    /// <typeparam name="T">표시할 UI_Screen 타입</typeparam>
+    /// <param name="key">Addressable 에셋 키 (null이면 타입 이름 사용)</param>
+    /// <param name="act">로딩 완료 콜백</param>
+    /// <param name="tk">취소 토큰</param>
+    public async UniTask<T> ShowScreenAsync<T>(string key = null, Action act = null, CancellationToken tk = default) where T : UI_Screen
+    {
+        await UniTask.WaitUntil(() => IsInitialized, cancellationToken: tk);
+        return await _screen.Show<T>(key, act, tk);
+    }
 
     /// <summary>
-    /// 화면 효과를 비동기로 숨깁니다.
+    /// 현재 스크린 UI를 비동기로 숨깁니다.
     /// </summary>
     public async UniTask HideScreenAsync(float time = 3f) => await _screen.Hide(time);
 
@@ -529,10 +526,10 @@ public class UIManager : PrimaryManager
         private readonly Canvas _root;
 
         // 타입별 스크린 캐시
-        private readonly Dictionary<ScreenEffectType, UI_Loading> _screens = new();
+        private readonly Dictionary<Type, UI_Screen> _screens = new();
 
         // 현재 활성화된 스크린
-        private UI_Loading _currentActive;
+        private UI_Screen _currentActive;
 
         // 표시 시작 시간
         private float _showStartTime;
@@ -552,32 +549,46 @@ public class UIManager : PrimaryManager
         #region Public Methods
 
         // 스크린 표시
-        public async UniTask Show(ScreenEffectType type, Action onComplete = null, CancellationToken ct = default)
+        public async UniTask<T> Show<T>(string key = null, Action onComplete = null, CancellationToken ct = default) where T : UI_Screen
         {
-            if (type == ScreenEffectType.None) return;
-            if (_root == null) return;
-
-            if (!_screens.TryGetValue(type, out var loading))
+            if (_root == null)
             {
-                string key = $"UI_Screen_{type}";
-                var prefab = await Main.Resource.LoadAssetAsync<GameObject>(key, AssetCacheType.NonRequired, ct);
-                if (prefab == null) return;
-
-                var instance = Object.Instantiate(prefab, _root.transform);
-                instance.name = key;
-
-                if (instance.TryGetComponent<UI_Loading>(out loading))
+                try
                 {
-                    _screens.Add(type, loading);
+                    await UniTask.WaitUntil(() => _root != null, cancellationToken: ct)
+                                 .Timeout(TimeSpan.FromSeconds(1));
                 }
+                catch (TimeoutException) { return null; }
+                catch (OperationCanceledException) { return null; }
             }
 
-            if (_currentActive == loading) return;
-            loading.Set(onComplete);
+            var type = typeof(T);
 
-            _currentActive = loading;
+            if (!_screens.TryGetValue(type, out var screen))
+            {
+                key ??= type.Name;
+                var prefab = await Main.Resource.LoadAssetAsync<T>(key, AssetCacheType.NonRequired, ct);
+                if (prefab == null) return null;
+
+                var instance = Object.Instantiate(prefab, _root.transform);
+                if (!instance.TryGetComponent<T>(out var comp))
+                {
+                    Object.Destroy(instance.gameObject);
+                    return null;
+                }
+
+                comp.name = key;
+                screen = comp;
+                _screens.Add(type, screen);
+            }
+
+            if (_currentActive == screen) return screen as T;
+            screen.Set(onComplete);
+
+            _currentActive = screen;
             _showStartTime = Time.time;
             _currentActive.FadeInLoading();
+            return screen as T;
         }
 
         // 스크린 숨기기

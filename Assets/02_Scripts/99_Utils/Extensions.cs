@@ -168,23 +168,24 @@ public static class Extensions
     #region UI - Screen
 
     /// <summary>
-    /// 화면 효과를 표시합니다.
+    /// 스크린 UI를 표시합니다.
     /// </summary>
-    public static void ShowScreen(ScreenEffectType type, Action act = null) => Main.UI.ShowScreen(type, act);
+    public static void ShowScreen<T>(string key = null, Action act = null) where T : UI_Screen
+        => Main.UI.ShowScreen<T>(key, act);
 
     /// <summary>
-    /// 화면 효과를 숨깁니다.
+    /// 스크린 UI를 숨깁니다.
     /// </summary>
     public static void HideScreen(float time = 3f) => Main.UI.HideScreen(time);
 
     /// <summary>
-    /// 화면 효과를 비동기로 표시합니다.
+    /// 스크린 UI를 비동기로 표시합니다.
     /// </summary>
-    public static async UniTask ShowScreenAsync(ScreenEffectType type, Action act = null, CancellationToken token = default)
-        => await Main.UI.ShowScreenAsync(type, act, token);
+    public static async UniTask<T> ShowScreenAsync<T>(string key = null, Action act = null, CancellationToken token = default) where T : UI_Screen
+        => await Main.UI.ShowScreenAsync<T>(key, act, token);
 
     /// <summary>
-    /// 화면 효과를 비동기로 숨깁니다.
+    /// 스크린 UI를 비동기로 숨깁니다.
     /// </summary>
     public static async UniTask HideScreenAsync(float time = 3f) => await Main.UI.HideScreenAsync(time);
 

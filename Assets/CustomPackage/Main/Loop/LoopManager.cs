@@ -30,7 +30,7 @@ public class LoopManager : CoreManager
     #region Properties
 
     // 현재 게임 속도
-    private float GameSpeed { get; set; } = 1f;
+    public float GameSpeed { get; private set; } = 1f;
 
     #endregion
 

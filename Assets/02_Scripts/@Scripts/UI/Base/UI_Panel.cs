@@ -20,8 +20,6 @@ public class UI_Panel : UI
         OnOpenEvent?.Invoke();
     }
 
-    
-
     public virtual void Close()
     {
         if (_onClose) return;

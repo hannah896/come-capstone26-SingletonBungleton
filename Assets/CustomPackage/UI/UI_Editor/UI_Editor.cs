@@ -85,7 +85,7 @@ public class UI_Editor : UI_Panel {
         gameObject.FindChild<UI_Button>("Btn_CameraZoom").SetEvent(OnEnterCameraZoom);
         gameObject.FindChild<UI_Button>("Btn_HeartInfinity").SetEvent(OnEnterHeartInfinity);
         //gameObject.FindChild<UI_Button>("Btn_AdRemove").SetEvent(OnEnterAdRemove);
-        //gameObject.FindChild<UI_Button>("Btn_SendClearEvent").SetEvent(OnEnterSendClearLog);
+        gameObject.FindChild<UI_Button>("Btn_SendClearEvent").SetEvent(OnEnterSendClearLog);
 
         _canvas.overrideSorting = true;
         _canvas.sortingLayerName = "UI";
@@ -224,30 +224,19 @@ public class UI_Editor : UI_Panel {
         _txtHeartInfinity.Text = sb.ToString();
     }
 
-    //private void OnEnterAdRemove()
-    //{
-    //    Main.Ads.IsEditorAdRemove = !Main.Ads.IsEditorAdRemove;
-    //    bool isActive = Main.Ads.IsEditorAdRemove;
-    //    StringBuilder sb = new();
-    //    sb.AppendLine("Ad");
-    //    sb.AppendLine("Remove");
-    //    sb.Append($"{GetActiveString(isActive)}");
-    //    _txtAdRemove.Text = sb.ToString();
-    //}
-
-    //private void OnEnterSendClearLog()
-    //{
-    //    int maxStage = Main.Data.GetMaxStageCount();
-    //    for (int i = 1; i <= maxStage; i++)
-    //    {
-    //        Main.AnalyticsSDK.LogEvent($"rca_clear_{i:D4}", null, AnalyticsType.GF);
-    //    }
-    //    StringBuilder sb = new();
-    //    sb.AppendLine("Send Clear");
-    //    sb.AppendLine("Event Log");
-    //    sb.Append($"[Success Log]");
-    //    _txtSendEvent.Text = sb.ToString();
-    //}
+    private void OnEnterSendClearLog()
+    {
+        int maxStage = Main.Data.GetMaxStageCount();
+        //for (int i = 1; i <= maxStage; i++)
+        //{
+        //    Main.AnalyticsSDK.LogEvent($"rca_clear_{i:D4}", null, AnalyticsType.GF);
+        //}
+        StringBuilder sb = new();
+        sb.AppendLine("Send Clear");
+        sb.AppendLine("Event Log");
+        sb.Append($"[Success Log]");
+        _txtSendEvent.Text = sb.ToString();
+    }
 
     private string GetActiveString(bool active)
     {
