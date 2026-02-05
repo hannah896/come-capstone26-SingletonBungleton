@@ -40,11 +40,11 @@ public class MapGeneratorUsageExample : MonoBehaviour
     #endregion
     async void Start()
     {
-        await UniTask.WaitUntil(() => Managers.Instance != null);
+        await UniTask.WaitUntil(() => Main.Instance != null);
         _cts = new CancellationTokenSource();
 
         if (_mapGenerator == null)
-            _mapGenerator = Utility.GetOrAddComponent<MapGenerator>(this.gameObject);
+            _mapGenerator = Extensions.GetOrAddComponent<MapGenerator>(this.gameObject);
 
         await LoadMapSettingAsync(_cts.Token);
         

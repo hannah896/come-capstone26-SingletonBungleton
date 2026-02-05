@@ -11,18 +11,18 @@ public class StoryWorldGenUsageExample : MonoBehaviour
     [SerializeField] private WorldGenerator _worldGenerator;
     [SerializeField] private WorldSettings _worldSettings;
 
-    private string _worldSettingLabel = "TestStoryWorldSettings";
+    private string _worldSettingLabel = "TestWorldSettings";
 
     private CancellationTokenSource _cts;
 
     
     async void Start()
     {
-        await UniTask.WaitUntil(() => Managers.Instance != null);
+        await UniTask.WaitUntil(() => Main.Instance != null);
         _cts = new CancellationTokenSource();
 
         if (_worldGenerator == null)
-            _worldGenerator = Utility.GetOrAddComponent<WorldGenerator>(this.gameObject);
+            _worldGenerator = Extensions.GetOrAddComponent<WorldGenerator>(this.gameObject);
 
         await LoadWorldSettingsAsync(_cts.Token);
         
@@ -92,31 +92,37 @@ public class StoryWorldGenUsageExample : MonoBehaviour
         switch (difficulty)
         {
             case 1: // 가지 : 최대, 순환 : 항상
+                Debug.Log("가지 : 최대, 순환 : 항상");
                 _worldSettings.WorldBranch = WorldBranchSetting.Most;
                 _worldSettings.WorldLoop = WorldLoopSetting.Always;
                 break;
 
             case 2: // 가지 : 절대, 순환 : 절대
+                Debug.Log("가지 : 절대, 순환 : 절대");
                 _worldSettings.WorldBranch = WorldBranchSetting.Never;
                 _worldSettings.WorldLoop = WorldLoopSetting.Never;
                 break;
 
             case 3: // 가지 : 기본, 순환 : 항상
+                Debug.Log("가지 : 기본, 순환 : 항상");
                 _worldSettings.WorldBranch = WorldBranchSetting.Default;
                 _worldSettings.WorldLoop = WorldLoopSetting.Always;
                 break;
 
             case 4: // 가지 최대, 순환 : 기본
+                Debug.Log("가지 : 최대, 순환 : 기본");
                 _worldSettings.WorldBranch = WorldBranchSetting.Most;
                 _worldSettings.WorldLoop = WorldLoopSetting.Default;
                 break;
 
             case 5: // 가지 : 절대, 순환 : 항상
+                Debug.Log("가지 : 절대, 순환 : 항상");
                 _worldSettings.WorldBranch = WorldBranchSetting.Never;
                 _worldSettings.WorldLoop = WorldLoopSetting.Always;
                 break;
 
             case 6: // 가지 : 최대, 순환 : 절대
+                Debug.Log("가지 : 최대, 순환 : 절대");
                 _worldSettings.WorldBranch = WorldBranchSetting.Most;
                 _worldSettings.WorldLoop = WorldLoopSetting.Never;
                 break;

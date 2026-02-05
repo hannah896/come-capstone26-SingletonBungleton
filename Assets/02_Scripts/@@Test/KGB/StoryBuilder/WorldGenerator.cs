@@ -7,35 +7,27 @@ using UnityEngine;
 
 public class WorldGenerator : MonoBehaviour
 {
-    [SerializeField] private WorldSettings _worldSettings;
-    [SerializeField] private StoryData _storyData;
-    [SerializeField] private StoryGenerator _storyGenerator;
-    [SerializeField] private RegionGenerator _regionGenerator;
+    private WorldSettings _worldSettings;
+    private StoryData _storyData;
+    private StoryGenerator _storyGenerator;
+    private RegionGenerator _regionGenerator;
+    private TilePartitioner _tilePartitioner;
+    private WorldObjectDisposer _objectDisposer;
 
-
-    [Header("Partitioning Settings")]
-    [SerializeField] private TilePartitioner.PartitionSettings _partitionSettings;
-    
-    [Header("Spawning Settings")]
-    [SerializeField] private WorldObjectDisposer.SpawnSettings _spawnSettings;
-    
     public int seed = 0;
     public bool useRandomSeed = true;
 
     private CancellationTokenSource _cts;
     
     // 생성된 데이터
-    private List<Node> _nodes = new();
-    private List<NodeConnection> _nodeConections = new();
-    private HashSet<KeyData> _currentKeys = new();
+    private GraphResult _result;
     
     // 서비스 클래스들
-    private TilePartitioner _tilePartitioner;
-    private WorldObjectDisposer _objectSpawner;
+
 
     async void Start()
     {
-        await UniTask.WaitUntil(() => Managers.Instance != null);
+        await UniTask.WaitUntil(() => Main.Instance != null);
         _cts = new CancellationTokenSource();
         
         if (_storyGenerator == null)
@@ -46,11 +38,17 @@ public class WorldGenerator : MonoBehaviour
 
     private void InitializeServices()
     {
-        _partitionSettings ??= new TilePartitioner.PartitionSettings();
-        _spawnSettings ??= new WorldObjectDisposer.SpawnSettings();
-        
-        _tilePartitioner = new TilePartitioner(_partitionSettings);
-        _objectSpawner = new WorldObjectDisposer(_spawnSettings);
+        _storyGenerator = new();
+        _regionGenerator = new();
+        _tilePartitioner = new();
+        _objectDisposer = new();
+        if (_result == null)
+        {
+            _result = new GraphResult();
+            _result.Nodes = new List<Node>();
+            _result.NodeConnections = new List<NodeConnection>();
+            _result.AdjacencyList = new Dictionary<Node, List<Node>>();
+        }
     }
 
     void OnDestroy()
@@ -70,8 +68,6 @@ public class WorldGenerator : MonoBehaviour
             Debug.LogError("Story Data 가 WorldSettings에 설정되지 않았습니다!");
             return;
         }
-        
-        _storyGenerator.SetWorldSettings(settings);
         
         _cts?.Cancel();
         _cts?.Dispose();
@@ -94,23 +90,21 @@ public class WorldGenerator : MonoBehaviour
         seed = useRandomSeed ? System.DateTime.Now.GetHashCode() : Mathf.Abs(seed);
         Random.InitState(seed);
         
-        if (_partitionSettings != null)
-            _partitionSettings.noiseSeed = seed;
-        
         InitializeServices();
         ClearWorld();
 
         try
         {
-            Debug.Log($"=== 월드 생성 시작: {_storyData.StoryName} ===");
-            
+            Debug.Log($"=== 월드 생성 시작: {_storyData.StoryName}===");
+            Debug.Log($" 크기: {_worldSettings.GetWorldSize()}, Branch: {_worldSettings.WorldBranch}, Loop: {_worldSettings.WorldLoop}");
+
             // 1단계: Region Graph 생성 (StoryGenerator에 위임)
             await GenerateStoryAsync(ct);
-            Debug.Log($"1단계 완료: Region Graph 생성 ({_nodes?.Count ?? 0}개 Task)");
+            Debug.Log($"1단계 완료: Region Graph 생성 ({_result.Nodes?.Count ?? 0})");
             
             // 2단계: Convert Rooms (RegionGenerator에 위임. 각 Task들의 Room 생성
-            await ConvertRegionToRoom(ct);
-            Debug.Log($"2단계 완료: Region 변환 ({_nodes.Count}개 Region)");
+            await ConvertRegionToRoomAsync(ct);
+            Debug.Log($"2단계 완료: Region 변환 ({_result.Nodes.Count}개 Room)");
 
             // 3단계: 보로노이 분할 및 영역 할당 (TilePartitioner에 위임)
             await PartitionWorldAsync(ct);
@@ -118,7 +112,7 @@ public class WorldGenerator : MonoBehaviour
 
             // 4단계: 오브젝트 배치 (WorldObjectDisposer에 위임)
             await SpawnObjectsAsync(ct);
-            Debug.Log($"4단계 완료: {_objectSpawner.SpawnResults.Count}개 오브젝트 배치");
+            Debug.Log($"4단계 완료: {_objectDisposer.SpawnResults.Count}개 오브젝트 배치");
             
             Debug.Log($"=== 월드 생성 완료: 시드 {seed} ===");
         }
@@ -134,205 +128,155 @@ public class WorldGenerator : MonoBehaviour
     private async UniTask GenerateStoryAsync(CancellationToken ct)
     {
         // StoryGenerator에게 Story 생성 위임 (_storyData 전달 후 완료되면 갱신함)
-        GraphResult regionResult = await _storyGenerator.GenerateStoryAsync(_storyData, ct);
-        _nodes = regionResult.nodes;
-        _nodeConections = regionResult.nodeConnections;
+        _result = await _storyGenerator.GenerateStoryAsync(_result, _worldSettings, ct);
+
 
     }
     #endregion
 
     #region 2단계: Region을 Room들의 집합으로 변환
-    private async Task ConvertRegionToRoom(CancellationToken ct)
+    private async UniTask ConvertRegionToRoomAsync(CancellationToken ct)
     {
         // RegionGenerator에게 Region -> Room 변환 위임(_nodes, _nodeConnections 전달 후 완료되면 갱신함)
-        GraphResult roomResult = await _regionGenerator.ConvertRegionsToRoomsAsync(_nodes, _nodeConections, ct);
-        _nodes = roomResult.nodes;
-        _nodeConections = roomResult.nodeConnections;
+        _result = await _regionGenerator.ConvertRegionsToRoomsAsync(_result, _worldSettings, ct);
     }
     #endregion
 
-    #region 3-4단계: 기존 로직 유지
+    #region 3단계: 보로노이 분할 및 영역 할당 
     private async UniTask PartitionWorldAsync(CancellationToken ct)
     {
-        if (_taskRegions.Count == 0)
-        {
-            Debug.LogWarning("분할할 영역이 없습니다.");
-            return;
-        }
-
-        Vector2Int worldSize = _worldSettings.GetWorldSize();
-        NormalizeRegionCenters(worldSize);
-        await _tilePartitioner.PartitionWorldAsync(worldSize, _taskRegions, ct);
-        
-        int totalTiles = _taskRegions.Sum(r => r.ownedTiles?.Count ?? 0);
-        Debug.Log($"맵 분할 완료: 총 {totalTiles}개 타일 할당됨");
-    }
-
-    private void NormalizeRegionCenters(Vector2Int worldSize)
-    {
-        if (_taskRegions.Count == 0) return;
-
-        if (_taskRegions.Count == 1)
-        {
-            _taskRegions[0].center = new Vector2(worldSize.x * 0.5f, worldSize.y * 0.5f);
-            return;
-        }
-
-        float minX = _taskRegions.Min(r => r.center.x);
-        float maxX = _taskRegions.Max(r => r.center.x);
-        float minY = _taskRegions.Min(r => r.center.y);
-        float maxY = _taskRegions.Max(r => r.center.y);
-
-        float rangeX = maxX - minX;
-        float rangeY = maxY - minY;
-
-        float padding = 0.1f;
-        float usableWidth = worldSize.x * (1f - padding * 2);
-        float usableHeight = worldSize.y * (1f - padding * 2);
-
-        foreach (var region in _taskRegions)
-        {
-            float normalizedX = rangeX > 0 ? (region.center.x - minX) / rangeX : 0.5f;
-            float normalizedY = rangeY > 0 ? (region.center.y - minY) / rangeY : 0.5f;
-
-            region.center = new Vector2(
-                padding * worldSize.x + normalizedX * usableWidth,
-                padding * worldSize.y + normalizedY * usableHeight
-            );
-        }
-    }
-
-    private async UniTask SpawnObjectsAsync(CancellationToken ct)
-    {
-        if (_taskRegions.Count == 0) return;
-
-        float densityMultiplier = _worldSettings.DensityMultiplier;
-        await _objectSpawner.SpawnObjectsAsync(_taskRegions, densityMultiplier, ct);
+        await _tilePartitioner.PartitionWorldAsync(_result, _worldSettings, ct);
     }
     #endregion
+
+    #region 4단계: 오브젝트 배치
+    private async UniTask SpawnObjectsAsync(CancellationToken ct)
+    {
+        await _objectDisposer.SpawnObjectsAsync(_result, _worldSettings, ct);
+    }
+
+    #endregion
+
 
     private void ClearWorld()
     {
         for (int i = transform.childCount - 1; i >= 0; i--)
             DestroyImmediate(transform.GetChild(i).gameObject);
-        
-        _nodes.Clear();
+
+        if (_result != null)
+        {
+            if (_result.Nodes == null) _result.Nodes = new List<Node>();
+            if (_result.NodeConnections == null) _result.NodeConnections = new List<NodeConnection>();
+            if (_result.AdjacencyList == null) _result.AdjacencyList = new Dictionary<Node, List<Node>>();
+
+            _result.Clear();
+        }
     }
 
     #region Debug & Gizmos
     [Header("Debug")]
     [SerializeField] private bool _drawGizmos = true;
+    [SerializeField] private bool _showConnections = true;
+    [SerializeField] private bool _showMapBounds = true;
     [SerializeField] private bool _drawTerritoryGrid = false;
 
     void OnDrawGizmos()
     {
-        if (!_drawGizmos || _taskRegions == null || _taskRegions.Count == 0) return;
+        if (!_drawGizmos || _result == null || _result.Nodes == null || _worldSettings == null) return;
 
-        // 영역 중심점 그리기
-        foreach (var region in _taskRegions)
+        if (_showMapBounds)
         {
-            Gizmos.color = region.isMainStory ? Color.green : Color.yellow;
-            if (region.room != null)
-                Gizmos.color = region.room.debugColor;
-            
-            Gizmos.DrawSphere(new Vector3(region.center.x, 0, region.center.y), 2f);
-            
-            #if UNITY_EDITOR
-            UnityEditor.Handles.Label(
-                new Vector3(region.center.x, 2f, region.center.y),
-                $"{region.task.taskName}\nD:{region.depth} T:{region.ownedTiles?.Count ?? 0}"
-            );
-            #endif
+            Gizmos.color = Color.cyan;
+            Vector3 center = new Vector3(_worldSettings.GetWorldSize().x / 2f, 0, _worldSettings.GetWorldSize().y / 2f);
+            Vector3 size = new Vector3(_worldSettings.GetWorldSize().x, 0, _worldSettings.GetWorldSize().y);
+            Gizmos.DrawWireCube(center, size);
         }
 
-        // Story 연결선 그리기
-        if (_storyResult?.taskConnections != null)
+        // 1. 노드 중심점 그리기
+        foreach (var node in _result.Nodes)
+        {
+            Gizmos.color = node.RoomData != null ? node.RoomData.DebugColor : Color.white;
+            Gizmos.DrawSphere(new Vector3(node.Position.x, 0, node.Position.y), 2f);
+        }
+
+        // 2. 연결선 그리기
+        if (_result.NodeConnections != null)
         {
             Gizmos.color = Color.white;
-            foreach (var conn in _storyResult.taskConnections)
+            foreach (var conn in _result.NodeConnections)
             {
-                if (conn?.taskA == null || conn?.taskB == null) continue;
-                
-                Vector3 start = new Vector3(conn.taskA.centerPosition.x, 1f, conn.taskA.centerPosition.y);
-                Vector3 end = new Vector3(conn.taskB.centerPosition.x, 1f, conn.taskB.centerPosition.y);
+                if (conn.ParentNode == null || conn.ChildNode == null) continue;
+                Vector3 start = new Vector3(conn.ParentNode.Position.x, 0, conn.ParentNode.Position.y);
+                Vector3 end = new Vector3(conn.ChildNode.Position.x, 0, conn.ChildNode.Position.y);
                 Gizmos.DrawLine(start, end);
             }
         }
 
-        // 영토 그리드 그리기
-        if (_drawTerritoryGrid && _tilePartitioner?.TerritoryWorld != null)
+        // 3. 영토 그리드(보로노이) 그리기
+        if (_drawTerritoryGrid && _tilePartitioner.TerritoryWorld != null)
         {
             DrawTerritoryGrid();
         }
     }
 
+    
     private void DrawTerritoryGrid()
     {
         int[,] territory = _tilePartitioner.TerritoryWorld;
         int width = territory.GetLength(0);
         int height = territory.GetLength(1);
 
-        int step = Mathf.Max(1, Mathf.Min(width, height) / 50);
+        // 성능을 위해 스텝 건너뛰기 (전체 다 그리면 렉 걸림)
+        int step = Mathf.Max(1, Mathf.Min(width, height) / 100);
 
         for (int x = 0; x < width; x += step)
         {
             for (int y = 0; y < height; y += step)
             {
-                int regionId = territory[x, y];
-                if (regionId < 0)
+                int nodeIndex = territory[x, y];
+
+                if (nodeIndex < 0) // 바다/벽
                 {
-                    Gizmos.color = Color.blue * 0.5f;
+                    Gizmos.color = new Color(0, 0, 1, 0.3f); // 파란색 반투명
                 }
-                else if (regionId < _taskRegions.Count)
+                else if (nodeIndex < _result.Nodes.Count)
                 {
-                    Gizmos.color = _taskRegions[regionId].room?.debugColor ?? Color.gray;
+                    // 해당 타일의 주인(Node)의 색상 가져오기
+                    var ownerNode = _result.Nodes[nodeIndex];
+                    Color c = ownerNode.RoomData != null ? ownerNode.RoomData.DebugColor : Color.gray;
+                    c.a = 0.5f; // 반투명
+                    Gizmos.color = c;
                 }
-                
-                Gizmos.DrawCube(new Vector3(x, -0.5f, y), Vector3.one * step * 0.8f);
+
+                // Y= -0.1f에 바닥처럼 그림
+                Gizmos.DrawCube(new Vector3(x, -0.1f, y), Vector3.one * step);
             }
         }
     }
     #endregion
 
     #region Public Getters
-    public TilePartitioner GetTilePartitioner() => _tilePartitioner;
-    public ObjectSpawner GetObjectSpawner() => _objectSpawner;
     public int GetSeed() => seed;
     #endregion
 }
 
-#region Data Classes
+
 [System.Serializable]
 public class Node
 {
-    public int Depth;
+    public int Depth = -1;
+    public int RoomDepth = -1;
+
     public Vector2 Position;
+    public Vector2 Velocity;
+    public Vector2 Force;
 
     public RegionData RegionData;
     public RoomData RoomData;
 
-    public Vector2 Velocity { get; set; }
-    public Vector2 Force { get; set; }
 
     // 소유 타일 목록
     public List<Vector2Int> OwnedTiles = new();
-    
-    // 바운딩 박스 (최적화용)
-    public Bounds GetBounds()
-    {
-        if (OwnedTiles == null || OwnedTiles.Count == 0)
-            return new Bounds(new Vector3(Position.x, 0, Position.y), Vector3.zero);
-
-        int minX = OwnedTiles.Min(tile => tile.x);
-        int maxX = OwnedTiles.Max(tile => tile.x);
-        int minY = OwnedTiles.Min(tile => tile.y);
-        int maxY = OwnedTiles.Max(tile => tile.y);
-
-        Vector3 boundsCenter = new Vector3((minX + maxX) / 2f, 0, (minY + maxY) / 2f);
-        Vector3 boundsSize = new Vector3(maxX - minX, 1, maxY - minY);
-        
-        return new Bounds(boundsCenter, boundsSize);
-    }
 }
 
 [System.Serializable]
@@ -351,9 +295,87 @@ public class NodeConnection
 /// <summary>
 /// 생성 결과
 /// </summary>
+[System.Serializable]
 public class GraphResult
 {
-    public List<Node> nodes;
-    public List<NodeConnection> nodeConnections;
+    private List<Node> _nodes;
+    public List<Node> Nodes
+    {
+        get => _nodes;
+        set => _nodes = value;
+    }
+
+    private List<NodeConnection> _nodeConnections;
+    public List<NodeConnection> NodeConnections
+    {
+        get => _nodeConnections;
+        set => _nodeConnections = value;
+    }
+
+    private Dictionary<Node, List<Node>> _adjacencyList;
+    public Dictionary<Node, List<Node>> AdjacencyList
+    {
+        get => _adjacencyList;
+        set => _adjacencyList = value;
+    }
+
+    public void Clear()
+    {
+        _nodes.Clear();
+        _nodeConnections.Clear();
+        _adjacencyList.Clear();
+    }
+
+    public int GetChildCount(Node parentNode)
+    {
+        return _nodeConnections.Count(conn => conn.ParentNode == parentNode);
+    }
+
+    public NodeConnection CreateConnection(Node parent, Node child)
+    {
+        if (AreConnected(parent, child)) return null;
+
+        NodeConnection connection = new NodeConnection(parent, child);
+        _nodeConnections.Add(connection);
+
+        _adjacencyList[parent].Add(child);
+        _adjacencyList[child].Add(parent);
+
+        // 깊이 업데이트
+        if (parent.Depth >= 0 && child.Depth < 0)
+        {
+            child.Depth = parent.Depth + 1;
+        }
+        else if (child.Depth >= 0 && parent.Depth < 0)
+        {
+            parent.Depth = child.Depth + 1;
+        }
+
+        return connection;
+    }
+
+    public bool AreConnected(Node a, Node b)
+    {
+        return _adjacencyList.ContainsKey(a) && _adjacencyList[a].Contains(b);
+    }
+
+    public void RebuildAdjacency()
+    {
+        _adjacencyList.Clear();
+        foreach (var node in _nodes)
+        {
+            if (!_adjacencyList.ContainsKey(node))
+                _adjacencyList[node] = new List<Node>();
+        }
+
+        foreach (var conn in _nodeConnections)
+        {
+            // 안전장치: 혹시 Nodes에 없는 노드가 연결에 있다면 건너뜀
+            if (_adjacencyList.ContainsKey(conn.ParentNode) && _adjacencyList.ContainsKey(conn.ChildNode))
+            {
+                _adjacencyList[conn.ParentNode].Add(conn.ChildNode);
+                _adjacencyList[conn.ChildNode].Add(conn.ParentNode);
+            }
+        }
+    }
 }
-#endregion

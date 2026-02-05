@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9c763dd1fd61394a9706354fc4ef7c9, type: 3}
+  m_Name: REG_Start
+  m_EditorClassIdentifier: 
+  RegionName: REG_Start
+  RoomBranch: 2
+  DefaultMinCount: 8
+  DefaultMaxCount: 10
+  EntranceRoom: {fileID: 0}
+  EssentialRooms:
+  - RoomData: {fileID: 11400000, guid: 0bd0e6916e9f96b419c88332494e7264, type: 2}
+    Depth: 0
+  DefaultRooms:
+  - {fileID: 11400000, guid: b9649c54027a4c44bbfac336352efcd0, type: 2}
+  LockIDs:
+  - LOCK_NONE
+  GivenKeyIDs:
+  - KEY_TIER1

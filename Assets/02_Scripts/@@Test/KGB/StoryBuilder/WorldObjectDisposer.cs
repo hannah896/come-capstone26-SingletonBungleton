@@ -10,23 +10,9 @@ using UnityEngine;
 /// </summary>
 public class WorldObjectDisposer
 {
-    #region Settings
-    [System.Serializable]
-    public class SpawnSettings
-    {
-        [Header("Poisson Disk Sampling")]
-        public float minObjectDistance = 2f;     // 오브젝트 간 최소 거리
-        public int maxSamplingAttempts = 30;     // 푸아송 샘플링 시도 횟수
-        
-        [Header("Performance")]
-        public int batchSize = 100;              // 비동기 처리 배치 크기
-    }
-    #endregion
+    
 
     #region Spawn Result
-    /// <summary>
-    /// 스폰 결과 데이터
-    /// </summary>
     public class SpawnResult
     {
         public string prefabName;
@@ -34,26 +20,26 @@ public class WorldObjectDisposer
     }
     #endregion
 
-    private SpawnSettings _settings;
+    private WorldSettings _worldSettings;
+    private DisposeSettings _disposeSettings;
     private List<SpawnResult> _spawnResults = new();
 
     public List<SpawnResult> SpawnResults => _spawnResults;
 
-    public WorldObjectDisposer(SpawnSettings settings = null)
-    {
-        _settings = settings ?? new SpawnSettings();
-    }
+
 
     /// <summary>
     /// 모든 영역에 오브젝트 배치
     /// </summary>
     public async UniTask SpawnObjectsAsync(
-        List<Node> nodes,
-        float globalDensityMultiplier,
+        GraphResult result,
+        WorldSettings worldSettings,
         CancellationToken ct)
     {
+        _worldSettings = worldSettings;
+        _disposeSettings = worldSettings.DisposeSettings;
         _spawnResults.Clear();
-
+        var nodes = result.Nodes;
         if (nodes == null) return;
 
         foreach (var node in nodes)
@@ -67,10 +53,10 @@ public class WorldObjectDisposer
                 continue;
             
             // density가 0 이하면 배치하지 않음
-            if (node.RoomData.density <= 0f)
+            if (node.RoomData.Density <= 0f)
                 continue;
 
-            await SpawnRegionObjectsAsync(node, globalDensityMultiplier, ct);
+            await SpawnRegionObjectsAsync(node, ct);
         }
     }
 
@@ -79,16 +65,15 @@ public class WorldObjectDisposer
     /// </summary>
     private async UniTask SpawnRegionObjectsAsync(
         Node region,
-        float globalDensityMultiplier,
         CancellationToken ct)
     {
         RoomData roomData = region.RoomData;
-        float effectiveDensity = roomData.density * globalDensityMultiplier;
-        
+        float density = roomData.Density;  //TODO: 자원별 밀도 조절 기능 추가 시 여기에 반영(Settings에 Dictionary<string, float> 등)
+
         // 푸아송 디스크 샘플링으로 배치 가능 위치 생성
         List<Vector2Int> validPositions = await GeneratePoissonPointsAsync(
             region.OwnedTiles,
-            effectiveDensity,
+            density,
             ct
         );
 
@@ -100,35 +85,35 @@ public class WorldObjectDisposer
         int positionIndex = 0;
 
         // 1. Essential Objects 배치 (확정 개수)
-        if (roomData.essentialObjects != null)
+        if (roomData.EssentialObjects != null)
         {
-            foreach (var essential in roomData.essentialObjects)
+            foreach (var essential in roomData.EssentialObjects)
             {
-                if (essential == null || string.IsNullOrEmpty(essential.prefabName))
+                if (essential == null || string.IsNullOrEmpty(essential.PrefabName))
                     continue;
                 
-                int count = Random.Range(essential.minCount, essential.maxCount + 1);
+                int count = Random.Range(essential.MinCount, essential.MaxCount + 1);
                 
                 for (int i = 0; i < count && positionIndex < validPositions.Count; i++)
                 {
                     Vector2Int tile = validPositions[positionIndex++];
                     _spawnResults.Add(new SpawnResult
                     {
-                        prefabName = essential.prefabName,
+                        prefabName = essential.PrefabName,
                         worldPosition = TileToWorldPosition(tile)
                     });
                 }
             }
         }
 
-        // 2. Proportion Objects 배치 (가중치 기반)
-        if (roomData.proportionObjects != null && roomData.proportionObjects.Count > 0)
+        // 2. WeghtedObjects 배치 (가중치 기반)
+        if (roomData.WeightedObjects != null && roomData.WeightedObjects.Count > 0)
         {
             int remainingPositions = validPositions.Count - positionIndex;
-            int proportionCount = Mathf.RoundToInt(remainingPositions * effectiveDensity);
+            int proportionCount = Mathf.RoundToInt(remainingPositions * density);
             
             // 가중치 정규화
-            float totalWeight = roomData.proportionObjects.Sum(p => p?.weight ?? 0f);
+            float totalWeight = roomData.WeightedObjects.Sum(p => p?.Weight ?? 0f);
             if (totalWeight <= 0) return;
 
             for (int i = 0; i < proportionCount && positionIndex < validPositions.Count; i++)
@@ -136,7 +121,7 @@ public class WorldObjectDisposer
                 ct.ThrowIfCancellationRequested();
                 
                 // 가중치 기반 랜덤 선택
-                string selectedPrefab = SelectWeightedRandom(roomData.proportionObjects, totalWeight);
+                string selectedPrefab = SelectWeightedRandom(roomData.WeightedObjects, totalWeight);
                 
                 if (!string.IsNullOrEmpty(selectedPrefab))
                 {
@@ -145,12 +130,10 @@ public class WorldObjectDisposer
                     {
                         prefabName = selectedPrefab,
                         worldPosition = TileToWorldPosition(tile),
-                        regionId = region.id,
-                        isEssential = false
                     });
                 }
 
-                if (i % _settings.batchSize == 0)
+                if (i % _disposeSettings.batchSize == 0)
                 {
                     await UniTask.Yield(ct);
                 }
@@ -171,7 +154,7 @@ public class WorldObjectDisposer
             return new List<Vector2Int>();
 
         // 밀도에 따른 최소 거리 조정
-        float adjustedMinDistance = _settings.minObjectDistance / Mathf.Clamp(density, 0.1f, 2f);
+        float adjustedMinDistance = _disposeSettings.minObjectDistance / Mathf.Clamp(density, 0.1f, 2f);
         
         // 바운딩 박스 계산
         int minX = availableTiles.Min(t => t.x);
@@ -205,7 +188,7 @@ public class WorldObjectDisposer
             Vector2Int currentPoint = activeList[randomIndex];
             bool foundValid = false;
 
-            for (int attempt = 0; attempt < _settings.maxSamplingAttempts; attempt++)
+            for (int attempt = 0; attempt < _disposeSettings.maxSamplingAttempts; attempt++)
             {
                 // 현재 점 주변 랜덤 위치
                 float angle = Random.Range(0f, Mathf.PI * 2);
@@ -230,7 +213,7 @@ public class WorldObjectDisposer
             }
 
             processedCount++;
-            if (processedCount % _settings.batchSize == 0)
+            if (processedCount % _disposeSettings.batchSize == 0)
             {
                 await UniTask.Yield(ct);
             }
@@ -299,7 +282,7 @@ public class WorldObjectDisposer
     /// <summary>
     /// 가중치 기반 랜덤 선택
     /// </summary>
-    private string SelectWeightedRandom(List<proportionSpawnData> items, float totalWeight)
+    private string SelectWeightedRandom(List<WeightedObjectData> items, float totalWeight)
     {
         float randomValue = Random.Range(0f, totalWeight);
         float cumulative = 0f;
@@ -308,14 +291,14 @@ public class WorldObjectDisposer
         {
             if (item == null) continue;
             
-            cumulative += item.weight;
+            cumulative += item.Weight;
             if (randomValue <= cumulative)
             {
-                return item.prefabName;
+                return item.PrefabName;
             }
         }
 
-        return items.LastOrDefault()?.prefabName;
+        return items.LastOrDefault()?.PrefabName;
     }
 
     /// <summary>

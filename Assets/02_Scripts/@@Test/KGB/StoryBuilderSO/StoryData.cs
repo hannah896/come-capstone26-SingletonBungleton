@@ -1,24 +1,22 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "StoryData", menuName = "Scriptable Objects/TestWorld/StoryData")]
-public class StoryData : ScriptableObject
+[CreateAssetMenu(fileName = "StoryData", menuName = "ScriptableObjects/TestWorld/Story Data")]
+public class StoryData : ScriptableObject       
 {
     [Header("Story Info")]
-    [SerializeField] private string storyName;    // "default adventure" 등 스토리 이름
-    public string StoryName => storyName;
+    public string StoryName;    // "default adventure" 등 스토리 이름
+
+    public List<string> FixedRegionIDs;       //TODO: 나중에 교체
+    public List<string> SideRegionIDs;
+    public string StartRegionID;
 
     [Header("--- Fixed Regions ---")]
-    [Tooltip("고정 Task")]
-    [SerializeField] private List<RegionData> fixedRegions;
-    public List<RegionData> FixedRegions => fixedRegions; // 고정 구역 (순서대로)
-
+    public List<RegionData> FixedRegions; // 고정 구역 (순서대로)
     [Header("--- Side Regions ---")]
-    [Tooltip("랜덤 Task")]
-    [SerializeField] private List<RegionData> sideRegions; // 서브 구역 (랜덤)
-    public List<RegionData> SideRegions => sideRegions;
-
+    public List<RegionData> SideRegions; // 서브 구역 (랜덤)
+    [Range(0f, 2f)]
+    public float SideRegionRatio = 0.5f; // 기본값 50%
     [Header("Starting Conditions")]
-    [SerializeField] private RegionData startRegion; // 시작 구역
-    public RegionData StartRegion => startRegion;
+    public RegionData StartRegion; // 시작 구역
 }

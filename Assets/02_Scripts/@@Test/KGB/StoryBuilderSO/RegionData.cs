@@ -7,54 +7,71 @@ using UnityEngine;
 public class RegionData : ScriptableObject
 {
     [Header("Basic Info")]
-    [SerializeField] private string regionName;      // 구역(바이옴) 이름 (예: "Pig King Forest")
-    public string RegionName => regionName;
-
-    [SerializeField] private float roomBranch;     // room들의 배치를 결정하는 값 (예: 0.0 ~ 1.0 사이 값, region의 모양)
-    public float RoomBranch => roomBranch;
-    [SerializeField] private int roomCount;   // 이 구역에 방(Node)을 몇 개 만들지
-    public int RoomCount => roomCount;
+    public string RegionName;      // 구역(바이옴) 이름 (예: "Pig King Forest")
+    public RegionBranch RoomBranch = RegionBranch.Default;     // room들의 배치를 결정하는 값 (예: 0.0 ~ 1.0 사이 값, region의 모양)
+    public int DefaultMinCount;   // 이 구역에 방(Node)을 몇 개 만들지
+    public int DefaultMaxCount;
 
     [Header("Room Configuration")]
-    [SerializeField] private RoomData entranceRoom = null;  // 입구 방 (안전함)
-    public RoomData EntranceRoom => entranceRoom;
-    [SerializeField] private RoomData endRoom = null;   // 끝 방 
-    public RoomData EndRoom => endRoom;
+    public RoomData EntranceRoom = null;  // 입구 방 (안전함)
+
+
+    public List<EssentialRoomEntry> EssentialRooms = null;   // 필수 방 
+    
 
     [Header("Default Room Pool")]
     [Tooltip("일반 노드에 랜덤하게 배치될 방 후보들")]
-    [SerializeField] private List<RoomData> defaultRooms;
-    public List<RoomData> DefaultRooms => defaultRooms;
+    public List<RoomData> DefaultRooms;
 
     [Header("Lock & Key System")]
     [Tooltip("이 구역에 들어가기 위해 필요한 열쇠들 (Locks)")]
-    // 예: "Bridge_Repair" (다리를 고쳐야 건너감), "Fire_Resistance" (화염 저항 필요)
-    [SerializeField] private List<LockData> locks = null;
-    public List<LockData> Locks => locks;
+    public List<string> LockIDs;
 
     [Tooltip("이 구역을 클리어하면 얻는 열쇠들 (Keys Given)")]
     // 예: "Gold_Key", "Magic_Staff"
-    [SerializeField] private List<KeyData> givenKeys;
-    public List<KeyData> GivenKeys => givenKeys;
+    public List<string> GivenKeyIDs;
 
-    public bool IsUnlockable(List<KeyData> preTaskKeys)
+    public bool IsUnlockable(List<string> preRegionKeys)
     {
-        if (locks == null || locks.Count == 0) return true;
+        if (LockIDs == null || LockIDs.Count == 0) return true;
 
-        foreach (var lockData in locks)
+        foreach (var lockID in LockIDs)
         {
-            if (lockData == null) continue;
-
-            // 하나라도 못 푸는 Lock이 있으면 -> 진입 불가!
-            if (!lockData.CanUnlock(preTaskKeys))
-                return false;
+            if (!LockResolver.CanUnlock(lockID, preRegionKeys))
+                return false;                                   
         }
-
-        // 모든 Lock을 다 통과함 -> 진입 성공!
         return true;
+    }
+
+    public RoomData GetRandomDefaultRoom()
+    {
+        if (DefaultRooms == null || DefaultRooms.Count == 0) return null;
+        return DefaultRooms[UnityEngine.Random.Range(0, DefaultRooms.Count)] ;
     }
 
 
 
-
 }
+
+[System.Serializable]
+public class EssentialRoomEntry
+{
+    public RoomData RoomData;
+    public RoomDepth Depth;
+}
+
+#region Enums
+public enum RoomDepth
+{
+    Early,
+    Mid,
+    Late,
+}
+
+public enum RegionBranch
+{
+    Least,
+    Default,
+    Most,
+}
+#endregion

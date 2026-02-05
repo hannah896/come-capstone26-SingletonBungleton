@@ -2,6 +2,7 @@ using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Unity.VisualScripting.Antlr3.Runtime;
 using UnityEngine;
 
 public class MapGenerator : MonoBehaviour
@@ -22,7 +23,7 @@ public class MapGenerator : MonoBehaviour
 
     async void Start()
     {
-        await UniTask.WaitUntil(() => Managers.Instance != null);
+        await UniTask.WaitUntil(() => Main.Instance != null);
         _cts = new CancellationTokenSource();
         await LoadBiomesAsync(_cts.Token);
 
@@ -417,7 +418,7 @@ public class MapGenerator : MonoBehaviour
         if (region.biome.groundPrefab != null)
         {
             Vector3 spawnPos = new Vector3(region.center.x, 0, region.center.y);
-            var ground = await Extensions.SpawnAsync(region.biome.groundPrefab.name, ct);
+            var ground = await Extensions.SpawnAsync(region.biome.groundPrefab.name, token: ct);
             if (ground != null)
             {
                 ground.transform.position = spawnPos;
@@ -435,7 +436,7 @@ public class MapGenerator : MonoBehaviour
                 Vector2 randomPoint = region.points[Random.Range(0, region.points.Count)];
                 Vector3 spawnPos = new Vector3(randomPoint.x, 0, randomPoint.y);
 
-                var instance = await Extensions.SpawnAsync(obj.prefab.name, ct);
+                var instance = await Extensions.SpawnAsync(obj.prefab.name, token: ct);
                 await UniTask.Yield(ct);
             }
         }
