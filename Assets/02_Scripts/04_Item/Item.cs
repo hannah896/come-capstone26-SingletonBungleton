@@ -10,7 +10,6 @@ public abstract class Item : MonoBehaviour
     // === 데이터 및 상태 ===
     public ItemDataSO itemData;        // 원본 데이터(설계도)
     public int stackCount;             // 현재 수량
-
     private float _createdTime;        // 생성 시점 (신선도 계산용)
 
     private void Awake()
@@ -22,7 +21,8 @@ public abstract class Item : MonoBehaviour
     protected virtual void Init(ItemDataSO data)
     {
         itemData = data;
-        stackCount = Mathf.Min(0, data.maxStack);
+        stackCount = 1;
+        _createdTime = Time.time;
     }
 
     protected virtual void Init()
@@ -59,7 +59,7 @@ public abstract class Item : MonoBehaviour
     /// 수량 추가 후 남은 수량 반환
     public int AddStack(int amount)
     {
-        int space = itemData.maxStack - stackCount;
+          int space = itemData.maxStack - stackCount;
         int toAdd = Mathf.Min(amount, space);
         stackCount += toAdd;
         return amount - toAdd;
