@@ -10,6 +10,7 @@ using UnityEngine.InputSystem.EnhancedTouch;
 /// 플레이어 입력을 관리하는 매니저.
 /// InputActions의 등록, 활성화/비활성화, 캐싱을 담당합니다.
 /// </summary>
+/// 
 public class InputManager : CoreManager
 {
     #region Fields
@@ -337,9 +338,6 @@ public class InputManager : CoreManager
 
         _curActionTypes.Clear();
         _typeToAction.Clear();
-
-        _input?.Disable();
-        _input = null;
     }
 
     #endregion

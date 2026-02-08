@@ -1,27 +1,31 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Blossom.Preference {
+namespace Blossom.Preference
+{
 
-    public static class Prefs {
+    public static class Prefs
+    {
         public static bool IsInitialized { get; private set; }
         public static event Action OnBeforeSave;
 
         #region Initialize
-        
-        public static void Initialize() {
+
+        public static void Initialize()
+        {
             if (IsInitialized) return;
             PrefSystem.Initialize();
             IsInitialized = true;
         }
-        
+
         public static void DeleteAll() => PrefSystem.DeleteAll();
-        
+
         #endregion
 
         #region Get
@@ -36,21 +40,22 @@ namespace Blossom.Preference {
         public static void Save(string key, bool forceSave = false) => PrefSystem.Save(key, forceSave);
         public static void LoadAll() => PrefSystem.LoadAll();
         public static void Load(string key) => PrefSystem.Load(key);
-        
+
         #endregion
-        
+
         #region Events
-        
+
         public static void OnChanged(string key) => PrefSystem.OnChanged(key);
         public static void InvokeOnBeforeSave() => OnBeforeSave?.Invoke();
         public static void RegisterOnDataLoaded(Action<string> cb) => PrefSystem.OnDataLoaded += cb;
         public static void UnregisterOnDataLoaded(Action<string> cb) => PrefSystem.OnDataLoaded -= cb;
 
         #endregion
-        
+
     }
-    
-    internal static class PrefSystem {
+
+    internal static class PrefSystem
+    {
 
         #region Settings.
 
@@ -58,12 +63,9 @@ namespace Blossom.Preference {
         public static readonly bool SaveUseThread = true;
         public static readonly bool ClearOnSaves = false;
         public static readonly float AutoSaveInterval = 0f;
-        public static readonly string[] PrefKeys = new[]
-        {
-            nameof(PlayPrefs),
-            nameof(CurrencyPrefs),
-            nameof(SettingPrefs),
-        };
+
+        // PrefData를 상속한 모든 타입을 자동으로 수집
+        public static string[] PrefKeys { get; private set; }
 
         #endregion
 
@@ -78,16 +80,21 @@ namespace Blossom.Preference {
 
         #region Initialize
 
-        public static void Initialize() {
+        public static void Initialize()
+        {
             PrefIO.Initialize();
 
             _prefDataMap = new();
             _saveRequestMap = new();
 
+            // PrefData를 상속한 모든 타입을 자동 수집
+            CollectPrefKeys();
+
             LoadAll();
             if (ClearOnSaves) ClearAllPrefData();
 
-            GameObject gameObject = new("[SAVE CALLBACK RECEIVER]") {
+            GameObject gameObject = new("[SAVE CALLBACK RECEIVER]")
+            {
                 hideFlags = HideFlags.HideInHierarchy
             };
             Object.DontDestroyOnLoad(gameObject);
@@ -95,11 +102,34 @@ namespace Blossom.Preference {
             if (AutoSaveInterval > 0) receiver.StartCoroutine(CoAutoSave());
         }
 
+        // PrefData를 상속한 모든 구체 클래스 타입명을 수집
+        private static void CollectPrefKeys()
+        {
+            PrefKeys = AppDomain.CurrentDomain.GetAssemblies()
+                .Where(a => !a.FullName.StartsWith("Unity") &&
+                            !a.FullName.StartsWith("System") &&
+                            !a.FullName.StartsWith("mscorlib"))
+                .SelectMany(a => {
+                    try { return a.GetTypes(); }
+                    catch { return Array.Empty<Type>(); }
+                })
+                .Where(t => !t.IsAbstract &&
+                            t != typeof(PrefData) &&
+                            typeof(PrefData).IsAssignableFrom(t))
+                .Select(t => t.Name)
+                .ToArray();
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"[PrefSystem] Collected {PrefKeys.Length} PrefData types: {string.Join(", ", PrefKeys)}");
+#endif
+        }
+
         #endregion
 
         #region Get
 
-        public static T Get<T>() where T : class, IPrefData, new() {
+        public static T Get<T>() where T : class, IPrefData, new()
+        {
             string key = typeof(T).Name;
             if (_prefDataMap.TryGetValue(key, out PrefData data)) return data as T;
             LoadAll();
@@ -112,12 +142,15 @@ namespace Blossom.Preference {
 
         #region Save / Load
 
-        public static void SaveAll(bool forceSave = false) {
+        public static void SaveAll(bool forceSave = false)
+        {
             foreach (string key in PrefKeys) Save(key, forceSave);
         }
 
-        public static void Save(string key, bool forceSave = false) {
-            if (!_prefDataMap.TryGetValue(key, out PrefData data)) {
+        public static void Save(string key, bool forceSave = false)
+        {
+            if (!_prefDataMap.TryGetValue(key, out PrefData data))
+            {
                 Debug.LogError($"[PrefSystem] Save({key}): Data is not loaded.");
                 return;
             }
@@ -125,62 +158,72 @@ namespace Blossom.Preference {
             if (!forceSave && !_saveRequestMap[key]) return;
 
             data.Flush();
-            if (SaveUseThread) {
+            if (SaveUseThread)
+            {
                 Thread thread = new(() => PrefIO.Serialize(data));
                 thread.Start();
             }
-            else {
+            else
+            {
                 PrefIO.Serialize(data);
             }
 
             _saveRequestMap[key] = false;
         }
 
-        private static IEnumerator CoAutoSave() {
+        private static IEnumerator CoAutoSave()
+        {
             WaitForSeconds wait = new(AutoSaveInterval);
-            while (true) {
+            while (true)
+            {
                 yield return wait;
                 SaveAll();
             }
         }
 
-        public static void LoadAll() {
+        public static void LoadAll()
+        {
             foreach (string key in PrefKeys) Load(key);
         }
 
-        public static void Load(string key) {
-             if (_prefDataMap.ContainsKey(key)) return;
+        public static void Load(string key)
+        {
+            if (_prefDataMap.ContainsKey(key)) return;
 
-             Type type = Type.GetType(key);
-             if (type == null) {
-                 Debug.LogError($"[PrefSystem] Load<{key}>(): Type is not found");
-                 return;
-             }
+            Type type = Type.GetType(key);
+            if (type == null)
+            {
+                Debug.LogError($"[PrefSystem] Load<{key}>(): Type is not found");
+                return;
+            }
 
-             MethodInfo method =
-                 typeof(PrefIO).GetMethod(nameof(PrefIO.Deserialize), BindingFlags.Public | BindingFlags.Static);
-             MethodInfo closedMethod = method.MakeGenericMethod(type);
-             PrefData data = (PrefData)closedMethod.Invoke(null, new object[] { key });
-             _prefDataMap[key] = data;
-             // _prefDataMap[key] = PrefIO.Deserialize(key);
-             
-             _saveRequestMap[key] = false;
-             OnDataLoaded?.Invoke(key);
+            MethodInfo method =
+                typeof(PrefIO).GetMethod(nameof(PrefIO.Deserialize), BindingFlags.Public | BindingFlags.Static);
+            MethodInfo closedMethod = method.MakeGenericMethod(type);
+            PrefData data = (PrefData)closedMethod.Invoke(null, new object[] { key });
+            _prefDataMap[key] = data;
+            // _prefDataMap[key] = PrefIO.Deserialize(key);
+
+            _saveRequestMap[key] = false;
+            OnDataLoaded?.Invoke(key);
         }
 
         #endregion
 
         #region Clear
 
-        public static void DeleteAll() {
+        public static void DeleteAll()
+        {
             foreach (string key in PrefKeys) PrefIO.DeleteFile(key);
         }
-        
-        private static void ClearAllPrefData() {
+
+        private static void ClearAllPrefData()
+        {
             foreach (string key in PrefKeys) ClearPrefData(key);
         }
 
-        private static void ClearPrefData(string key) {
+        private static void ClearPrefData(string key)
+        {
             if (!_prefDataMap.TryGetValue(key, out PrefData data)) return;
             data.Clear();
             _saveRequestMap[key] = true;
@@ -191,23 +234,27 @@ namespace Blossom.Preference {
 
         #region Events
 
-        public static void OnChanged(string key) {
+        public static void OnChanged(string key)
+        {
             if (_prefDataMap.ContainsKey(key))
                 _saveRequestMap[key] = true;
         }
 
         #endregion
 
-        private class UnityCallbackReceiver : MonoBehaviour {
-            
-            private void OnDestroy() {
+        private class UnityCallbackReceiver : MonoBehaviour
+        {
+
+            private void OnDestroy()
+            {
 #if UNITY_EDITOR
                 Prefs.InvokeOnBeforeSave();
                 SaveAll(true);
 #endif
             }
 
-            private void OnApplicationFocus(bool hasFocus) {
+            private void OnApplicationFocus(bool hasFocus)
+            {
 #if !UNITY_EDITOR
                 if (!hasFocus) {
                     Prefs.InvokeOnBeforeSave();
@@ -216,7 +263,7 @@ namespace Blossom.Preference {
 #endif
             }
         }
-        
+
     }
-    
+
 }

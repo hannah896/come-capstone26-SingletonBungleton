@@ -6,6 +6,7 @@ using UnityEngine;
 /// <summary>
 /// 게임 시뮬레이션의 핵심 로직을 담당하는 매니저.
 /// 로컬 및 서버에서 동일한 코드로 실행되어 결정론적 결과를 보장합니다.
+/// 실제 게임 로직은 호스트에서 처리 해줘야함. 그래야 데이터를 클라가 받아서 씀.
 /// </summary>
 public class SimulationManager : CoreManager
 {

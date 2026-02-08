@@ -22,10 +22,9 @@ public class TweenBtn : InitBehaviour, IPointerDownHandler, IPointerUpHandler
     [SerializeField] private bool _useColor = true; // 컬러 변경 사용 여부
     [SerializeField] private Color _targetColor = new Color(0.6f, 0.6f, 0.6f, 1f); // 목표 컬러
 
-    [Header("Sound & Haptic")]
+    [Header("Sound 설정")]
     [SerializeField] private bool _useClickSound = true; // 클릭 사운드 재생 여부
     [SerializeField] private AudioLibrarySounds _audioLibrarySounds; // 재생할 클릭 사운드
-    [SerializeField] private bool _useHaptic = true; // 햅틱 피드백 사용 여부
 
     private Dictionary<Transform, Vector3> _originalScales = new(); // 캐싱된 원본 스케일
     private List<Graphic> _cachedGraphics = new(); // 캐싱된 Graphic 컴포넌트들
@@ -165,12 +164,12 @@ public class TweenBtn : InitBehaviour, IPointerDownHandler, IPointerUpHandler
         }
     }
 
-    // 사운드 및 햅틱 피드백
+    // 사운드 피드백
     private void PlayFeedback()
     {
         if (_useClickSound)
         {
-            // Main.JSAM.PlaySFX(_audioLibrarySounds);
+            Main.JSAM.PlaySFX(_audioLibrarySounds);
         }
     }
 

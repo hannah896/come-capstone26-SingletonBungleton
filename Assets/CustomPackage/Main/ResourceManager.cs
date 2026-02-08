@@ -76,10 +76,7 @@ public class ResourceManager : PrimaryManager
     /// <summary>
     /// 에셋 핸들을 비동기로 로드합니다.
     /// </summary>
-    public async UniTask<AsyncOperationHandle> LoadHandleAsync(
-        string key,
-        AssetCacheType cacheType = AssetCacheType.NonRequired,
-        CancellationToken ct = default)
+    public async UniTask<AsyncOperationHandle> LoadHandleAsync(string key, AssetCacheType cacheType = AssetCacheType.NonRequired, CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(key)) return default;
 
@@ -167,10 +164,7 @@ public class ResourceManager : PrimaryManager
     /// <summary>
     /// 에셋을 비동기로 로드합니다.
     /// </summary>
-    public async UniTask<T> LoadAssetAsync<T>(
-        string key = null,
-        AssetCacheType cacheType = AssetCacheType.NonRequired,
-        CancellationToken ct = default) where T : UnityEngine.Object
+    public async UniTask<T> LoadAssetAsync<T>(string key = null, AssetCacheType cacheType = AssetCacheType.NonRequired, CancellationToken ct = default) where T : UnityEngine.Object
     {
         if (string.IsNullOrEmpty(key)) key = typeof(T).Name;
 
@@ -202,10 +196,7 @@ public class ResourceManager : PrimaryManager
     /// <summary>
     /// 라벨로 여러 에셋을 비동기로 로드합니다.
     /// </summary>
-    public async UniTask<List<T>> LoadAssetsByLabelAsync<T>(
-        string label,
-        AssetCacheType cacheType = AssetCacheType.NonRequired,
-        CancellationToken ct = default) where T : UnityEngine.Object
+    public async UniTask<List<T>> LoadAssetsByLabelAsync<T>(string label, AssetCacheType cacheType = AssetCacheType.NonRequired, CancellationToken ct = default) where T : UnityEngine.Object
     {
         if (string.IsNullOrEmpty(label)) return new List<T>();
 

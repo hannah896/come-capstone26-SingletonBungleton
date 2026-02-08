@@ -97,8 +97,13 @@ public class TextManager : CoreManager
     // 폰트 데이터 초기화
     private void InitFontData()
     {
-        foreach (TMP_FontAsset item in _fontsSo.dictFontsData.Values)
+        foreach (var (key, item) in _fontsSo.dictFontsData)
         {
+            if (item == null)
+            {
+                Debug.LogError($"[TextManager] FontsSo.dictFontsData에 null인 TMP_FontAsset가 있습니다. (Key: {key})");
+                continue;
+            }
             _dictFontsData[item] = new FontData(item);
         }
     }

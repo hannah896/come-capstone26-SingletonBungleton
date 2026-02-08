@@ -21,7 +21,7 @@ public abstract class Item : MonoBehaviour
     {
         itemData = data;
         stackCount = Mathf.Min(0, data.maxStack);
-    }
+    } 
 
     protected virtual void Init()
     {
