@@ -1,19 +1,16 @@
-using System;
 using DG.Tweening;
+using System;
 using UnityEngine;
 
 public class UI_Loading_Iap : UI_Loading
 {
-    private UI_Image _imgDim;
     private CanvasGroup _cg;
 
     public override bool Initialize()
     {
         if (!base.Initialize()) return false;
+        _cg = gameObject.GetOrAddComponent<CanvasGroup>();
 
-        _imgDim = gameObject.FindChild<UI_Image>("Img_Dim");
-        _cg = gameObject.GetComponent<CanvasGroup>();
-        
         return true;
     }
 

@@ -1,21 +1,20 @@
-using System;
-using Cysharp.Threading.Tasks;
 using DG.Tweening;
+using System;
 using UnityEngine;
 
-public class  UI_Loading_Transition : UI_Loading
+public class UI_Loading_Transition : UI_Loading
 {
     private const float FadeInDuration = 0.3f;
     private const float FadeOutDuration = 0.3f;
 
     private CanvasGroup _cg;
-    
+
     public override bool Initialize()
     {
-        if(!base.Initialize())return false;
+        if (!base.Initialize()) return false;
 
-        _cg = gameObject.GetComponent<CanvasGroup>();
-        
+        _cg = gameObject.GetOrAddComponent<CanvasGroup>();
+
         return true;
     }
 
@@ -28,10 +27,10 @@ public class  UI_Loading_Transition : UI_Loading
     public override void FadeInLoading()
     {
         base.FadeInLoading();
-    } 
+    }
 
     public override void FadeOutLoading()
-    { 
+    {
         base.FadeOutLoading();
         sequence.Append(_cg.DOFade(0, 0.5f));
     }

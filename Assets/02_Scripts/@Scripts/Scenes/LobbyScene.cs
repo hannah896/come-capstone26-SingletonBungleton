@@ -11,7 +11,7 @@ public class LobbyScene : SceneBase
 {
     #region Properties
     
-    public UI_LobbyScene LobbyUI { get; private set; }
+    public UI_Hud_Lobby HudLobbyUIHud { get; private set; }
 
     public static LobbyState LobbyState
     {
@@ -75,10 +75,10 @@ public class LobbyScene : SceneBase
         // AudioManager.PlayMusic(BgmKey.BgmLobby);
         
         // #01. UI Setup - 먼저 UI를 생성하고 초기화만
-        LobbyUI = Object.FindFirstObjectByType<UI_LobbyScene>();
-        if (!LobbyUI)
+        HudLobbyUIHud = Object.FindFirstObjectByType<UI_Hud_Lobby>();
+        if (!HudLobbyUIHud)
         {
-            LobbyUI = await Main.Resource.LoadAssetAsync<UI_LobbyScene>();
+            HudLobbyUIHud = await Main.Resource.LoadAssetAsync<UI_Hud_Lobby>();
         }
 
         // #02. UI 초기화 및 홈페이지로 강제 설정
@@ -92,16 +92,16 @@ public class LobbyScene : SceneBase
     private async UniTask InitializeUIWithHomePage()
     {
         // UI 초기화
-        LobbyUI.Initialize();
+        HudLobbyUIHud.Initialize();
         
-        // 홈페이지로 즉시 설정 (애니메이션 없이)
-        LobbyUI.Nav.NavigateTo(PageType.Lobby, immediate: true);
+        //// 홈페이지로 즉시 설정 (애니메이션 없이)
+        //HudLobbyUIHud.Nav.NavigateTo(PageType.Lobby, immediate: true);
         
         // 한 프레임 대기하여 UI가 완전히 설정되도록 함
         await UniTask.NextFrame();
         
         // 최종 Set 호출
-        LobbyUI.Set(this);
+        HudLobbyUIHud.Set(this);
     }
 
     private void SequenceEntryPoint()
@@ -221,7 +221,7 @@ public class LobbyScene : SceneBase
 
     public override UniTask EnterScene(CancellationToken token)
     {
-        Main.Loading.Hide(3);
+        Main.UI.HideScreen(3);
         InitializeLobbySequence();
         return UniTask.CompletedTask;
     }

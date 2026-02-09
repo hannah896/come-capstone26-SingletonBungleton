@@ -12,29 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2204bf128383ced4f8a374a536984a4c, type: 3}
   m_Name: AudioLibrary
   m_EditorClassIdentifier: com.Brogrammist.JSAM::JSAM.AudioLibrary
-  soundCategories: []
+  soundCategories:
+  - 
   musicCategories:
-  - BGM
+  - 
   Sounds: []
-  Music:
-  - {fileID: 11400000, guid: e78f462996628ab4e803ec25228495c0, type: 2}
-  - {fileID: 11400000, guid: b27362d5a26ffc147bff9bf807dc8f97, type: 2}
-  - {fileID: 11400000, guid: 78206fbea91873948956890ffd3ae537, type: 2}
-  - {fileID: 11400000, guid: a6542e612a144c842a5205bfcfd5187b, type: 2}
-  - {fileID: 11400000, guid: 550746d4a2888c8498c9a84b8f8d069b, type: 2}
-  - {fileID: 11400000, guid: 9b90ecef402ec7b45b22166b3454e4eb, type: 2}
-  - {fileID: 11400000, guid: bfbeff38672c98946ac28d1e3da6e541, type: 2}
-  - {fileID: 11400000, guid: 602c4263d032c624ea221aa89928e1eb, type: 2}
-  - {fileID: 11400000, guid: 5c0ad89a452d90c4b87d6c1b47717573, type: 2}
-  - {fileID: 11400000, guid: ffe6192532b03fe42bc7e654126db169, type: 2}
-  - {fileID: 11400000, guid: 654e9482fbb3829479a10d0f60841f4a, type: 2}
-  - {fileID: 11400000, guid: 4231e3c4c590a8241819fe968bffae2a, type: 2}
-  - {fileID: 11400000, guid: 28be47f5aa86d274499ce7b9ec3fc913, type: 2}
-  - {fileID: 11400000, guid: 2e705b68a8f4f0148a5c32701577ddf3, type: 2}
-  - {fileID: 11400000, guid: 8bdf809e8f100dd49a7c3f717aa4883d, type: 2}
-  - {fileID: 11400000, guid: 82a63df02f8bff7419cf3751bf3b9068, type: 2}
-  - {fileID: 11400000, guid: f7c93ed1fbdd52d4b8b991d556a546b7, type: 2}
-  - {fileID: 11400000, guid: d8f7158e20f385d43a46e8905d56056a, type: 2}
+  Music: []
   useCustomNames: 0
   generatedName: AudioLibrary
   musicEnum: 
@@ -45,26 +28,11 @@ MonoBehaviour:
   soundEnumGenerated: AudioLibrarySounds
   soundNamespace: 
   soundNamespaceGenerated: 
-  soundCategoriesToList: []
+  soundCategoriesToList:
+  - name: 
+    files: []
+    foldout: 1
   musicCategoriesToList:
-  - name: BGM
-    files:
-    - {fileID: 11400000, guid: e78f462996628ab4e803ec25228495c0, type: 2}
-    - {fileID: 11400000, guid: b27362d5a26ffc147bff9bf807dc8f97, type: 2}
-    - {fileID: 11400000, guid: 78206fbea91873948956890ffd3ae537, type: 2}
-    - {fileID: 11400000, guid: a6542e612a144c842a5205bfcfd5187b, type: 2}
-    - {fileID: 11400000, guid: 550746d4a2888c8498c9a84b8f8d069b, type: 2}
-    - {fileID: 11400000, guid: 9b90ecef402ec7b45b22166b3454e4eb, type: 2}
-    - {fileID: 11400000, guid: bfbeff38672c98946ac28d1e3da6e541, type: 2}
-    - {fileID: 11400000, guid: 602c4263d032c624ea221aa89928e1eb, type: 2}
-    - {fileID: 11400000, guid: 5c0ad89a452d90c4b87d6c1b47717573, type: 2}
-    - {fileID: 11400000, guid: ffe6192532b03fe42bc7e654126db169, type: 2}
-    - {fileID: 11400000, guid: 654e9482fbb3829479a10d0f60841f4a, type: 2}
-    - {fileID: 11400000, guid: 4231e3c4c590a8241819fe968bffae2a, type: 2}
-    - {fileID: 11400000, guid: 28be47f5aa86d274499ce7b9ec3fc913, type: 2}
-    - {fileID: 11400000, guid: 2e705b68a8f4f0148a5c32701577ddf3, type: 2}
-    - {fileID: 11400000, guid: 8bdf809e8f100dd49a7c3f717aa4883d, type: 2}
-    - {fileID: 11400000, guid: 82a63df02f8bff7419cf3751bf3b9068, type: 2}
-    - {fileID: 11400000, guid: f7c93ed1fbdd52d4b8b991d556a546b7, type: 2}
-    - {fileID: 11400000, guid: d8f7158e20f385d43a46e8905d56056a, type: 2}
+  - name: 
+    files: []
     foldout: 1

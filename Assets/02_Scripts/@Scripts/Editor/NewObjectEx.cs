@@ -3,8 +3,7 @@ using UnityEditor;
 using System;
 using Object = UnityEngine.Object;
 
-public class NewObjectEx
-{
+public class NewObjectEx {
 
     #region Properties
 
@@ -13,8 +12,8 @@ public class NewObjectEx
     #endregion
 
     #region Generals
-
-
+    
+    
     private static Prefabs FindPrefabs()
     {
         var guids = AssetDatabase.FindAssets("t:Prefabs");
@@ -26,10 +25,8 @@ public class NewObjectEx
         return null;
     }
 
-    private static void Instantiate(Func<Prefabs, GameObject> selector)
-    {
-        if (FindPrefabs() == null)
-        {
+    private static void Instantiate(Func<Prefabs, GameObject> selector) {
+        if (FindPrefabs() == null) {
             Debug.LogWarning($"Prefabs not found at path {Name}");
             return;
         }
@@ -54,8 +51,8 @@ public class NewObjectEx
 
     [MenuItem("GameObject/>>>UI/Base/Button", false, 1)]
     private static void CreateNewButton() => Instantiate(findPrefabs => findPrefabs.Button);
-
-
+    
+    
     [MenuItem("GameObject/>>>UI/Base/Toggle", false, 1)]
     private static void CreateNewToggle() => Instantiate(findPrefabs => findPrefabs.Toggle);
 

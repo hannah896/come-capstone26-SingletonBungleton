@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2376846283081443092}
-  - component: {fileID: 2559230004773081697}
+  - component: {fileID: 7939643111953215961}
   m_Layer: 5
   m_Name: Mask
   m_TagString: Untagged
@@ -37,7 +37,7 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!225 &2559230004773081697
+--- !u!225 &7939643111953215961
 CanvasGroup:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -58,9 +58,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5639880952001474445}
-  - component: {fileID: 3777506598218165765}
-  - component: {fileID: 4782700293493569810}
-  - component: {fileID: 7772638129820607114}
   - component: {fileID: 7549851741389910404}
   m_Layer: 5
   m_Name: UI_Panel_Tutorial
@@ -91,69 +88,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
---- !u!223 &3777506598218165765
-Canvas:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 734713398792726965}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_RenderMode: 0
-  m_Camera: {fileID: 0}
-  m_PlaneDistance: 100
-  m_PixelPerfect: 0
-  m_ReceivesEvents: 1
-  m_OverrideSorting: 0
-  m_OverridePixelPerfect: 0
-  m_SortingBucketNormalizedSize: 0
-  m_VertexColorAlwaysGammaSpace: 0
-  m_AdditionalShaderChannelsFlag: 25
-  m_UpdateRectTransformForStandalone: 0
-  m_SortingLayerID: 0
-  m_SortingOrder: 0
-  m_TargetDisplay: 0
---- !u!114 &4782700293493569810
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 734713398792726965}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
-  m_UiScaleMode: 1
-  m_ReferencePixelsPerUnit: 100
-  m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 1080, y: 1920}
-  m_ScreenMatchMode: 0
-  m_MatchWidthOrHeight: 0.5
-  m_PhysicalUnit: 3
-  m_FallbackScreenDPI: 96
-  m_DefaultSpriteDPI: 96
-  m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 0
---- !u!114 &7772638129820607114
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 734713398792726965}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
-  m_IgnoreReversedGraphics: 1
-  m_BlockingObjects: 0
-  m_BlockingMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
 --- !u!114 &7549851741389910404
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -166,6 +100,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 712a8119be2c6478d92462eac53dc47d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_Panel_Tutorial
+  OnOpenEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  OnCloseEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDestroyEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  AnimationType: 0
 --- !u!1 &1131297577709148528
 GameObject:
   m_ObjectHideFlags: 0
@@ -337,8 +281,7 @@ GameObject:
   - component: {fileID: 5408400092137665086}
   - component: {fileID: 7236766696997841392}
   - component: {fileID: 3504276015970581392}
-  - component: {fileID: 4892088263641854142}
-  - component: {fileID: 118682595338799854}
+  - component: {fileID: 348454289208820059}
   m_Layer: 5
   m_Name: Img_TutorialText
   m_TagString: Untagged
@@ -415,7 +358,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3613e9f726bca481f830099d3b8f40fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_Image
---- !u!225 &4892088263641854142
+--- !u!225 &348454289208820059
 CanvasGroup:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -427,21 +370,6 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
---- !u!114 &118682595338799854
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2508982389458296941}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 727dced2961124dc78c22de7fd1f7484, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AspectRatioResizer
-  baseAxis: 0
-  targetSize: 600
-  targetImage: 
 --- !u!1 &7927230690040519115
 GameObject:
   m_ObjectHideFlags: 0
@@ -454,8 +382,7 @@ GameObject:
   - component: {fileID: 4015308843611291527}
   - component: {fileID: 8761355047915069338}
   - component: {fileID: 4786647399598383771}
-  - component: {fileID: 4049015206409671219}
-  - component: {fileID: 2207442873427379022}
+  - component: {fileID: 2942401018542919706}
   m_Layer: 5
   m_Name: Img_Character
   m_TagString: Untagged
@@ -532,7 +459,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3613e9f726bca481f830099d3b8f40fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_Image
---- !u!225 &4049015206409671219
+--- !u!225 &2942401018542919706
 CanvasGroup:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -544,21 +471,6 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
---- !u!114 &2207442873427379022
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7927230690040519115}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 727dced2961124dc78c22de7fd1f7484, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AspectRatioResizer
-  baseAxis: 0
-  targetSize: 900
-  targetImage: 
 --- !u!1001 &320695571103154117
 PrefabInstance:
   m_ObjectHideFlags: 0

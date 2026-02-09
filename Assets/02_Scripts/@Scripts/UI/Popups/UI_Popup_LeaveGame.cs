@@ -41,7 +41,7 @@ public class UI_Popup_LeaveGame : UI_Popup {
     private void OnButtonLeave() {
         //if (Main.Lives.Use()) _currencyPrefs.Lives.DisplayValueSync();
         // Main.Scene.SwitchAsync("LobbyScene");
-        Main.Scene.SwitchAsync("GameScene");
+        //Main.Scene.SwitchAsync("GameScene");
         Close();
     }
 

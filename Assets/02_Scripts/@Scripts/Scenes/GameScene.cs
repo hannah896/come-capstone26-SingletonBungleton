@@ -1,7 +1,6 @@
-using System;
-using System.Collections;
 using Blossom.Preference;
 using Cysharp.Threading.Tasks;
+using System;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -52,7 +51,7 @@ public class GameScene : SceneBase
     // public static ItemType CurrentItemType { get; set; }
 
     public static StageData CurrentStage { get; private set; }
-    public UI_GameScene SceneUI { get; private set; }
+    public UI_Hud_Game UIHud { get; private set; }
 
     #endregion
 
@@ -141,7 +140,7 @@ public class GameScene : SceneBase
         Main.Loop.ResetGameEvent();
         GameProcessing = GameProcessing.Stopping;
         RefillHeart();
-        Main.Board.Clear();
+        Main.Game.Clear();
     }
 
     public void RefillHeart() => HeartCount = MaxHeartCount;
@@ -158,19 +157,22 @@ public class GameScene : SceneBase
         }
 
         // #2. 개체 생성.
-        Main.Board.GenerateBoard(CurrentStage);
+        Main.Game.GenerateBoard(CurrentStage);
 
         // #3. 개체 오브젝트 생성.
-        Main.Board.GenerateBoardObject();
+        Main.Game.GenerateBoardObject();
 
         // #5. UI 생성.
-        SceneUI = Object.FindFirstObjectByType<UI_GameScene>();
-        if (SceneUI == null) SceneUI = await Main.Resource.LoadAssetAsync<UI_GameScene>();
+        UIHud = Object.FindFirstObjectByType<UI_Hud_Game>();
+        if (UIHud == null)
+        {
+            UIHud = await Extensions.ShowHud<UI_Hud_Game>();
+        }
 
         // #6. 카메라 및 인풋 설정.
         Main.Screen.SetCamera();
         InputController.AllowInput = true;
-        Main.Input.SetInputActions(InputActionType.None);
+        // Main.Input.SetInputActions(InputActionType.None);
 
         // #7. 게임 시작.
         GameEvents.OnGameReady?.Invoke();
@@ -178,20 +180,20 @@ public class GameScene : SceneBase
         GameState = GameState.Playing;
         GameProcessing = GameProcessing.Processing;
 
-        SceneUI.Set(this);
-        Main.Screen.StartGameCameraAnimation(() => Main.Input.SetInputActions(InputActionType.GameScenePlay));
+        UIHud.Set(this);
+        // Main.Screen.StartGameCameraAnimation(() => Main.Input.SetInputActions(InputActionType.GameScenePlay));
 
         // #8. 튜토리얼 확인
-        foreach (TutorialLevelType type in Enum.GetValues(typeof(TutorialLevelType)))
-        {
-            if (type == TutorialLevelType.None) continue;
-            if (stage == (int)type)
-            {
-                UI_Popup_Tutorial popup = await Extensions.ShowPopup<UI_Popup_Tutorial>();
-                popup.Set(type);
-                break;
-            }
-        }
+        // foreach (TutorialLevelType type in Enum.GetValues(typeof(TutorialLevelType)))
+        // {
+        //     if (type == TutorialLevelType.None) continue;
+        //     if (stage == (int)type)
+        //     {
+        //         UI_Panel_Tutorial panel = await Extensions.ShowPopup<UI_Panel_Tutorial>();
+        //         panel.Set(type);
+        //         break;
+        //     }
+        // }
     }
 
     public void SuccessGame()
@@ -230,7 +232,7 @@ public class GameScene : SceneBase
         //}
         //else
         //{
-        //    UI_Popup_RetryAds  popup = await Extensions.ShowPopup<UI_Popup_RetryAds>();
+        //    UI_Popup_RetryAds popup = await Extensions.ShowPopup<UI_Popup_RetryAds>();
         //    popup.Set();
         //}
     }

@@ -13,15 +13,39 @@ using UnityEditor;
 
 public class LocalizationEnumGenerator : EditorWindow
 {
-    private LocalizedEnumSo _searchDataAsset;
-    private string searchDataPath = "Assets/@ScriptableObjects/LocalizedEnum/LocalizedEnumSo.asset";
-    private string csvPath = "Assets/Localization/base.csv";
-    private string outputRelativePath = "Assets/Localization/ELocalizedName.cs";
+    #region Constants
+
+    // EditorPrefs 키
+    private const string PREF_CSV_FILENAME = "LocalizationEnumGenerator_CsvFileName";
+    private const string PREF_ENUM_OUTPUT_FOLDER = "LocalizationEnumGenerator_EnumOutputFolder";
+    private const string PREF_ENUM_NAME = "LocalizationEnumGenerator_EnumName";
+    private const string PREF_DATA_ASSET_FOLDER = "LocalizationEnumGenerator_DataAssetFolder";
+
+    #endregion
+
+    #region Fields
+
+    // CSV 설정
+    private string csvFileName = "base.csv";
+    private string _foundCsvPath = "";
+
+    // Enum 출력 설정
+    private DefaultAsset _enumOutputFolder;
     private string enumName = "ELocalizedName";
+
+    // 데이터 에셋 설정
+    private LocalizedEnumSo _searchDataAsset;
+    private DefaultAsset _dataAssetFolder;
+
+    // UI 상태
     private Vector2 scroll;
     private List<string> previewNames = new List<string>();
     private string statusMessage = "";
+
+    // 파싱 데이터
     private Dictionary<string, string> memberToEnglish = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    #endregion
 
     [MenuItem("Tools/Localization/Generate ELocalizedName")]
     public static void OpenWindow()
@@ -32,46 +56,227 @@ public class LocalizationEnumGenerator : EditorWindow
     
     private void LoadSearchDataAsset()
     {
-        _searchDataAsset = AssetDatabase.LoadAssetAtPath<LocalizedEnumSo>(searchDataPath);
+        // EditorPrefs에서 저장된 설정 불러오기
+        LoadPrefs();
+
+        // LocalizedEnumSo 자동 탐색
+        _searchDataAsset = FindAssetInProject<LocalizedEnumSo>();
+
         if (_searchDataAsset == null)
         {
-            statusMessage = "LocalizationSearchData 에셋을 찾을 수 없습니다. Generate를 눌러 새로 생성하세요.";
+            statusMessage = "LocalizedEnumSo 에셋을 찾을 수 없습니다. Generate 시 지정된 폴더에 새로 생성됩니다.";
         }
+        else
+        {
+            statusMessage = $"LocalizedEnumSo 발견: {AssetDatabase.GetAssetPath(_searchDataAsset)}";
+        }
+
+        // 윈도우 열릴 때 CSV 파일 자동 검색
+        _foundCsvPath = FindCsvFileInAssets(csvFileName);
+    }
+
+    // EditorPrefs에서 설정 불러오기
+    private void LoadPrefs()
+    {
+        csvFileName = EditorPrefs.GetString(PREF_CSV_FILENAME, "base.csv");
+        enumName = EditorPrefs.GetString(PREF_ENUM_NAME, "ELocalizedName");
+
+        // 폴더는 GUID로 저장/복원
+        string enumFolderGuid = EditorPrefs.GetString(PREF_ENUM_OUTPUT_FOLDER, "");
+        if (!string.IsNullOrEmpty(enumFolderGuid))
+        {
+            string path = AssetDatabase.GUIDToAssetPath(enumFolderGuid);
+            if (!string.IsNullOrEmpty(path) && AssetDatabase.IsValidFolder(path))
+            {
+                _enumOutputFolder = AssetDatabase.LoadAssetAtPath<DefaultAsset>(path);
+            }
+        }
+
+        string dataFolderGuid = EditorPrefs.GetString(PREF_DATA_ASSET_FOLDER, "");
+        if (!string.IsNullOrEmpty(dataFolderGuid))
+        {
+            string path = AssetDatabase.GUIDToAssetPath(dataFolderGuid);
+            if (!string.IsNullOrEmpty(path) && AssetDatabase.IsValidFolder(path))
+            {
+                _dataAssetFolder = AssetDatabase.LoadAssetAtPath<DefaultAsset>(path);
+            }
+        }
+    }
+
+    // EditorPrefs에 설정 저장
+    private void SavePrefs()
+    {
+        EditorPrefs.SetString(PREF_CSV_FILENAME, csvFileName);
+        EditorPrefs.SetString(PREF_ENUM_NAME, enumName);
+
+        // 폴더는 GUID로 저장
+        if (_enumOutputFolder != null)
+        {
+            string path = AssetDatabase.GetAssetPath(_enumOutputFolder);
+            string guid = AssetDatabase.AssetPathToGUID(path);
+            EditorPrefs.SetString(PREF_ENUM_OUTPUT_FOLDER, guid);
+        }
+        else
+        {
+            EditorPrefs.SetString(PREF_ENUM_OUTPUT_FOLDER, "");
+        }
+
+        if (_dataAssetFolder != null)
+        {
+            string path = AssetDatabase.GetAssetPath(_dataAssetFolder);
+            string guid = AssetDatabase.AssetPathToGUID(path);
+            EditorPrefs.SetString(PREF_DATA_ASSET_FOLDER, guid);
+        }
+        else
+        {
+            EditorPrefs.SetString(PREF_DATA_ASSET_FOLDER, "");
+        }
+    }
+
+    // 윈도우가 닫힐 때 설정 저장
+    private void OnDisable()
+    {
+        SavePrefs();
+    }
+
+    // Assets 전체에서 특정 타입의 에셋을 탐색
+    private T FindAssetInProject<T>() where T : UnityEngine.Object
+    {
+        string[] guids = AssetDatabase.FindAssets($"t:{typeof(T).Name}");
+
+        if (guids.Length > 0)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+            return AssetDatabase.LoadAssetAtPath<T>(path);
+        }
+
+        return null;
+    }
+
+    // 폴더 경로 가져오기 (DefaultAsset → string)
+    private string GetFolderPath(DefaultAsset folder)
+    {
+        if (folder == null) return null;
+
+        string path = AssetDatabase.GetAssetPath(folder);
+        if (AssetDatabase.IsValidFolder(path))
+        {
+            return path;
+        }
+
+        return null;
     }
 
 private void OnGUI()
     {
-        GUILayout.Label("CSV → enum 변환기 (CSV에 없는 기존 키는 제거)", EditorStyles.boldLabel);
+        GUILayout.Label("CSV → Enum 변환기", EditorStyles.boldLabel);
         EditorGUILayout.BeginVertical("box");
-        csvPath = EditorGUILayout.TextField("CSV 파일 경로", csvPath);
-        outputRelativePath = EditorGUILayout.TextField("출력 파일 (프로젝트 경로)", outputRelativePath);
-        enumName = EditorGUILayout.TextField("생성할 enum 이름", enumName);
-        
-        // ▼▼▼ 수정된 부분 ▼▼▼
-        EditorGUILayout.LabelField("검색 데이터 에셋", EditorStyles.boldLabel);
-        searchDataPath = EditorGUILayout.TextField("데이터 에셋 경로", searchDataPath);
-        
-        // 연결된 에셋을 표시 (수동 연결도 가능하게)
-        _searchDataAsset = (LocalizedEnumSo)EditorGUILayout.ObjectField(
-            "Search Data Asset", 
-            _searchDataAsset, 
-            typeof(LocalizedEnumSo), 
+
+        // ========== CSV 파일 설정 ==========
+        EditorGUILayout.LabelField("CSV 파일 설정", EditorStyles.boldLabel);
+        csvFileName = EditorGUILayout.TextField("CSV 파일 이름", csvFileName);
+
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("검색", GUILayout.Width(60)))
+        {
+            _foundCsvPath = FindCsvFileInAssets(csvFileName);
+        }
+        EditorGUILayout.LabelField(_foundCsvPath, EditorStyles.helpBox);
+        EditorGUILayout.EndHorizontal();
+
+        if (string.IsNullOrEmpty(_foundCsvPath))
+        {
+            EditorGUILayout.HelpBox($"'{csvFileName}' 파일을 찾지 못했습니다.", MessageType.Warning);
+        }
+
+        EditorGUILayout.Space();
+
+        // ========== Enum 출력 설정 ==========
+        EditorGUILayout.LabelField("Enum 출력 설정", EditorStyles.boldLabel);
+
+        _enumOutputFolder = (DefaultAsset)EditorGUILayout.ObjectField(
+            "출력 폴더",
+            _enumOutputFolder,
+            typeof(DefaultAsset),
             false);
-        
+
+        // 폴더 유효성 검사
+        if (_enumOutputFolder != null && !AssetDatabase.IsValidFolder(AssetDatabase.GetAssetPath(_enumOutputFolder)))
+        {
+            EditorGUILayout.HelpBox("폴더만 선택할 수 있습니다.", MessageType.Error);
+            _enumOutputFolder = null;
+        }
+
+        enumName = EditorGUILayout.TextField("Enum 이름", enumName);
+
+        // 출력 경로 미리보기
+        string enumOutputPath = GetEnumOutputPath();
+        if (!string.IsNullOrEmpty(enumOutputPath))
+        {
+            EditorGUILayout.LabelField("출력 경로", enumOutputPath, EditorStyles.helpBox);
+        }
+        else
+        {
+            EditorGUILayout.HelpBox("출력 폴더를 선택해주세요.", MessageType.Warning);
+        }
+
+        EditorGUILayout.Space();
+
+        // ========== 데이터 에셋 설정 ==========
+        EditorGUILayout.LabelField("LocalizedEnumSo 설정", EditorStyles.boldLabel);
+
+        // 자동 탐색된 에셋 표시
+        EditorGUI.BeginDisabledGroup(true);
+        EditorGUILayout.ObjectField("탐색된 에셋", _searchDataAsset, typeof(LocalizedEnumSo), false);
+        EditorGUI.EndDisabledGroup();
+
+        // 재탐색 버튼
+        if (GUILayout.Button("Assets에서 재탐색", GUILayout.Width(120)))
+        {
+            _searchDataAsset = FindAssetInProject<LocalizedEnumSo>();
+            if (_searchDataAsset != null)
+            {
+                statusMessage = $"LocalizedEnumSo 발견: {AssetDatabase.GetAssetPath(_searchDataAsset)}";
+            }
+            else
+            {
+                statusMessage = "LocalizedEnumSo를 찾지 못했습니다.";
+            }
+        }
+
+        // 에셋이 없을 경우 생성 폴더 선택
         if (_searchDataAsset == null)
         {
-            EditorGUILayout.HelpBox("검색 데이터 에셋이 없습니다. Generate 시 지정된 경로에 새로 생성됩니다.", MessageType.Info);
-        }
-        // ▲▲▲ 수정된 부분 ▲▲▲
+            _dataAssetFolder = (DefaultAsset)EditorGUILayout.ObjectField(
+                "생성 폴더",
+                _dataAssetFolder,
+                typeof(DefaultAsset),
+                false);
 
-        if (GUILayout.Button("Preview (파싱해서 미리보기)"))
+            if (_dataAssetFolder != null && !AssetDatabase.IsValidFolder(AssetDatabase.GetAssetPath(_dataAssetFolder)))
+            {
+                EditorGUILayout.HelpBox("폴더만 선택할 수 있습니다.", MessageType.Error);
+                _dataAssetFolder = null;
+            }
+
+            EditorGUILayout.HelpBox("LocalizedEnumSo가 없습니다. Generate 시 위 폴더에 새로 생성됩니다.", MessageType.Info);
+        }
+
+        EditorGUILayout.Space();
+
+        // ========== 버튼 영역 ==========
+        if (GUILayout.Button("Preview (미리보기)"))
         {
+            if (string.IsNullOrEmpty(_foundCsvPath))
+            {
+                _foundCsvPath = FindCsvFileInAssets(csvFileName);
+            }
             TryParseCsvAndPreview();
         }
-        // ... (이하 OnGUI의 Preview/Generate 버튼 로직은 동일)
+
         if (previewNames.Count > 0)
         {
-            EditorGUILayout.LabelField("Preview (" + previewNames.Count + ")", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField($"Preview ({previewNames.Count}개)", EditorStyles.boldLabel);
             scroll = EditorGUILayout.BeginScrollView(scroll, GUILayout.Height(200));
             foreach (var p in previewNames)
                 EditorGUILayout.LabelField(p, EditorStyles.label, GUILayout.MinWidth(10));
@@ -80,14 +285,25 @@ private void OnGUI()
 
         EditorGUILayout.Space();
 
+        // Generate 버튼 활성화 조건 확인
+        bool canGenerate = !string.IsNullOrEmpty(_foundCsvPath) &&
+                           !string.IsNullOrEmpty(GetEnumOutputPath()) &&
+                           (_searchDataAsset != null || _dataAssetFolder != null);
+
+        EditorGUI.BeginDisabledGroup(!canGenerate);
         if (GUILayout.Button("Generate (생성)"))
         {
-            // 안전장치 알림
-            if (EditorUtility.DisplayDialog("Enum 생성/병합 확인",
-                    "CSV에 없는 기존 enum 키들은 최종 파일에서 제거됩니다. 계속하시겠습니까?\n(권장: 기존 ELocalizedName.cs 백업)", "계속", "취소"))
+            if (EditorUtility.DisplayDialog("Enum 생성 확인",
+                    "CSV에 없는 기존 enum 키들은 제거됩니다. 계속하시겠습니까?", "계속", "취소"))
             {
                 GenerateEnumFile();
             }
+        }
+        EditorGUI.EndDisabledGroup();
+
+        if (!canGenerate)
+        {
+            EditorGUILayout.HelpBox("Generate 하려면 CSV 파일, 출력 폴더, 데이터 에셋(또는 생성 폴더)이 필요합니다.", MessageType.Info);
         }
 
         if (!string.IsNullOrEmpty(statusMessage))
@@ -96,6 +312,16 @@ private void OnGUI()
         }
 
         EditorGUILayout.EndVertical();
+    }
+
+    // Enum 출력 경로 계산
+    private string GetEnumOutputPath()
+    {
+        string folderPath = GetFolderPath(_enumOutputFolder);
+        if (string.IsNullOrEmpty(folderPath) || string.IsNullOrEmpty(enumName))
+            return null;
+
+        return $"{folderPath}/{enumName}.cs";
     }
 
     // CSV 전체 텍스트에서 "레코드"(한 행) 리스트를 추출.
@@ -148,19 +374,72 @@ private static List<string> ParseCsvRecords(string text)
 
         return records;
     }
+    // Assets 폴더 내에서 CSV 파일을 이름으로 검색
+    private string FindCsvFileInAssets(string fileName)
+    {
+        if (string.IsNullOrEmpty(fileName))
+        {
+            statusMessage = "파일 이름을 입력해주세요.";
+            return "";
+        }
+
+        // 확장자가 없으면 .csv 추가
+        if (!fileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+        {
+            fileName += ".csv";
+        }
+
+        // 파일 이름에서 확장자 제거하여 검색
+        string nameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
+
+        // AssetDatabase로 검색 (확장자 없이 검색)
+        string[] guids = AssetDatabase.FindAssets(nameWithoutExt);
+
+        foreach (string guid in guids)
+        {
+            string assetPath = AssetDatabase.GUIDToAssetPath(guid);
+
+            // .csv 파일인지 확인
+            if (!assetPath.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            // 파일 이름이 정확히 일치하는지 확인
+            string foundFileName = Path.GetFileName(assetPath);
+            if (foundFileName.Equals(fileName, StringComparison.OrdinalIgnoreCase))
+            {
+                statusMessage = $"CSV 파일 발견: {assetPath}";
+                return assetPath;
+            }
+        }
+
+        statusMessage = $"'{fileName}' 파일을 Assets 폴더에서 찾을 수 없습니다.";
+        return "";
+    }
+
     private void TryParseCsvAndPreview()
     {
         statusMessage = "";
         previewNames.Clear();
         memberToEnglish.Clear();
 
+        // _foundCsvPath가 비어있으면 먼저 검색 시도
+        if (string.IsNullOrEmpty(_foundCsvPath))
+        {
+            _foundCsvPath = FindCsvFileInAssets(csvFileName);
+        }
+
+        if (string.IsNullOrEmpty(_foundCsvPath))
+        {
+            statusMessage = $"CSV 파일을 찾을 수 없습니다. 파일 이름을 확인해주세요: {csvFileName}";
+            return;
+        }
+
         string assetsPath = Directory.GetCurrentDirectory();
-        
-        string csvFullPath = Path.Combine(assetsPath, csvPath);
+        string csvFullPath = Path.Combine(assetsPath, _foundCsvPath);
 
         if (!File.Exists(csvFullPath))
         {
-            statusMessage = $"CSV 파일을 찾을 수 없습니다: {csvFullPath}";
+            statusMessage = $"CSV 파일이 존재하지 않습니다: {csvFullPath}";
             return;
         }
 
@@ -239,19 +518,19 @@ private static List<string> ParseCsvRecords(string text)
             return;
         }
 
+        // 출력 경로 확인
+        string outputRelativePath = GetEnumOutputPath();
+        if (string.IsNullOrEmpty(outputRelativePath))
+        {
+            statusMessage = "출력 폴더를 선택해주세요.";
+            return;
+        }
+
         Dictionary<string, int> merged = new Dictionary<string, int>(StringComparer.Ordinal);
-        
+
         try
         {
-            string outPath;
-            if (outputRelativePath.StartsWith("Assets"))
-            {
-                outPath = Path.Combine(Directory.GetCurrentDirectory(), outputRelativePath);
-            }
-            else
-            {
-                outPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets", outputRelativePath); // Assets/ 추가
-            }
+            string outPath = Path.Combine(Directory.GetCurrentDirectory(), outputRelativePath);
 
             var dir = Path.GetDirectoryName(outPath);
             if (!Directory.Exists(dir))
@@ -362,6 +641,10 @@ private static List<string> ParseCsvRecords(string text)
             {
                 try
                 {
+                    // 기존 백업 파일 정리 (최대 2개 유지)
+                    CleanupOldBackups(outPath, maxBackups: 2);
+
+                    // 새 백업 생성
                     var bak = outPath + ".bak_" + DateTime.Now.ToString("yyyyMMdd_HHmmss");
                     File.Copy(outPath, bak);
                 }
@@ -385,52 +668,67 @@ private static List<string> ParseCsvRecords(string text)
         }
     }
     
-    // ▼▼▼ 핵심 추가 함수 ▼▼▼
+    // LocalizedEnumSo 에셋 업데이트 (자동 탐색 → 덮어쓰기 또는 새로 생성)
     private void UpdateSearchDataAsset(Dictionary<string, int> mergedEnumMap, Dictionary<string, string> englishMap)
     {
-        // 1. 에셋 로드 또는 생성
+        // 1. 에셋 탐색 또는 생성
         if (_searchDataAsset == null)
         {
-            _searchDataAsset = AssetDatabase.LoadAssetAtPath<LocalizedEnumSo>(searchDataPath);
+            // Assets 전체에서 다시 탐색
+            _searchDataAsset = FindAssetInProject<LocalizedEnumSo>();
         }
-        
+
+        // 여전히 없으면 새로 생성
         if (_searchDataAsset == null)
         {
+            string folderPath = GetFolderPath(_dataAssetFolder);
+            if (string.IsNullOrEmpty(folderPath))
+            {
+                statusMessage += "\n[오류] LocalizedEnumSo 생성 폴더가 지정되지 않았습니다.";
+                return;
+            }
+
             _searchDataAsset = ScriptableObject.CreateInstance<LocalizedEnumSo>();
-            
-            var dir = Path.GetDirectoryName(searchDataPath);
-            if (!Directory.Exists(dir))
-                Directory.CreateDirectory(dir);
-            
-            AssetDatabase.CreateAsset(_searchDataAsset, searchDataPath);
-            statusMessage += $"\n검색 에셋 생성: {searchDataPath}";
+
+            string assetPath = $"{folderPath}/LocalizedEnumSo.asset";
+
+            // 폴더가 없으면 생성
+            string fullDir = Path.Combine(Directory.GetCurrentDirectory(), folderPath);
+            if (!Directory.Exists(fullDir))
+                Directory.CreateDirectory(fullDir);
+
+            AssetDatabase.CreateAsset(_searchDataAsset, assetPath);
+            statusMessage += $"\nLocalizedEnumSo 생성: {assetPath}";
         }
-        
+        else
+        {
+            statusMessage += $"\nLocalizedEnumSo 덮어쓰기: {AssetDatabase.GetAssetPath(_searchDataAsset)}";
+        }
+
         // 2. 데이터 업데이트
         _searchDataAsset.DictValueToString.Clear();
-        
+
         // NONE = 0 추가
-        _searchDataAsset.DictValueToString[0] = "None"; 
-        
-        foreach (var pair in mergedEnumMap) // pair.Key = Enum이름(string), pair.Value = Enum값(int)
+        _searchDataAsset.DictValueToString[0] = "None";
+
+        foreach (var pair in mergedEnumMap)
         {
-            if (pair.Value == 0) continue; // NONE은 이미 처리
-            
+            if (pair.Value == 0) continue;
+
             if (englishMap.TryGetValue(pair.Key, out string englishText))
             {
                 _searchDataAsset.DictValueToString[pair.Value] = englishText;
             }
             else
             {
-                // 영문 텍스트가 없는 경우
-                _searchDataAsset.DictValueToString[pair.Value] = ""; 
+                _searchDataAsset.DictValueToString[pair.Value] = "";
             }
         }
-        
+
         // 3. 변경사항 저장
         EditorUtility.SetDirty(_searchDataAsset);
         AssetDatabase.SaveAssets();
-        statusMessage += "\n검색 데이터 에셋 업데이트 완료.";
+        statusMessage += "\nLocalizedEnumSo 업데이트 완료.";
     }
 
 private static string EscapeForComment(string s)
@@ -508,6 +806,38 @@ private static string EscapeForComment(string s)
         }
         return result;
     }
+
+    // 오래된 백업 파일 정리
+    private static void CleanupOldBackups(string originalFilePath, int maxBackups)
+    {
+        try
+        {
+            string directory = Path.GetDirectoryName(originalFilePath);
+            string fileName = Path.GetFileName(originalFilePath);
+
+            if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
+                return;
+
+            // 백업 파일 패턴: {원본파일명}.bak_*
+            string pattern = fileName + ".bak_*";
+            var backupFiles = Directory.GetFiles(directory, pattern)
+                .OrderBy(f => f) // 파일명에 날짜가 포함되어 있으므로 이름순 정렬 = 시간순
+                .ToList();
+
+            // maxBackups 개수를 초과하는 오래된 파일 삭제
+            int deleteCount = backupFiles.Count - maxBackups;
+            for (int i = 0; i < deleteCount; i++)
+            {
+                File.Delete(backupFiles[i]);
+                Debug.Log($"[LocalizationEnumGenerator] 오래된 백업 삭제: {Path.GetFileName(backupFiles[i])}");
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[LocalizationEnumGenerator] 백업 정리 중 오류: {e.Message}");
+        }
+    }
+
     private static string ToMinimalSanitizedEnumName(string raw)
     {
         if (string.IsNullOrEmpty(raw)) return null;

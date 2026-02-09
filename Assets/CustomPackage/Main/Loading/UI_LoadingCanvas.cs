@@ -65,12 +65,12 @@ public class UI_LoadingCanvas : UI_Popup
             onChangeProgress?.Invoke(_showTime / LoadingTime);
         }
 
-        Main.Scene.SwitchAsync("GameScene", false);
+        Main.Scene.ChangeScene("GameScene");
         
         // 첫 세션 타임에서 하루가 지난 시점에서 앱 오픈 광고 실행
         if (_playPrefs.FirstSessionTime.GetElapsedTime() > 24 * 60f)
         {
-            //    Main.Ads.ShowAppOpenAd();
+            //Main.Ads.ShowAppOpenAd();
         }
         Destroy(gameObject);
     }

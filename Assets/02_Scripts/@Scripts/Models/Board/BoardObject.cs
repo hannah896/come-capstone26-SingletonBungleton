@@ -1,8 +1,5 @@
-/// <summary>
-/// 
-/// </summary>
-public class BoardObject : Entity 
-{
+public class BoardObject : Entity {
+
     private Board _board;
 
     public void Set(Board board) {
@@ -13,4 +10,5 @@ public class BoardObject : Entity
         this.transform.SetParent(null);
         this.transform.position = _board.Center;
     }
+
 }

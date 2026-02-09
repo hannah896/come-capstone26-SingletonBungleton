@@ -15,23 +15,48 @@ MonoBehaviour:
   m_GroupName: Common
   m_GUID: 1355e2feab16e06409f202acb6043666
   m_SerializeEntries:
+  - m_GUID: 1040de833c653814cbcea6b8764451dc
+    m_Address: Item_Sword
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 2c50d873c029ef243a017465c51035ba
     m_Address: Canvas_View
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 2c9631d528fe3be48908a5ac7aed3364
-    m_Address: Item_SurvivalTools
+  - m_GUID: 30e3f958a5065454784651e6ffdb0d6b
+    m_Address: NetworkPlayerData
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 41c30fc5302e630498fe10a0498cf0d2
-    m_Address: Item_Resources
+  - m_GUID: 37905398519c0a049b888e714dd5c1d7
+    m_Address: UI_Screen_StartLoading
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 447bea82f4847b24ab03cffbdeacac39
-    m_Address: Item_Booties
+  - m_GUID: 3e816c2635c4be24d9accaaf06f5c695
+    m_Address: Food_Test
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5d69ee7bdaedb6e44a8da1e377a4d210
+    m_Address: Item_Stone
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 616ca56aa7890e949b4e0092bd714b95
+    m_Address: Item_CookedMeat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6b2e9ed6fce4a2648909e3bba7491ec5
+    m_Address: UI_Screen_Iap
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 92d15a646582d8147aae3d4d3dc8a278
+    m_Address: UI_Screen_Fade
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -40,13 +65,43 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: b577f2c754ad42047b0b93919bf75f00
-    m_Address: Item_CombatGears
+  - m_GUID: 9ebcd66ab4045844187672673de88087
+    m_Address: Canvas_Hud
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ad4d6f0f372463042928e52d859b1005
+    m_Address: UI_Screen_Ads
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b8441eb85a0dbe849aba709a0dd51ade
+    m_Address: Canvas_Scene
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c804574cf954db24b8af209e536501c6
+    m_Address: Item_Wood
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d422b3c6d6af2e94c9ae5a211d0b10f1
+    m_Address: Test_Tool
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e24ef0f7a1a9c21498e652acf7681e1c
     m_Address: Canvas_Popup
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e998d47af87bdb4418295ce934844380
+    m_Address: UI_Screen_Transition
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f2b0090b82e668d4ea98af655caa8966
+    m_Address: Item_Bow
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

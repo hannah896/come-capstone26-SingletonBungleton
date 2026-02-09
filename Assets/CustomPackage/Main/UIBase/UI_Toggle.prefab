@@ -66,7 +66,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 408861cfc91f8461b90e0e0e95529521, type: 3}
+  m_Sprite: {fileID: 0}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -88,5 +88,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 87e9b19966ae247da8ae3ce03ed2da00, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_Toggle
-  _toggleOn: {fileID: 21300000, guid: 408861cfc91f8461b90e0e0e95529521, type: 3}
-  _toggleOff: {fileID: 21300000, guid: f812e712b58214bf58ebf493f288f771, type: 3}
+  _toggleOn: {fileID: 0}
+  _toggleOff: {fileID: 0}
