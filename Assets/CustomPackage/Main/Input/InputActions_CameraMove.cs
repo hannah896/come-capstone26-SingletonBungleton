@@ -1,48 +1,51 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
-public class InputActions_CameraMove : InputActions
+/// <summary>
+/// 마우스 드래그 혹은 터치패드 드래그로 카메라를 이동시키는 인풋 액션
+/// </summary>
+public sealed class InputActions_CameraMove : InputActions
 {
-    private Vector2 _lastPanPosition;
-    private Vector2 CameraMoveMinPos => Main.Board.Current.Min;
-    private Vector2 CameraMoveMaxPos => Main.Board.Current.Max;
+    public InputActions_CameraMove(InputManager manager) : base(manager){}
+        
+    private Vector2 _lastPos;
+    private Vector2 _startPos;
+    private bool _isDragging;
+    private const float DragThreshold = 5f;
 
-    public override InputActionType GetInputActionType() => InputActionType.CameraMove;
-
-    public override void ConnectInputController()
+    public override void Connect()
     {
-        InputController.OnActionPositionLeftStarted += PositionLeft;
-        InputController.OnActionPositionLeftCanceled += LeftClickLeftCanceled;
-        InputController.OnActionPositionLeftDrag += OnDrag;
+        Manager.Actions.Mobile.Click.started += OnStart;
+        Manager.Actions.Mobile.Click.canceled += OnEnd;
+        Manager.Actions.Mobile.Point.performed += OnMove;
     }
-
-    public override void DisconnectInputController()
+    public override void Disconnect()
     {
-        InputController.OnActionPositionLeftStarted -= PositionLeft;
-        InputController.OnActionPositionLeftCanceled -= LeftClickLeftCanceled;
-        InputController.OnActionPositionLeftDrag -= OnDrag;
+        Manager.Actions.Mobile.Click.started -= OnStart;
+        Manager.Actions.Mobile.Click.canceled -= OnEnd;
+        Manager.Actions.Mobile.Point.performed -= OnMove;
+        _isDragging = false;
     }
-    
-    private void PositionLeft(Vector2 position)
+    private void OnStart(InputAction.CallbackContext ctx)
     {
-        _lastPanPosition = position;
+        var pos = Manager.Actions.Mobile.Point.ReadValue<Vector2>();
+        if (Manager.IsPointerOverUI(pos)) return;
+        _isDragging = true;
+        _startPos = pos;
+        _lastPos = pos;
     }
-    private void LeftClickLeftCanceled(Vector2 position)
+    private void OnMove(InputAction.CallbackContext ctx)
     {
-        _lastPanPosition = position;;
-    }
-
-    private void OnDrag(Vector2 position)
-    {
-        Vector2 worldDelta = position - _lastPanPosition;
-        Vector3 cameraPos = Camera.transform.position;
-        cameraPos -= (Vector3)worldDelta;
-        if (!Main.IsEditorMode)
+        if (!_isDragging) return;
+        var currentPos = ctx.ReadValue<Vector2>();
+        if (Vector2.Distance(_startPos, currentPos) < DragThreshold)
         {
-            cameraPos.x = Mathf.Clamp(cameraPos.x, CameraMoveMinPos.x, CameraMoveMaxPos.x);
-            cameraPos.y = Mathf.Clamp(cameraPos.y, CameraMoveMinPos.y, CameraMoveMaxPos.y);
+            _lastPos = currentPos;
+            return;
         }
-
-        if (Camera.transform.position == cameraPos) return;
-        Camera.transform.position = cameraPos;
+        Vector3 delta = Manager.ScreenToWorld(currentPos) - Manager.ScreenToWorld(_lastPos);
+        if (MainCamera != null) MainCamera.transform.position -= delta;
+        _lastPos = currentPos;
     }
+    private void OnEnd(InputAction.CallbackContext ctx) => _isDragging = false;
 }

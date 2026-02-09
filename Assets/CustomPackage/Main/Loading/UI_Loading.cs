@@ -1,7 +1,5 @@
-
-
-using System;
 using DG.Tweening;
+using System;
 using UnityEngine;
 
 public abstract class UI_Loading : InitBehaviour
@@ -12,7 +10,6 @@ public abstract class UI_Loading : InitBehaviour
     public override bool Initialize()
     {
         if (!base.Initialize()) return false;
-        
         return true;
     }
 

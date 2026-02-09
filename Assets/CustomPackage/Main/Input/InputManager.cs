@@ -1,160 +1,344 @@
-using Cysharp.Threading.Tasks;
 using System;
 using System.Collections.Generic;
-using System.Reflection;
+using System.Linq;
+using Cysharp.Threading.Tasks;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.EnhancedTouch;
 
 /// <summary>
-/// 게임의 입력(UI 클릭 제외)을 총괄해주는 매니저
+/// 플레이어 입력을 관리하는 매니저.
+/// InputActions의 등록, 활성화/비활성화, 캐싱을 담당합니다.
 /// </summary>
-public class InputManager : ContentManager
+/// 
+public class InputManager : CoreManager
 {
-    #region Field
+    #region Fields
 
-    private InputController _inputController = new();
-    
-    // 현재 적용된 입력 상태들
-    private InputActionType _currentInputActionType = InputActionType.None;
+    // Unity Input System 액션 에셋
+    private InputSystem_Actions _input;
 
-    // Action들을 추가로 넣을 때 아래에 추가해서 생성.
-    private readonly InputActions_CameraMove _cameraMove = new();
-    private readonly InputActions_CameraZoom _cameraZoom = new();
+    // 현재 활성화된 액션 타입 집합
+    private HashSet<Type> _curActionTypes = new();
 
-    private Dictionary<InputActionType, InputActions> _inputActions = new();
+    // 타입별 액션 인스턴스 캐시
+    private readonly Dictionary<Type, InputActions> _typeToAction = new();
 
     #endregion
+
+    #region Properties
+
+    public InputSystem_Actions Actions => _input;
+    public int ActiveActionCount => _curActionTypes.Count;
+    public int CachedActionCount => _typeToAction.Count;
+
+    #endregion
+
+    #region Initialization
 
     protected override async UniTask OnInitializeAsync()
     {
         await base.OnInitializeAsync();
-        
-        _inputController.Initialize();
 
-        // Field에 등록해둔 InputAction들을 읽고 초기화 및 inputActions에 캐싱해둠.
-        foreach (FieldInfo fieldInfo in typeof(InputManager).GetFields(BindingFlags.NonPublic | BindingFlags.Instance))
-        {
-            InputActions actions = fieldInfo.GetValue(Main.Input) as InputActions;
-            if (actions == null) continue;
-            actions.Init(_inputController);
-            _inputActions[actions.GetInputActionType()] = actions;
-        }
+        EnhancedTouchSupport.Enable();
+        _input = new InputSystem_Actions();
+        _input.Enable();
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log("[InputManager] Initialized");
+#endif
     }
 
-    // 모든 인풋 액션을 덮어쓰는 함수
-    public void SetInputActions(InputActionType setType)
+    #endregion
+
+    #region Input Mask - Type API
+
+    // 지정한 InputAction 타입들만 활성화하고 나머지는 비활성화
+    private void SetInput(params Type[] targetTypes)
     {
-        if (_currentInputActionType == setType) return;
+        HashSet<Type> nextActionTypes = targetTypes
+            .Where(IsValidActionType)
+            .ToHashSet();
 
-        // 1. 변화가 필요한 비트만 추출 (XOR)
-        InputActionType changed = _currentInputActionType ^ setType;
-
-        // 2. 바뀐 비트들 중에서 전체 리스트를 순회하며 처리
-        foreach (var kvp in _inputActions)
+        // 기존에 활성화되었지만 새 마스크에는 없는 액션들 비활성화
+        foreach (Type curType in _curActionTypes)
         {
-            InputActionType actionType = kvp.Key;
-            InputActions action = kvp.Value;
-
-            // 이 액션이 변화가 필요한 대상인가?
-            if ((changed & actionType) != 0)
+            if (!nextActionTypes.Contains(curType))
             {
-                // 변화가 필요한데 nextType에 포함되어 있다면 -> Connect
-                if ((setType & actionType) != 0)
-                {
-                    action.ConnectInputController();
-                }
-                // 변화가 필요한데 nextType에 없다면 (기존엔 있었다는 뜻) -> Disconnect
-                else
-                {
-                    action.DisconnectInputController();
-                }
-            }
-        }
-        
-        _currentInputActionType = setType;
-    }
-
-    // 해당 인풋 액션을 추가하는 함수
-    public void AddInputAction(InputActionType addType)
-    {
-        // 1. 이미 가지고 있는 비트를 제외하고 '새로 추가될 비트'만 계산
-        InputActionType bitsToAdd = addType & ~_currentInputActionType;
-        if (bitsToAdd == InputActionType.None) return;
-
-        // 2. 등록된 모든 액션을 순회하며 새로 추가된 비트에 해당하는 것만 실행
-        foreach (var kvp in _inputActions)
-        {
-            if ((bitsToAdd & kvp.Key) != 0)
-            {
-                kvp.Value.ConnectInputController();
+                DisconnectAction(curType);
             }
         }
 
-        _currentInputActionType |= bitsToAdd;
-    }
-
-    // 해당 인풋 액션을 제거하는 함수
-    public void RemoveInputAction(InputActionType removeType)
-    {
-        // 1. 현재 가지고 있는 비트 중에서 '삭제할 비트'만 추출
-        InputActionType bitsToRemove = removeType & _currentInputActionType;
-        if (bitsToRemove == InputActionType.None) return;
-
-        // 2. 삭제 대상 비트에 해당하는 액션만 연결 해제
-        foreach (var kvp in _inputActions)
+        // 새 마스크에 있지만 기존에 비활성화된 액션들 활성화
+        foreach (Type nextType in nextActionTypes)
         {
-            if ((bitsToRemove & kvp.Key) != 0)
+            if (!_curActionTypes.Contains(nextType))
             {
-                kvp.Value.DisconnectInputController();
+                ConnectAction(nextType);
             }
         }
 
-        _currentInputActionType &= ~bitsToRemove;
+        _curActionTypes = nextActionTypes;
     }
-    
-    // 해당 인풋 액션을 토글(On <-> Off) 형태로 전환하는 함수
-    public void ToggleInputAction(InputActionType toggleType)
+
+    // 인풋 액션 추가
+    private void AddInput(params Type[] addTypes)
     {
-        if (toggleType == InputActionType.None) return;
+        SetInput(_curActionTypes.Concat(addTypes).ToArray());
+    }
 
-        // 1. 등록된 모든 액션을 순회
-        foreach (var kvp in _inputActions)
+    // 인풋 액션 제거
+    private void RemoveInput(params Type[] removeTypes)
+    {
+        SetInput(_curActionTypes.Where(t => !removeTypes.Contains(t)).ToArray());
+    }
+
+    #endregion
+
+    #region Input Mask - Generic API
+
+    /// <summary>
+    /// 단일 InputAction 타입을 활성화합니다.
+    /// </summary>
+    public void SetInput<T>() where T : InputActions
+    {
+        SetInput(typeof(T));
+    }
+
+    /// <summary>
+    /// 두 개의 InputAction 타입을 활성화합니다.
+    /// </summary>
+    public void SetInput<T1, T2>()
+        where T1 : InputActions
+        where T2 : InputActions
+    {
+        SetInput(typeof(T1), typeof(T2));
+    }
+
+    /// <summary>
+    /// 세 개의 InputAction 타입을 활성화합니다.
+    /// </summary>
+    public void SetInput<T1, T2, T3>()
+        where T1 : InputActions
+        where T2 : InputActions
+        where T3 : InputActions
+    {
+        SetInput(typeof(T1), typeof(T2), typeof(T3));
+    }
+
+    /// <summary>
+    /// 네 개의 InputAction 타입을 활성화합니다.
+    /// </summary>
+    public void SetInput<T1, T2, T3, T4>()
+        where T1 : InputActions
+        where T2 : InputActions
+        where T3 : InputActions
+        where T4 : InputActions
+    {
+        SetInput(typeof(T1), typeof(T2), typeof(T3), typeof(T4));
+    }
+
+    /// <summary>
+    /// 단일 인풋 액션을 추가합니다.
+    /// </summary>
+    public void AddInput<T>() where T : InputActions
+    {
+        AddInput(typeof(T));
+    }
+
+    /// <summary>
+    /// 단일 인풋 액션을 제거합니다.
+    /// </summary>
+    public void RemoveInput<T>() where T : InputActions
+    {
+        RemoveInput(typeof(T));
+    }
+
+    /// <summary>
+    /// 현재 적용된 모든 인풋 액션을 제거합니다.
+    /// </summary>
+    public void RemoveAllInputs()
+    {
+        SetInput();
+    }
+
+    #endregion
+
+    #region State Query
+
+    /// <summary>
+    /// 인풋 액션이 활성화 상태인지 확인합니다. 모두 활성화되어야 true 반환.
+    /// </summary>
+    public bool IsActive(params Type[] searchTypes)
+    {
+        return searchTypes.All(t => _curActionTypes.Contains(t));
+    }
+
+    /// <summary>
+    /// 단일 인풋 액션이 활성화 상태인지 확인합니다.
+    /// </summary>
+    public bool IsActive<T>() where T : InputActions
+    {
+        return _curActionTypes.Contains(typeof(T));
+    }
+
+    /// <summary>
+    /// 캐싱된 액션 인스턴스를 가져옵니다. 없으면 null 반환.
+    /// </summary>
+    public T GetAction<T>() where T : InputActions
+    {
+        return _typeToAction.TryGetValue(typeof(T), out var action) ? action as T : null;
+    }
+
+    /// <summary>
+    /// 캐싱된 액션 인스턴스를 가져오거나, 없으면 생성합니다.
+    /// </summary>
+    public T GetOrCreateAction<T>() where T : InputActions
+    {
+        var type = typeof(T);
+
+        if (_typeToAction.TryGetValue(type, out var action))
         {
-            // 이 액션이 토글 대상에 포함되는지 확인
-            if ((toggleType & kvp.Key) != 0)
-            {
-                // 현재 상태 확인: 켜져 있으면 끄고, 꺼져 있으면 킴
-                bool isCurrentlyActive = (_currentInputActionType & kvp.Key) != 0;
+            return action as T;
+        }
 
-                if (isCurrentlyActive)
-                {
-                    kvp.Value.DisconnectInputController();
-                }
-                else
-                {
-                    kvp.Value.ConnectInputController();
-                }
+        return CreateAndCacheAction(type) as T;
+    }
+
+    /// <summary>
+    /// 특정 타입의 액션이 캐싱되어 있는지 확인합니다.
+    /// </summary>
+    public bool IsCached<T>() where T : InputActions
+    {
+        return _typeToAction.ContainsKey(typeof(T));
+    }
+
+    #endregion
+
+    #region Internal Methods
+
+    // 유효한 InputActions 타입인지 검증
+    private bool IsValidActionType(Type type)
+    {
+        if (type == null) return false;
+        if (type.IsAbstract) return false;
+        if (!typeof(InputActions).IsAssignableFrom(type)) return false;
+        return true;
+    }
+
+    // 액션 연결 (필요시 생성)
+    private void ConnectAction(Type type)
+    {
+        var action = GetOrCreateActionInternal(type);
+        if (action == null) return;
+
+        action.Connect();
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[InputManager] Connected: {type.Name}");
+#endif
+    }
+
+    // 액션 연결 해제
+    private void DisconnectAction(Type type)
+    {
+        if (!_typeToAction.TryGetValue(type, out var action)) return;
+
+        action.Disconnect();
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[InputManager] Disconnected: {type.Name}");
+#endif
+    }
+
+    // 액션 인스턴스 가져오기 또는 생성
+    private InputActions GetOrCreateActionInternal(Type type)
+    {
+        if (_typeToAction.TryGetValue(type, out var action))
+        {
+            return action;
+        }
+
+        return CreateAndCacheAction(type);
+    }
+
+    // 액션 인스턴스 생성 및 캐싱
+    private InputActions CreateAndCacheAction(Type type)
+    {
+        try
+        {
+            var action = (InputActions)Activator.CreateInstance(type, this);
+            _typeToAction[type] = action;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"[InputManager] Created and cached: {type.Name}");
+#endif
+            return action;
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[InputManager] Failed to create InputActions instance: {type.Name}\n{e}");
+            return null;
+        }
+    }
+
+    #endregion
+
+    #region Utility
+
+    // UI 레이캐스트용 이벤트 데이터
+    private PointerEventData _pointerData;
+
+    // UI 레이캐스트 결과 버퍼
+    private readonly List<RaycastResult> _raycastResults = new(16);
+
+    /// <summary>
+    /// 현재 포인터가 UI 위에 존재하는지 확인합니다.
+    /// </summary>
+    public bool IsPointerOverUI(Vector2 screenPos)
+    {
+        if (EventSystem.current == null) return false;
+
+        _pointerData ??= new PointerEventData(EventSystem.current);
+        _pointerData.position = screenPos;
+        _raycastResults.Clear();
+        EventSystem.current.RaycastAll(_pointerData, _raycastResults);
+
+        return _raycastResults.Count > 0;
+    }
+
+    /// <summary>
+    /// 스크린 좌표를 월드 좌표로 변환합니다.
+    /// </summary>
+    public Vector3 ScreenToWorld(Vector2 screenPos)
+    {
+        var cam = Camera.main;
+        if (cam == null) return Vector3.zero;
+
+        float depth = cam.orthographic ? -cam.transform.position.z : 0f;
+        return cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, depth));
+    }
+
+    #endregion
+
+    #region Cleanup
+
+    public override void Clear()
+    {
+        base.Clear();
+
+        // 모든 활성화된 액션 비활성화
+        foreach (var type in _curActionTypes)
+        {
+            if (_typeToAction.TryGetValue(type, out var action))
+            {
+                action.Disconnect();
             }
         }
 
-        // 2. 현재 상태 비트마스크 반전 (XOR 연산)
-        // XOR(^)은 서로 다르면 1, 같으면 0이 되므로 켜진 비트는 꺼지고, 꺼진 비트는 켜짐
-        _currentInputActionType ^= toggleType;
+        _curActionTypes.Clear();
+        _typeToAction.Clear();
     }
 
-    // 해당 인풋 액션이 활성화되어있는지 확인하는 함수
-    public bool IsActiveAction(InputActionType checkType)
-    {
-        if (checkType == InputActionType.None) return false;
-        return (_currentInputActionType & checkType) == checkType;
-    }
-}
-
-[Flags]
-public enum InputActionType
-{
-    None = 0,
-    CameraMove = 1 << 0,
-    CameraZoom = 1 << 1,
-    
-    GameScenePlay = CameraMove | CameraZoom,
-
+    #endregion
 }

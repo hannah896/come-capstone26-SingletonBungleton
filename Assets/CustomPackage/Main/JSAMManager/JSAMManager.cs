@@ -5,23 +5,34 @@ using UnityEngine;
 
 /// <summary>
 /// 오디오들의 출력들을 관리해주는 매니저.
+/// JSAM(Simple Audio Manager)을 래핑하여 BGM/SFX를 제어합니다.
 /// </summary>
-public class JSAMManager : ContentManager
+public class JSAMManager : PrimaryManager
 {
-    #region Field
-    
+    #region Fields
+
+    // BGM 설정 여부
     private bool _setBGM;
+
+    // SFX 설정 여부
     private bool _setSFX;
+
+    // 설정 프리퍼런스
     private SettingPrefs _settingPrefs;
 
     #endregion
 
-    #region Property
+    #region Properties
 
+    // BGM 활성화 여부
     public bool SetBGM => _settingPrefs.BGM.Value;
+
+    // SFX 활성화 여부
     public bool SetSFX => _settingPrefs.SFX.Value;
 
     #endregion
+
+    #region Initialization
 
     protected override async UniTask OnInitializeAsync()
     {
@@ -31,20 +42,35 @@ public class JSAMManager : ContentManager
         if (!Object.FindFirstObjectByType<AudioManager>())
         {
             AudioManager go = await Main.Resource.LoadAssetAsync<AudioManager>("AudioManager");
-            go = new GameObject("[AudioManager]").AddComponent<AudioManager>();
+            var prefab = GameObject.Instantiate(go);
+
+            await UniTask.Delay(1000);
+            prefab.name = "@Audio";
+            prefab.transform.SetSiblingIndex(2);
         }
-        
+
         _settingPrefs = Prefs.Get<SettingPrefs>();
-        _settingPrefs.BGM.OnValueChanged += SetMusicPlay; 
-        _settingPrefs.SFX.OnValueChanged += SetSoundPlay; 
+        _settingPrefs.BGM.OnValueChanged += SetMusicPlay;
+        _settingPrefs.SFX.OnValueChanged += SetSoundPlay;
     }
 
-    #region Audio
+    #endregion
 
+    #region Audio Control
+
+    /// <summary>
+    /// 음악 재생 설정을 변경합니다.
+    /// </summary>
     public void SetMusicPlay(bool active) => AudioManager.MusicMuted = !active;
+
+    /// <summary>
+    /// 효과음 재생 설정을 변경합니다.
+    /// </summary>
     public void SetSoundPlay(bool active) => AudioManager.SoundMuted = !active;
 
-    // BGM 플레이
+    /// <summary>
+    /// BGM을 재생합니다.
+    /// </summary>
     public void PlayBGM(AudioLibraryMusic clip, float vol = 0.8f)
     {
         if (!SetBGM) return;
@@ -56,7 +82,9 @@ public class JSAMManager : ContentManager
 #endif
     }
 
-    // SFX 플레이
+    /// <summary>
+    /// SFX를 재생합니다.
+    /// </summary>
     public void PlaySFX(AudioLibrarySounds clip, float vol = 0.8f)
     {
         if (!SetSFX) return;
@@ -67,25 +95,35 @@ public class JSAMManager : ContentManager
 #endif
     }
 
-    // SFX 랜덤 플레이
+    /// <summary>
+    /// 랜덤 SFX를 재생합니다.
+    /// </summary>
     public void PlayRandomSFX(AudioLibrarySounds[] clip, float vol = 0.8f)
     {
         if (!SetSFX) return;
         int randomIndex = Random.Range(0, clip.Length);
         PlaySFX(clip[randomIndex], vol);
-        Main.JSAM.PlaySFX(clip[randomIndex], vol);
     }
 
+    /// <summary>
+    /// BGM을 정지합니다.
+    /// </summary>
     public void StopBGM()
     {
         AudioManager.StopAllMusic();
     }
 
+    /// <summary>
+    /// SFX를 정지합니다.
+    /// </summary>
     public void StopSFX()
     {
         AudioManager.StopAllSounds();
     }
 
+    /// <summary>
+    /// 모든 사운드를 정지합니다.
+    /// </summary>
     public void StopAllSound()
     {
         StopBGM();

@@ -68,8 +68,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: d7e8a4983f5c54136a92cde531412d83, type: 2}
-  m_sharedMaterial: {fileID: -1809993754968581050, guid: d7e8a4983f5c54136a92cde531412d83, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: fd6e492493bb526499c1ccce23605b07, type: 2}
+  m_sharedMaterial: {fileID: -1809993754968581050, guid: fd6e492493bb526499c1ccce23605b07, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -149,3 +149,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4741ce3b72af84726a937f18f53b5c74, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_Text
+  _autoResize: 0
+  _resizePadding: 0
+  _localeName: 0
+  _outlineSettings:
+    color: {r: 1, g: 1, b: 1, a: 1}
+    thickness: 0
+    dilate: 0
+  _previewOutline: 1

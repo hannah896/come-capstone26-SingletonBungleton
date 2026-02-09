@@ -15,7 +15,7 @@ MonoBehaviour:
   m_DefaultGroup: 1355e2feab16e06409f202acb6043666
   m_currentHash:
     serializedVersion: 2
-    Hash: 00000000000000000000000000000000
+    Hash: 866a13422f8223ee73e6c57cc32f16fc
   m_OptimizeCatalogSize: 0
   m_BuildRemoteCatalog: 0
   m_CatalogRequestsTimeout: 0
@@ -62,8 +62,6 @@ MonoBehaviour:
   m_GroupAssets:
   - {fileID: 11400000, guid: e6ccef0b5b2540943a9c90cbdb1c304d, type: 2}
   - {fileID: 11400000, guid: 3ca174560c64618448f1a1c619c2b170, type: 2}
-  - {fileID: 11400000, guid: 8cf1ca2e21235144aadb0fef8058e309, type: 2}
-  - {fileID: 11400000, guid: 0a32dbfc195d4e34abd06beac4b0d34d, type: 2}
   - {fileID: 11400000, guid: f7160eebd0276e047beb889697b07f5c, type: 2}
   - {fileID: 11400000, guid: 641a3730c42739f498f31a108caa5ea3, type: 2}
   m_BuildSettings:
@@ -106,9 +104,6 @@ MonoBehaviour:
     m_LabelNames:
     - default
     - EveryScene
-    - BiomeData
-    - TestWorldSettings
-    - TestMapSettings
   m_SchemaTemplates: []
   m_GroupTemplateObjects:
   - {fileID: 11400000, guid: e7ab815488528f64289e35f404d2c676, type: 2}

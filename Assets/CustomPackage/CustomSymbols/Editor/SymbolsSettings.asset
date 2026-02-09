@@ -15,30 +15,84 @@ MonoBehaviour:
   customAllSymbols:
   - gameanalytics_max_enabled
   - gameanalytics_admob_enabled
-  - Arrows_RainBowCat
   - DOTWEEN
+  - UNITASK_DOTWEEN_SUPPORT
+  - PHOTON_FUSION
+  - FUSION_LOGLEVEL_INFO
+  - FUSION_WEAVER
+  - FUSION2
+  - FUSION_2
+  - FUSION_2_0
+  - FUSION_2_0_9
+  - FUSION_2_OR_NEWER
+  - FUSION_2_0_OR_NEWER
   allPlatformSymbols:
   - gameanalytics_max_enabled
   - gameanalytics_admob_enabled
   - DOTWEEN
-  - Arrows_RainBowCat
+  - UNITASK_DOTWEEN_SUPPORT
+  - PHOTON_FUSION
+  - FUSION_LOGLEVEL_INFO
+  - FUSION_WEAVER
+  - FUSION2
+  - FUSION_2
+  - FUSION_2_0
+  - FUSION_2_0_9
+  - FUSION_2_OR_NEWER
+  - FUSION_2_0_OR_NEWER
   windowPlatformSymbols:
   - gameanalytics_max_enabled
   - gameanalytics_admob_enabled
   - DOTWEEN
-  - Arrows_RainBowCat
+  - UNITASK_DOTWEEN_SUPPORT
+  - PHOTON_FUSION
+  - FUSION_LOGLEVEL_INFO
+  - FUSION_WEAVER
+  - FUSION2
+  - FUSION_2
+  - FUSION_2_0
+  - FUSION_2_0_9
+  - FUSION_2_OR_NEWER
+  - FUSION_2_0_OR_NEWER
   macPlatformSymbols:
   - gameanalytics_max_enabled
   - gameanalytics_admob_enabled
   - DOTWEEN
-  - Arrows_RainBowCat
+  - UNITASK_DOTWEEN_SUPPORT
+  - PHOTON_FUSION
+  - FUSION_LOGLEVEL_INFO
+  - FUSION_WEAVER
+  - FUSION2
+  - FUSION_2
+  - FUSION_2_0
+  - FUSION_2_0_9
+  - FUSION_2_OR_NEWER
+  - FUSION_2_0_OR_NEWER
   aosPlatformSymbols:
   - gameanalytics_max_enabled
   - gameanalytics_admob_enabled
   - DOTWEEN
-  - Arrows_RainBowCat
+  - UNITASK_DOTWEEN_SUPPORT
+  - PHOTON_FUSION
+  - FUSION_LOGLEVEL_INFO
+  - FUSION_WEAVER
+  - FUSION2
+  - FUSION_2
+  - FUSION_2_0
+  - FUSION_2_0_9
+  - FUSION_2_OR_NEWER
+  - FUSION_2_0_OR_NEWER
   iosPlatformSymbols:
   - gameanalytics_max_enabled
   - gameanalytics_admob_enabled
   - DOTWEEN
-  - Arrows_RainBowCat
+  - UNITASK_DOTWEEN_SUPPORT
+  - PHOTON_FUSION
+  - FUSION_LOGLEVEL_INFO
+  - FUSION_WEAVER
+  - FUSION2
+  - FUSION_2
+  - FUSION_2_0
+  - FUSION_2_0_9
+  - FUSION_2_OR_NEWER
+  - FUSION_2_0_OR_NEWER

@@ -111,34 +111,6 @@
                     "isPartOfComposite": false
                 }
             ]
-        },
-        {
-            "name": "Player",
-            "id": "ed3e822f-b057-4982-bf29-2581712a51ae",
-            "actions": [
-                {
-                    "name": "New action",
-                    "type": "Button",
-                    "id": "9115b9f7-1b4a-42cc-a6f6-bb4df2a7d832",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                }
-            ],
-            "bindings": [
-                {
-                    "name": "",
-                    "id": "043c2d03-bf95-4f9c-bbb5-b9c3bd187c8a",
-                    "path": "",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "New action",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                }
-            ]
         }
     ],
     "controlSchemes": []

@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public class UI_Canvas : UI_Base
+public class UI_Canvas : UI
 {
     protected Canvas _canvas;
     protected CanvasScaler _scaler;

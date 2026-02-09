@@ -4,7 +4,7 @@ using Blossom.Preference;
 using TMPro;
 using UnityEngine;
 
-public class UI_Editor : UI_Base {
+public class UI_Editor : UI_Panel {
 
     #region Const
 
@@ -85,7 +85,7 @@ public class UI_Editor : UI_Base {
         gameObject.FindChild<UI_Button>("Btn_CameraZoom").SetEvent(OnEnterCameraZoom);
         gameObject.FindChild<UI_Button>("Btn_HeartInfinity").SetEvent(OnEnterHeartInfinity);
         //gameObject.FindChild<UI_Button>("Btn_AdRemove").SetEvent(OnEnterAdRemove);
-        //gameObject.FindChild<UI_Button>("Btn_SendClearEvent").SetEvent(OnEnterSendClearLog);
+        gameObject.FindChild<UI_Button>("Btn_SendClearEvent").SetEvent(OnEnterSendClearLog);
 
         _canvas.overrideSorting = true;
         _canvas.sortingLayerName = "UI";
@@ -193,23 +193,23 @@ public class UI_Editor : UI_Base {
     private void OnEnterClose() => IsActiveEditor = false;
     private void OnEnterCameraMove()
     {
-        Main.Input.ToggleInputAction(InputActionType.CameraMove);
-        bool isActive = Main.Input.IsActiveAction(InputActionType.CameraMove);
+        // Main.Input.ToggleInputAction(InputActionType.CameraMove);
+        // bool isActive = Main.Input.IsActiveAction(InputActionType.CameraMove);
         StringBuilder sb = new();
         sb.AppendLine("Camera");
         sb.AppendLine("Move");
-        sb.Append($"{GetActiveString(isActive)}");
+        // sb.Append($"{GetActiveString(isActive)}");
         _txtCameraMove.Text = sb.ToString();
     }
 
     private void OnEnterCameraZoom()
     {
-        Main.Input.ToggleInputAction(InputActionType.CameraZoom);
-        bool isActive = Main.Input.IsActiveAction(InputActionType.CameraZoom);
+        // Main.Input.ToggleInputAction(InputActionType.CameraZoom);
+        // bool isActive = Main.Input.IsActiveAction(InputActionType.CameraZoom);
         StringBuilder sb = new();
         sb.AppendLine("Camera");
         sb.AppendLine("Zoom");
-        sb.Append($"{GetActiveString(isActive)}");
+        // sb.Append($"{GetActiveString(isActive)}");
         _txtCameraZoom.Text = sb.ToString();
     }
 
@@ -224,30 +224,19 @@ public class UI_Editor : UI_Base {
         _txtHeartInfinity.Text = sb.ToString();
     }
 
-    //private void OnEnterAdRemove()
-    //{
-    //    Main.Ads.IsEditorAdRemove = !Main.Ads.IsEditorAdRemove;
-    //    bool isActive = Main.Ads.IsEditorAdRemove;
-    //    StringBuilder sb = new();
-    //    sb.AppendLine("Ad");
-    //    sb.AppendLine("Remove");
-    //    sb.Append($"{GetActiveString(isActive)}");
-    //    _txtAdRemove.Text = sb.ToString();
-    //}
-
-    //private void OnEnterSendClearLog()
-    //{
-    //    int maxStage = Main.Data.GetMaxStageCount();
-    //    for (int i = 1; i <= maxStage; i++)
-    //    {
-    //        Main.AnalyticsSDK.LogEvent($"rca_clear_{i:D4}", null, AnalyticsType.GF);
-    //    }
-    //    StringBuilder sb = new();
-    //    sb.AppendLine("Send Clear");
-    //    sb.AppendLine("Event Log");
-    //    sb.Append($"[Success Log]");
-    //    _txtSendEvent.Text = sb.ToString();
-    //}
+    private void OnEnterSendClearLog()
+    {
+        int maxStage = Main.Data.GetMaxStageCount();
+        //for (int i = 1; i <= maxStage; i++)
+        //{
+        //    Main.AnalyticsSDK.LogEvent($"rca_clear_{i:D4}", null, AnalyticsType.GF);
+        //}
+        StringBuilder sb = new();
+        sb.AppendLine("Send Clear");
+        sb.AppendLine("Event Log");
+        sb.Append($"[Success Log]");
+        _txtSendEvent.Text = sb.ToString();
+    }
 
     private string GetActiveString(bool active)
     {

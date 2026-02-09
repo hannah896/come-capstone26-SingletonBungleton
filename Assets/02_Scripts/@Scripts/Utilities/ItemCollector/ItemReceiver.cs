@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 
-public class ItemReceiver : Entity
-{
+public class ItemReceiver : Entity {
 
     #region Fields
 

@@ -6,71 +6,71 @@ using UnityEngine;
 
 public class UI_Loader : InitBehaviour {
 
-    #region Fields
+    //#region Fields
 
-    private bool _isShowing;
-    private float _showTime;
-    private bool _hideFlag;
+    //private bool _isShowing;
+    //private float _showTime;
+    //private bool _hideFlag;
     
-    private Sequence _sequence;
+    //private Sequence _sequence;
     
-    // Components.
-    private CanvasGroup _canvasGroup;
+    //// Components.
+    //private CanvasGroup _canvasGroup;
     
-    private UI_Loading _currentLoading;
-    private Dictionary<LoadingType, UI_Loading> _loadings = new();
+    //private UI_Loading _currentLoading;
+    //private Dictionary<ScreenEffectType, UI_Loading> _loadings = new();
 
-    #endregion
+    //#endregion
 
-    #region MonoBehaviours
+    //#region MonoBehaviours
 
-    private void Update() {
-        if (!_isShowing) return;
-        _showTime += Time.deltaTime;
-    }
+    //private void Update() {
+    //    if (!_isShowing) return;
+    //    _showTime += Time.deltaTime;
+    //}
 
-    #endregion
+    //#endregion
 
-    #region Initialize / Set
+    //#region Initialize / Set
 
-    public override bool Initialize() {
-        if (!base.Initialize()) return false;
+    //public override bool Initialize() {
+    //    if (!base.Initialize()) return false;
         
-        _loadings.Add(LoadingType.Transition, gameObject.FindChild<UI_Loading_Transition>());
-        _loadings.Add(LoadingType.Ads, gameObject.FindChild<UI_Loading_Ads>());
-        _loadings.Add(LoadingType.Iap, gameObject.FindChild<UI_Loading_Iap>());
-        DontDestroyOnLoad(gameObject);
+    //    _loadings.Add(ScreenEffectType.Fade, gameObject.FindChild<UI_Loading_Transition>());
+    //    _loadings.Add(ScreenEffectType.Ads, gameObject.FindChild<UI_Loading_Ads>());
+    //    _loadings.Add(ScreenEffectType.Iap, gameObject.FindChild<UI_Loading_Iap>());
+    //    DontDestroyOnLoad(gameObject);
         
-        return true;
-    }
+    //    return true;
+    //}
 
-    public void Set(LoadingType type, Action onLoadingComplete = null)
-    {
-        Initialize();
-        _showTime = 0;
-        _currentLoading = _loadings[type];
-        _currentLoading.Set(onLoadingComplete);
-    }
+    //public void Set(ScreenEffectType type, Action onLoadingComplete = null)
+    //{
+    //    Initialize();
+    //    _showTime = 0;
+    //    _currentLoading = _loadings[type];
+    //    _currentLoading.Set(onLoadingComplete);
+    //}
 
-    #endregion
+    //#endregion
 
-    public void Show()
-    {
-        if (_currentLoading == null)
-        {
-            Debug.LogError($"loading show is failed");
-            return;
-        }
-        _isShowing = true;
-        _currentLoading.FadeInLoading();
-    }
+    //public void Show()
+    //{
+    //    if (_currentLoading == null)
+    //    {
+    //        Debug.LogError($"loading show is failed");
+    //        return;
+    //    }
+    //    _isShowing = true;
+    //    _currentLoading.FadeInLoading();
+    //}
 
-    public void Hide(float minWaitSec = 3f) => StartCoroutine(HideCoroutine(minWaitSec));
+    //public void Hide(float minWaitSec = 3f) => StartCoroutine(HideCoroutine(minWaitSec));
 
-    private IEnumerator HideCoroutine(float minWaitSec = 3f)
-    {
-        yield return new WaitUntil(() => _showTime >= minWaitSec);
-        _currentLoading.FadeOutLoading();
-        _isShowing = false;
-    }
+    //private IEnumerator HideCoroutine(float minWaitSec = 3f)
+    //{
+    //    yield return new WaitUntil(() => _showTime >= minWaitSec);
+    //    _currentLoading.FadeOutLoading();
+    //    _isShowing = false;
+    //}
 }

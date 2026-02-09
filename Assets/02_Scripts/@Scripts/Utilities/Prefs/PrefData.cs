@@ -33,11 +33,11 @@ namespace Blossom.Preference {
 
         protected void RebindPrefValues() {
             const BindingFlags FLAGS = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            foreach (FieldInfo fieldInfo in GetType().GetFields(FLAGS)) {
+            foreach (FieldInfo fieldInfo in GetType().GetFields(FLAGS)) 
+            {
                 Type t = fieldInfo.FieldType;
                 if (!t.IsGenericType) continue;
                 if (t.GetGenericTypeDefinition() != typeof(PrefValue<>)) continue;
-
                 object fieldInfoValue = fieldInfo.GetValue(this);
                 if (fieldInfoValue == null) continue;
 
@@ -52,13 +52,19 @@ namespace Blossom.Preference {
             }
         }
 
+        /// <summary>
+        /// 저장할떄 쓰는거 
+        /// </summary>
         public virtual void Flush() { }
         
+        /// <summary>
+        /// 데이터 초기화 할 때 쓰는거
+        /// </summary>
         public virtual void Clear() { }
 
-        public virtual void OnChanged() {
+        public virtual void OnChanged() 
+        {
             PrefSystem.OnChanged(_key);
         }
     }
-    
 }
