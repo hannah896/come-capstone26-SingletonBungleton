@@ -253,6 +253,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7baf775aa949c0e49905681e525c801a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  test_Food: {fileID: 0}
 --- !u!1 &368285498
 GameObject:
   m_ObjectHideFlags: 0
@@ -345,9 +346,78 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &920097691
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 920097693}
+  - component: {fileID: 920097692}
+  m_Layer: 0
+  m_Name: ItemTestManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &920097692
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 920097691}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 741adc2a6fd275a49bd4f882ad82a1cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  survivalToolData:
+  - {fileID: 11400000, guid: ddbbce5581b91654598a8c87aa7a4a0f, type: 2}
+  - {fileID: 11400000, guid: 2214542d16abe6d4f833fe41caa772c0, type: 2}
+  - {fileID: 11400000, guid: 41909ce6e3bb1334898e2b02f5f26412, type: 2}
+  combatGearData:
+  - {fileID: 11400000, guid: 50c9bbe0734ae3645afaedaba373f9bc, type: 2}
+  - {fileID: 11400000, guid: 82a84a61e8ffb3140bbf280ca4a75188, type: 2}
+  - {fileID: 11400000, guid: c06e0dbf626bfce47b0abe9f177cea1b, type: 2}
+  - {fileID: 11400000, guid: e1f596cdacd8d3541a52e313b232e317, type: 2}
+  - {fileID: 11400000, guid: af0d40ff45c7db0458d0220260c739e8, type: 2}
+  - {fileID: 11400000, guid: 7e761d3834f7336428fb3e220a2e08b9, type: 2}
+  resourceData:
+  - {fileID: 11400000, guid: 1443a72bdfd73b34d94f736cd1780a6d, type: 2}
+  - {fileID: 11400000, guid: d8e11409ce1e71342a2bfc44b7a88dbc, type: 2}
+  - {fileID: 11400000, guid: 1a846fdde396fc945acf993a20dd51e4, type: 2}
+  - {fileID: 11400000, guid: 9acaa5c28b0f06147905d7eff9260d7f, type: 2}
+  - {fileID: 11400000, guid: 5e2cad9aa1cc7634383497107cfd8248, type: 2}
+  - {fileID: 11400000, guid: 405e514e4f6943e4fae2d25ad4a5e0b8, type: 2}
+  - {fileID: 11400000, guid: 64bd351efb9aecd468e2cd3ba48367e7, type: 2}
+  lootData:
+  - {fileID: 11400000, guid: 591a07624aafd3b49bd884681bbc252f, type: 2}
+  - {fileID: 11400000, guid: 3dac3d9944fb33b45a908a2340b97911, type: 2}
+  - {fileID: 11400000, guid: 50213bac9b38cd84aa1e1c9170c93cb7, type: 2}
+  - {fileID: 11400000, guid: 2dfc70791e0c5204388942da7d3fe05f, type: 2}
+--- !u!4 &920097693
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 920097691}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.13970622, y: 0.13370386, z: 0.2279041}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 368285501}
   - {fileID: 238472299}
+  - {fileID: 920097693}
