@@ -1,8 +1,10 @@
 using Cysharp.Threading.Tasks;
+using Cysharp.Threading.Tasks.Triggers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using UnityEngine;
+using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
 
 /// <summary>
 /// 단일 Task의 Room 그래프를 생성하는 클래스
@@ -44,21 +46,27 @@ public class RegionGenerator
             _fastSettings = settings.FastSettings;
 
             _ct = ct;
-            // 1: Task Node 배치 (Macro Layout)
+            // 1 : Task Node 배치 (Macro Layout)
             // 논리적 그래프만 있는 상태이므로, Region Node들을 물리적으로 펼쳐줍니다.
             await ArrangeRegionNodes();
 
-            // 2 : 각 Region Node를 Room Cluster로 변환
+            // 2 : Force Simulation 실행
+            _regionResult.Nodes = await RunForceSimulationAsync(_regionResult.Nodes, _macroSettings, _ct);
+
+            // 3 : 각 Region Node를 Room Cluster로 변환
             await GenerateInternalTopology();
 
-            // 3 : Force Simulation으로 Node들 배치 (Fast Layout)
+            // 4 : Force Simulation으로 Node들 배치 (Fast Layout)
             _regionResult.Nodes = await RunForceSimulationAsync(_regionResult.Nodes, _fastSettings, _ct);
 
-            // 4 : Loop 생성
+            // 5 : Loop 생성
             await CreateLoopsAsync();
 
-            // Phase 5 : 
+            // 6 : 
             _regionResult.Nodes = await RunForceSimulationAsync(_regionResult.Nodes, _microSettings, _ct);
+
+            // 7 : 
+            await CutLoopConnections();
 
             // 오프셋 적용 및 결과 생성
             return _regionResult;
@@ -74,16 +82,40 @@ public class RegionGenerator
     private async UniTask ArrangeRegionNodes()
     {
         // 1. 초기화: 0,0에 뭉쳐있지 않게 랜덤하게 살짝 흩뿌림 (Start는 0,0 고정)
-        foreach (var node in _regionResult.Nodes)
+        if (!_regionResult.IsLooped)
         {
-            if (node.Depth == 1) // Start Node
-                node.Position = Random.insideUnitCircle * _microSettings.idealEdgeLength;
-            else
-                node.Position = Random.insideUnitCircle * _macroSettings.idealEdgeLength;
+            foreach (var node in _regionResult.Nodes)
+            {
+                if (node.Depth == 1) // Start Node
+                    node.Position = Random.insideUnitCircle * _microSettings.idealEdgeLength;
+                else
+                    node.Position = Random.insideUnitCircle * _macroSettings.idealEdgeLength;
+            }
         }
-        //2. Force Simulation 실행
-        _regionResult.Nodes = await RunForceSimulationAsync(_regionResult.Nodes,_macroSettings, _ct);
+        else
+        {   
+            // [원형 배치] 도넛 모양 만들기
+            // Depth 순서대로 정렬 (시작 -> 중간 -> 끝)
+            var sortedNodes = _regionResult.Nodes.OrderBy(n => n.Depth).ToList();
+            int count = sortedNodes.Count;
 
+            // 적절한 반지름 계산 (노드 사이 간격을 유지하며 원을 만들 크기)
+            float circumference = count * _macroSettings.idealEdgeLength;
+            float radius = circumference / (2 * Mathf.PI);
+
+            // 반지름이 너무 작으면 뭉치므로 최소값 보장
+            radius = Mathf.Max(radius, _macroSettings.idealEdgeLength * 2);
+
+            for (int i = 0; i < count; i++)
+            {
+                // 각도 계산 (0도 ~ 360도)
+                float angle = i * (360f / count) * Mathf.Deg2Rad;
+                // 원형 좌표 할당
+                sortedNodes[i].Position = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+            }
+        }
+
+        
 
         if (_worldSettings.EnableStepByStep)
             await UniTask.Delay(System.TimeSpan.FromSeconds(0.1f), cancellationToken: _ct);
@@ -91,7 +123,7 @@ public class RegionGenerator
 
     #endregion
 
-    #region 1. Room Cluster Generation
+    #region Phase 1: Room Cluster Generation
     private async UniTask GenerateInternalTopology()
     {
         // 1. [Snapshot] 원본 Region 데이터 복사 (루프용 & 참조용)
@@ -102,151 +134,103 @@ public class RegionGenerator
         _regionResult.Clear();
         _regionToCluster.Clear();
 
-        List<Node> allRoomNodes = new List<Node>();
-        List<NodeConnection> allRoomConnections = new List<NodeConnection>();
         foreach (Node regionNode in regionNodesSnapshot)
         {
-            //A. 해당 Region에 대한 Room Cluster 및 연결 생성,  Data 참조
-            List<Node> cluster = new();
-            List<NodeConnection> clusterConnections = new();
-            RegionData regionData = regionNode.RegionData;
+            var(cluster, clusterConnections) = GenerateRoomsForRegion(regionNode);
 
             _regionToCluster[regionNode] = cluster;
+            ////A. 해당 Region에 대한 Room Cluster 및 연결 생성,  Data 참조
+            //List<Node> cluster = new();
+            //List<NodeConnection> clusterConnections = new();
+            //RegionData regionData = regionNode.RegionData;
+
+            //_regionToCluster[regionNode] = cluster;
 
 
-            //B. 기본 방 개수 결정
-            int defaultRoomCount = Random.Range(regionData.DefaultMinCount, regionData.DefaultMaxCount + 1);
+            ////B. 기본 방 개수 결정
+            //int defaultRoomCount = Random.Range(regionData.DefaultMinCount, regionData.DefaultMaxCount + 1);
 
-            //C. 시작 방 선정(입구 방 우선, 없는 경우 DefaultRooms 중 랜덤)
-            RoomData startRoomData = regionData.EntranceRoom;
-            if (startRoomData == null)
+            ////C. 시작 방 선정(입구 방 우선, 없는 경우 DefaultRooms 중 랜덤)
+            //RoomData startRoomData = regionData.EntranceRoom ?? regionData.GetRandomDefaultRoom();
+            ////D. 입구 방 없는 경우 default 방 중 랜덤하게 선택하여 시작 방으로 설정
+            //Node startRoom = new()
+            //{
+            //    Position = regionNode.Position,
+            //    RegionData = regionData,
+            //    RoomData = startRoomData,
+            //    Depth = regionNode.Depth,
+            //    RoomDepth = 1
+            //};
+            //cluster.Add(startRoom);
+            //// E. 기본 방 배치 루프(Essential Room 개수 만큼 루프 늘린 후 Essential Room 배치 시 기존 방과 스왑하는 형식)
+            //while (cluster.Count < defaultRoomCount + regionData.EssentialRooms.Count)
+            //{
+            //    // E1. 부모 노드 선정
+            //    Node parentNode = PickParentRoom(cluster, regionData.RoomBranch);
+            //    if (parentNode == null) break;
+
+            //    // E2. 새 방 생성
+            //    // 위치: 부모 위치 기준 + 랜덤 방향 (parentNode의 parent 방향은 피해서 ,Micro Setting 거리)
+            //    Vector2 safeDirection = GetDirectionAwayFromGrandparent(parentNode, clusterConnections);
+            //    Vector2 newOffset = parentNode.Position + (safeDirection * _microSettings.idealEdgeLength);
+
+            //    Node newRoom = new Node
+            //    {
+            //        Position = newOffset,
+            //        RegionData = regionData,
+            //        RoomData = regionData.GetRandomDefaultRoom(),
+            //        Depth = parentNode.Depth,               // Region Depth
+            //        RoomDepth = parentNode.RoomDepth + 1    // Local Depth
+            //    };
+
+            //    // E3. 등록 및 연결
+            //    cluster.Add(newRoom);
+            //    clusterConnections.Add(new(parentNode, newRoom));
+            //}
+
+            //// F. 필수 방 배치(스왑)
+            //if (regionData.EssentialRooms != null)
+            //{
+            //    AssignEssentialRooms(cluster, regionData);
+            //}
+
+            //===========================================
+            if (cluster.Count > 0)
             {
-                if (regionData.DefaultRooms != null && regionData.DefaultRooms.Count > 0)
-                    startRoomData = regionData.DefaultRooms[Random.Range(0, regionData.DefaultRooms.Count)];
-                else
-                {
-                    // DefaultRoom도 없으면 에러 혹은 기본값 처리
-                    Debug.LogError($"Region {regionData.RegionName} has no rooms!");
-                    return;
-                }
-            }
-            //D. 입구 방 없는 경우 default 방 중 랜덤하게 선택하여 시작 방으로 설정
-            Node startRoom = new()
-            {
-                Position = regionNode.Position,
-                RegionData = regionData,
-                RoomData = startRoomData,
-                Depth = regionNode.Depth,
-                RoomDepth = 1
-            };
-            cluster.Add(startRoom);
-            // E. 기본 방 배치 루프(Essential Room 개수 만큼 루프 늘린 후 Essential Room 배치 시 기존 방과 스왑하는 형식)
-            while (cluster.Count < defaultRoomCount + regionData.EssentialRooms.Count)
-            {
-                // E1. 부모 노드 선정
-                Node parentNode = PickParentRoom(cluster, regionData.RoomBranch);
-
-                // 방어 코드: 더 이상 붙일 곳이 없으면 중단 
-                if (parentNode == null) break;
-
-                // E2. 새 방 생성
-                // 위치: 부모 위치 기준 + 랜덤 방향 (parentNode의 parent 방향은 피해서 ,Micro Setting 거리)
-                Vector2 safeDirection = GetDirectionAwayFromGrandparent(
-                    parentNode,
-                    clusterConnections
-                    );
-
-                Vector2 newOffset = parentNode.Position + (safeDirection * _microSettings.idealEdgeLength);
-
-                Node newRoom = new Node
-                {
-                    Position = newOffset,
-                    RegionData = regionData,
-                    RoomData = regionData.GetRandomDefaultRoom(),
-                    Depth = parentNode.Depth,               // Region Depth
-                    RoomDepth = parentNode.RoomDepth + 1    // Local Depth
-                };
-
-                // E3. 등록 및 연결
-                cluster.Add(newRoom);
-                clusterConnections.Add(new(parentNode, newRoom));
-            }
-
-            // F. 필수 방 배치(스왑)
-            if (regionData.EssentialRooms != null)
-            {
-                int clusterMaxDepth = cluster.Max(r => r.RoomDepth);
-                int minRange = 1;
-                int maxRange = clusterMaxDepth;
-                foreach (EssentialRoomEntry essential in regionData.EssentialRooms)
-                {
-                    RoomData essentialRoomData = essential.RoomData;
-                    RoomDepth targetDepth = essential.Depth;
-
-                    switch (targetDepth)
-                    {
-                        case RoomDepth.Early:
-                            {
-                                minRange = 1;
-                                maxRange = Mathf.Max(1, Mathf.FloorToInt(clusterMaxDepth * 0.25f));
-                                break;
-                            }
-                        case RoomDepth.Mid:
-                            {
-                                minRange = Mathf.Max(1, Mathf.FloorToInt(clusterMaxDepth * 0.45f));
-                                maxRange = Mathf.Max(minRange, Mathf.FloorToInt(clusterMaxDepth * 0.55f));
-                                break;
-                            }
-                        case RoomDepth.Late:
-                            {
-                                minRange = Mathf.Max(1, Mathf.FloorToInt(clusterMaxDepth * 0.8f));
-                                maxRange = Mathf.Max(minRange, Mathf.FloorToInt(clusterMaxDepth * 0.9f));
-                                break;
-                            }
-                    }
-
-                    var candidates = cluster.Where(n =>
-                        n.RoomDepth >= minRange &&
-                        n.RoomDepth <= maxRange
-                        ).ToList();
-
-                    Node targetNode = null;
-
-                    if (candidates.Count > 0)
-                    {
-                        // 후보가 있으면 그 중에서 랜덤 선택
-                        targetNode = candidates[Random.Range(0, candidates.Count)];
-                    }
-                    else
-                    {
-                        // Fallback: 범위 내에 방이 없다면(맵이 작을 때), 
-                        // 목표 깊이(이상적인 중간값)와 가장 가까운 '빈 방'을 찾음
-                        int idealDepth = (minRange + maxRange) / 2;
-
-                        targetNode = cluster
-                            .OrderBy(n => Mathf.Abs(n.RoomDepth - idealDepth)) // 깊이 차이가 적은 순 정렬
-                            .FirstOrDefault();
-                    }
-
-                    if (targetNode != null)
-                    {
-                        targetNode.RoomData = essentialRoomData;
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[{regionData.RegionName}] 필수 방({essentialRoomData.name})을 배치할 공간이 부족합니다.");
-                    }
-                }
+                _regionResult.Nodes.AddRange(cluster);
+                _regionResult.NodeConnections.AddRange(clusterConnections);
             }
 
-            await ConnectToParentRegion(regionNode, cluster, clusterConnections, regionConnectionsSnapshot);
+            //await ConnectToParentRegion(regionNode, cluster, clusterConnections, regionConnectionsSnapshot);
 
             if (_worldSettings.EnableStepByStep)
                 await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
         }// foreach RegionNodes 끝
-    }
 
-    
+        foreach (var conn in regionConnectionsSnapshot)
+        {
+            Node parentRegion = conn.ParentNode;
+            Node childRegion = conn.ChildNode;
+
+            if (_regionToCluster.TryGetValue(parentRegion, out var parentCluster) && parentCluster.Count > 0 &&
+                _regionToCluster.TryGetValue(childRegion, out var childCluster) && childCluster.Count > 0)
+            {
+                // 부모의 출구(Exit) <-> 자식의 입구(Entrance)
+                Node bridgeStart = parentCluster.OrderByDescending(n => n.RoomDepth).First();
+                Node bridgeEnd = childCluster.OrderBy(n => n.RoomDepth).First();
+
+                // 다리 연결 추가
+                _regionResult.NodeConnections.Add(new NodeConnection(bridgeStart, bridgeEnd));
+            }
+            else
+            {
+                Debug.LogError($"[RegionGen] 치명적 오류: Region 클러스터를 찾을 수 없음 ({parentRegion.RegionData.RegionName} -> {childRegion.RegionData.RegionName})");
+            }
+
+            if (_worldSettings.EnableStepByStep)
+                await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
+        }
+    }
     #region Helper for Phase 1
     private Vector2 GetDirectionAwayFromGrandparent(
         Node parentNode,
@@ -301,11 +285,91 @@ public class RegionGenerator
                 return placedRooms[Random.Range(0, placedRooms.Count)];
         }
     }
+    private void AssignEssentialRooms(List<Node> clusters, RegionData regionData)
+    {
+        int clustersMaxDepth = clusters.Max(r => r.RoomDepth);
+        int minRange = 1, maxRange = clustersMaxDepth;
 
-    #endregion
+        foreach (EssentialRoomEntry essential in regionData.EssentialRooms)
+        {
+            RoomData essentialRoomData = essential.RoomData;
+
+            switch (essential.Depth)
+            {
+                case RoomDepth.Early:
+                    maxRange = Mathf.Max(1, Mathf.FloorToInt(clustersMaxDepth * 0.25f)); break;
+                case RoomDepth.Mid:
+                    minRange = Mathf.Max(1, Mathf.FloorToInt(clustersMaxDepth * 0.45f));
+                    maxRange = Mathf.Max(minRange, Mathf.FloorToInt(clustersMaxDepth * 0.55f)); break;
+                case RoomDepth.Late:
+                    minRange = Mathf.Max(1, Mathf.FloorToInt(clustersMaxDepth * 0.8f));
+                    maxRange = Mathf.Max(minRange, Mathf.FloorToInt(clustersMaxDepth * 0.9f)); break;
+            }
+
+            var candidates = clusters.Where(n => n.RoomDepth >= minRange && n.RoomDepth <= maxRange).ToList();
+            Node targetNode = (candidates.Count > 0) ? candidates[Random.Range(0, candidates.Count)] :
+                clusters.OrderBy(n => Mathf.Abs(n.RoomDepth - (minRange + maxRange) / 2)).FirstOrDefault();
+
+            if (targetNode != null) targetNode.RoomData = essentialRoomData;
+        }
+
+    }
+
+    private (List<Node> cluster, List<NodeConnection> clusterConnections) GenerateRoomsForRegion(Node regionNode)
+    {
+        List<Node> cluster = new();
+        List<NodeConnection> clusterConnections = new();
+        RegionData regionData = regionNode.RegionData;
+
+        // 1. 시작 방 생성
+        RoomData startRoomData = regionData.EntranceRoom ?? regionData.GetRandomDefaultRoom();
+        if (startRoomData == null) return (cluster, clusterConnections); // 데이터 없음
+
+        Node startRoom = new()
+        {
+            Position = regionNode.Position,
+            RegionData = regionData,
+            RoomData = startRoomData,
+            Depth = regionNode.Depth,
+            RoomDepth = 1
+        };
+        cluster.Add(startRoom);
+
+        // 2. 방 확장 루프
+        int defaultRoomCount = Random.Range(regionData.DefaultMinCount, regionData.DefaultMaxCount + 1) + regionData.EssentialRooms.Count;
+
+        while (cluster.Count < defaultRoomCount)
+        {
+            Node parentNode = PickParentRoom(cluster, regionData.RoomBranch);
+            if (parentNode == null) break;
+
+            Vector2 safeDir = GetDirectionAwayFromGrandparent(parentNode, clusterConnections);
+            Vector2 newPos = parentNode.Position + (safeDir * _microSettings.idealEdgeLength);
+
+            Node newRoom = new Node
+            {
+                Position = newPos,
+                RegionData = regionData,
+                RoomData = regionData.GetRandomDefaultRoom() ?? startRoomData,
+                Depth = parentNode.Depth,
+                RoomDepth = parentNode.RoomDepth + 1
+            };
+
+            cluster.Add(newRoom);
+            clusterConnections.Add(new NodeConnection(parentNode, newRoom));
+        }
+
+        // 3. 필수 방 배치 (Swap)
+        if (regionData.EssentialRooms != null && regionData.EssentialRooms.Count > 0)
+        {
+            AssignEssentialRooms(cluster, regionData);
+        }
+
+        return (cluster, clusterConnections);
+    }
     #endregion
 
-    #region 2. Connect to Parent Region
+
     private async UniTask ConnectToParentRegion(
         Node currentRegionNode,
         List<Node> cluster, 
@@ -345,9 +409,9 @@ public class RegionGenerator
         if (_worldSettings.EnableStepByStep)
             await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
     }
-    #endregion
+    
 
-    #region 3. Create Loops
+    
     private async UniTask CreateLoopsAsync()
     {
         // 1. 설정 확인 (Never면 패스)
@@ -413,12 +477,12 @@ public class RegionGenerator
 
 
     #region Force Simulation
-        /// <summary>
-        /// 들어온 노드들에대해 Force Simulation을 실행합니다.
-        /// </summary>
-        /// <param name="graph"></param>
-        /// <param name="ct"></param>
-        /// <returns></returns>
+    /// <summary>
+    /// 들어온 노드들에대해 Force Simulation을 실행합니다.
+    /// </summary>
+    /// <param name="graph"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     private async UniTask<List<Node>> RunForceSimulationAsync(
         List<Node> nodes,
         ForceSimSettings forceSettings,
@@ -486,8 +550,8 @@ public class RegionGenerator
     {
         foreach (var node in nodes)
         {
-            if (node.Depth == 1 && node.RoomDepth == 1)                 //시작 노드는 고정
-                continue;
+            //if (node.Depth == 1 && node.RoomDepth == 1)                 //시작 노드는 고정
+            //    continue;
             node.Velocity = (node.Velocity + node.Force) * forceSettings.dampingFactor;
             node.Position += node.Velocity;
         }
@@ -515,7 +579,24 @@ public class RegionGenerator
     }
     #endregion
 
-  
+    private async UniTask CutLoopConnections()
+    {
+        // "부모(End)가 자식(Start)보다 깊이가 깊은 경우" = 루프 연결
+        int removedCount = _regionResult.NodeConnections.RemoveAll(conn =>
+            conn.ParentNode.Depth > conn.ChildNode.Depth
+        );
+
+        // 연결 정보 갱신 (필수)
+        _regionResult.RebuildAdjacency();
+
+        if (removedCount > 0)
+            Debug.Log($"[RegionGen] 루프 연결 {removedCount}개를 절단했습니다. (웜홀 구역 생성)");
+
+        if (_worldSettings.EnableStepByStep)
+            await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
+    }
+
+
 
 
 }

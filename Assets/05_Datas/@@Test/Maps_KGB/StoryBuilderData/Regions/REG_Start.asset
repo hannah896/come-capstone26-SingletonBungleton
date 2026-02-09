@@ -17,11 +17,9 @@ MonoBehaviour:
   DefaultMinCount: 8
   DefaultMaxCount: 10
   EntranceRoom: {fileID: 0}
-  EssentialRooms:
-  - RoomData: {fileID: 11400000, guid: 0bd0e6916e9f96b419c88332494e7264, type: 2}
-    Depth: 0
+  EssentialRooms: []
   DefaultRooms:
-  - {fileID: 11400000, guid: b9649c54027a4c44bbfac336352efcd0, type: 2}
+  - {fileID: 11400000, guid: 0bd0e6916e9f96b419c88332494e7264, type: 2}
   LockIDs:
   - LOCK_NONE
   GivenKeyIDs:

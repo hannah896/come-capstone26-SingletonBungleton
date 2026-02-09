@@ -48,9 +48,6 @@ public class RegionData : ScriptableObject
         if (DefaultRooms == null || DefaultRooms.Count == 0) return null;
         return DefaultRooms[UnityEngine.Random.Range(0, DefaultRooms.Count)] ;
     }
-
-
-
 }
 
 [System.Serializable]

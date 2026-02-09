@@ -23,18 +23,18 @@ MonoBehaviour:
   branchMost: 0.8
   loopNever: 0
   loopDefault: 0.5
-  loopAlways: 0.75
+  loopAlways: 1
   densityMultiplier: 1
   MacroSettings:
     simulationIterations: 150
-    repulsionStrength: 500
+    repulsionStrength: 600
     attractionStrength: 0.1
     idealEdgeLength: 20
     dampingFactor: 0.9
     minNodeDistance: 10
   MicroSettings:
     simulationIterations: 150
-    repulsionStrength: 20
+    repulsionStrength: 200
     attractionStrength: 0.1
     idealEdgeLength: 5
     dampingFactor: 0.9
@@ -42,7 +42,7 @@ MonoBehaviour:
   FastSettings:
     simulationIterations: 50
     repulsionStrength: 50
-    attractionStrength: 0.3
+    attractionStrength: 0.1
     idealEdgeLength: 5
     dampingFactor: 0.9
     minNodeDistance: 10
@@ -57,5 +57,5 @@ MonoBehaviour:
     minObjectDistance: 2
     maxSamplingAttempts: 30
     batchSize: 100
-  _enableStepByStep: 0
+  _enableStepByStep: 1
   _stepDelay: 0.1

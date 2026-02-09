@@ -36,7 +36,7 @@ public class WorldSettings : ScriptableObject
     [Header("Land Loop")]
     [SerializeField] private float loopNever = 0f;
     [SerializeField] private float loopDefault = 0.5f;
-    [SerializeField] private float loopAlways = 0.75f;
+    [SerializeField] private float loopAlways = 1.0f;
     private WorldLoopSetting _worldLoop = WorldLoopSetting.Default;
     public WorldLoopSetting WorldLoop { get => _worldLoop; set => _worldLoop = value; }
 

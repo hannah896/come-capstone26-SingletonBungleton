@@ -164,12 +164,26 @@ public class TilePartitioner
             return;
         }
 
+        HashSet<(RegionData, RegionData)> connectedRegions = new HashSet<(RegionData, RegionData)>();
+        foreach (var conn in _graphResult.NodeConnections)
+        {
+            // 서로 다른 Region끼리 연결된 다리(Bridge)가 있다면 등록
+            if (conn.ParentNode.RegionData != conn.ChildNode.RegionData)
+            {
+                // 양방향 모두 등록 (A->B, B->A)
+                connectedRegions.Add((conn.ParentNode.RegionData, conn.ChildNode.RegionData));
+                connectedRegions.Add((conn.ChildNode.RegionData, conn.ParentNode.RegionData));
+            }
+        }
+
         float mapArea = _worldSize.x * _worldSize.y;
         float avgAreaPerNode = mapArea / nodes.Count;
-
         float baseRadius = Mathf.Sqrt(avgAreaPerNode / Mathf.PI);
-
         float maxTerritoryRadius = baseRadius * 1.4f;
+
+        // 끊어진 땅 사이를 얼마나 벌릴지 (값이 클수록 바다가 넓어짐)
+        float separationGap = _partiSettings.noiseStrength;
+        if (separationGap < 2.0f) separationGap = 2.0f; // 최소값 보장
 
         int processedCount = 0;
 
@@ -178,27 +192,73 @@ public class TilePartitioner
             for (int y = 0; y < _worldSize.y; y++)
             {
                 _ct.ThrowIfCancellationRequested();
-                
                 Vector2 tilePos = new Vector2(x, y);
 
-                var (closestRegionIndex, dist) = FindClosestNodeWithNoise(tilePos, nodes);
-                _territoryWorld[x, y] = closestRegionIndex;
+                // 1등과 2등 노드를 모두 가져옴
+                var (idx1, dist1, idx2, dist2) = FindTopTwoNodesWithNoise(tilePos, nodes);
 
-                if (dist <= maxTerritoryRadius)
+                // 기본값: 바다(-1)
+                int finalOwner = -1;
+
+                // 조건 1: 1등 노드와의 거리가 최대 반경 이내여야 함 (섬 모양 유지)
+                if (idx1 != -1 && dist1 <= maxTerritoryRadius)
                 {
-                    _territoryWorld[x, y] = closestRegionIndex;
+                    bool shouldSeparate = false;
+
+                    // 조건 2: 2등 노드와의 경계선 근처인가?
+                    if (idx2 != -1)
+                    {
+                        // 두 거리의 차이가 작으면 경계선 근처라는 뜻
+                        float diff = dist2 - dist1;
+                        if (diff < separationGap)
+                        {
+                            Node node1 = nodes[idx1];
+                            Node node2 = nodes[idx2];
+
+                            bool isSameRegion = (node1.RegionData == node2.RegionData);
+
+                            if (isSameRegion)
+                            {
+                                shouldSeparate = false;
+                            }
+                            // 2. 다른 지역이면 '지역 간 연결'이 있는지 확인
+                            else
+                            {
+                                // 캐싱해둔 정보 조회: "두 지역 사이에 다리가 하나라도 있는가?"
+                                bool regionsConnected = connectedRegions.Contains((node1.RegionData, node2.RegionData));
+
+                                // 연결이 아예 없으면 -> 찢음 (바다)
+                                if (!regionsConnected)
+                                {
+                                    shouldSeparate = true;
+                                }
+                            }
+                        }
+                    }
+
+                    if (!shouldSeparate)
+                    {
+                        finalOwner = idx1;
+                    }
                 }
-                else
-                {
-                    _territoryWorld[x, y] = -1; // 너무 멀면 바다(Ocean)
-                }
+
+                //var (closestRegionIndex, dist) = FindClosestNodeWithNoise(tilePos, nodes);
+                //_territoryWorld[x, y] = closestRegionIndex;
+
+                //if (dist <= maxTerritoryRadius)
+                //{
+                //    _territoryWorld[x, y] = closestRegionIndex;
+                //}
+                //else
+                //{
+                //    _territoryWorld[x, y] = -1; // 너무 멀면 바다(Ocean)
+                //}
+
+                _territoryWorld[x, y] = finalOwner;
 
                 processedCount++;
                 // 배치 처리로 메인 스레드 양보
-                if (processedCount % _partiSettings.batchSize == 0)
-                {
-                    await UniTask.Yield(_ct);
-                }
+                if (processedCount % _partiSettings.batchSize == 0) await UniTask.Yield(_ct);
             }
         }
 
@@ -209,37 +269,44 @@ public class TilePartitioner
     /// <summary>
     /// 노이즈가 적용된 최근접 노드 인덱스 찾기
     /// </summary>
-    private (int index, float distance) FindClosestNodeWithNoise(Vector2 tilePos, List<Node> nodes)
+  
+    private (int idx1, float dist1, int idx2, float dist2) FindTopTwoNodesWithNoise(Vector2 tilePos, List<Node> nodes)
     {
-        int closestIndex = -1;
-        float minDistance = float.MaxValue;
+        int idx1 = -1; float dist1 = float.MaxValue;
+        int idx2 = -1; float dist2 = float.MaxValue;
 
         int x = Mathf.Clamp((int)tilePos.x, 0, _worldSize.x - 1);
         int y = Mathf.Clamp((int)tilePos.y, 0, _worldSize.y - 1);
         float noiseOffset = _noiseWorld[x, y];
 
-        for(int i = 0; i < nodes.Count; i++)
+        for (int i = 0; i < nodes.Count; i++)
         {
-            Node node = nodes[i];
-            
-            float distance = Vector2.Distance(tilePos, node.Position);
-            
-            // 조기 종료: 노이즈 최대값을 더해도 현재 최소값보다 크면 스킵
-            if (distance - _partiSettings.noiseStrength > minDistance)
-                continue;
-            
-            // 각 영역별로 다른 노이즈 오프셋 적용 (영역 고유성)
+            float distance = Vector2.Distance(tilePos, nodes[i].Position);
+
+            // 최적화: 이미 2등보다 훨씬 멀면 계산 스킵
+            if (distance - _partiSettings.noiseStrength > dist2) continue;
+
             float regionNoiseFactor = Mathf.Sin(i * 0.7f) * 0.5f + 0.5f;
-            float distortedDistance = distance + noiseOffset * regionNoiseFactor;
-            
-            if (distortedDistance < minDistance)
+            float distortedDistance = distance + (noiseOffset * regionNoiseFactor);
+
+            if (distortedDistance < dist1)
             {
-                minDistance = distortedDistance;
-                closestIndex = i;
+                // 1등 자리를 뺏고, 기존 1등은 2등으로 밀려남
+                dist2 = dist1;
+                idx2 = idx1;
+
+                dist1 = distortedDistance;
+                idx1 = i;
+            }
+            else if (distortedDistance < dist2)
+            {
+                // 2등 자리만 갱신
+                dist2 = distortedDistance;
+                idx2 = i;
             }
         }
 
-        return (closestIndex, minDistance);
+        return (idx1, dist1, idx2, dist2);
     }
     #endregion
 
@@ -360,7 +427,7 @@ public class TilePartitioner
                     nodes[nodeIndex].OwnedTiles.Add(new Vector2Int(x, y));
                 }
                 processedCount++;
-                if (processedCount % (_partiSettings.batchSize * 5) == 0) // 단순 대입이라 덜 자주 해도 됨
+                if (processedCount % (_partiSettings.batchSize * 5) == 0) 
                 {
                     await UniTask.Yield(_ct);
                 }

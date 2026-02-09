@@ -239,6 +239,7 @@ public class StoryGenerator
             // 4. 연결 생성!
             // RegionGenerator가 이 연결 정보를 보고 나중에 두 구역 사이에 다리(Bridge)를 놓게 됩니다.
             _storyResult.CreateConnection(endNode, startNode);
+            _storyResult.IsLooped = true;
 
             Debug.Log($"[StoryGenerator] Macro Loop Created: {endNode.RegionData.RegionName} -> {startNode.RegionData.RegionName}");
         }

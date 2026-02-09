@@ -13,16 +13,11 @@ public static class LockResolver
     {
         { Locks.LOCK_NONE,    new List<string> { } }, // 잠금 없음
 
-
-
         { Locks.LOCK_TIER1,   new List<string> { Keys.KEY_TIER1 } },
-        
    
         { Locks.LOCK_TIER2,   new List<string> { Keys.KEY_TIER2 } },
-        
    
         { Locks.LOCK_TIER3,   new List<string> { Keys.KEY_TIER3 } },
-        
    
         { Locks.LOCK_TIER4,   new List<string> { Keys.KEY_TIER4 } },
 
@@ -77,6 +72,7 @@ public static class Keys
 
 
 /// <summary>
+///TODO: 참고용
 //tasks = {
 //              "Make a pick",              NONE, {
 //				"Dig that rock",            ROCK
