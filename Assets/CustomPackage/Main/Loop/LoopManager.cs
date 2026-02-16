@@ -42,6 +42,9 @@ public class LoopManager : CoreManager
     // 게임 속도가 적용된 업데이트 이벤트
     public event Action<float> OnGameUpdate;
 
+    // 매 프레임 호출되는 이벤트
+    public event Action<float> OnLateUpdate;
+
     #endregion
 
     #region Update
@@ -63,6 +66,13 @@ public class LoopManager : CoreManager
         OnGameUpdate?.Invoke(deltaTime * GameSpeed);
     }
 
+    /// <summary>
+    /// 매 프레임 LateUpdate를 실행합니다.
+    /// </summary>
+    public void LateUpdate(float deltaTime)
+    {
+        OnLateUpdate?.Invoke(deltaTime);
+    }
     #endregion
 
     #region Time Control

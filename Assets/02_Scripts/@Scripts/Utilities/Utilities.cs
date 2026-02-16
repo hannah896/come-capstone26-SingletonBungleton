@@ -411,7 +411,6 @@ public static class Utilities {
     }
 
     #endregion
-
 }
 
 public class Vector2IntDictionaryConverter : JsonConverter<Dictionary<Vector2Int, int>> {

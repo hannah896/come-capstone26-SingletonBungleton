@@ -1,6 +1,7 @@
 /// <summary>
-/// 게임의 핵심 데이터와 상태를 관리하는 매니저.
-/// 보드 생성, 게임 상태 판정, 시간 시스템을 담당합니다.
+/// 인 게임 내의 낮밤을 관리.
+/// 나중에 낮밤 구현하실때 여기 구현해주세요~~
+/// 내부 내용은 대충 무시해주세요~~
 /// </summary>
 public class GameManager : ContentManager
 {
@@ -23,7 +24,7 @@ public class GameManager : ContentManager
     {
         Current = new(data);
     }
-
+    
     /// <summary>
     /// 보드 오브젝트를 생성합니다.
     /// </summary>

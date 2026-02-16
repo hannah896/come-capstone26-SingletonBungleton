@@ -197,6 +197,12 @@ public class Main : MonoBehaviour
         Loop.Update(UnityEngine.Time.deltaTime);
         Loop.GameUpdate(UnityEngine.Time.deltaTime);
     }
+
+    private void LateUpdate()
+    {
+        if (!Loop.IsInitialized) return;
+        Loop.LateUpdate(UnityEngine.Time.deltaTime);
+    }
     #endregion
 
     #region Coroutine Helpers
