@@ -11,19 +11,14 @@ using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCou
 /// </summary>
 public class RegionGenerator
 {
-    
-
-    [Header("Settings")]
-    
     private WorldSettings _worldSettings;
+    private GraphResult _regionResult;
+    private CancellationToken _ct;
 
-    // 2. 내부 변수
     private ForceSimSettings _macroSettings;
     private ForceSimSettings _microSettings;
     private ForceSimSettings _fastSettings;
 
-    private GraphResult _regionResult;
-    private CancellationToken _ct;
 
     //// Region Node에 생성된 Cluster 대한 매핑
     private Dictionary<Node, List<Node>> _regionToCluster = new();

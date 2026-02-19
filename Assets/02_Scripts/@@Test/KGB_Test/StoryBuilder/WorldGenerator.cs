@@ -11,7 +11,10 @@ public class WorldGenerator : MonoBehaviour
     private StoryData _storyData;
     private StoryGenerator _storyGenerator;
     private RegionGenerator _regionGenerator;
-    private TilePartitioner _tilePartitioner;
+
+    private TerritoryBuilder _territoryBuilder;
+    private DetailBuilder _detailBuilder;
+
     private WorldObjectDisposer _objectDisposer;
 
     public int seed = 0;
@@ -20,7 +23,8 @@ public class WorldGenerator : MonoBehaviour
     private CancellationTokenSource _cts;
     
     // 생성된 데이터
-    private GraphResult _result;
+    private GraphResult _graphResult;
+    private WorldMapData _worldMapData;
     
     // 서비스 클래스들
 
@@ -30,9 +34,6 @@ public class WorldGenerator : MonoBehaviour
         await UniTask.WaitUntil(() => Main.Instance != null);
         _cts = new CancellationTokenSource();
         
-        if (_storyGenerator == null)
-            _storyGenerator = GetComponent<StoryGenerator>();
-        
         InitializeServices();
     }
 
@@ -40,15 +41,9 @@ public class WorldGenerator : MonoBehaviour
     {
         _storyGenerator = new();
         _regionGenerator = new();
-        _tilePartitioner = new();
-        _objectDisposer = new();
-        if (_result == null)
-        {
-            _result = new GraphResult();
-            _result.Nodes = new List<Node>();
-            _result.NodeConnections = new List<NodeConnection>();
-            _result.AdjacencyList = new Dictionary<Node, List<Node>>();
-        }
+        _territoryBuilder = new();
+        _detailBuilder = new();
+        _objectDisposer = new();    
     }
 
     void OnDestroy()
@@ -99,19 +94,28 @@ public class WorldGenerator : MonoBehaviour
             Debug.Log($"=== 월드 생성 시작: {_storyData.StoryName}===");
             Debug.Log($" 전체 타일 개수 : {_worldSettings.GetTileGridSize()}, Branch: {_worldSettings.WorldBranch}, Loop: {_worldSettings.WorldLoop}");
 
+            _graphResult = new GraphResult();
+
+            Vector2Int gridSize = _worldSettings.GetTileGridSize();
+            _worldMapData = new WorldMapData(gridSize);
+
             // 1단계: Region Graph 생성 (StoryGenerator에 위임)
             await GenerateStoryAsync(ct);
-            Debug.Log($"1단계 완료: Region Graph 생성 ({_result.Nodes?.Count ?? 0})");
+            Debug.Log($"1단계 완료: Region Graph 생성 ({_graphResult.Nodes?.Count ?? 0})");
             
             // 2단계: Convert Rooms (RegionGenerator에 위임. 각 Task들의 Room 생성
             await ConvertRegionToRoomAsync(ct);
-            Debug.Log($"2단계 완료: Region 변환 ({_result.Nodes.Count}개 Room)");
+            Debug.Log($"2단계 완료: Region 변환 ({_graphResult.Nodes.Count}개 Room)");
 
-            // 3단계: 보로노이 분할 및 영역 할당 (TilePartitioner에 위임)
-            await PartitionWorldAsync(ct);
-            Debug.Log($"3단계 완료: 맵 분할 완료");
+            // 3단계: 보로노이 분할 
+            await TerritoryBuildAsync(ct);
+            Debug.Log($"3단계 완료: 보로노이 분할 완료");
 
-            // 4단계: 오브젝트 배치 (WorldObjectDisposer에 위임)
+            //4단계: 노이즈, 높이, 경계 처리
+            await TileDetailAsync(ct);
+            Debug.Log($"4단계 완료: 타일 디테일 처리 완료");
+
+            // 5단계: 오브젝트 배치 (WorldObjectDisposer에 위임)
             await SpawnObjectsAsync(ct);
             Debug.Log($"4단계 완료: {_objectDisposer.SpawnResults.Count}개 오브젝트 배치");
             
@@ -129,7 +133,7 @@ public class WorldGenerator : MonoBehaviour
     private async UniTask GenerateStoryAsync(CancellationToken ct)
     {
         // StoryGenerator에게 Story 생성 위임 (_storyData 전달 후 완료되면 갱신함)
-        _result = await _storyGenerator.GenerateStoryAsync(_result, _worldSettings, ct);
+        _graphResult = await _storyGenerator.GenerateStoryAsync(_graphResult, _worldSettings, ct);
 
 
     }
@@ -139,21 +143,28 @@ public class WorldGenerator : MonoBehaviour
     private async UniTask ConvertRegionToRoomAsync(CancellationToken ct)
     {
         // RegionGenerator에게 Region -> Room 변환 위임(_nodes, _nodeConnections 전달 후 완료되면 갱신함)
-        _result = await _regionGenerator.ConvertRegionsToRoomsAsync(_result, _worldSettings, ct);
+        _graphResult = await _regionGenerator.ConvertRegionsToRoomsAsync(_graphResult, _worldSettings, ct);
     }
     #endregion
 
-    #region 3단계: 보로노이 분할 및 영역 할당 
-    private async UniTask PartitionWorldAsync(CancellationToken ct)
+    #region 3단계: 영토 분할
+    private async UniTask TerritoryBuildAsync(CancellationToken ct)
     {
-        await _tilePartitioner.PartitionWorldAsync(_result, _worldSettings, ct);
+        _worldMapData = await _territoryBuilder.TerritoryBuildAsync(_graphResult, _worldMapData, _worldSettings, ct);
     }
     #endregion
 
-    #region 4단계: 오브젝트 배치
+    #region 4단계: 타일 디테일 처리 (노이즈, 높이, 경계)
+    private async UniTask TileDetailAsync(CancellationToken ct)
+    {
+        _worldMapData = await _detailBuilder.TileDetailAsync(_graphResult, _worldMapData, _worldSettings, ct);
+    }
+    #endregion
+
+    #region 5단계: 오브젝트 배치
     private async UniTask SpawnObjectsAsync(CancellationToken ct)
     {
-        await _objectDisposer.SpawnObjectsAsync(_result, _worldSettings, ct);
+        await _objectDisposer.SpawnObjectsAsync(_graphResult, _worldSettings, ct);
     }
 
     #endregion
@@ -164,13 +175,13 @@ public class WorldGenerator : MonoBehaviour
         for (int i = transform.childCount - 1; i >= 0; i--)
             DestroyImmediate(transform.GetChild(i).gameObject);
 
-        if (_result != null)
+        if (_graphResult != null)
         {
-            if (_result.Nodes == null) _result.Nodes = new List<Node>();
-            if (_result.NodeConnections == null) _result.NodeConnections = new List<NodeConnection>();
-            if (_result.AdjacencyList == null) _result.AdjacencyList = new Dictionary<Node, List<Node>>();
+            if (_graphResult.Nodes == null) _graphResult.Nodes = new List<Node>();
+            if (_graphResult.NodeConnections == null) _graphResult.NodeConnections = new List<NodeConnection>();
+            if (_graphResult.AdjacencyList == null) _graphResult.AdjacencyList = new Dictionary<Node, List<Node>>();
 
-            _result.Clear();
+            _graphResult.Clear();
         }
     }
 
@@ -184,7 +195,7 @@ public class WorldGenerator : MonoBehaviour
 
     void OnDrawGizmos()
     {
-        if (!_drawGizmos || _result == null || _result.Nodes == null || _worldSettings == null) return;
+        if (!_drawGizmos || _graphResult == null || _graphResult.Nodes == null || _worldSettings == null) return;
 
         if (_showMapBounds)
         {
@@ -198,17 +209,17 @@ public class WorldGenerator : MonoBehaviour
         float halfTile = tileSize / 2f;
 
         // 1. 노드 중심점 그리기
-        foreach (var node in _result.Nodes)
+        foreach (var node in _graphResult.Nodes)
         {
             float worldX = (node.Position.x * tileSize) + halfTile;
             float worldZ = (node.Position.y * tileSize) + halfTile;
             Vector3 nodePos = new Vector3(worldX, 0, worldZ);
 
-            if (_useHeightVisualization && _tilePartitioner?.HeightWorld != null)
+            if (_useHeightVisualization && _worldMapData?.HeightWorld != null)
             {
                 int tileX = Mathf.RoundToInt(node.Position.x);
                 int tileY = Mathf.RoundToInt(node.Position.y);
-                float height = _tilePartitioner.GetHeightAt(tileX, tileY);
+                float height = _worldMapData.GetHeightAt(tileX, tileY);
                 nodePos.y = height;
             }
 
@@ -217,10 +228,10 @@ public class WorldGenerator : MonoBehaviour
         }
 
         // 2. 연결선 그리기
-        if (_result.NodeConnections != null)
+        if (_graphResult.NodeConnections != null)
         {
             Gizmos.color = Color.white;
-            foreach (var conn in _result.NodeConnections)
+            foreach (var conn in _graphResult.NodeConnections)
             {
                 if (conn.ParentNode == null || conn.ChildNode == null) continue;
                 float startX = (conn.ParentNode.Position.x * tileSize) + halfTile;
@@ -232,15 +243,15 @@ public class WorldGenerator : MonoBehaviour
                 Vector3 end = new Vector3(endX, 0, endZ);
 
                 // 높이 적용
-                if (_useHeightVisualization && _tilePartitioner?.HeightWorld != null)
+                if (_useHeightVisualization && _worldMapData?.HeightWorld != null)
                 {
                     int startTileX = Mathf.RoundToInt(conn.ParentNode.Position.x);
                     int startTileY = Mathf.RoundToInt(conn.ParentNode.Position.y);
                     int endTileX = Mathf.RoundToInt(conn.ChildNode.Position.x);
                     int endTileY = Mathf.RoundToInt(conn.ChildNode.Position.y);
 
-                    start.y = _tilePartitioner.GetHeightAt(startTileX, startTileY);
-                    end.y = _tilePartitioner.GetHeightAt(endTileX, endTileY);
+                    start.y = _worldMapData.GetHeightAt(startTileX, startTileY);
+                    end.y = _worldMapData.GetHeightAt(endTileX, endTileY);
                 }
 
                 Gizmos.DrawLine(start, end);
@@ -248,7 +259,7 @@ public class WorldGenerator : MonoBehaviour
         }
 
         // 3. 영토 그리드(보로노이) 그리기
-        if (_drawTerritoryGrid && _tilePartitioner.TerritoryWorld != null)
+        if (_drawTerritoryGrid && _worldMapData.TerritoryWorld != null)
         {
             DrawTerritoryGrid();
         }
@@ -257,8 +268,8 @@ public class WorldGenerator : MonoBehaviour
     
     private void DrawTerritoryGrid()
     {
-        int[,] territory = _tilePartitioner.TerritoryWorld;
-        float[,] heightWorld = _tilePartitioner.HeightWorld;
+        int[,] territory = _worldMapData.TerritoryWorld;
+        float[,] heightWorld = _worldMapData.HeightWorld;
         int width = territory.GetLength(0);
         int height = territory.GetLength(1);
 
@@ -284,10 +295,10 @@ public class WorldGenerator : MonoBehaviour
                 {
                     Gizmos.color = new Color(0, 0, 1, 0.3f); // 파란색 반투명
                 }
-                else if (nodeIndex < _result.Nodes.Count)
+                else if (nodeIndex < _graphResult.Nodes.Count)
                 {
                     // 해당 타일의 주인(Node)의 색상 가져오기
-                    var ownerNode = _result.Nodes[nodeIndex];
+                    var ownerNode = _graphResult.Nodes[nodeIndex];
                     Color c = ownerNode.RoomData != null ? ownerNode.RoomData.DebugColor : Color.gray;
 
                     // 높이에 따라 밝기 조절 (높을수록 밝게)

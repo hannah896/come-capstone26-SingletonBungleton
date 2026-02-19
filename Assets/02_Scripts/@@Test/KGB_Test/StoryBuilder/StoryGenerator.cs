@@ -59,7 +59,11 @@ public class StoryGenerator
 
     private Node PickParentNode()
     {
-        var candidates = _storyResult.Nodes.Where(n => _storyResult.GetChildCount(n) < 3).ToList();
+        int maxChildrenPerNode = 3;         //TODO: WorldSettings에서 설정 가능하도록 변경 예정
+        var candidates = _storyResult.Nodes
+            .Where(n => _storyResult.GetChildCount(n) < maxChildrenPerNode)
+            .ToList();
+
         switch(_worldSettings.WorldBranch)
         {
             case WorldBranchSetting.Never:

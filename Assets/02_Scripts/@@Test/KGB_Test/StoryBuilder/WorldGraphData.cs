@@ -2,52 +2,20 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-
-[System.Serializable]
-public class Node
-{
-    public int Depth = -1;
-    public int RoomDepth = -1;
-
-    public Vector2 Position;
-    public Vector2 Velocity;
-    public Vector2 Force;
-
-    public RegionData RegionData;
-    public RoomData RoomData;
-
-
-    // 소유 타일 목록
-    public List<Vector2Int> OwnedTiles = new();
-}
-
-[System.Serializable]
-public class NodeConnection
-{
-    public Node ParentNode;
-    public Node ChildNode;
-
-    public NodeConnection(Node a, Node b)
-    {
-        ParentNode = a;
-        ChildNode = b;
-    }
-}
-
 /// <summary>
 /// 생성 결과
 /// </summary>
 [System.Serializable]
 public class GraphResult
 {
-    private List<Node> _nodes;
+    private List<Node> _nodes = new();
     public List<Node> Nodes
     {
         get => _nodes;
         set => _nodes = value;
     }
 
-    private List<NodeConnection> _nodeConnections;
+    private List<NodeConnection> _nodeConnections = new();
     public List<NodeConnection> NodeConnections
     {
         get => _nodeConnections;
@@ -61,7 +29,7 @@ public class GraphResult
         set => _isLooped = value;
     }
 
-    private Dictionary<Node, List<Node>> _adjacencyList;
+    private Dictionary<Node, List<Node>> _adjacencyList = new();
     public Dictionary<Node, List<Node>> AdjacencyList
     {
         get => _adjacencyList;
@@ -126,5 +94,37 @@ public class GraphResult
                 _adjacencyList[conn.ChildNode].Add(conn.ParentNode);
             }
         }
+    }
+}
+
+
+[System.Serializable]
+public class Node
+{
+    public int Depth = -1;
+    public int RoomDepth = -1;
+
+    public Vector2 Position;
+    public Vector2 Velocity;
+    public Vector2 Force;
+
+    public RegionData RegionData;
+    public RoomData RoomData;
+
+
+    // 소유 타일 목록
+    public List<Vector2Int> OwnedTiles = new();
+}
+
+[System.Serializable]
+public class NodeConnection
+{
+    public Node ParentNode;
+    public Node ChildNode;
+
+    public NodeConnection(Node a, Node b)
+    {
+        ParentNode = a;
+        ChildNode = b;
     }
 }
