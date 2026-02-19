@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: TestWroldSettings
   m_EditorClassIdentifier: 
   CurrentStory: {fileID: 11400000, guid: 1286a88dc4584c44497a3905a9366d92, type: 2}
-  sizeSmall: 80
-  sizeMedium: 200
-  sizeLarge: 300
-  sizeHuge: 400
+  sizeSmall: 1200
+  sizeMedium: 1400
+  sizeLarge: 1600
+  sizeHuge: 2000
   branchNever: 0
   branchLeast: 0.4
   branchDefault: 0.6
@@ -24,6 +24,37 @@ MonoBehaviour:
   loopNever: 0
   loopDefault: 0.5
   loopAlways: 1
+  Height_Plains: 0
+  Height_LowHills: 10
+  Height_Hills: 25
+  Height_Highlands: 50
+  Noise_LowLow:
+    Frequency: 0.01
+    Strength: 0.2
+  Noise_LowMid:
+    Frequency: 0.01
+    Strength: 1
+  Noise_LowHigh:
+    Frequency: 0.01
+    Strength: 3
+  Noise_MidLow:
+    Frequency: 0.05
+    Strength: 0.2
+  Noise_MidMid:
+    Frequency: 0.05
+    Strength: 1
+  Noise_MidHigh:
+    Frequency: 0.05
+    Strength: 3
+  Noise_HighLow:
+    Frequency: 0.15
+    Strength: 0.2
+  Noise_HighMid:
+    Frequency: 0.15
+    Strength: 1
+  Noise_HighHigh:
+    Frequency: 0.15
+    Strength: 3
   densityMultiplier: 1
   MacroSettings:
     simulationIterations: 150
@@ -49,10 +80,10 @@ MonoBehaviour:
   PartitionSettings:
     noiseScale: 0.1
     noiseStrength: 15
-    noiseSeed: 0
+    noiseSeed: -1728668257
     borderWidth: 2
     oceanThreshold: 0.85
-    batchSize: 1000
+    batchSize: 100000
   DisposeSettings:
     minObjectDistance: 2
     maxSamplingAttempts: 30

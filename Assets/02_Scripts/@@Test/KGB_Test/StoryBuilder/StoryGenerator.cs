@@ -9,11 +9,8 @@ using UnityEngine;
 /// </summary>
 public class StoryGenerator
 {
-    [Header("Settings")]
-    [SerializeField] private WorldSettings _worldSettings;
-    [SerializeField] private StoryData _storyData;
-
-
+    private WorldSettings _worldSettings;
+    private StoryData _storyData;
 
     private CancellationToken _ct;
 
@@ -26,10 +23,7 @@ public class StoryGenerator
     /// <summary>
     /// 외부 호출 메서드 : StoryData와 Lock & Key 시스템을 이용하여 Story 생성
     /// </summary>
-    public async UniTask<GraphResult> GenerateStoryAsync(
-        GraphResult result,
-        WorldSettings settings,
-        CancellationToken ct)
+    public async UniTask<GraphResult> GenerateStoryAsync(GraphResult result, WorldSettings settings, CancellationToken ct)
     {
         
         try
@@ -45,9 +39,11 @@ public class StoryGenerator
             // Phase 2: 사이드 Task들 생성 및 연결
             await GenerateSideRegionsAsync();
 
+            
             // Phase 3: World Loop 적용
             await ApplyWorldLoopAsync();
 
+            Debug.Log($"Story '{_storyData.StoryName}' 생성 완료! 총 Region 수: {_storyResult.Nodes.Count}, Loop 적용 여부: {_storyResult.IsLooped}");
 
             return _storyResult;
         }
@@ -85,13 +81,13 @@ public class StoryGenerator
     private async UniTask<bool> TryProcessNextRegionAsync(List<RegionData> candidateRegions)
     {
         // [디버깅 로그 추가] 현재 내가 가진 열쇠 목록 출력
-        Debug.Log($"[StoryGen] 현재 보유 키: {string.Join(", ", _availableKeys)}");
+        //Debug.Log($"[StoryGen] 현재 보유 키: {string.Join(", ", _availableKeys)}");
 
         // [디버깅 로그 추가] 후보 지역들이 열리는지 검사
         foreach (var region in candidateRegions)
         {
             bool isOpen = region.IsUnlockable(_availableKeys);
-            Debug.Log($"[StoryGen] 후보 지역 '{region.RegionName}' 잠금 해제 가능? -> {isOpen}");
+            //Debug.Log($"[StoryGen] 후보 지역 '{region.RegionName}' 잠금 해제 가능? -> {isOpen}");
         }
 
         // 1. 현재 키로 갈 수 있는 Region 필터링

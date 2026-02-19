@@ -139,69 +139,12 @@ public class RegionGenerator
             var(cluster, clusterConnections) = GenerateRoomsForRegion(regionNode);
 
             _regionToCluster[regionNode] = cluster;
-            ////A. 해당 Region에 대한 Room Cluster 및 연결 생성,  Data 참조
-            //List<Node> cluster = new();
-            //List<NodeConnection> clusterConnections = new();
-            //RegionData regionData = regionNode.RegionData;
-
-            //_regionToCluster[regionNode] = cluster;
-
-
-            ////B. 기본 방 개수 결정
-            //int defaultRoomCount = Random.Range(regionData.DefaultMinCount, regionData.DefaultMaxCount + 1);
-
-            ////C. 시작 방 선정(입구 방 우선, 없는 경우 DefaultRooms 중 랜덤)
-            //RoomData startRoomData = regionData.EntranceRoom ?? regionData.GetRandomDefaultRoom();
-            ////D. 입구 방 없는 경우 default 방 중 랜덤하게 선택하여 시작 방으로 설정
-            //Node startRoom = new()
-            //{
-            //    Position = regionNode.Position,
-            //    RegionData = regionData,
-            //    RoomData = startRoomData,
-            //    Depth = regionNode.Depth,
-            //    RoomDepth = 1
-            //};
-            //cluster.Add(startRoom);
-            //// E. 기본 방 배치 루프(Essential Room 개수 만큼 루프 늘린 후 Essential Room 배치 시 기존 방과 스왑하는 형식)
-            //while (cluster.Count < defaultRoomCount + regionData.EssentialRooms.Count)
-            //{
-            //    // E1. 부모 노드 선정
-            //    Node parentNode = PickParentRoom(cluster, regionData.RoomBranch);
-            //    if (parentNode == null) break;
-
-            //    // E2. 새 방 생성
-            //    // 위치: 부모 위치 기준 + 랜덤 방향 (parentNode의 parent 방향은 피해서 ,Micro Setting 거리)
-            //    Vector2 safeDirection = GetDirectionAwayFromGrandparent(parentNode, clusterConnections);
-            //    Vector2 newOffset = parentNode.Position + (safeDirection * _microSettings.idealEdgeLength);
-
-            //    Node newRoom = new Node
-            //    {
-            //        Position = newOffset,
-            //        RegionData = regionData,
-            //        RoomData = regionData.GetRandomDefaultRoom(),
-            //        Depth = parentNode.Depth,               // Region Depth
-            //        RoomDepth = parentNode.RoomDepth + 1    // Local Depth
-            //    };
-
-            //    // E3. 등록 및 연결
-            //    cluster.Add(newRoom);
-            //    clusterConnections.Add(new(parentNode, newRoom));
-            //}
-
-            //// F. 필수 방 배치(스왑)
-            //if (regionData.EssentialRooms != null)
-            //{
-            //    AssignEssentialRooms(cluster, regionData);
-            //}
-
-            //===========================================
+            
             if (cluster.Count > 0)
             {
                 _regionResult.Nodes.AddRange(cluster);
                 _regionResult.NodeConnections.AddRange(clusterConnections);
             }
-
-            //await ConnectToParentRegion(regionNode, cluster, clusterConnections, regionConnectionsSnapshot);
 
             if (_worldSettings.EnableStepByStep)
                 await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
@@ -368,49 +311,6 @@ public class RegionGenerator
         return (cluster, clusterConnections);
     }
     #endregion
-
-
-    private async UniTask ConnectToParentRegion(
-        Node currentRegionNode,
-        List<Node> cluster, 
-        List<NodeConnection> clusterConnections,
-        List<NodeConnection> regionConnSnapshot) 
-    {
-        //  1. 클러스터 및 연결 등록
-        _regionResult.Nodes.AddRange(cluster);
-        _regionResult.NodeConnections.AddRange(clusterConnections);
-
-        //  2. 부모 노드 찾기 (child가 currentRegionNode인 연결 찾기)
-        var regionLink = regionConnSnapshot.FirstOrDefault(c => c.ChildNode == currentRegionNode);
-        //  부모 노드가 없으면 (Start Region인 경우) 여기서 종료
-        if (regionLink == null) 
-            return;
-
-        Node parentRegionNode = regionLink.ParentNode;
-
-        
-        //  3. 부모 Region의 방 목록 조회
-        if (!_regionToCluster.TryGetValue(parentRegionNode, out var parentCluster))
-        {
-            Debug.LogError($"[순서 오류] Region '{currentRegionNode.RegionData.RegionName}'의 부모가 아직 생성되지 않았습니다.");
-            return;
-        }
-
-        // 4. 부모 노드의 '출구' <-> 나의 '입구'
-        Node myEntrance = cluster.OrderBy(n => n.RoomDepth).First();           // 나의 입구: 가장 깊이 낮은 방
-        Node parentExit = parentCluster.OrderByDescending(n => n.RoomDepth).First();  // 부모 출구: 가장 깊이 높은 방
-
-        //  5. [다리 놓기] Bridge Connection 생성 및 등록
-        NodeConnection bridgeConnection = new NodeConnection(parentExit, myEntrance);
-        _regionResult.NodeConnections.Add(bridgeConnection);
-
-
-
-        if (_worldSettings.EnableStepByStep)
-            await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
-    }
-    
-
     
     private async UniTask CreateLoopsAsync()
     {

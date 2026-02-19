@@ -89,14 +89,15 @@ public class WorldGenerator : MonoBehaviour
         // 시드 초기화
         seed = useRandomSeed ? System.DateTime.Now.GetHashCode() : Mathf.Abs(seed);
         Random.InitState(seed);
-        
+        _worldSettings.PartitionSettings.noiseSeed = seed;
+
         InitializeServices();
         ClearWorld();
 
         try
         {
             Debug.Log($"=== 월드 생성 시작: {_storyData.StoryName}===");
-            Debug.Log($" 크기: {_worldSettings.GetWorldSize()}, Branch: {_worldSettings.WorldBranch}, Loop: {_worldSettings.WorldLoop}");
+            Debug.Log($" 전체 타일 개수 : {_worldSettings.GetTileGridSize()}, Branch: {_worldSettings.WorldBranch}, Loop: {_worldSettings.WorldLoop}");
 
             // 1단계: Region Graph 생성 (StoryGenerator에 위임)
             await GenerateStoryAsync(ct);
@@ -179,6 +180,7 @@ public class WorldGenerator : MonoBehaviour
     [SerializeField] private bool _showConnections = true;
     [SerializeField] private bool _showMapBounds = true;
     [SerializeField] private bool _drawTerritoryGrid = false;
+    [SerializeField] private bool _useHeightVisualization = true;
 
     void OnDrawGizmos()
     {
@@ -187,16 +189,31 @@ public class WorldGenerator : MonoBehaviour
         if (_showMapBounds)
         {
             Gizmos.color = Color.cyan;
-            Vector3 center = new Vector3(_worldSettings.GetWorldSize().x / 2f, 0, _worldSettings.GetWorldSize().y / 2f);
-            Vector3 size = new Vector3(_worldSettings.GetWorldSize().x, 0, _worldSettings.GetWorldSize().y);
+            Vector3 center = new Vector3(_worldSettings.GetRealWorldSize().x / 2f, 0, _worldSettings.GetRealWorldSize().y / 2f);
+            Vector3 size = new Vector3(_worldSettings.GetRealWorldSize().x, 0, _worldSettings.GetRealWorldSize().y);
             Gizmos.DrawWireCube(center, size);
         }
+
+        int tileSize = _worldSettings.TileUnitSize;
+        float halfTile = tileSize / 2f;
 
         // 1. 노드 중심점 그리기
         foreach (var node in _result.Nodes)
         {
+            float worldX = (node.Position.x * tileSize) + halfTile;
+            float worldZ = (node.Position.y * tileSize) + halfTile;
+            Vector3 nodePos = new Vector3(worldX, 0, worldZ);
+
+            if (_useHeightVisualization && _tilePartitioner?.HeightWorld != null)
+            {
+                int tileX = Mathf.RoundToInt(node.Position.x);
+                int tileY = Mathf.RoundToInt(node.Position.y);
+                float height = _tilePartitioner.GetHeightAt(tileX, tileY);
+                nodePos.y = height;
+            }
+
             Gizmos.color = node.RoomData != null ? node.RoomData.DebugColor : Color.white;
-            Gizmos.DrawSphere(new Vector3(node.Position.x, 0, node.Position.y), 2f);
+            Gizmos.DrawSphere(nodePos, tileSize * 0.8f);
         }
 
         // 2. 연결선 그리기
@@ -206,8 +223,26 @@ public class WorldGenerator : MonoBehaviour
             foreach (var conn in _result.NodeConnections)
             {
                 if (conn.ParentNode == null || conn.ChildNode == null) continue;
-                Vector3 start = new Vector3(conn.ParentNode.Position.x, 0, conn.ParentNode.Position.y);
-                Vector3 end = new Vector3(conn.ChildNode.Position.x, 0, conn.ChildNode.Position.y);
+                float startX = (conn.ParentNode.Position.x * tileSize) + halfTile;
+                float startZ = (conn.ParentNode.Position.y * tileSize) + halfTile;
+                float endX = (conn.ChildNode.Position.x * tileSize) + halfTile;
+                float endZ = (conn.ChildNode.Position.y * tileSize) + halfTile;
+
+                Vector3 start = new Vector3(startX, 0, startZ);
+                Vector3 end = new Vector3(endX, 0, endZ);
+
+                // 높이 적용
+                if (_useHeightVisualization && _tilePartitioner?.HeightWorld != null)
+                {
+                    int startTileX = Mathf.RoundToInt(conn.ParentNode.Position.x);
+                    int startTileY = Mathf.RoundToInt(conn.ParentNode.Position.y);
+                    int endTileX = Mathf.RoundToInt(conn.ChildNode.Position.x);
+                    int endTileY = Mathf.RoundToInt(conn.ChildNode.Position.y);
+
+                    start.y = _tilePartitioner.GetHeightAt(startTileX, startTileY);
+                    end.y = _tilePartitioner.GetHeightAt(endTileX, endTileY);
+                }
+
                 Gizmos.DrawLine(start, end);
             }
         }
@@ -223,8 +258,11 @@ public class WorldGenerator : MonoBehaviour
     private void DrawTerritoryGrid()
     {
         int[,] territory = _tilePartitioner.TerritoryWorld;
+        float[,] heightWorld = _tilePartitioner.HeightWorld;
         int width = territory.GetLength(0);
         int height = territory.GetLength(1);
+
+        int tileSize = _worldSettings.TileUnitSize;
 
         // 성능을 위해 스텝 건너뛰기 (전체 다 그리면 렉 걸림)
         int step = Mathf.Max(1, Mathf.Min(width, height) / 100);
@@ -234,6 +272,13 @@ public class WorldGenerator : MonoBehaviour
             for (int y = 0; y < height; y += step)
             {
                 int nodeIndex = territory[x, y];
+                float tileHeight = 0f;
+
+                // 높이 값 가져오기
+                if (_useHeightVisualization && heightWorld != null)
+                {
+                    tileHeight = heightWorld[x, y];
+                }
 
                 if (nodeIndex < 0) // 바다/벽
                 {
@@ -244,12 +289,26 @@ public class WorldGenerator : MonoBehaviour
                     // 해당 타일의 주인(Node)의 색상 가져오기
                     var ownerNode = _result.Nodes[nodeIndex];
                     Color c = ownerNode.RoomData != null ? ownerNode.RoomData.DebugColor : Color.gray;
+
+                    // 높이에 따라 밝기 조절 (높을수록 밝게)
+                    if (_useHeightVisualization && heightWorld != null)
+                    {
+                        float normalizedHeight = Mathf.InverseLerp(-10f, 60f, heightWorld[x, y]);
+                        c = Color.Lerp(c * 0.5f, c * 1.5f, normalizedHeight);
+                    }
+
+
                     c.a = 0.5f; // 반투명
                     Gizmos.color = c;
                 }
 
+                float worldX = x * tileSize + tileSize / 2f;
+                float WorldZ = y * tileSize + tileSize / 2f;
+
+                Vector3 cubePos = new Vector3(worldX, tileHeight, WorldZ);
+
                 // Y= -0.1f에 바닥처럼 그림
-                Gizmos.DrawCube(new Vector3(x, -0.1f, y), Vector3.one * step);
+                Gizmos.DrawCube(cubePos, Vector3.one * tileSize * step);
             }
         }
     }

@@ -12,13 +12,17 @@ public class RegionData : ScriptableObject
     public int DefaultMinCount;   // 이 구역에 방(Node)을 몇 개 만들지
     public int DefaultMaxCount;
 
+    [Header("Height Settings")]
+    [Tooltip("이 지역의 지형 등급을 선택하세요.")]
+    public HeightLevel BaseHeightLevel = HeightLevel.Plains;
+    [Header("Height Noise Settings")]
+    [Tooltip("노이즈 빈도(주파수(진동 횟수)), 노이즈 강도(진폭(진동 크기))")]
+    [SerializeField] public NoiseTier HeightNoiseTier;
+
     [Header("Room Configuration")]
-    public RoomData EntranceRoom = null;  // 입구 방 (안전함)
-
-
+    public RoomData EntranceRoom = null;  // 입구 방 
     public List<EssentialRoomEntry> EssentialRooms = null;   // 필수 방 
     
-
     [Header("Default Room Pool")]
     [Tooltip("일반 노드에 랜덤하게 배치될 방 후보들")]
     public List<RoomData> DefaultRooms;

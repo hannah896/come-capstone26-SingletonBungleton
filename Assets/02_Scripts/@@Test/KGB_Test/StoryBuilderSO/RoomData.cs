@@ -10,7 +10,11 @@ public class RoomData : ScriptableObject
     public Color DebugColor = Color.green; // 기즈모용 색상
 
     [Header("Assets")]
-    [SerializeField] public string GroundPrefab;  
+    // GameObject 직접 참조 대신 키값(string) 사용
+    [SerializeField] public string TopTileKey;    // 예: "Tile_Grass_Top"
+    [SerializeField] public string CliffTileKey;  // 예: "Tile_Dirt_Cliff"
+    [SerializeField] public string WaterTileKey;  // 예: "Tile_Water"
+
     [Header("1. Essential Objects (필수 배치)")]
     // 예: 보스, 웜홀, 금광맥 (개수 보장)
     [SerializeField] public List<EssentialObjectData> EssentialObjects;
@@ -18,8 +22,10 @@ public class RoomData : ScriptableObject
     // 예: 나무, 풀 (가중치 랜덤 알고리즘으로 배치)
     [SerializeField] public List<WeightedObjectData> WeightedObjects;
 
+    
 
-   
+
+
 
 }
 

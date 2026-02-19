@@ -10,16 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a9c763dd1fd61394a9706354fc4ef7c9, type: 3}
-  m_Name: REG__SmallHighlands
+  m_Name: REG_Desert
   m_EditorClassIdentifier: 
-  RegionName: REG__SmallMound
+  RegionName: REG_Desert
   RoomBranch: 1
   DefaultMinCount: 7
-  DefaultMaxCount: 10
+  DefaultMaxCount: 9
+  BaseHeightLevel: 2
+  HeightNoiseTier: 0
   EntranceRoom: {fileID: 0}
   EssentialRooms: []
   DefaultRooms:
-  - {fileID: 11400000, guid: fddfeb7d4ba52044598c6a8ec0c38a08, type: 2}
+  - {fileID: 11400000, guid: 002b4fc75e786e44da058de45c0a226f, type: 2}
   LockIDs:
   - LOCK_TIER2
-  GivenKeyIDs: []
+  GivenKeyIDs:
+  - KEY_TIER3
