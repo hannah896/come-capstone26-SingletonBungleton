@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemID: Wood_Charcoal
   itemName: "\uC22F"
-  description: "\uC7A5\uC791\uC744 \uD0DC\uC6B0\uBA74 \uC22F\uC774 \uB429\uB2C8\uB2E4."
+  description: "\uB098\uBB34\uC790\uC6D0_\uC22F\uC785\uB2C8\uB2E4."
   icon: {fileID: 0}
   prefab: {fileID: 0}
   itemType: 2
