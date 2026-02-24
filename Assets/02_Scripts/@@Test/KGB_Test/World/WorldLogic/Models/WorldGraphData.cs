@@ -6,7 +6,7 @@ using UnityEngine;
 /// 생성 결과
 /// </summary>
 [System.Serializable]
-public class GraphResult
+public class WorldGraphData
 {
     private List<Node> _nodes = new();
     public List<Node> Nodes

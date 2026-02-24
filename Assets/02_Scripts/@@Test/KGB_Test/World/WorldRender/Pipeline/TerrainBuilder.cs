@@ -1,0 +1,77 @@
+using System.Collections.Generic;
+using UnityEngine;
+using System.Threading;
+using Cysharp.Threading.Tasks;
+
+public class TerrainBuilder
+{
+    private const float MAX_TERRAIN_HEIGHT = 150f; // 최대 지형 높이 (필요에 따라 조정)
+    public async UniTask<(TerrainData, GameObject)> BuildTerrainAsync(
+        WorldLogicData logicData,
+        WorldGraphData graphData,
+        WorldSettings settings,
+        CancellationToken ct)
+    {
+        Debug.Log("⛰️ [TerrainBuilder] 지형 융기 연산 시작...");
+
+        int gridX = logicData.TileGridSize.x;
+        int gridY = logicData.TileGridSize.y;
+
+        // 1. TerrainData 생성 및 해상도 설정
+        TerrainData terrainData = new TerrainData();
+
+        // 유니티 지형 해상도는 배열의 크기와 동일해야 합니다. (정사각형 권장)
+        int resolution = Mathf.Max(gridX, gridY);
+        terrainData.heightmapResolution = resolution;
+
+        // 2. 실제 월드 사이즈(Transform 크기) 설정
+        // 반드시 heightmapResolution을 먼저 설정한 뒤에 size를 줘야 버그가 안 납니다!
+        float worldSizeX = gridX * settings.TileUnitSize;
+        float worldSizeZ = gridY * settings.TileUnitSize;
+        terrainData.size = new Vector3(worldSizeX, MAX_TERRAIN_HEIGHT, worldSizeZ);
+
+        // 3. 높이 데이터 변환 
+        // ⚠️ 유니티 SetHeights는 [y, x] 순서의 2차원 배열을 받습니다!
+        float[,] unityHeights = new float[resolution, resolution];
+
+        int processedCount = 0;
+        int batchSize = 100; // 프레임 방어용
+
+        for (int x = 0; x < gridX; x++)
+        {
+            for (int y = 0; y < gridY; y++)
+            {
+                // 바다 깊이(-3f) 같은 음수 높이를 0으로 보정 (물은 나중에 Water Plane으로 덮음)
+                float logicHeight = Mathf.Max(0f, logicData.HeightWorld[x, y]);
+
+                // ⚠️ 0.0f ~ 1.0f 사이의 비율로 정규화 (Normalize)
+                float normalizedHeight = logicHeight / MAX_TERRAIN_HEIGHT;
+
+                // ⚠️ 인덱스를 [y, x]로 뒤집어서 대입!
+                unityHeights[y, x] = normalizedHeight;
+            }
+
+            processedCount++;
+            if (processedCount % batchSize == 0)
+            {
+                ct.ThrowIfCancellationRequested();
+                await UniTask.Yield(ct);
+            }
+        }
+
+        // 4. 지형을 한 번에 융기! (가장 무거운 연산)
+        terrainData.SetHeights(0, 0, unityHeights);
+
+        // 5. 씬에 Terrain 게임 오브젝트 소환
+        GameObject terrainGO = Terrain.CreateTerrainGameObject(terrainData);
+        terrainGO.name = "World_Terrain";
+
+        // 맵이 (0,0)에서 시작하도록 설정 (필요 시 중앙 정렬로 변경 가능)
+        terrainGO.transform.position = Vector3.zero;
+
+        Debug.Log("⛰️ [TerrainBuilder] 지형 융기 완료!");
+
+        // 칠하기 단계(TerrainPainter)에서 재사용할 수 있도록 반환
+        return (terrainData, terrainGO);
+    }
+}

@@ -16,6 +16,8 @@ MonoBehaviour:
   RoomBranch: 1
   DefaultMinCount: 7
   DefaultMaxCount: 9
+  BaseHeightLevel: 1
+  HeightNoiseTier: 1
   EntranceRoom: {fileID: 0}
   EssentialRooms: []
   DefaultRooms:

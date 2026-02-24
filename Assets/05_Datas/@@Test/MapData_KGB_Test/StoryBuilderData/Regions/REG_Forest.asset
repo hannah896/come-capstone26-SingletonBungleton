@@ -17,7 +17,7 @@ MonoBehaviour:
   DefaultMinCount: 7
   DefaultMaxCount: 9
   BaseHeightLevel: 3
-  HeightNoiseTier: 0
+  HeightNoiseTier: 5
   EntranceRoom: {fileID: 0}
   EssentialRooms: []
   DefaultRooms:

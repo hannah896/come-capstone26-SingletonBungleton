@@ -15,7 +15,7 @@ public class StoryGenerator
     private CancellationToken _ct;
 
     // 배치된 Node 데이터
-    private GraphResult _storyResult;
+    private WorldGraphData _storyResult;
 
     private List<string> _availableKeys;
 
@@ -23,12 +23,12 @@ public class StoryGenerator
     /// <summary>
     /// 외부 호출 메서드 : StoryData와 Lock & Key 시스템을 이용하여 Story 생성
     /// </summary>
-    public async UniTask<GraphResult> GenerateStoryAsync(GraphResult result, WorldSettings settings, CancellationToken ct)
+    public async UniTask<WorldGraphData> GenerateStoryAsync(WorldGraphData graphData, WorldSettings settings, CancellationToken ct)
     {
         
         try
         {
-            _storyResult = result;
+            _storyResult = graphData;
             _worldSettings = settings;
             _storyData = _worldSettings.CurrentStory;
             _ct = ct;

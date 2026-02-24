@@ -3,7 +3,7 @@ using UnityEngine;
 /// <summary>
 /// 맵의 2D/3D 배열 데이터를 담고 있는 컨테이너 클래스
 /// </summary>
-public class WorldMapData
+public class WorldLogicData
 {
     public Vector2Int TileGridSize { get; private set; }
 
@@ -12,7 +12,7 @@ public class WorldMapData
     public int[,] BorderWorld { get; set; }     // -2: 경계선
     public float[,] NoiseWorld { get; set; }    // 펄린 노이즈 캐시
 
-    public WorldMapData(Vector2Int gridSize)
+    public WorldLogicData(Vector2Int gridSize)
     {
         TileGridSize = gridSize;
         TerritoryWorld = new int[gridSize.x, gridSize.y];

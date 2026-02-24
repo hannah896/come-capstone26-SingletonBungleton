@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: REG_Highlands
   m_EditorClassIdentifier: 
   RegionName: REG_Mound
-  RoomBranch: 0
+  RoomBranch: 2
   DefaultMinCount: 7
   DefaultMaxCount: 9
   BaseHeightLevel: 4

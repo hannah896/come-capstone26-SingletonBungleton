@@ -12,7 +12,7 @@ using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCou
 public class RegionGenerator
 {
     private WorldSettings _worldSettings;
-    private GraphResult _regionResult;
+    private WorldGraphData _regionResult;
     private CancellationToken _ct;
 
     private ForceSimSettings _macroSettings;
@@ -26,8 +26,8 @@ public class RegionGenerator
     /// <summary>
     /// 메인 진입점 : RegionData 기반으로 Room 그래프 생성
     /// </summary>
-    public async UniTask<GraphResult> ConvertRegionsToRoomsAsync(
-        GraphResult result, 
+    public async UniTask<WorldGraphData> ConvertRegionsToRoomsAsync(
+        WorldGraphData result, 
         WorldSettings settings,
         CancellationToken ct)
     {

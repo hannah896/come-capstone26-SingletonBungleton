@@ -6,7 +6,8 @@ public class WorldSettings : ScriptableObject
 {
     [Header("--- Game Context ---")]
     [Tooltip("이번 월드 생성에 사용할 스토리 데이터")]
-    [SerializeField] public StoryData CurrentStory; 
+    [SerializeField] public StoryData CurrentStory;
+    [SerializeField] public int WorldSeed = 0; // 월드 시드 (랜덤 시드로 덮어쓰기됨)
 
     [Header("Map Size")]
     [SerializeField] private int tileGridSmall = 300;    
@@ -18,7 +19,7 @@ public class WorldSettings : ScriptableObject
 
     [Header("Optimization")]
     [Tooltip("1개의 타일이 차지하는 유닛 크기 (예: 4면 1타일 = 4x4 WorldUnit)")]
-    [SerializeField] private int _tileUnitSize = 2; // 기본값 4
+    [SerializeField] private int _tileUnitSize = 4; 
     [SerializeField] private int _tileUnitHeight; // 타일 높이   
     public int TileUnitSize { get => _tileUnitSize; set => _tileUnitSize = Mathf.Max(1, value); } 
     public int TileUnitHeight { get => _tileUnitSize / 2;}
@@ -49,29 +50,29 @@ public class WorldSettings : ScriptableObject
     public WorldLoopSetting WorldLoop { get => _worldLoop; set => _worldLoop = value; }
 
     [Header("Terrain Height Settings")]
-    [Tooltip("각 지형 등급(Tier)별 실제 높이(Y축) 설정")]
-    [SerializeField] private float Height_Plains = 0.0f;
-    [SerializeField] private float Height_LowHills = 10.0f;
-    [SerializeField] private float Height_Hills = 25.0f;
-    [SerializeField] private float Height_Highlands = 50.0f;
+    [Tooltip("각 지형 등급(Tier)별 실제 높이 블록 설정")]
+    [SerializeField] private float Height_Plains = 2.0f;
+    [SerializeField] private float Height_LowHills = 20.0f;
+    [SerializeField] private float Height_Hills = 45.0f;
+    [SerializeField] private float Height_Highlands = 80.0f;
 
     [Header("--- Low Frequency (거대한 평원/고원) ---")]
-    // 방 하나에 봉우리가 1~1.5개 (방 전체가 서서히 높아지는 거대한 고원 느낌)
-    public NoiseParams Noise_LowLow = new NoiseParams(1.0f, 1.0f, 1.0f);
+    // 지역 하나에 봉우리가 1~1.5개 (구역 전체가 서서히 높아지는 거대한 고원 느낌)
+    public NoiseParams Noise_LowLow = new NoiseParams(1.0f, 1.0f, 2.0f);
     public NoiseParams Noise_LowMid = new NoiseParams(1.0f, 1.0f, 5.0f);
-    public NoiseParams Noise_LowHigh = new NoiseParams(1.0f, 1.5f, 15.0f); // 초거대 화산 1개 느낌
+    public NoiseParams Noise_LowHigh = new NoiseParams(1.0f, 1.0f, 15.0f);
 
     [Header("--- Mid Frequency (일반 숲/언덕) ---")]
-    // 방 하나에 언덕이 2~3개 (적당히 오르락 내리락 하는 숲)
-    public NoiseParams Noise_MidLow = new NoiseParams(1.5f, 2.5f, 2.0f);
+    // 지역 하나에 언덕이 2~3개 (적당히 오르락 내리락 하는 숲)
+    public NoiseParams Noise_MidLow = new NoiseParams(2.0f, 3.0f, 2.0f);
     public NoiseParams Noise_MidMid = new NoiseParams(2.0f, 3.0f, 5.0f);
-    public NoiseParams Noise_MidHigh = new NoiseParams(2.0f, 3.5f, 10.0f);
+    public NoiseParams Noise_MidHigh = new NoiseParams(2.0f, 3.0f, 15.0f);
 
     [Header("--- High Frequency (복잡한 산맥/바위) ---")]
-    // 방 하나에 봉우리가 4~6개 (완전 빽빽하고 험준한 산맥)
-    public NoiseParams Noise_HighLow = new NoiseParams(4.0f, 6.0f, 1.0f);
-    public NoiseParams Noise_HighMid = new NoiseParams(4.0f, 6.0f, 3.0f);
-    public NoiseParams Noise_HighHigh = new NoiseParams(5.0f, 8.0f, 5.0f);
+    // 지역 하나에 언덕이 4~6개 (완전 빽빽하고 험준한 산맥)
+    public NoiseParams Noise_HighLow = new NoiseParams(4.0f, 6.0f, 2.0f);
+    public NoiseParams Noise_HighMid = new NoiseParams(4.0f, 6.0f, 5.0f);
+    public NoiseParams Noise_HighHigh = new NoiseParams(4.0f, 6.0f, 15.0f);
 
 
 
@@ -197,7 +198,6 @@ public class PartitionSettings
     [Header("Noise Settings")]
     public float noiseScale = 0.1f;          // 펄린 노이즈 스케일
     public float noiseStrength = 15f;        // 노이즈가 거리에 미치는 영향력
-    public int noiseSeed = 0;                // 노이즈 시드
 
     [Header("Border Settings")]
     public int borderWidth = 2;              // 영역 경계 두께
@@ -277,18 +277,18 @@ public enum HeightLevel
 public enum NoiseTier
 {
     // [빈도 Low] : 넓직넓직한 지형
-    Low_Low,    // 평평함
-    Low_Mid,    // 완만한 언덕
-    Low_High,   // 높은 산 (거대함)
+    Low_Low,    
+    Low_Mid,   
+    Low_High, 
 
     // [빈도 Mid] : 일반적인 지형
-    Mid_Low,    // 약간 울퉁불퉁
-    Mid_Mid,    // 보통 야생
-    Mid_High,   // 험함
+    Mid_Low,    
+    Mid_Mid,   
+    Mid_High,  
 
     // [빈도 High] : 자글자글한 지형
-    High_Low,   // 자갈/노이즈 바닥
-    High_Mid,   // 거친 바위산
-    High_High   // 카오스
+    High_Low,   
+    High_Mid,  
+    High_High   
 }
 #endregion

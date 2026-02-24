@@ -32,7 +32,7 @@ public class WorldObjectDisposer
     /// 모든 영역에 오브젝트 배치
     /// </summary>
     public async UniTask SpawnObjectsAsync(
-        GraphResult result,
+        WorldGraphData result,
         WorldSettings worldSettings,
         CancellationToken ct)
     {
