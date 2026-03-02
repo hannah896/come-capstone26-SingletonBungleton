@@ -14,8 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RegionName: REG_Start
   RoomBranch: 2
-  DefaultMinCount: 8
-  DefaultMaxCount: 10
+  DefaultMinCount: 5
+  DefaultMaxCount: 8
+  BaseHeightLevel: 1
+  TerrainNoise:
+    MinBumps: 1
+    MaxBumps: 1
+    HeightVarianceBlocks: 10
   EntranceRoom: {fileID: 0}
   EssentialRooms: []
   DefaultRooms:

@@ -15,9 +15,13 @@ public class RegionData : ScriptableObject
     [Header("Height Settings")]
     [Tooltip("이 지역의 지형 등급을 선택하세요.")]
     public HeightLevel BaseHeightLevel = HeightLevel.Plains;
-    [Header("Height Noise Settings")]
-    [Tooltip("노이즈 빈도(주파수(진동 횟수)), 노이즈 강도(진폭(진동 크기))")]
-    [SerializeField] public NoiseTier HeightNoiseTier;
+    [Tooltip("지형 생성 노이즈 파라미터 (직접 조정)")]
+    public NoiseParams TerrainNoise = new NoiseParams
+    {
+        MinBumps = 2f,
+        MaxBumps = 3f,
+        HeightVarianceBlocks = 10f
+    };
 
     [Header("Room Configuration")]
     public RoomData EntranceRoom = null;  // 입구 방 

@@ -1,30 +1,24 @@
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Threading;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 /// <summary>
 /// 5단계: 오브젝트 배치를 담당하는 클래스
 /// 푸아송 디스크 샘플링과 밀도 기반 배치를 지원
 /// </summary>
-public class WorldObjectDisposer
+public class ObjectDisposer
 {
     
 
-    #region Spawn Result
-    public class SpawnResult
-    {
-        public string prefabName;
-        public Vector3 worldPosition;
-    }
-    #endregion
-
     private WorldSettings _worldSettings;
     private DisposeSettings _disposeSettings;
-    private List<SpawnResult> _spawnResults = new();
+    private List<DisposeData> _disposeResults = new();
 
-    public List<SpawnResult> SpawnResults => _spawnResults;
+    public List<DisposeData> DisposeResults => _disposeResults;
 
 
 
@@ -38,7 +32,7 @@ public class WorldObjectDisposer
     {
         _worldSettings = worldSettings;
         _disposeSettings = worldSettings.DisposeSettings;
-        _spawnResults.Clear();
+        _disposeResults.Clear();
         var nodes = result.Nodes;
         if (nodes == null) return;
 
@@ -64,15 +58,15 @@ public class WorldObjectDisposer
     /// 단일 영역에 오브젝트 배치
     /// </summary>
     private async UniTask SpawnRegionObjectsAsync(
-        Node region,
+        Node roomNode,
         CancellationToken ct)
     {
-        RoomData roomData = region.RoomData;
+        RoomData roomData = roomNode.RoomData;
         float density = roomData.Density;  //TODO: 자원별 밀도 조절 기능 추가 시 여기에 반영(Settings에 Dictionary<string, float> 등)
 
         // 푸아송 디스크 샘플링으로 배치 가능 위치 생성
         List<Vector2Int> validPositions = await GeneratePoissonPointsAsync(
-            region.OwnedTiles,
+            roomNode.OwnedTiles,
             density,
             ct
         );
@@ -84,6 +78,10 @@ public class WorldObjectDisposer
 
         int positionIndex = 0;
 
+        var seedChannel = (int)WorldSeedChannel.Disposer_SpawnRegionObjects;
+        var prng = new System.Random(_worldSettings.WorldSeed + seedChannel);
+        
+
         // 1. Essential Objects 배치 (확정 개수)
         if (roomData.EssentialObjects != null)
         {
@@ -92,15 +90,19 @@ public class WorldObjectDisposer
                 if (essential == null || string.IsNullOrEmpty(essential.PrefabName))
                     continue;
                 
-                int count = Random.Range(essential.MinCount, essential.MaxCount + 1);
+                int count = prng.Next(essential.MinCount, essential.MaxCount + 1);
                 
                 for (int i = 0; i < count && positionIndex < validPositions.Count; i++)
                 {
                     Vector2Int tile = validPositions[positionIndex++];
-                    _spawnResults.Add(new SpawnResult
+                    _disposeResults.Add(new DisposeData
                     {
                         prefabName = essential.PrefabName,
-                        worldPosition = TileToWorldPosition(tile)
+                        tilePosition = tile,
+
+                        rotation = Quaternion.Euler(0f, (float)prng.NextDouble() * 360f, 0f),
+                        scale = Vector3.one * (0.8f + (float)prng.NextDouble() * 0.4f),
+                        ownerNodeIndex = roomNode.Index
                     });
                 }
             }
@@ -126,10 +128,13 @@ public class WorldObjectDisposer
                 if (!string.IsNullOrEmpty(selectedPrefab))
                 {
                     Vector2Int tile = validPositions[positionIndex++];
-                    _spawnResults.Add(new SpawnResult
+                    _disposeResults.Add(new DisposeData
                     {
                         prefabName = selectedPrefab,
-                        worldPosition = TileToWorldPosition(tile),
+                        tilePosition = tile,
+                        rotation = Quaternion.Euler(0f, (float)prng.NextDouble() * 360f, 0f),
+                        scale = Vector3.one * (0.8f + (float)prng.NextDouble() * 0.4f),
+                        ownerNodeIndex = roomNode.Index
                     });
                 }
 
@@ -153,6 +158,9 @@ public class WorldObjectDisposer
         if (availableTiles == null || availableTiles.Count == 0)
             return new List<Vector2Int>();
 
+        var seedChannel = (int)WorldSeedChannel.Disposer_GeneratePoissonPoints;
+        var prng = new System.Random(_worldSettings.WorldSeed + seedChannel);
+
         // 밀도에 따른 최소 거리 조정
         float adjustedMinDistance = _disposeSettings.minObjectDistance / Mathf.Clamp(density, 0.1f, 2f);
         
@@ -175,7 +183,7 @@ public class WorldObjectDisposer
         List<Vector2Int> result = new List<Vector2Int>();
 
         // 시작점 선택
-        Vector2Int startPoint = availableTiles[Random.Range(0, availableTiles.Count)];
+        Vector2Int startPoint = availableTiles[prng.Next(0, availableTiles.Count)];
         InsertPoint(startPoint, grid, activeList, result, minX, minY, cellSize);
 
         int processedCount = 0;
@@ -184,16 +192,17 @@ public class WorldObjectDisposer
         {
             ct.ThrowIfCancellationRequested();
             
-            int randomIndex = Random.Range(0, activeList.Count);
+            int randomIndex = prng.Next(0, activeList.Count);
             Vector2Int currentPoint = activeList[randomIndex];
             bool foundValid = false;
 
             for (int attempt = 0; attempt < _disposeSettings.maxSamplingAttempts; attempt++)
             {
                 // 현재 점 주변 랜덤 위치
-                float angle = Random.Range(0f, Mathf.PI * 2);
-                float distance = Random.Range(adjustedMinDistance, adjustedMinDistance * 2);
-                
+                float angle = (float)prng.NextDouble() * Mathf.PI * 2f;
+                float distance = adjustedMinDistance + ((float)prng.NextDouble() * adjustedMinDistance);
+
+
                 int newX = currentPoint.x + Mathf.RoundToInt(Mathf.Cos(angle) * distance);
                 int newY = currentPoint.y + Mathf.RoundToInt(Mathf.Sin(angle) * distance);
                 Vector2Int candidate = new Vector2Int(newX, newY);
@@ -272,9 +281,12 @@ public class WorldObjectDisposer
     /// </summary>
     private void ShuffleList<T>(List<T> list)
     {
+        var seedChannel = (int)WorldSeedChannel.Disposer_SuffleList;
+        var prng = new System.Random(_worldSettings.WorldSeed + seedChannel);
+
         for (int i = list.Count - 1; i > 0; i--)
         {
-            int j = Random.Range(0, i + 1);
+            int j = prng.Next(0, i + 1);
             (list[i], list[j]) = (list[j], list[i]);
         }
     }
@@ -284,7 +296,10 @@ public class WorldObjectDisposer
     /// </summary>
     private string SelectWeightedRandom(List<WeightedObjectData> items, float totalWeight)
     {
-        float randomValue = Random.Range(0f, totalWeight);
+        var seedChannel = (int)WorldSeedChannel.Disposer_WeightedRandom;
+        var prng = new System.Random(_worldSettings.WorldSeed + seedChannel);
+
+        float randomValue = (float)prng.NextDouble() * totalWeight;
         float cumulative = 0f;
 
         foreach (var item in items)
@@ -301,13 +316,5 @@ public class WorldObjectDisposer
         return items.LastOrDefault()?.PrefabName;
     }
 
-    /// <summary>
-    /// 타일 좌표를 월드 좌표로 변환
-    /// </summary>
-    private Vector3 TileToWorldPosition(Vector2Int tile)
-    {
-        // 3D 좌표로 변환 (XZ 평면)
-        return new Vector3(tile.x, 0, tile.y);
-    }
     #endregion
 }

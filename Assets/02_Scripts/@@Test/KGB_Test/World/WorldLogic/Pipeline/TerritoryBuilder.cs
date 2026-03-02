@@ -1,10 +1,12 @@
 using Cysharp.Threading.Tasks;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Unity.Mathematics;
 using UnityEngine;
 
+//TODO: 맵 크기
 /// <summary>
 /// 3 단계: 보로노이 분할 및 자연스러운 경계 처리를 담당하는 클래스
 /// </summary>
@@ -18,7 +20,9 @@ public class TerritoryBuilder
     private const float NOISE_AMPLITUDE_DECAY = 0.5f;
     private const float NOISE_FREQUENCY_GROWTH = 2f;
     public const int OCEAN_MARKER = -1;
-
+    public const int BORDER_MARKER = -2;
+    private const float OCEAN_NOISE_SCALE = 0.1f;
+    private const int SMOOTHING_DIRECTIONS = 4;
     #endregion
 
     #region Fields
@@ -76,14 +80,15 @@ public class TerritoryBuilder
 
             await FitNodesToTileGridAsync();
 
-            InitializeSpatialGrid();
+            SpatialGrid();
 
             await GenerateNoiseWorldAsync();
 
             await AssignTerritoriesAsync();
 
-            await AssignOwnedTilesToRegionsAsync();
+            await ProcessBordersAsync();
 
+            await AssignOwnedTilesToRegionsAsync();
 
             return _worldLogicData;
         }
@@ -105,7 +110,7 @@ public class TerritoryBuilder
     /// <summary>
     /// 공간 분할 그리드 초기화
     /// </summary>
-    private void InitializeSpatialGrid()
+    private void SpatialGrid()
     {
         var nodes = _graphResult.Nodes;
         if (nodes == null || nodes.Count == 0) return;
@@ -141,7 +146,7 @@ public class TerritoryBuilder
     }
     #endregion
 
-    #region Phase 0: Fit Nodes to Grid
+    #region Phase 1: Fit Nodes to Grid
     private async UniTask FitNodesToTileGridAsync()
     {
         var nodes = _graphResult.Nodes;
@@ -218,10 +223,11 @@ public class TerritoryBuilder
     }
     #endregion
 
-    #region Phase 1: Noise Map Generation
+    #region Phase 2: Noise Map Generation
     private async UniTask GenerateNoiseWorldAsync()
     {
-        System.Random prng = new System.Random(_worldSettings.WorldSeed + 100);
+        var seedChannel = (int)WorldSeedChannel.Territory_GenerateNoiseWorld;
+        var prng = new System.Random(_worldSettings.WorldSeed + seedChannel);
         float offsetX = prng.Next(-10000, 10000);
         float offsetY = prng.Next(-10000, 10000);
 
@@ -264,7 +270,7 @@ public class TerritoryBuilder
     }
     #endregion
 
-    #region Phase 2: Voronoi Partitioning with Noise
+    #region Phase 3: Voronoi Partitioning with Noise
     private async UniTask AssignTerritoriesAsync()
     {
         var nodes = _graphResult.Nodes;
@@ -279,22 +285,55 @@ public class TerritoryBuilder
         float mapArea = _worldLogicData.TileGridSize.x * _worldLogicData.TileGridSize.y;
         float avgAreaPerNode = mapArea / nodes.Count;
         float baseRadius = Mathf.Sqrt(avgAreaPerNode / Mathf.PI);
-        //float maxTerritoryRadius = baseRadius * 2.0f;
-
-        // ==========================================
         float maxConnectedDist = 0f;
         if (_graphResult.NodeConnections != null)
         {
-            foreach (var conn in _graphResult.NodeConnections)
+            foreach (NodeConnection conn in _graphResult.NodeConnections)
             {
                 float dist = Vector2.Distance(conn.ParentNode.Position, conn.ChildNode.Position);
                 if (dist > maxConnectedDist) maxConnectedDist = dist;
             }
         }
 
-        // 최대 엣지 길이의 65% 만큼 뻗어나가도록 설정
-        float maxTerritoryRadius = Mathf.Max(baseRadius * 2.0f, maxConnectedDist * 0.65f);
-        // ==========================================
+        // Region별 노드 수 집계
+        Dictionary<RegionData, int> regionCounts = new Dictionary<RegionData, int>();
+        for (int i = 0; i < nodes.Count; i++)
+        {
+            RegionData regionData = nodes[i].RegionData;
+            if (regionData == null) continue;
+            if (!regionCounts.ContainsKey(regionData))
+                regionCounts[regionData] = 0;
+            regionCounts[regionData]++;
+        }
+
+        float avgNodesPerRegion = regionCounts.Count > 0 ? (float)regionCounts.Values.Average() : 1f;
+        const float radiusGain = 1.15f;          // 전체 스케일 여유
+        const float minRadiusScale = 0.6f;       // 지나친 축소 방지
+        const float maxRadiusScale = 3.0f;       // 과도한 확장 방지
+
+        // Region별 반경 사전
+        Dictionary<RegionData, float> regionRadius = new Dictionary<RegionData, float>();
+        foreach (KeyValuePair<RegionData, int> regionCount in regionCounts)
+        {
+            // 노드 수 기반 반경 계산 (루트 스케일링)
+            float countScale = Mathf.Sqrt(regionCount.Value / Mathf.Max(1f, avgNodesPerRegion));
+            float radiusFromCount = baseRadius * countScale * radiusGain;
+            float radiusFromEdges = maxConnectedDist * 0.65f;
+            float radius = Mathf.Max(radiusFromCount, radiusFromEdges, baseRadius * minRadiusScale);
+            radius = Mathf.Min(radius, baseRadius * maxRadiusScale);
+            regionRadius[regionCount.Key] = radius;
+        }
+
+        // 노드 인덱스별 반경 매핑
+        float[] nodeRadius = new float[nodes.Count];
+        for (int i = 0; i < nodes.Count; i++)
+        {
+            RegionData regionData = nodes[i].RegionData;
+            if (regionData != null && regionRadius.TryGetValue(regionData, out float r))
+                nodeRadius[i] = r;
+            else
+                nodeRadius[i] = baseRadius;
+        }
 
         float separationGap = Mathf.Max(_partiSettings.noiseStrength, DEFAULT_SEPARATION_GAP);
 
@@ -313,7 +352,7 @@ public class TerritoryBuilder
 
                 int finalOwner = OCEAN_MARKER;
 
-                if (idx1 != -1 && dist1 <= maxTerritoryRadius)
+                if (idx1 != -1 && dist1 <= nodeRadius[idx1])
                 {
                     bool shouldSeparate = ShouldSeparateRegions(
                         idx2, dist1, dist2, separationGap,
@@ -337,7 +376,8 @@ public class TerritoryBuilder
             }
         }
 
-        Debug.Log($"[TilePartitioner] 땅 타일: {landCount}개 / 바다 타일: {mapArea - landCount}개 | 최대 반경: {maxTerritoryRadius:F2}");
+        float avgRadius = nodeRadius.Length > 0 ? nodeRadius.Average() : 0f;
+        Debug.Log($"[TilePartitioner] 땅 타일: {landCount}개 / 바다 타일: {mapArea - landCount}개 | 평균 반경: {avgRadius:F2} | 최대 엣지 기반: {maxConnectedDist * 0.65f:F2}");
 
         if (_worldSettings.EnableStepByStep)
             await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
@@ -398,7 +438,6 @@ public class TerritoryBuilder
 
     /// <summary>
     /// ★ [최적화] SpatialGrid를 활용한 최근접 노드 검색
-    /// O(n) -> O(log n) 수준으로 개선
     /// </summary>
     private (int idx1, float dist1, int idx2, float dist2) FindTopTwoNodesOptimized(
         Vector2 tilePos, int x, int y)
@@ -448,10 +487,98 @@ public class TerritoryBuilder
     }
     #endregion
 
+    #region Phase 4: Border and Ocean Processing
+    private async UniTask ProcessBordersAsync()
+    {
+        int processedCount = 0;
+        float halfWidth = _worldLogicData.TileGridSize.x * 0.5f;
+        float halfHeight = _worldLogicData.TileGridSize.y * 0.5f;
 
-   
+        for (int x = 0; x < _worldLogicData.TileGridSize.x; x++)
+        {
+            for (int y = 0; y < _worldLogicData.TileGridSize.y; y++)
+            {
+                _ct.ThrowIfCancellationRequested();
+
+                // 가장자리 거리 계산 최적화
+                float edgeDistanceX = Mathf.Min(x, _worldLogicData.TileGridSize.x - 1 - x) / halfWidth;
+                float edgeDistanceY = Mathf.Min(y, _worldLogicData.TileGridSize.y - 1 - y) / halfHeight;
+                float edgeDistance = Mathf.Min(edgeDistanceX, edgeDistanceY);
+
+                float oceanNoise = _worldLogicData.NoiseWorld[x, y] / _partiSettings.noiseStrength * OCEAN_NOISE_SCALE;
+
+                if (edgeDistance + oceanNoise < (1f - _partiSettings.oceanThreshold))
+                {
+                    _worldLogicData.TerritoryWorld[x, y] = OCEAN_MARKER;
+                }
+
+                processedCount++;
+                if (processedCount % _partiSettings.batchSize == 0)
+                {
+                    await UniTask.Yield(_ct);
+                }
+            }
+        }
+
+        if (_partiSettings.borderWidth > 0)
+        {
+            await MarkBorderTilesAsync();
+        }
+
+        if (_worldSettings.EnableStepByStep)
+            await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
+    }
+
+    private async UniTask MarkBorderTilesAsync()
+    {
+        _worldLogicData.BorderWorld = new int[_worldLogicData.TileGridSize.x, _worldLogicData.TileGridSize.y];
+        //System.Array.Copy(_territoryWorld, _borderWorld, _territoryWorld.Length);
+
+        int processedCount = 0;
+
+        for (int x = 1; x < _worldLogicData.TileGridSize.x - 1; x++)
+        {
+            for (int y = 1; y < _worldLogicData.TileGridSize.y - 1; y++)
+            {
+                _ct.ThrowIfCancellationRequested();
+
+                int currentRegion = _worldLogicData.TerritoryWorld[x, y];
+                if (currentRegion == OCEAN_MARKER) continue;
+
+                bool isBorder = false;
+                for (int d = 0; d < SMOOTHING_DIRECTIONS; d++)
+                {
+                    int nx = x + _dx[d];
+                    int ny = y + _dy[d];
+
+                    if (_worldLogicData.TerritoryWorld[nx, ny] != currentRegion && _worldLogicData.TerritoryWorld[nx, ny] != OCEAN_MARKER)
+                    {
+                        isBorder = true;
+                        break;
+                    }
+                }
+
+                if (isBorder)
+                {
+                    _worldLogicData.BorderWorld[x, y] = BORDER_MARKER;
+                }
+
+                processedCount++;
+                if (processedCount % _partiSettings.batchSize == 0)
+                {
+                    await UniTask.Yield(_ct);
+                }
+            }
+        }
+    }
+    #endregion
+
 
     #region Phase 5: Assign Tiles to Regions
+    /// <summary>
+    /// 타일 데이터를 각 노드의 RegionData에 할당하여 소유 타일 목록 구축  
+    /// </summary>
+    /// <returns></returns>
     private async UniTask AssignOwnedTilesToRegionsAsync()
     {
         var nodes = _graphResult.Nodes;

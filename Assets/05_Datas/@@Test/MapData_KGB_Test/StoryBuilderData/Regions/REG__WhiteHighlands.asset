@@ -12,12 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a9c763dd1fd61394a9706354fc4ef7c9, type: 3}
   m_Name: REG__WhiteHighlands
   m_EditorClassIdentifier: 
-  RegionName: REG__WhiteMound
+  RegionName: REG__WhiteHighlands
   RoomBranch: 1
   DefaultMinCount: 7
   DefaultMaxCount: 10
-  BaseHeightLevel: 4
-  HeightNoiseTier: 0
+  BaseHeightLevel: 3
+  TerrainNoise:
+    MinBumps: 0.5
+    MaxBumps: 1.5
+    HeightVarianceBlocks: 10
   EntranceRoom: {fileID: 0}
   EssentialRooms: []
   DefaultRooms:

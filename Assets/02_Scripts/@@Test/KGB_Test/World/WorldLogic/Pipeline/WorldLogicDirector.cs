@@ -14,18 +14,16 @@ public class WorldLogicDirector : MonoBehaviour
     private StoryGenerator _storyGenerator;
     private RegionGenerator _regionGenerator;
     private TerritoryBuilder _territoryBuilder;
-    private DetailBuilder _detailBuilder;
-    private WorldObjectDisposer _objectDisposer;
+    private HeightBuilder _heightBuilder;
+    private ObjectDisposer _objectDisposer;
     #endregion
-
-    private int _seed = 0;
-    private bool _useRandomSeed = true;
 
     private CancellationToken _ct;
 
     #region Internal Data
     private WorldGraphData _worldGraphData;
     private WorldLogicData _worldLogicData;
+    private List<DisposeData> _worldDisposeDatas;
     #endregion 
     // 서비스 클래스들
 
@@ -42,7 +40,7 @@ public class WorldLogicDirector : MonoBehaviour
         _storyGenerator = new();
         _regionGenerator = new();
         _territoryBuilder = new();
-        _detailBuilder = new();
+        _heightBuilder = new();
         _objectDisposer = new();    
     }
 
@@ -72,11 +70,6 @@ public class WorldLogicDirector : MonoBehaviour
             return;
         }
 
-        // 시드 초기화
-        _seed = _useRandomSeed ? System.DateTime.Now.GetHashCode() : Mathf.Abs(_seed);
-        Random.InitState(_seed);
-        _worldSettings.WorldSeed = _seed;
-
         InitializeServices();
         ClearWorld();
 
@@ -103,14 +96,15 @@ public class WorldLogicDirector : MonoBehaviour
             Debug.Log($"3단계 완료: 보로노이 분할 완료");
 
             //4단계: 노이즈, 높이, 경계 처리
-            await TileDetailAsync(ct);
+            await HeightBuildAsync(ct);
             Debug.Log($"4단계 완료: 타일 디테일 처리 완료");
 
             // 5단계: 오브젝트 배치 (WorldObjectDisposer에 위임)
             await SpawnObjectsAsync(ct);
-            Debug.Log($"4단계 완료: {_objectDisposer.SpawnResults.Count}개 오브젝트 배치");
+            int disposeCount = _worldDisposeDatas != null ? _worldDisposeDatas.Count : 0;
+            Debug.Log($"5단계 완료: {disposeCount}개 오브젝트 배치");
             
-            Debug.Log($"=== 월드 생성 완료: 시드 {_seed} ===");
+            Debug.Log($"=== 월드 생성 완료: 시드 {_worldSettings.WorldSeed} ===");
         }
         catch (System.OperationCanceledException)
         {
@@ -135,6 +129,7 @@ public class WorldLogicDirector : MonoBehaviour
     {
         // RegionGenerator에게 Region -> Room 변환 위임(_nodes, _nodeConnections 전달 후 완료되면 갱신함)
         _worldGraphData = await _regionGenerator.ConvertRegionsToRoomsAsync(_worldGraphData, _worldSettings, ct);
+        _worldGraphData.UpdateNodeIndices(); // 변환 후 인덱스 갱신
     }
     #endregion
 
@@ -146,9 +141,9 @@ public class WorldLogicDirector : MonoBehaviour
     #endregion
 
     #region 4단계: 타일 디테일 처리 (노이즈, 높이, 경계)
-    private async UniTask TileDetailAsync(CancellationToken ct)
+    private async UniTask HeightBuildAsync(CancellationToken ct)
     {
-        _worldLogicData = await _detailBuilder.TileDetailAsync(_worldGraphData, _worldLogicData, _worldSettings, ct);
+        _worldLogicData = await _heightBuilder.HeightBuildAsync(_worldGraphData, _worldLogicData, _worldSettings, ct);
     }
     #endregion
 
@@ -183,6 +178,7 @@ public class WorldLogicDirector : MonoBehaviour
     [SerializeField] private bool _showMapBounds = true;
     [SerializeField] private bool _drawTerritoryGrid = false;
     [SerializeField] private bool _useHeightVisualization = true;
+    [SerializeField] private bool _showRegionNames = true; // ★ 텍스트 표시 토글 추가
 
     void OnDrawGizmos()
     {
@@ -216,6 +212,24 @@ public class WorldLogicDirector : MonoBehaviour
 
             Gizmos.color = node.RoomData != null ? node.RoomData.DebugColor : Color.white;
             Gizmos.DrawSphere(nodePos, tileSize * 0.8f);
+
+#if UNITY_EDITOR
+            if (_showRegionNames && node.RegionData != null)
+            {
+                // 텍스트 스타일(색상, 폰트 크기, 정렬 등) 설정
+                GUIStyle style = new GUIStyle();
+                style.normal.textColor = Color.black; // 글자색 (배경이 밝으면 black 추천)
+                style.fontSize = 12;                  // 폰트 크기
+                style.fontStyle = FontStyle.Bold;     // 볼드체
+                style.alignment = TextAnchor.MiddleCenter;
+
+                // 노드보다 살짝 위쪽에 텍스트 배치 (높이는 조절 가능)
+                Vector3 labelPos = nodePos + Vector3.up * (tileSize * 1.5f);
+
+                // 화면에 텍스트 렌더링
+                UnityEditor.Handles.Label(labelPos, node.RegionData.RegionName, style);
+            }
+#endif
         }
 
         // 2. 연결선 그리기
@@ -252,12 +266,12 @@ public class WorldLogicDirector : MonoBehaviour
         // 3. 영토 그리드(보로노이) 그리기
         if (_drawTerritoryGrid && _worldLogicData.TerritoryWorld != null)
         {
-            DrawTerritoryGrid();
+            DrawTerritoryGizmos();
         }
     }
 
     
-    private void DrawTerritoryGrid()
+    private void DrawTerritoryGizmos()
     {
         int[,] territory = _worldLogicData.TerritoryWorld;
         float[,] heightWorld = _worldLogicData.HeightWorld;
@@ -292,16 +306,7 @@ public class WorldLogicDirector : MonoBehaviour
                     // 해당 타일의 주인(Node)의 색상 가져오기
                     var ownerNode = _worldGraphData.Nodes[nodeIndex];
                     Color c = ownerNode.RoomData != null ? ownerNode.RoomData.DebugColor : Color.gray;
-
-                    // 높이에 따라 밝기 조절 (높을수록 밝게)
-                    if (_useHeightVisualization && heightWorld != null)
-                    {
-                        float normalizedHeight = Mathf.InverseLerp(-10f, 60f, heightWorld[x, y]);
-                        c = Color.Lerp(c * 0.5f, c * 1.5f, normalizedHeight);
-                    }
-
-
-                    c.a = 0.5f; // 반투명
+                    
                     Gizmos.color = c;
                 }
 
@@ -322,7 +327,7 @@ public class WorldLogicDirector : MonoBehaviour
     #region Getters
     public WorldLogicData GetWorldLogicData() => _worldLogicData;
     public WorldGraphData GetWorldGraphData() => _worldGraphData;   
-    public List<WorldObjectDisposer.SpawnResult> GetWorldSpawnData() => _objectDisposer.SpawnResults;
+    public List<DisposeData> GetWorldDisposeDatas() => _worldDisposeDatas;
     #endregion
 
 }

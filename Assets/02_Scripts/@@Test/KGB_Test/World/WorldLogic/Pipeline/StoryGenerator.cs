@@ -20,6 +20,7 @@ public class StoryGenerator
     private List<string> _availableKeys;
 
 
+
     /// <summary>
     /// 외부 호출 메서드 : StoryData와 Lock & Key 시스템을 이용하여 Story 생성
     /// </summary>
@@ -32,6 +33,7 @@ public class StoryGenerator
             _worldSettings = settings;
             _storyData = _worldSettings.CurrentStory;
             _ct = ct;
+
 
             // Phase 1: 고정 Region들 생성 및 연결
             await GenerateFixedRegionsAsync();
@@ -64,7 +66,10 @@ public class StoryGenerator
             .Where(n => _storyResult.GetChildCount(n) < maxChildrenPerNode)
             .ToList();
 
-        switch(_worldSettings.WorldBranch)
+        var seedChannel = (int)WorldSeedChannel.Story_PickParentNode;
+        var prng = new System.Random(_worldSettings.WorldSeed + seedChannel);
+
+        switch (_worldSettings.WorldBranch)
         {
             case WorldBranchSetting.Never:
                 return _storyResult.Nodes.Last();
@@ -77,7 +82,7 @@ public class StoryGenerator
 
             case WorldBranchSetting.Default:
             default:
-                return candidates[Random.Range(0, candidates.Count)];
+                return candidates[prng.Next(0, candidates.Count)];
 
         }
     }
@@ -105,7 +110,9 @@ public class StoryGenerator
         }
 
         // 2. 랜덤 선택
-        var selectedRegion = unlockableRegions[Random.Range(0, unlockableRegions.Count)];
+        var seedChannel = (int)WorldSeedChannel.Story_TryProcessNextRegionAsync;
+        var prng = new System.Random(_worldSettings.WorldSeed + seedChannel);
+        var selectedRegion = unlockableRegions[prng.Next(0, unlockableRegions.Count)];
 
         // 3. 부모 노드 선정
         Node parentNode = PickParentNode();
@@ -228,7 +235,9 @@ public class StoryGenerator
         _storyResult.RebuildAdjacency();
 
         // 2. 확률 체크 (Don't Starve는 기본 50% 또는 설정값)
-        if (Random.value > _worldSettings.GetLoopMultiplier()) return;
+        var seedChannel = (int)WorldSeedChannel.Story_ApplyWorldLoopAsync;
+        var prng = new System.Random(_worldSettings.WorldSeed + seedChannel);
+        if (prng.NextDouble() > _worldSettings.GetLoopMultiplier()) return;
 
         // 3. 시작 노드와 끝 노드 찾기
         Node startNode = _storyResult.Nodes.FirstOrDefault(n => n.Depth == 1);

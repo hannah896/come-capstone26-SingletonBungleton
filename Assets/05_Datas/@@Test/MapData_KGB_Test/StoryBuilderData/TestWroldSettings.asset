@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: TestWroldSettings
   m_EditorClassIdentifier: 
   CurrentStory: {fileID: 11400000, guid: 1286a88dc4584c44497a3905a9366d92, type: 2}
-  tileGridSmall: 300
-  tileGridMedium: 350
-  tileGridLarge: 400
-  tileGridHuge: 500
-  _tileUnitSize: 4
-  _tileUnitHeight: 2
+  WorldSeed: -228003274
+  tileGridSmall: 255
+  tileGridMedium: 513
+  tileGridLarge: 1025
+  _tileUnitSize: 1
+  _tileUnitHeight: 1
   branchNever: 0
   branchLeast: 0.4
   branchDefault: 0.6
@@ -26,47 +26,9 @@ MonoBehaviour:
   loopNever: 0
   loopDefault: 0.5
   loopAlways: 1
-  Height_Plains: 0
-  Height_LowHills: 10
+  Height_Plains: 5
   Height_Hills: 25
-  Height_Highlands: 50
-  Noise_LowLow:
-    MinBumps: 1
-    MaxBumps: 1
-    HeightVarianceBlocks: 1
-  Noise_LowMid:
-    MinBumps: 1
-    MaxBumps: 1
-    HeightVarianceBlocks: 5
-  Noise_LowHigh:
-    MinBumps: 1
-    MaxBumps: 1.5
-    HeightVarianceBlocks: 15
-  Noise_MidLow:
-    MinBumps: 1.5
-    MaxBumps: 2.5
-    HeightVarianceBlocks: 2
-  Noise_MidMid:
-    MinBumps: 2
-    MaxBumps: 3
-    HeightVarianceBlocks: 5
-  Noise_MidHigh:
-    MinBumps: 2
-    MaxBumps: 3.5
-    HeightVarianceBlocks: 10
-  Noise_HighLow:
-    MinBumps: 4
-    MaxBumps: 6
-    HeightVarianceBlocks: 1
-  Noise_HighMid:
-    MinBumps: 4
-    MaxBumps: 6
-    HeightVarianceBlocks: 3
-  Noise_HighHigh:
-    MinBumps: 5
-    MaxBumps: 8
-    HeightVarianceBlocks: 5
-  densityMultiplier: 1
+  Height_Highlands: 80
   MacroSettings:
     simulationIterations: 150
     repulsionStrength: 600
@@ -91,7 +53,6 @@ MonoBehaviour:
   PartitionSettings:
     noiseScale: 0.1
     noiseStrength: 15
-    noiseSeed: 1485070741
     borderWidth: 2
     oceanThreshold: 0.85
     batchSize: 100000

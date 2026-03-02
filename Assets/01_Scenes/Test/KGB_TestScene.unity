@@ -253,7 +253,7 @@ GameObject:
   - component: {fileID: 2114054887}
   - component: {fileID: 2114054886}
   m_Layer: 0
-  m_Name: WorldSystem
+  m_Name: WorldGenSystem
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -271,8 +271,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb58c5fab695fb24395b5857d4d75191, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _worldGenerator: {fileID: 0}
+  _worldLogicDirector: {fileID: 0}
+  _worldRenderDirector: {fileID: 0}
   _worldSettings: {fileID: 0}
+  _lastPressedDifficulty: -1
+  _currentSeed: 0
 --- !u!114 &2114054887
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -285,14 +288,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e7e6d65f8de67484182db445f5b35543, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  seed: 0
-  useRandomSeed: 1
   _drawGizmos: 1
   _showConnections: 1
   _showMapBounds: 1
   _drawTerritoryGrid: 1
   _useHeightVisualization: 1
-  _heightScale: 1
+  _showRegionNames: 1
 --- !u!114 &2114054888
 MonoBehaviour:
   m_ObjectHideFlags: 0

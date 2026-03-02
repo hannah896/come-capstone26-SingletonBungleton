@@ -17,7 +17,10 @@ MonoBehaviour:
   DefaultMinCount: 7
   DefaultMaxCount: 10
   BaseHeightLevel: 1
-  HeightNoiseTier: 0
+  TerrainNoise:
+    MinBumps: 1
+    MaxBumps: 1
+    HeightVarianceBlocks: 10
   EntranceRoom: {fileID: 0}
   EssentialRooms: []
   DefaultRooms:

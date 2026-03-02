@@ -12,6 +12,9 @@ public class WorldGenUsageExample : MonoBehaviour
     [SerializeField] private WorldRenderDirector _worldRenderDirector;
     [SerializeField] private WorldSettings _worldSettings;
 
+    [SerializeField] private int _lastPressedDifficulty = -1; // 마지막으로 누른 키 번호
+    [SerializeField] private int _currentSeed = 0;            // 현재 유지 중인 시드값
+
     private string _worldSettingLabel = "TestWorldSettings";
 
     private CancellationTokenSource _cts;
@@ -107,6 +110,23 @@ public class WorldGenUsageExample : MonoBehaviour
         _cts = new CancellationTokenSource(); // 새 스위치 발급
         try
         {
+            
+            
+            if (_lastPressedDifficulty == difficulty)
+            {
+                // 같은 키를 연달아 누름 -> 기존 시드 유지
+                Debug.Log($"동일한 키({difficulty}) 입력됨. 이전 시드({_currentSeed}) 재사용.");
+            }
+            else
+            {
+                // 다른 키를 누름 -> 새로운 무작위 시드 발급
+                // (System.Random의 시드로 사용하기 위해 int 범위 내에서 난수 생성)
+                _currentSeed = UnityEngine.Random.Range(int.MinValue, int.MaxValue);
+                _lastPressedDifficulty = difficulty;
+                Debug.Log($"새로운 키({difficulty}) 입력됨. 새 무작위 시드({_currentSeed}) 발급.");
+            }
+
+            _worldSettings.WorldSeed = _currentSeed;
             _worldSettings.WorldSize = WorldSize.Huge;
             switch (difficulty)
             {
@@ -156,9 +176,9 @@ public class WorldGenUsageExample : MonoBehaviour
 
             var graphData = _worldLogicDirector.GetWorldGraphData();
             var logicData = _worldLogicDirector.GetWorldLogicData();
-            var spawnData = _worldLogicDirector.GetWorldSpawnData();
+            var disposeDatas = _worldLogicDirector.GetWorldDisposeDatas();
 
-            await _worldRenderDirector.RenderWorldAsync(logicData, graphData, spawnData, _worldSettings, _cts.Token);
+            await _worldRenderDirector.RenderWorldAsync(logicData, graphData, disposeDatas, _worldSettings, _cts.Token);
         }
         catch (System.OperationCanceledException)
         {

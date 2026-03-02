@@ -26,7 +26,6 @@ public class WorldRenderDirector : MonoBehaviour
 
     private void InitializeServices()
     {
-        // 작업자 고용
         _terrainBuilder = new TerrainBuilder();
         _terrainPainter = new TerrainPainter();
         // _objectSpawner = new ObjectSpawner();
@@ -38,7 +37,7 @@ public class WorldRenderDirector : MonoBehaviour
     public async UniTask RenderWorldAsync(
         WorldLogicData logicData,
         WorldGraphData graphData,
-        List<WorldObjectDisposer.SpawnResult> spawnData,
+        List<DisposeData> disposeDatas,
         WorldSettings settings,
         CancellationToken ct)
     {

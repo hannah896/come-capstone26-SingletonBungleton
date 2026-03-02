@@ -95,12 +95,21 @@ public class WorldGraphData
             }
         }
     }
+
+    public void UpdateNodeIndices()
+    {
+        for (int i = 0; i < _nodes.Count; i++)
+        {
+            _nodes[i].Index = i;
+        }
+    }
 }
 
 
 [System.Serializable]
 public class Node
 {
+    public int Index = -1;
     public int Depth = -1;
     public int RoomDepth = -1;
 

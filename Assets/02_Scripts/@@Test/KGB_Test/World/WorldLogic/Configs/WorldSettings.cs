@@ -10,16 +10,16 @@ public class WorldSettings : ScriptableObject
     [SerializeField] public int WorldSeed = 0; // 월드 시드 (랜덤 시드로 덮어쓰기됨)
 
     [Header("Map Size")]
-    [SerializeField] private int tileGridSmall = 300;    
-    [SerializeField] private int tileGridMedium = 350;  
-    [SerializeField] private int tileGridLarge = 400;   
-    [SerializeField] private int tileGridHuge = 500;
+    [SerializeField] private int tileGridSmall = 255;    
+    [SerializeField] private int tileGridMedium = 513;  
+    [SerializeField] private int tileGridLarge = 1025;   
+
     private WorldSize _worldSize = WorldSize.Medium;
     public WorldSize WorldSize { get => _worldSize; set => _worldSize = value; }
 
     [Header("Optimization")]
     [Tooltip("1개의 타일이 차지하는 유닛 크기 (예: 4면 1타일 = 4x4 WorldUnit)")]
-    [SerializeField] private int _tileUnitSize = 4; 
+    [SerializeField] private int _tileUnitSize = 2; 
     [SerializeField] private int _tileUnitHeight; // 타일 높이   
     public int TileUnitSize { get => _tileUnitSize; set => _tileUnitSize = Mathf.Max(1, value); } 
     public int TileUnitHeight { get => _tileUnitSize / 2;}
@@ -51,39 +51,18 @@ public class WorldSettings : ScriptableObject
 
     [Header("Terrain Height Settings")]
     [Tooltip("각 지형 등급(Tier)별 실제 높이 블록 설정")]
-    [SerializeField] private float Height_Plains = 2.0f;
-    [SerializeField] private float Height_LowHills = 20.0f;
+    [SerializeField] private float Height_Plains = 20.0f;
     [SerializeField] private float Height_Hills = 45.0f;
     [SerializeField] private float Height_Highlands = 80.0f;
 
-    [Header("--- Low Frequency (거대한 평원/고원) ---")]
-    // 지역 하나에 봉우리가 1~1.5개 (구역 전체가 서서히 높아지는 거대한 고원 느낌)
-    public NoiseParams Noise_LowLow = new NoiseParams(1.0f, 1.0f, 2.0f);
-    public NoiseParams Noise_LowMid = new NoiseParams(1.0f, 1.0f, 5.0f);
-    public NoiseParams Noise_LowHigh = new NoiseParams(1.0f, 1.0f, 15.0f);
-
-    [Header("--- Mid Frequency (일반 숲/언덕) ---")]
-    // 지역 하나에 언덕이 2~3개 (적당히 오르락 내리락 하는 숲)
-    public NoiseParams Noise_MidLow = new NoiseParams(2.0f, 3.0f, 2.0f);
-    public NoiseParams Noise_MidMid = new NoiseParams(2.0f, 3.0f, 5.0f);
-    public NoiseParams Noise_MidHigh = new NoiseParams(2.0f, 3.0f, 15.0f);
-
-    [Header("--- High Frequency (복잡한 산맥/바위) ---")]
-    // 지역 하나에 언덕이 4~6개 (완전 빽빽하고 험준한 산맥)
-    public NoiseParams Noise_HighLow = new NoiseParams(4.0f, 6.0f, 2.0f);
-    public NoiseParams Noise_HighMid = new NoiseParams(4.0f, 6.0f, 5.0f);
-    public NoiseParams Noise_HighHigh = new NoiseParams(4.0f, 6.0f, 15.0f);
-
-
-
     [Header("Advanced Settings")]
-    [Range(0.5f, 2f)]
-    [SerializeField] private float densityMultiplier = 1f; // 영역 밀도 조절 0.5 ~ 2 
-    public float DensityMultiplier
-    {
-        get => densityMultiplier;
-        set => densityMultiplier = Mathf.Clamp(value, 0.5f, 2f);
-    }
+    //[Range(0.5f, 2f)]
+    //[SerializeField] private float densityMultiplier = 1f; // 영역 밀도 조절 0.5 ~ 2 
+    //public float DensityMultiplier
+    //{
+    //    get => densityMultiplier;
+    //    set => densityMultiplier = Mathf.Clamp(value, 0.5f, 2f);
+    //}
     #region Force Sim Settings, Partition Settings, Spawn Settings
     public ForceSimSettings MacroSettings = new ForceSimSettings { idealEdgeLength = 20f, repulsionStrength = 250f }; // Region 배치용 (넓게)
     public ForceSimSettings MicroSettings = new ForceSimSettings { idealEdgeLength = 5f, repulsionStrength = 50f };
@@ -102,7 +81,6 @@ public class WorldSettings : ScriptableObject
             WorldSize.Small => new Vector2Int(tileGridSmall, tileGridSmall),
             WorldSize.Medium => new Vector2Int(tileGridMedium, tileGridMedium),
             WorldSize.Large => new Vector2Int(tileGridLarge, tileGridLarge),
-            WorldSize.Huge => new Vector2Int(tileGridHuge, tileGridHuge),
             _ => new Vector2Int(tileGridMedium, tileGridMedium)
         };
     }
@@ -136,38 +114,18 @@ public class WorldSettings : ScriptableObject
         };
     }
 
-    public float GetHeight(HeightLevel tier)
+    public float GetHeight(HeightLevel heightLevel)
     {
-        switch (tier)
+        switch (heightLevel)
         {
             case HeightLevel.Ocean: return -2.0f; // 바다 깊이 고정
             case HeightLevel.Plains: return Height_Plains;
-            case HeightLevel.LowHills: return Height_LowHills;
             case HeightLevel.Hills: return Height_Hills;
             case HeightLevel.Highlands: return Height_Highlands;
             default: return 0.0f;
         }
     }
 
-    public NoiseParams GetNoiseSettings(NoiseTier tier)
-    {
-        switch (tier)
-        {
-            case NoiseTier.Low_Low: return Noise_LowLow;
-            case NoiseTier.Low_Mid: return Noise_LowMid;
-            case NoiseTier.Low_High: return Noise_LowHigh;
-
-            case NoiseTier.Mid_Low: return Noise_MidLow;
-            case NoiseTier.Mid_Mid: return Noise_MidMid;
-            case NoiseTier.Mid_High: return Noise_MidHigh;
-
-            case NoiseTier.High_Low: return Noise_HighLow;
-            case NoiseTier.High_Mid: return Noise_HighMid;
-            case NoiseTier.High_High: return Noise_HighHigh;
-
-            default: return Noise_MidMid;
-        }
-    }
     #endregion
     #region Debug Settings
     [Header("Debug")]
@@ -191,13 +149,13 @@ public class ForceSimSettings
     public float minNodeDistance = 10f;
 }
 #endregion
-#region Partition Settings
+#region Partition Noise Settings
 [System.Serializable]
 public class PartitionSettings
 {
     [Header("Noise Settings")]
     public float noiseScale = 0.1f;          // 펄린 노이즈 스케일
-    public float noiseStrength = 15f;        // 노이즈가 거리에 미치는 영향력
+    public float noiseStrength = 25f;        // 노이즈가 거리에 미치는 영향력
 
     [Header("Border Settings")]
     public int borderWidth = 2;              // 영역 경계 두께
@@ -219,11 +177,11 @@ public class DisposeSettings
     public int batchSize = 100;              // 비동기 처리 배치 크기
 }
 #endregion
-
-[System.Serializable] // 이게 있어야 인스펙터에 보입니다!
+#region Height Noise Parameters
+[System.Serializable]
 public class NoiseParams
 {
-    [Tooltip("지역 안의 봉우리 횟수 ")]
+    [Tooltip("지역 안의 최소 봉우리 횟수 ")]
     public float MinBumps;
 
     [Tooltip("지역 안의 봉우리 최대 횟수")]
@@ -232,13 +190,8 @@ public class NoiseParams
     [Tooltip("지형의 굴곡이 최대 몇 블록 높이까지 생기는가?")]
     public float HeightVarianceBlocks;
 
-    public NoiseParams(float minBumps, float maxBumps, float heightVarianceBlocks)
-    {
-        MinBumps = minBumps;
-        MaxBumps = maxBumps;
-        HeightVarianceBlocks = heightVarianceBlocks;
-    }
 }
+#endregion
 
 #region Enums : WorldSize, WorldBranchSetting, WorldLoopSetting, HeightLevel, NoiseTier
 public enum WorldSize
@@ -268,27 +221,33 @@ public enum WorldLoopSetting
 public enum HeightLevel
 { 
     Ocean,      
-    Plains,         
-    LowHills,           
+    Plains,               
     Hills,              
     Highlands,          
 }
 
-public enum NoiseTier
+
+public enum WorldSeedChannel
 {
-    // [빈도 Low] : 넓직넓직한 지형
-    Low_Low,    
-    Low_Mid,   
-    Low_High, 
+    Story_PickParentNode = 101,
+    Story_TryProcessNextRegionAsync = 102,
+    Story_ApplyWorldLoopAsync = 103,
 
-    // [빈도 Mid] : 일반적인 지형
-    Mid_Low,    
-    Mid_Mid,   
-    Mid_High,  
+    Region_ArrangeRegionNodes = 201,
+    Region_GetDirectionAwayFromGrandparent = 202,
+    Region_PickParentRoom = 203,
+    Region_AssignEssentialRooms = 204,
+    Region_GenerateRoomsForRegion = 205,
+    Region_CreateLoopsAsync = 206,
 
-    // [빈도 High] : 자글자글한 지형
-    High_Low,   
-    High_Mid,  
-    High_High   
+    Territory_GenerateNoiseWorld = 301,
+
+    Height_BuildRegionFrequencyCache = 401,
+    Height_GenerateHeightMapAsync = 402,
+
+    Disposer_SpawnRegionObjects = 501,
+    Disposer_SuffleList = 502,
+    Disposer_WeightedRandom = 503,
+    Disposer_GeneratePoissonPoints = 504,
 }
 #endregion

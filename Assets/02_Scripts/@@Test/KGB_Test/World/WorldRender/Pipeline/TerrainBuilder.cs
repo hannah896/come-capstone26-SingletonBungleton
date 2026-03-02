@@ -41,8 +41,7 @@ public class TerrainBuilder
         {
             for (int y = 0; y < gridY; y++)
             {
-                // 바다 깊이(-3f) 같은 음수 높이를 0으로 보정 (물은 나중에 Water Plane으로 덮음)
-                float logicHeight = Mathf.Max(0f, logicData.HeightWorld[x, y]);
+                float logicHeight = logicData.HeightWorld[x, y];
 
                 // ⚠️ 0.0f ~ 1.0f 사이의 비율로 정규화 (Normalize)
                 float normalizedHeight = logicHeight / MAX_TERRAIN_HEIGHT;
