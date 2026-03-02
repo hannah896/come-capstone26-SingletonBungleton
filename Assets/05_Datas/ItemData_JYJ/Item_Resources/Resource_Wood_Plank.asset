@@ -18,18 +18,19 @@ MonoBehaviour:
   icon: {fileID: 0}
   prefab: {fileID: 0}
   itemType: 2
+  survivalToolType: 0
+  combatGearType: 0
+  resourceType: 2
+  bootyType: 0
+  foodType: 0
   isStackable: 1
   maxStack: 99
   equipSlot: 0
+  hasDurability: 0
+  maxDurability: 0
+  attackDamage: 0
+  attackRange: 0
+  defense: 0
   hungerRestore: 0
   healthRestore: 0
   sanityRestore: 0
-  hasDurability: 0
-  maxDurability: 100
-  attackDamage: 0
-  attackSpeed: 1
-  attackRange: 1
-  defense: 0
-  moveSpeedMultiplier: 1
-  harvestSpeedMultiplier: 1
-  additionalSlots: 0

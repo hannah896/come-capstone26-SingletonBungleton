@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "New_Item", menuName = "Game/Item Data")]
+[CreateAssetMenu(fileName = "Item_", menuName = "Game/Item Data")]
 public class ItemDataSO : ScriptableObject
 {
     [Header("=== 기본 정보 ===")]
@@ -23,27 +23,54 @@ public class ItemDataSO : ScriptableObject
 
 
 
-    [Header("=== 분류 ===")]
-    [Tooltip("아이템 대분류 타입")]
+    [Header("=== 분류 및 스택 ===")]
+    [Tooltip("아이템 분류 타입")]
     public ItemType itemType;
 
-    [Header("=== 스택 관리 ===")]
-    [Tooltip("겹치기 가능 여부 (자원은 true, 장비는 false)")]
-    public bool isStackable = true;
+    [Header("=== 세부 분류 (해당되는 것만 선택) ===")]
+    [Tooltip("생존도구일 경우 선택")]
+    public SurvivalToolType survivalToolType;
 
-    [Tooltip("최대 겹치기 개수")]
+    [Tooltip("전투장비일 경우 선택")]
+    public CombatGearType combatGearType;
+
+    [Tooltip("자원일 경우 선택")]
+    public ResourceType resourceType;
+
+    [Tooltip("전리품일 경우 선택")]
+    public BootyType bootyType;
+
+    [Tooltip("음식일 경우 선택")]
+    public FoodType foodType;
+
+    [Tooltip("겹치기 가능 여부, 최대 개수")]
+    public bool isStackable = true;
     [Range(1, 999)]
     public int maxStack = 64;
 
 
-    [Header("=== 장착 정보 (장비 전용) ===")]
+    [Header("=== 장착 정보 (장비용) ===")]
     [Tooltip("장착 슬롯 (머리/가슴/손)")]
     public EquipSlot equipSlot = EquipSlot.None;
 
+    [Tooltip("내구도 여부")]
+    public bool hasDurability = false;
+
+    [Tooltip("최대 내구도")]
+    public float maxDurability = 100f;
+
+    [Tooltip("공격력")]
+    public float attackDamage = 0f;
+
+    [Tooltip("공격 범위")]
+    public float attackRange = 1.5f;
+
+    [Tooltip("방어력")]
+    public float defense = 0f;
 
 
 
-    [Header("=== 생존 스탯 효과 (음식/일부 도구) ===")]
+    [Header("=== 생존 효과 (음식용) ===")]
     [Tooltip("배고픔 회복량")]
     public float hungerRestore = 0f;
 
@@ -56,55 +83,12 @@ public class ItemDataSO : ScriptableObject
 
 
 
-    [Header("=== 내구도 (도구/무기/방어구) ===")]
-    [Tooltip("내구도가 있는 아이템인지")]
-    public bool hasDurability = false;
-
-    [Tooltip("최대 내구도")]
-    public float maxDurability = 100f;
-
-
-
-
-    [Header("=== 전투 속성 (무기 전용) ===")]
-    [Tooltip("공격력")]
-    public float attackDamage = 0f;
-
-    [Tooltip("공격 속도 (초당 공격 횟수)")]
-    public float attackSpeed = 1f;
-
-    [Tooltip("공격 범위")]
-    public float attackRange = 1f;
-
-
-
-
-    [Header("=== 방어 속성 (방어구 전용) ===")]
-    [Tooltip("방어력")]
-    public float defense = 0f;
-
-    [Tooltip("이동 속도 배율 (1 = 기본, 0.8 = 20% 느림)")]
-    public float moveSpeedMultiplier = 1f;
-
-
-
-    [Header("=== 채집 효율 (도구 전용) ===")]
-    [Tooltip("채집 속도 배율 (1 = 기본, 2 = 2배 빠름)")]
-    public float harvestSpeedMultiplier = 1f;
-
-
-
-    [Header("=== 인벤토리 확장 (가방 전용) ===")]
-    [Tooltip("추가 슬롯 개수")]
-    public int additionalSlots = 0;
-
-
     private void OnValidate()
     {
         // ID가 없으면 자동 생성 (파일명 기반)
         if (string.IsNullOrEmpty(itemID))
         {
-            itemID = name; // ScriptableObject 파일명 사용
+            itemID = name;
         }
     }
 }

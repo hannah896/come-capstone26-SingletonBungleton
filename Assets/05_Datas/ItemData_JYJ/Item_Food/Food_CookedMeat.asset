@@ -10,26 +10,27 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
-  m_Name: CombatGear_Shield
+  m_Name: Food_CookedMeat
   m_EditorClassIdentifier: 
-  itemID: Shield
-  itemName: "\uBC29\uD328"
-  description: "\uBC29\uC5B4\uAD6C \uBC29\uD328\uC785\uB2C8\uB2E4."
+  itemID: CookedMeat
+  itemName: "\uAD6C\uC6B4\uACE0\uAE30"
+  description: "\uC74C\uC2DD_\uAD6C\uC6B4\uACE0\uAE30 \uC785\uB2C8\uB2E4."
   icon: {fileID: 0}
   prefab: {fileID: 0}
-  itemType: 1
-  isStackable: 0
-  maxStack: 1
-  equipSlot: 3
-  hungerRestore: 0
-  healthRestore: 0
-  sanityRestore: 0
-  hasDurability: 1
-  maxDurability: 100
+  itemType: 4
+  survivalToolType: 0
+  combatGearType: 0
+  resourceType: 0
+  bootyType: 0
+  foodType: 1
+  isStackable: 1
+  maxStack: 64
+  equipSlot: 0
+  hasDurability: 0
+  maxDurability: 0
   attackDamage: 0
-  attackSpeed: 1
-  attackRange: 1
-  defense: 1
-  moveSpeedMultiplier: 1
-  harvestSpeedMultiplier: 1
-  additionalSlots: 0
+  attackRange: 0
+  defense: 0
+  hungerRestore: 10
+  healthRestore: 3
+  sanityRestore: 2

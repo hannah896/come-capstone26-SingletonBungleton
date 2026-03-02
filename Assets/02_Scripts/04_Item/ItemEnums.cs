@@ -9,7 +9,7 @@ public enum ItemType
     Food            // 음식
 }
 
-// 1. 생존도구 세부 타입
+// 생존도구 세부 타입
 public enum SurvivalToolType
 {
     None,       
@@ -18,19 +18,19 @@ public enum SurvivalToolType
     Torch       // 횃불
 }
 
-// 2. 전투도구 세부 타입
+// 전투도구 세부 타입
 public enum CombatGearType
 {
     None,       
     Helmet,     // 헬멧
-    Armor,      // 갑옷
+    Chestplate,      // 갑옷
     Sword,      // 칼
     Bow,        // 활
     Spear,      // 창
     Shield      // 방패
 }
 
-// 3. 자원 세부 타입
+// 자원 세부 타입
 public enum ResourceType
 {
     None,
@@ -46,17 +46,25 @@ public enum ResourceType
     Plant_Grass     // 풀
 }
 
-// 4. 전리품 세부 타입
+// 전리품 세부 타입
 public enum BootyType
 {
     None,       
-    RawMeat,       // 생고기
+    RawMeat,    // 생고기
     Leather,    // 가죽
     Feather,    // 깃털
     Horn        // 뿔
 }
 
-// 5. 장비 장착 위치
+
+// 음식
+public enum FoodType
+{
+    None,
+    CookedMeat  //구운고기
+}
+
+//  장비 장착 위치
 public enum EquipSlot
 {
     None,

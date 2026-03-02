@@ -178,7 +178,7 @@ public class Item_CombatGear : Item, IEquipable
     public bool IsArmor()
     {
         return combatGearType == CombatGearType.Helmet ||
-               combatGearType == CombatGearType.Armor;
+               combatGearType == CombatGearType.Chestplate;
     }
 
 //무기인지 확인

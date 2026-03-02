@@ -10,26 +10,27 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
-  m_Name: Booty_Horn
+  m_Name: Weapon_Bow
   m_EditorClassIdentifier: 
-  itemID: Horn
-  itemName: "\uBFD4"
-  description: "\uBAAC\uC2A4\uD130\uAC00 \uB4DC\uB78D\uD55C \uBFD4\uC785\uB2C8\uB2E4."
+  itemID: Bow
+  itemName: "\uD65C"
+  description: "\uC6D0\uAC70\uB9AC \uBB34\uAE30 \uD65C\uC785\uB2C8\uB2E4."
   icon: {fileID: 0}
   prefab: {fileID: 0}
-  itemType: 3
-  isStackable: 1
-  maxStack: 99
-  equipSlot: 0
+  itemType: 1
+  survivalToolType: 0
+  combatGearType: 4
+  resourceType: 0
+  bootyType: 0
+  foodType: 0
+  isStackable: 0
+  maxStack: 1
+  equipSlot: 3
+  hasDurability: 1
+  maxDurability: 100
+  attackDamage: 20
+  attackRange: 10
+  defense: 0
   hungerRestore: 0
   healthRestore: 0
   sanityRestore: 0
-  hasDurability: 0
-  maxDurability: 100
-  attackDamage: 0
-  attackSpeed: 1
-  attackRange: 1
-  defense: 0
-  moveSpeedMultiplier: 1
-  harvestSpeedMultiplier: 1
-  additionalSlots: 0

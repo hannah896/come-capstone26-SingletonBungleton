@@ -10,26 +10,27 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
-  m_Name: Booty_Feather
+  m_Name: Booty_RawMeat
   m_EditorClassIdentifier: 
-  itemID: Feather
-  itemName: "\uAE43\uD138"
-  description: "\uBAAC\uC2A4\uD130\uAC00 \uB4DC\uB78D\uD55C \uAE43\uD138\uC785\uB2C8\uB2E4."
+  itemID: RawMeat
+  itemName: "\uC0DD\uACE0\uAE30"
+  description: "\uB3D9\uBB3C\uC774 \uB4DC\uB78D\uD55C \uC0DD\uACE0\uAE30\uC785\uB2C8\uB2E4."
   icon: {fileID: 0}
   prefab: {fileID: 0}
   itemType: 3
+  survivalToolType: 0
+  combatGearType: 0
+  resourceType: 0
+  bootyType: 1
+  foodType: 0
   isStackable: 1
   maxStack: 99
   equipSlot: 0
-  hungerRestore: 0
-  healthRestore: 0
-  sanityRestore: 0
   hasDurability: 0
   maxDurability: 100
   attackDamage: 0
-  attackSpeed: 1
-  attackRange: 1
+  attackRange: 0
   defense: 0
-  moveSpeedMultiplier: 1
-  harvestSpeedMultiplier: 1
-  additionalSlots: 0
+  hungerRestore: 0
+  healthRestore: 0
+  sanityRestore: 0

@@ -10,26 +10,27 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
-  m_Name: CombatGear_Spear
+  m_Name: Tool_Torch
   m_EditorClassIdentifier: 
-  itemID: Spear
-  itemName: "\uCC3D"
-  description: "\uADFC\uAC70\uB9AC \uBB34\uAE30 \uCC3D\uC785\uB2C8\uB2E4."
+  itemID: Torch
+  itemName: "\uD683\uBD88"
+  description: "\uC5B4\uB460\uC744 \uBC1D\uD600\uC8FC\uB294  \uD683\uBD88\uC785\uB2C8\uB2E4."
   icon: {fileID: 0}
   prefab: {fileID: 0}
-  itemType: 1
-  isStackable: 0
-  maxStack: 1
+  itemType: 0
+  survivalToolType: 3
+  combatGearType: 0
+  resourceType: 0
+  bootyType: 0
+  foodType: 0
+  isStackable: 1
+  maxStack: 99
   equipSlot: 3
+  hasDurability: 0
+  maxDurability: 0
+  attackDamage: 0
+  attackRange: 0
+  defense: 0
   hungerRestore: 0
   healthRestore: 0
   sanityRestore: 0
-  hasDurability: 1
-  maxDurability: 100
-  attackDamage: 1
-  attackSpeed: 1
-  attackRange: 1
-  defense: 0
-  moveSpeedMultiplier: 1
-  harvestSpeedMultiplier: 1
-  additionalSlots: 0
