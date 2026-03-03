@@ -2,198 +2,172 @@ using UnityEngine;
 
 /// <summary>
 /// 생존도구 아이템 클래스
-/// - 조끼 (방어)
-/// - 도끼 (벌목)
-/// - 곡괭이 (채굴)
-/// - 횃불 (조명)
+/// - 도끼
+/// - 곡괭이
+/// - 횃불
 /// </summary>
 
 
 public class Item_SurvivalTool : Item, IEquipable
 {
-    [Header("=== 생존도구 전용 속성 ===")]
-    [Tooltip("생존도구 세부 타입")]
+    [Header("=== 생존도구 전용 ===")]
     public SurvivalToolType survivalToolType = SurvivalToolType.None;
 
-    // IEquipable 인터페이스 구현
+    // ─── 내구도 ───
     private int _currentDurability;
     public int CurrentDurability
     {
         get => _currentDurability;
-        set => _currentDurability = value;
+        set => _currentDurability = Mathf.Clamp(value, 0, (int)itemData.maxDurability);
     }
 
     [Header("=== 횃불 전용 ===")]
-    [Tooltip("남은 연료 (횃불 전용)")]
-    public float remainingFuel = 100f;
+    [Tooltip("횃불 Light 컴포넌트 연결")]
+    public Light torchLight;
 
-    [Tooltip("최대 연료")]
-    public float maxFuel = 100f;
+    private bool _isLit = false;
 
-    [Tooltip("초당 연료 소모량")]
-    public float fuelConsumptionRate = 1f;
 
-    private bool _isLit = false; // 횃불이 켜져있는지
+    #region 초기화
 
     protected override void Init()
     {
         base.Init();
-
-        // 내구도 초기화
-        if (itemData.hasDurability)
-        {
+        if (itemData != null && itemData.hasDurability)
             _currentDurability = (int)itemData.maxDurability;
-        }
+
+        if (itemData != null)
+            survivalToolType = itemData.survivalToolType;
+
+        // 시작 시 횃불 꺼두기
+        if (survivalToolType == SurvivalToolType.Torch && torchLight != null)
+            torchLight.enabled = false;
     }
 
-    protected override void Init(ItemDataSO data)
+    public override void Init(ItemDataSO data)
     {
         base.Init(data);
-
         if (itemData.hasDurability)
-        {
             _currentDurability = (int)itemData.maxDurability;
-        }
-    }
 
-    private void Update()
+        survivalToolType = itemData.survivalToolType;
+    }
+    #endregion
+
+
+
+    #region IEquipable 구현
+    public void Equip()
     {
-        // 횃불이 켜져있으면 연료 소모
-        if (survivalToolType == SurvivalToolType.Torch && _isLit)
-        {
-            ConsumeFuel(fuelConsumptionRate * Time.deltaTime);
-        }
+        Debug.Log($"[도구] {itemData.itemName} 장착!");
+
+        if (survivalToolType == SurvivalToolType.Torch)
+            SetTorchLight(true);
     }
 
-
-//도구 사용
-    public void Use()
+    public void Unequip()
     {
-        switch (survivalToolType)
-        {
-            case SurvivalToolType.Axe:
-                ChopTree();
-                break;
+        Debug.Log($"[도구] {itemData.itemName} 해제!");
 
-            case SurvivalToolType.Pickaxe:
-                MineOre();
-                break;
-
-            case SurvivalToolType.Torch:
-                ToggleTorch();
-                break;
-
-            default:
-                Debug.Log($"{itemData.itemName} 사용!");
-                break;
-        }
+        if (survivalToolType == SurvivalToolType.Torch)
+            SetTorchLight(false);
     }
 
-//도끼
-    private void ChopTree()
-    {
-        Debug.Log($"{itemData.itemName}으로 나무 벌목!");
-
-        // TODO: 실제 나무 오브젝트와 상호작용
-        // 채집 속도: itemData.harvestSpeedMultiplier
-
-        UseDurability(1); // 내구도 1 감소
-    }
-
-//곡괭이
-    private void MineOre()
-    {
-        Debug.Log($"{itemData.itemName}으로 광물 채굴!");
-
-        // TODO: 실제 광물 오브젝트와 상호작용
-
-        UseDurability(1);
-    }
-
-//횃불 연료 소모
-    private void ToggleTorch()
-    {
-        if (remainingFuel <= 0)
-        {
-            Debug.Log("연료가 부족합니다!");
-            _isLit = false;
-            return;
-        }
-
-        _isLit = !_isLit;
-        Debug.Log($"횃불 {(_isLit ? "켜짐" : "꺼짐")}!");
-
-        // TODO: 라이트 컴포넌트 On/Off
-    }
-
-    private void ConsumeFuel(float amount)
-    {
-        remainingFuel -= amount;
-
-        if (remainingFuel <= 0)
-        {
-            remainingFuel = 0;
-            _isLit = false;
-            Debug.Log("횃불의 연료가 다 떨어졌습니다!");
-        }
-    }
-
-//내구도 사용
     public void UseDurability(int amount = 1)
     {
         if (!itemData.hasDurability) return;
 
         _currentDurability = Mathf.Max(0, _currentDurability - amount);
+        Debug.Log($"[도구] 내구도 {_currentDurability}/{itemData.maxDurability}");
 
         if (_currentDurability <= 0)
-        {
             OnToolBroken();
-        }
     }
 
-
-//도구 부서졌을 때
-    private void OnToolBroken()
-    {
-        Debug.Log($"{itemData.itemName}이(가) 부서졌습니다!");
-        Destroy(gameObject);
-    }
-
-//내구도 회복
     public void Repair(int amount)
     {
         if (!itemData.hasDurability) return;
 
-        _currentDurability += amount;
-        _currentDurability = Mathf.Min(_currentDurability, (int)itemData.maxDurability);
-
-        Debug.Log($"{itemData.itemName} 수리! (현재: {_currentDurability}/{itemData.maxDurability})");
+        _currentDurability = Mathf.Min(_currentDurability + amount, (int)itemData.maxDurability);
+        Debug.Log($"[도구] {itemData.itemName} 수리! ({_currentDurability}/{itemData.maxDurability})");
     }
 
-//내구도 퍼센트
     public float GetDurabilityPercent()
     {
         if (!itemData.hasDurability) return 1f;
-        return _currentDurability / itemData.maxDurability;
+        return (float)_currentDurability / itemData.maxDurability;
+    }
+    #endregion
+
+
+
+    #region 도구 사용
+    public void Use()
+    {
+        if (itemData.hasDurability && _currentDurability <= 0)
+        {
+            Debug.Log($"[도구] {itemData.itemName}이(가) 부서져서 사용할 수 없습니다!");
+            return;
+        }
+
+        switch (survivalToolType)
+        {
+            case SurvivalToolType.Axe: ChopTree(); break;
+            case SurvivalToolType.Pickaxe: MineOre(); break;
+            default: Debug.Log($"[도구] {itemData.itemName} 사용!"); break;
+        }
     }
 
-//UI
+    private void ChopTree()
+    {
+        Debug.Log($"[도끼] 나무 벌목!");
+        // TODO: 나무 오브젝트에 Raycast → IHarvestable.Harvest(this) 호출
+        UseDurability(1);
+    }
+
+    private void MineOre()
+    {
+        Debug.Log($"[곡괭이] 광물 채굴!");
+        // TODO: 광물 오브젝트에 Raycast → IHarvestable.Harvest(this) 호출
+        UseDurability(1);
+    }
+    #endregion
+
+
+
+    #region 횃불
+    private void SetTorchLight(bool on)
+    {
+        _isLit = on;
+
+        if (torchLight != null)
+            torchLight.enabled = on;
+        else
+            Debug.LogWarning("[횃불] torchLight가 연결되지 않았습니다");
+
+        Debug.Log($"[횃불] {(on ? "켜짐" : "꺼짐")}");
+    }
+    #endregion
+
+
+
+    #region 내부 이벤트
+    private void OnToolBroken()
+    {
+        Debug.Log($"[도구] {itemData.itemName}이(가) 부서졌습니다!");
+        Unequip();
+        Destroy(gameObject);
+    }
+    #endregion
+
+
     public override string ToString()
     {
-        string baseInfo = base.ToString();
-
-        // 내구도 표시
+        string info = base.ToString();
         if (itemData.hasDurability)
-        {
-            baseInfo += $" [내구도: {_currentDurability}/{itemData.maxDurability}]";
-        }
-
-        // 횃불 연료 표시
+            info += $" [내구도: {_currentDurability}/{itemData.maxDurability}]";
         if (survivalToolType == SurvivalToolType.Torch)
-        {
-            baseInfo += $" [연료: {remainingFuel:F0}%]";
-        }
-
-        return baseInfo;
+            info += $" [{(_isLit ? "켜짐" : "꺼짐")}]";
+        return info;
     }
 }

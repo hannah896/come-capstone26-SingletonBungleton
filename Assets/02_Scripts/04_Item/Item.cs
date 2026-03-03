@@ -1,83 +1,95 @@
-using UnityEditor.Localization.Plugins.XLIFF.V12;
 using UnityEngine;
-using UnityEngine.Splines;
 
-/// 게임 내에 실제로 존재하는 아이템 인스턴스 (데이터 실체)
+/// 게임 내 실제 존재하는 아이템 인스턴스의 베이스 클래스
+/// 월드에 존재하는 아이템 프리팹에 붙는 컴포넌트임
 
-[System.Serializable]
+[RequireComponent(typeof(Collider))]  // 줍기용 콜라이더 필수
 public abstract class Item : MonoBehaviour
 {
-    // === 데이터 및 상태 ===
-    public ItemDataSO itemData;        // 원본 데이터(설계도)
-    public int stackCount;             // 현재 수량
-    private float _createdTime;        // 생성 시점 (신선도 계산용)
+    [Header("=== 아이템 데이터 ===")]
+    [Tooltip("아이템 원본 데이터 (SO 연결)")]
+    public ItemDataSO itemData;
 
+    [Tooltip("현재 보유 수량")]
+    public int stackCount = 1;
+
+    private float _createdTime;  // 생성 시점 (신선도 계산용 - 추후 사용)
+
+    #region 초기화
     private void Awake()
     {
         Init();
     }
 
-    /// 아이템 생성 및 초기화
-    protected virtual void Init(ItemDataSO data)
+    /// 프리팹에 SO 연결 (Inspector에서 설정)
+    protected virtual void Init()
+    {
+        if (itemData == null)
+        {
+            Debug.LogWarning($"[Item] {gameObject.name}: ItemDataSO가 연결되지 않았습니다!");
+            return;
+        }
+        stackCount = 1;
+        _createdTime = Time.time;
+    }
+
+    /// 코드로 동적 생성할 때 데이터를 주입하는 경우에
+    public virtual void Init(ItemDataSO data)
     {
         itemData = data;
         stackCount = 1;
         _createdTime = Time.time;
     }
+    #endregion
 
-    protected virtual void Init()
-    {
-        if (itemData == null)
-        {
-            Debug.Log($"[Item] {gameObject.name} 프리펩 내에 SO 데이터가 존재하지 않습니다. ");
-            return;
-        }
-        stackCount = Mathf.Min(0, itemData.maxStack);
-    }
 
-    protected virtual void ApplySurvivalEffects()
-    {
-        // TODO: Survival Manager 연동
-        if (itemData.hungerRestore > 0) Debug.Log($"배고픔 +{itemData.hungerRestore}");
-        if (itemData.healthRestore > 0) Debug.Log($"체력 +{itemData.healthRestore}");
-        if (itemData.sanityRestore > 0) Debug.Log($"정신력 +{itemData.sanityRestore}");
-    }
 
-    // === 스택 및 수량 관리 ===
+    #region 중첩 관리
 
-    /// 대상 아이템과 겹치기가 가능한지 확인
+    /// 다른 아이템과 겹칠 수 있는지 확인
     public virtual bool CanStackWith(Item other)
     {
-        if (other == null || other.itemData != this.itemData) return false;
-        if (!itemData.isStackable || stackCount >= itemData.maxStack) return false;
-
-        
-
+        if (other == null) return false;
+        if (other.itemData != this.itemData) return false;       // 같은 종류인지
+        if (!itemData.isStackable) return false;                  // 겹치기 허용인지
+        if (stackCount >= itemData.maxStack) return false;        // 자리 있는지
         return true;
     }
 
-    /// 수량 추가 후 남은 수량 반환
+    /// 수량 추가. 반환값 = 넘쳐서 못 담은 수량
     public int AddStack(int amount)
     {
-          int space = itemData.maxStack - stackCount;
+        int space = itemData.maxStack - stackCount;
         int toAdd = Mathf.Min(amount, space);
         stackCount += toAdd;
-        return amount - toAdd;
+        return amount - toAdd;  // 초과분 반환
     }
 
-    /// 수량 제거 후 실제 제거된 수량 반환
+    /// 수량 제거. 반환값 = 실제로 제거된 수량
     public int RemoveStack(int amount)
     {
         int toRemove = Mathf.Min(amount, stackCount);
         stackCount -= toRemove;
         return toRemove;
     }
+    #endregion
 
 
+
+    #region 생존 효과 (음식)
+
+    /// 먹었을 때 배고픔/체력/정신력 회복
+    protected virtual void ApplySurvivalEffects()
+    {
+        // TODO: SurvivalManager.Instance.AddHunger(itemData.hungerRestore) 등으로 교체
+        if (itemData.hungerRestore > 0) Debug.Log($"[음식] 배고픔 +{itemData.hungerRestore}");
+        if (itemData.healthRestore > 0) Debug.Log($"[음식] 체력 +{itemData.healthRestore}");
+        if (itemData.sanityRestore > 0) Debug.Log($"[음식] 정신력 +{itemData.sanityRestore}");
+    }
+    #endregion
 
     public override string ToString()
     {
-        string info = $"{itemData.itemName} x{stackCount}";
-        return info;
+        return $"{itemData.itemName} x{stackCount}";
     }
 }
