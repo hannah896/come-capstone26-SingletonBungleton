@@ -15,6 +15,8 @@ MonoBehaviour:
   RoomName: 
   Density: 0
   DebugColor: {r: 0, g: 0.44313726, b: 0.16078432, a: 1}
-  GroundPrefab: 
+  TopTileKey: Forest_Top
+  CliffTileKey: 
+  WaterTileKey: 
   EssentialObjects: []
   WeightedObjects: []

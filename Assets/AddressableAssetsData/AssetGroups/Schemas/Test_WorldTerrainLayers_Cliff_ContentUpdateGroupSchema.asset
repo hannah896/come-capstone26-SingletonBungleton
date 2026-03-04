@@ -9,14 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0876442a15f410b4996018d0e2f11f16, type: 3}
-  m_Name: Room_Plain
+  m_Script: {fileID: 11500000, guid: 5834b5087d578d24c926ce20cd31e6d6, type: 3}
+  m_Name: Test_WorldTerrainLayers_Cliff_ContentUpdateGroupSchema
   m_EditorClassIdentifier: 
-  RoomName: 
-  Density: 0
-  DebugColor: {r: 0, g: 1, b: 0.3137255, a: 1}
-  TopTileKey: Plain_Top
-  CliffTileKey: 
-  WaterTileKey: 
-  EssentialObjects: []
-  WeightedObjects: []
+  m_Group: {fileID: 11400000, guid: ced859eb843a0eb44ab680489ae8187e, type: 2}
+  m_StaticContent: 0

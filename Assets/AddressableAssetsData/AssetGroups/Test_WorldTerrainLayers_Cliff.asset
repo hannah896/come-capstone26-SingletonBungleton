@@ -10,14 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
-  m_Name: TestMap
+  m_Name: Test_WorldTerrainLayers_Cliff
   m_EditorClassIdentifier: 
-  m_GroupName: TestMap
-  m_GUID: 8dcd73c70ff08a44db9c3e7057b8e626
-  m_SerializeEntries: []
+  m_GroupName: Test_WorldTerrainLayers_Cliff
+  m_GUID: b63b3c32022292c48a7fbe0635ba454f
+  m_SerializeEntries:
+  - m_GUID: f716f456807e6d3459bff747adc3961b
+    m_Address: Highlands_Cliff
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: d49714acbe7dc4846b65422625851c9a, type: 2}
   m_SchemaSet:
     m_Schemas:
-    - {fileID: 11400000, guid: c918a975c6be62f4cb49b571c267b311, type: 2}
-    - {fileID: 11400000, guid: 53349955f7c6e4743911853b3bde50e0, type: 2}
+    - {fileID: 11400000, guid: 55005e5c792c79d449c4cf6e92075c6e, type: 2}
+    - {fileID: 11400000, guid: bacb7f470d204da4ea0b6a678cbf07df, type: 2}

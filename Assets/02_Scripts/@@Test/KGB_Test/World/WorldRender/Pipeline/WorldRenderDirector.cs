@@ -49,7 +49,10 @@ public class WorldRenderDirector : MonoBehaviour
         // 1. 지형(Terrain) 생성 및 높이맵 데이터 적용
         (_terrainData, _terrainGO) = await _terrainBuilder.BuildTerrainAsync(logicData, graphData, settings, ct);
 
-        // 2. 프리팹 오브젝트 스폰
+        // 2. 지형 텍스처 페인팅
+        await _terrainPainter.PaintTerrainAsync(_terrainData, logicData, graphData, settings, ct);
+
+        // 3. 프리팹 오브젝트 스폰
         // await _objectSpawner.SpawnObjectsAsync(spawnData, ...);
 
         Debug.Log("✨ 월드 렌더링 완료!");
@@ -69,6 +72,7 @@ public class WorldRenderDirector : MonoBehaviour
         {
             Destroy(_terrainData);
             _terrainData = null;
+            _terrainPainter.ReleasePaintedLayers();
         }
     }
 }

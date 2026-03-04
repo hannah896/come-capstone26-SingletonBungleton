@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Test_WorldTerrainLayers_RegionGround
+  m_EditorClassIdentifier: 
+  m_GroupName: Test_WorldTerrainLayers_RegionGround
+  m_GUID: 6987663f12ee81f48b5473d3d8b55db4
+  m_SerializeEntries:
+  - m_GUID: 22bd516efa069a045a3a2ea76962a5ed
+    m_Address: RockyDesert_Top
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 39f8b9e8aaafa0841a7d83892ea3e3f4
+    m_Address: Swamp_Top
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 47a059cf343d18a49af7b80b395451bd
+    m_Address: Desert_Top
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6cb94fe356b18b245851120f4beac95e
+    m_Address: Plain_Top
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 97bf90360c36d46469984cc59f7c5344
+    m_Address: Savannah_Top
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b1afa7c9f9e154f42b91b28a300b3c17
+    m_Address: Highlands_Top
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f32abc1c577b54e44a00467575ef7f0d
+    m_Address: Forest_Top
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fc7d1e021cd316d4d9c845671c26caf6
+    m_Address: White_Top
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: d49714acbe7dc4846b65422625851c9a, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 72bafa8513c0f1c45becaa522cccdad9, type: 2}
+    - {fileID: 11400000, guid: 8db33c8b939a96542a9aa34d542ce1f3, type: 2}
