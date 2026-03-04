@@ -16,9 +16,7 @@ public class RegionGenerator
     private WorldGraphData _regionResult;
     private CancellationToken _ct;
 
-    private ForceSimSettings _macroSettings;
-    private ForceSimSettings _microSettings;
-    private ForceSimSettings _fastSettings;
+
 
 
     //// Region Node에 생성된 Cluster 대한 매핑
@@ -37,32 +35,13 @@ public class RegionGenerator
             _regionResult = result;
             _worldSettings = settings;
 
-            _macroSettings = settings.MacroSettings;
-            _microSettings = settings.MicroSettings;
-            _fastSettings = settings.FastSettings;
-
             _ct = ct;
-            // 1 : Task Node 배치 (Macro Layout)
-            // 논리적 그래프만 있는 상태이므로, Region Node들을 물리적으로 펼쳐줍니다.
-            await ArrangeRegionNodes();
 
-            // Force Simulation 실행
-            _regionResult.Nodes = await RunForceSimulationAsync(_regionResult.Nodes, _macroSettings, _ct);
-
-            // 2 : 각 Region Node를 Room Cluster로 변환
+            // 1 : 각 Region Node를 Room Cluster로 변환
             await GenerateInternalTopology();
 
-            // Force Simulation으로 Node들 배치 (Fast Layout)
-            _regionResult.Nodes = await RunForceSimulationAsync(_regionResult.Nodes, _fastSettings, _ct);
-
-            // 3 : Loop 생성
+            // 2 : Region 내부에 루프 연결 생성 
             await CreateLoopsAsync();
-
-            // Force Simulation으로 최종 배치 (Micro Layout)
-            _regionResult.Nodes = await RunForceSimulationAsync(_regionResult.Nodes, _microSettings, _ct);
-
-            // 4 : 
-            await CutLoopConnections();
 
             // 오프셋 적용 및 결과 생성
             return _regionResult;
@@ -75,162 +54,14 @@ public class RegionGenerator
     }
 
 
-    #region Force Simulation
+
+
     /// <summary>
-    /// 들어온 노드들에대해 Force Simulation을 실행합니다.
+    ///  [Room Cluster 생성 단계]
+    ///  각 Region Node를 중심으로 Room Cluster를 생성하고, Region 간 연결을 Cluster 간 연결로 변환
     /// </summary>
-    /// <param name="graph"></param>
-    /// <param name="ct"></param>
     /// <returns></returns>
-    private async UniTask<List<Node>> RunForceSimulationAsync(
-        List<Node> nodes,
-        ForceSimSettings forceSettings,
-        CancellationToken ct)
-    {
-        for (int iteration = 0; iteration < forceSettings.simulationIterations; iteration++)
-        {
-            ct.ThrowIfCancellationRequested();
-
-            foreach (var node in nodes)
-                node.Force = Vector2.zero;
-
-            nodes = CalculateRepulsionForces(nodes, forceSettings);
-            CalculateAttractionForces(_regionResult.NodeConnections, forceSettings);
-            nodes = UpdateNodePositions(nodes, forceSettings);
-
-            if (_worldSettings.EnableStepByStep && iteration % 10 == 0)
-                await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: ct);
-        }
-
-        return nodes;
-    }
-
-
-    // 노드간 척력 계산
-    private List<Node> CalculateRepulsionForces(List<Node> nodes, ForceSimSettings forceSettings)
-    {
-        for (int i = 0; i < nodes.Count; i++)
-        {
-            for (int j = i + 1; j < nodes.Count; j++)
-            {
-                Vector2 direction = nodes[i].Position - nodes[j].Position;
-                float distSqr = direction.sqrMagnitude;
-
-                // 0 나누기 방지
-                if (distSqr < 0.01f) distSqr = 0.01f;
-                float distance = Mathf.Sqrt(distSqr);
-
-                // 공식: Force = Strength / distance^2
-                float forceMagnitude = forceSettings.repulsionStrength / distSqr;
-                Vector2 force = direction.normalized * forceMagnitude;
-
-                nodes[i].Force += force;
-                nodes[j].Force -= force;
-            }
-        }
-
-        return nodes;
-    }
-
-    // 노드 연결에 대한 인력 계산
-    private void CalculateAttractionForces(List<NodeConnection> connections, ForceSimSettings forceSettings)
-    {
-        foreach (var edge in connections)
-        {
-            Vector2 direction = edge.ChildNode.Position - edge.ParentNode.Position;
-            float displacement = direction.magnitude - forceSettings.idealEdgeLength;
-            Vector2 force = direction.normalized * (forceSettings.attractionStrength * displacement);
-
-            edge.ParentNode.Force += force;
-            edge.ChildNode.Force -= force;
-        }
-    }
-
-
-    // 노드 위치 업데이트 및 최소 거리 유지
-    private List<Node> UpdateNodePositions(List<Node> nodes, ForceSimSettings forceSettings)
-    {
-        foreach (var node in nodes)
-        {
-            //if (node.Depth == 1 && node.RoomDepth == 1)                 //시작 노드는 고정
-            //    continue;
-            node.Velocity = (node.Velocity + node.Force) * forceSettings.dampingFactor;
-            node.Position += node.Velocity;
-        }
-
-
-        for (int i = 0; i < nodes.Count; i++)
-        {
-            for (int j = i + 1; j < nodes.Count; j++)
-            {
-                Vector2 direction = nodes[i].Position - nodes[j].Position;
-                float distance = direction.magnitude;
-
-                if (distance < forceSettings.minNodeDistance && distance > 0.01f)
-                {
-                    float overlap = forceSettings.minNodeDistance - distance;
-                    Vector2 push = direction.normalized * (overlap / 2f);
-
-                    nodes[i].Position += push;
-                    nodes[j].Position -= push;
-                }
-            }
-        }
-
-        return nodes;
-    }
-    #endregion
-
-
-    #region Phase 1: Arrange Region Nodes
-
-    private async UniTask ArrangeRegionNodes()
-    {
-        var seedChannel = (int)WorldSeedChannel.Region_ArrangeRegionNodes;
-        var prng = new System.Random(_worldSettings.WorldSeed + seedChannel);
-        // 1. 초기화: 0,0에 뭉쳐있지 않게 랜덤하게 살짝 흩뿌림 (Start는 0,0 고정)
-        if (!_regionResult.IsLooped)
-        {
-            foreach (var node in _regionResult.Nodes)
-            {
-                if (node.Depth == 1) // Start Node
-                    node.Position = GetInsideUnitCircle(prng) * _microSettings.idealEdgeLength;
-                else
-                    node.Position = GetInsideUnitCircle(prng) * _macroSettings.idealEdgeLength;
-            }
-        }
-        else
-        {   
-            // [원형 배치] 도넛 모양 만들기
-            // Depth 순서대로 정렬 (시작 -> 중간 -> 끝)
-            var sortedNodes = _regionResult.Nodes.OrderBy(n => n.Depth).ToList();
-            int count = sortedNodes.Count;
-
-            // 적절한 반지름 계산 (노드 사이 간격을 유지하며 원을 만들 크기)
-            float circumference = count * _macroSettings.idealEdgeLength;
-            float radius = circumference / (2 * Mathf.PI);
-
-            // 반지름이 너무 작으면 뭉치므로 최소값 보장
-            radius = Mathf.Max(radius, _macroSettings.idealEdgeLength * 2);
-
-            for (int i = 0; i < count; i++)
-            {
-                // 각도 계산 (0도 ~ 360도)
-                float angle = i * (360f / count) * Mathf.Deg2Rad;
-                // 원형 좌표 할당
-                sortedNodes[i].Position = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
-            }
-        }
-
-        
-
-        if (_worldSettings.EnableStepByStep)
-            await UniTask.Delay(System.TimeSpan.FromSeconds(0.1f), cancellationToken: _ct);
-    }
-
-    #endregion
-
-    #region Phase 2: Room Cluster Generation
+    #region Phase 1: Room Cluster Generation
     private async UniTask GenerateInternalTopology()
     {
         // 1. [Snapshot] 원본 Region 데이터 복사 (루프용 & 참조용)
@@ -243,7 +74,8 @@ public class RegionGenerator
 
         foreach (Node regionNode in regionNodesSnapshot)
         {
-            var(cluster, clusterConnections) = GenerateRoomsForRegion(regionNode);
+            // 2.1 [Generate] Region Node를 Room Cluster로 변환
+            var (cluster, clusterConnections) = GenerateRoomsInRegion(regionNode);
 
             _regionToCluster[regionNode] = cluster;
             
@@ -257,6 +89,7 @@ public class RegionGenerator
                 await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
         }// foreach RegionNodes 끝
 
+        // 3. [Bridge] Region 간 연결 생성 (Region Node 간 연결을 Cluster 간 연결로 변환)
         foreach (var conn in regionConnectionsSnapshot)
         {
             Node parentRegion = conn.ParentNode;
@@ -281,146 +114,60 @@ public class RegionGenerator
                 await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
         }
     }
-    #endregion
 
-    #region Phase 3: Loop Creation
-    private async UniTask CreateLoopsAsync()
+
+    private (List<Node> cluster, List<NodeConnection> clusterConnections) GenerateRoomsInRegion(Node regionNode)
     {
-        // 1. 설정 확인 (Never면 패스)
-        if (_worldSettings.WorldLoop == WorldLoopSetting.Never) return;
+        List<Node> cluster = new();
+        List<NodeConnection> clusterConnections = new();
+        RegionData regionData = regionNode.RegionData;
 
-        _regionResult.RebuildAdjacency();
+        // 1. 시작 방 생성
+        RoomData startRoomData = regionData.EntranceRoom ?? regionData.GetRandomDefaultRoom();
+        if (startRoomData == null) return (cluster, clusterConnections);
 
-        // 2. 루프 확률 가져오기 (0.0 ~ 1.0)
-        float loopChance = _worldSettings.GetLoopMultiplier();
-        float connectRange = _microSettings.idealEdgeLength * 1.5f;
-        float connectRangeSqr = connectRange * connectRange;
+        Node startRoom = new()
+        {
+            RegionData = regionData,
+            RoomData = startRoomData,
+            Depth = regionNode.Depth,
+            RoomDepth = 1,
+        };
+        cluster.Add(startRoom);
 
-        
-        List<Node> nodes = _regionResult.Nodes;
-        List<NodeConnection> newConnections = new List<NodeConnection>();
-
-        var seedChannel = (int)WorldSeedChannel.Region_CreateLoopsAsync;
+        // 2. 방 확장 루프
+        var seedChannel = (int)WorldSeedChannel.Region_GenerateRoomsForRegion;
         var prng = new System.Random(_worldSettings.WorldSeed + seedChannel);
 
-        // 3. 모든 노드 쌍을 검사 
-        for (int i = 0; i < nodes.Count; i++)
+        int defaultRoomCount = prng.Next(regionData.DefaultMinCount, regionData.DefaultMaxCount + 1) + regionData.EssentialRooms.Count;
+
+
+        while (cluster.Count < defaultRoomCount)
         {
-            for (int j = i + 1; j < nodes.Count; j++)
+            Node parentNode = PickParentRoom(cluster, regionData.RoomBranch);
+            if (parentNode == null) break;
+
+
+            Node newRoom = new Node
             {
-                Node nodeA = nodes[i];
-                Node nodeB = nodes[j];
+                RegionData = regionData,
+                RoomData = regionData.GetRandomDefaultRoom() ?? startRoomData,
+                Depth = parentNode.Depth,
+                RoomDepth = parentNode.RoomDepth + 1
+            };
 
-                // 조건 A: 같은 Region끼리만 연결할 것인가? (보통 같은 Region 내에서 진행)
-                if (nodeA.RegionData != nodeB.RegionData) continue;
-
-                // 조건 B: 이미 연결되어 있는가?
-                if (_regionResult.AreConnected(nodeA, nodeB)) continue;
-
-                // 조건 C: 거리가 가까운가?
-                float distSqr = (nodeA.Position - nodeB.Position).sqrMagnitude;
-                if (distSqr > connectRangeSqr) continue;
-
-                // 조건 D: 확률 체크
-                if (prng.NextDouble() < loopChance)
-                {
-                    // 연결 생성
-                    newConnections.Add(new NodeConnection(nodeA, nodeB));
-
-                    // 한 노드에서 너무 많은 루프가 생기는 걸 방지하려면 여기서 break 또는 확률 감소 로직 추가 가능
-                }
-            }
+            cluster.Add(newRoom);
+            clusterConnections.Add(new NodeConnection(parentNode, newRoom));
         }
 
-        // 4. 생성된 루프 연결을 그래프에 반영
-        if (newConnections.Count > 0)
+        // 3. 필수 방 배치 (Swap)
+        if (regionData.EssentialRooms != null && regionData.EssentialRooms.Count > 0)
         {
-            // AdjacencyList 갱신 (AreConnected가 올바르게 작동하려면 필요)
-            // _regionResult.CreateConnection 메서드를 쓰는 게 더 안전할 수 있음
-            foreach (var conn in newConnections)
-            {
-                // CreateConnection 내부에서 AdjacencyList에 Add 함
-                _regionResult.CreateConnection(conn.ParentNode, conn.ChildNode);
-            }
+            AssignEssentialRooms(cluster, regionData);
         }
 
-        if (_worldSettings.EnableStepByStep)
-            await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
-
+        return (cluster, clusterConnections);
     }
-    #endregion
-
-    #region Phase 4: Loop Cutting
-    private async UniTask CutLoopConnections()
-    {
-        // 1. 연결 정보에서 Depth가 높은 쪽이 부모인 연결을 모두 제거 (루프 절단)
-        int removedCount = _regionResult.NodeConnections.RemoveAll(conn =>
-            conn.ParentNode.Depth > conn.ChildNode.Depth
-        );
-
-        // 연결 정보 갱신 (필수)
-        _regionResult.RebuildAdjacency();
-
-        if (removedCount > 0)
-            Debug.Log($"[RegionGen] 루프 연결 {removedCount}개를 절단했습니다.");
-
-        if (_worldSettings.EnableStepByStep)
-            await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
-    }
-    #endregion
-
-    #region Helper Methods
-    private Vector2 GetInsideUnitCircle(System.Random prng)
-    {
-        // 1. 0 ~ 360도(2π) 사이의 랜덤 각도
-        float angle = (float)prng.NextDouble() * Mathf.PI * 2f;
-
-        // 2. 중심에 몰리지 않도록 루트(Sqrt)를 씌워서 반지름 거리 계산
-        float r = Mathf.Sqrt((float)prng.NextDouble());
-
-        // 3. 삼각함수로 X, Y 좌표 변환
-        return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * r;
-    }
-    
-    private Vector2 GetDirectionAwayFromGrandparent(
-        Node parentNode,
-        List<NodeConnection> existingConnections
-        )
-    {
-        Vector2 baseDirection;
-
-        // 1. 할아버지 노드 찾기 (부모가 Child로 되어 있는 연결 찾기)
-        var parentConnection = existingConnections.FirstOrDefault(c => c.ChildNode == parentNode);
-
-        // 랜덤 시드 설정 (부모 노드의 인덱스 + 메서드 채널 번호)
-        var seedChannel = (int)WorldSeedChannel.Region_GetDirectionAwayFromGrandparent;
-        var prng = new System.Random(_worldSettings.WorldSeed + seedChannel);
-
-        if (parentConnection != null)
-        {
-            // 할아버지 -> 부모 방향 (이게 '전방' 기준)
-            baseDirection = (parentNode.Position - parentConnection.ParentNode.Position).normalized;
-        }
-        else
-        {
-            // 할아버지가 없음 (부모가 시작 방임) -> 그냥 완전 랜덤 방향
-            baseDirection = GetInsideUnitCircle(prng).normalized;
-            // 0 벡터 방지
-            if (baseDirection == Vector2.zero) baseDirection = Vector2.up;
-        }
-
-        // 2. 랜덤 각도 생성 ( -120도 ~ +120도 )
-        float randomAngle = prng.Next(-120, 121);
-
-        // 3. 벡터 회전 
-        // Z축을 기준으로 randomAngle만큼 회전시킴
-        Quaternion rotation = Quaternion.Euler(0, 0, randomAngle);
-        Vector2 finalDirection = rotation * baseDirection;
-
-        return finalDirection.normalized;
-    }
-
-    // TODO: RoomBranch(Least/Most/Default)에 따라 부모를 고르는 전략(나중에 region 
     private Node PickParentRoom(List<Node> placedRooms, RegionBranch branch)
     {
         var seedChannel = (int)WorldSeedChannel.Region_PickParentRoom;
@@ -441,6 +188,7 @@ public class RegionGenerator
                 return placedRooms[prng.Next(0, placedRooms.Count)];
         }
     }
+
     private void AssignEssentialRooms(List<Node> clusters, RegionData regionData)
     {
         int clustersMaxDepth = clusters.Max(r => r.RoomDepth);
@@ -473,64 +221,80 @@ public class RegionGenerator
         }
 
     }
+    #endregion
 
-    private (List<Node> cluster, List<NodeConnection> clusterConnections) GenerateRoomsForRegion(Node regionNode)
+    #region Phase 2: Region Loop Creation
+    private async UniTask CreateLoopsAsync()
     {
-        List<Node> cluster = new();
-        List<NodeConnection> clusterConnections = new();
-        RegionData regionData = regionNode.RegionData;
+        // 1. 설정 확인
+        if (_worldSettings.WorldLoop == WorldLoopSetting.Never) return;
 
-        // 1. 시작 방 생성
-        RoomData startRoomData = regionData.EntranceRoom ?? regionData.GetRandomDefaultRoom();
-        if (startRoomData == null) return (cluster, clusterConnections);
+        // 그래프 갱신
+        _regionResult.RebuildAdjacency();
 
-        Node startRoom = new()
-        {
-            Position = regionNode.Position,
-            RegionData = regionData,
-            RoomData = startRoomData,
-            Depth = regionNode.Depth,
-            RoomDepth = 1
-        };
-        cluster.Add(startRoom);
+        float loopChance = _worldSettings.GetLoopMultiplier();
+        int maxDepthDifference = 1;
 
-        // 2. 방 확장 루프
-        var seedChannel = (int)WorldSeedChannel.Region_GenerateRoomsForRegion;
+        int maxConnectionsPerNode = 3; // 한 방이 가질 수 있는 최대 연결(문) 개수
+
+        var seedChannel = (int)WorldSeedChannel.Region_CreateLoopsAsync;
         var prng = new System.Random(_worldSettings.WorldSeed + seedChannel);
 
-        int defaultRoomCount = prng.Next(regionData.DefaultMinCount, regionData.DefaultMaxCount + 1) + regionData.EssentialRooms.Count;
-
-        
-        while (cluster.Count < defaultRoomCount)
+        // _regionToCluster.Values는 각 지역에 속한 노드들의 리스트(Cluster)입니다.
+        foreach (List<Node> cluster in _regionToCluster.Values)
         {
-            Node parentNode = PickParentRoom(cluster, regionData.RoomBranch);
-            if (parentNode == null) break;
+            // 빈 클러스터 스킵
+            if (cluster == null || cluster.Count < 2) continue;
 
-            Vector2 safeDir = GetDirectionAwayFromGrandparent(parentNode, clusterConnections);
-            Vector2 newPos = parentNode.Position + (safeDir * _microSettings.idealEdgeLength);
+            int maxLoopsForThisCluster = Mathf.Max(1, Mathf.RoundToInt(cluster.Count * loopChance)); //* 0.4f));
+            int currentLoops = 0;
 
-            Node newRoom = new Node
+            // 해당 지역(Cluster) 내부에서만 쌍을 검사
+            for (int i = 0; i < cluster.Count; i++)
             {
-                Position = newPos,
-                RegionData = regionData,
-                RoomData = regionData.GetRandomDefaultRoom() ?? startRoomData,
-                Depth = parentNode.Depth,
-                RoomDepth = parentNode.RoomDepth + 1
-            };
+                for (int j = i + 1; j < cluster.Count; j++)
+                {
+                    if (currentLoops >= maxLoopsForThisCluster) break; 
 
-            cluster.Add(newRoom);
-            clusterConnections.Add(new NodeConnection(parentNode, newRoom));
+                    Node nodeA = cluster[i];
+                    Node nodeB = cluster[j];
+
+                    // 조건 A: 이미 연결되어 있는가?
+                    if (_regionResult.AreConnected(nodeA, nodeB)) continue;
+
+                    // 조건 B: RoomDepth 차이 검사
+                    int depthDiff = Mathf.Abs(nodeA.RoomDepth - nodeB.RoomDepth);
+                    if (depthDiff > maxDepthDifference) continue;
+
+                    // 조건 C: 각 노드의 연결 수 검사 (너무 많은 연결 방지)
+                    int connA = _regionResult.NodeConnections.Count(c => c.ParentNode == nodeA || c.ChildNode == nodeA);
+                    int connB = _regionResult.NodeConnections.Count(c => c.ParentNode == nodeB || c.ChildNode == nodeB);
+                    if (connA >= maxConnectionsPerNode || connB >= maxConnectionsPerNode) continue;
+
+                    // 조건 D: 같은 Region 내에서만 연결 (부모 노드가 같은지 검사)
+                    var parentA = _regionResult.NodeConnections.FirstOrDefault(c => c.ChildNode == nodeA)?.ParentNode;
+                    var parentB = _regionResult.NodeConnections.FirstOrDefault(c => c.ChildNode == nodeB)?.ParentNode;
+                    if (parentA != parentB) continue;
+
+
+                    // 최종 : 확률 체크
+                    if (prng.NextDouble() < loopChance)
+                    {
+                        Node parent = (nodeA.RoomDepth <= nodeB.RoomDepth) ? nodeA : nodeB;
+                        Node child = (parent == nodeA) ? nodeB : nodeA;
+
+                        _regionResult.CreateConnection(parent, child);
+                        currentLoops++;
+                    }
+                }
+            }
         }
-
-        // 3. 필수 방 배치 (Swap)
-        if (regionData.EssentialRooms != null && regionData.EssentialRooms.Count > 0)
-        {
-            AssignEssentialRooms(cluster, regionData);
-        }
-
-        return (cluster, clusterConnections);
+        if (_worldSettings.EnableStepByStep)
+            await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
     }
     #endregion
+
+    
 
 }
 

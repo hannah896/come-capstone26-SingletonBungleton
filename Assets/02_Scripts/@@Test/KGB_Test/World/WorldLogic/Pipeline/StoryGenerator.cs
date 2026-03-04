@@ -122,7 +122,8 @@ public class StoryGenerator
         var selectedNode = new Node
         {
             RegionData = selectedRegion,
-            Depth = parentNode.Depth + 1
+            Depth = parentNode.Depth + 1,
+
         };
 
         _storyResult.Nodes.Add(selectedNode);
@@ -167,7 +168,7 @@ public class StoryGenerator
         _storyResult.Nodes.Add(new Node
         {
             RegionData = startRegionData,
-            Depth = 1
+            Depth = 1,
         });
 
         // 시작 Region의 열쇠 획득

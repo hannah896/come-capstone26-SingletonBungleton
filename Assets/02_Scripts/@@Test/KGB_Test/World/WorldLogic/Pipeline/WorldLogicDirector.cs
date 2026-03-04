@@ -13,6 +13,7 @@ public class WorldLogicDirector : MonoBehaviour
     #region Worker Fields
     private StoryGenerator _storyGenerator;
     private RegionGenerator _regionGenerator;
+    private ForceSimulator _forceSimulator;
     private TerritoryBuilder _territoryBuilder;
     private HeightBuilder _heightBuilder;
     private ObjectDisposer _objectDisposer;
@@ -39,6 +40,7 @@ public class WorldLogicDirector : MonoBehaviour
     {
         _storyGenerator = new();
         _regionGenerator = new();
+        _forceSimulator = new();
         _territoryBuilder = new();
         _heightBuilder = new();
         _objectDisposer = new();    
@@ -85,24 +87,30 @@ public class WorldLogicDirector : MonoBehaviour
 
             // 1단계: Region Graph 생성 (StoryGenerator에 위임)
             await GenerateStoryAsync(ct);
-            Debug.Log($"1단계 완료: Region Graph 생성 ({_worldGraphData.Nodes?.Count ?? 0})");
+            Debug.Log($"1단계 완료: Region Graph 생성 ({_worldGraphData.Nodes.Count})");
             
             // 2단계: Convert Rooms (RegionGenerator에 위임. 각 Task들의 Room 생성
-            await ConvertRegionToRoomAsync(ct);
+            await ConvertRegionToRoomsAsync(ct);
             Debug.Log($"2단계 완료: Region 변환 ({_worldGraphData.Nodes.Count}개 Room)");
+            // 각 region에 몇개의 room이 배치되었는지 디버그
+            //Debug.Log($"Region별 Room 개수: " + string.Join(", ", _worldGraphData.Nodes.Select(n => $"{n.RegionData.RegionName}: {n.Rooms.Count}개")));
 
-            // 3단계: 보로노이 분할 
+            // 3단계 : Force Simulation (ForceSimulator에 위임. 노드 위치 조정)
+            await ForceSimulationAsync(ct);
+            Debug.Log($"3단계 완료: Force Simulation 완료");
+
+            // 4단계: 보로노이 분할 
             await TerritoryBuildAsync(ct);
-            Debug.Log($"3단계 완료: 보로노이 분할 완료");
+            Debug.Log($"4단계 완료: 보로노이 분할 완료");
 
-            //4단계: 노이즈, 높이, 경계 처리
+            // 5단계: 노이즈, 높이, 경계 처리
             await HeightBuildAsync(ct);
-            Debug.Log($"4단계 완료: 타일 디테일 처리 완료");
+            Debug.Log($"5단계 완료: 타일 디테일 처리 완료");
 
-            // 5단계: 오브젝트 배치 (WorldObjectDisposer에 위임)
+            // 6단계: 오브젝트 배치 (WorldObjectDisposer에 위임)
             await SpawnObjectsAsync(ct);
             int disposeCount = _worldDisposeDatas != null ? _worldDisposeDatas.Count : 0;
-            Debug.Log($"5단계 완료: {disposeCount}개 오브젝트 배치");
+            Debug.Log($"6단계 완료: {disposeCount}개 오브젝트 배치");
             
             Debug.Log($"=== 월드 생성 완료: 시드 {_worldSettings.WorldSeed} ===");
         }
@@ -120,12 +128,11 @@ public class WorldLogicDirector : MonoBehaviour
         // StoryGenerator에게 Story 생성 위임 (_storyData 전달 후 완료되면 갱신함)
         _worldGraphData = await _storyGenerator.GenerateStoryAsync(_worldGraphData, _worldSettings, ct);
 
-
     }
     #endregion
 
     #region 2단계: Region을 Room들의 집합으로 변환
-    private async UniTask ConvertRegionToRoomAsync(CancellationToken ct)
+    private async UniTask ConvertRegionToRoomsAsync(CancellationToken ct)
     {
         // RegionGenerator에게 Region -> Room 변환 위임(_nodes, _nodeConnections 전달 후 완료되면 갱신함)
         _worldGraphData = await _regionGenerator.ConvertRegionsToRoomsAsync(_worldGraphData, _worldSettings, ct);
@@ -133,21 +140,28 @@ public class WorldLogicDirector : MonoBehaviour
     }
     #endregion
 
-    #region 3단계: 영토 분할
+    #region 3단계: Force Simulation
+    private async UniTask ForceSimulationAsync(CancellationToken ct)
+    {
+        // ForceSimulator에게 노드 위치 조정 위임(_nodes 전달 후 완료되면 갱신함)
+        _worldGraphData = await _forceSimulator.ForceSimulateAsync(_worldGraphData, _worldSettings, ct);
+    }
+    #endregion
+    #region 4단계: 영토 분할
     private async UniTask TerritoryBuildAsync(CancellationToken ct)
     {
         _worldLogicData = await _territoryBuilder.TerritoryBuildAsync(_worldGraphData, _worldLogicData, _worldSettings, ct);
     }
     #endregion
 
-    #region 4단계: 타일 디테일 처리 (노이즈, 높이, 경계)
+    #region 5단계: 타일 디테일 처리 (노이즈, 높이, 경계)
     private async UniTask HeightBuildAsync(CancellationToken ct)
     {
         _worldLogicData = await _heightBuilder.HeightBuildAsync(_worldGraphData, _worldLogicData, _worldSettings, ct);
     }
     #endregion
 
-    #region 5단계: 오브젝트 배치
+    #region 6단계: 오브젝트 배치
     private async UniTask SpawnObjectsAsync(CancellationToken ct)
     {
         await _objectDisposer.SpawnObjectsAsync(_worldGraphData, _worldSettings, ct);
@@ -227,7 +241,7 @@ public class WorldLogicDirector : MonoBehaviour
                 Vector3 labelPos = nodePos + Vector3.up * (tileSize * 1.5f);
 
                 // 화면에 텍스트 렌더링
-                UnityEditor.Handles.Label(labelPos, node.RegionData.RegionName, style);
+                UnityEditor.Handles.Label(labelPos, $"{ node.RegionData.RegionName}: {node.RoomDepth}", style);
             }
 #endif
         }
@@ -331,6 +345,5 @@ public class WorldLogicDirector : MonoBehaviour
     #endregion
 
 }
-
 
 

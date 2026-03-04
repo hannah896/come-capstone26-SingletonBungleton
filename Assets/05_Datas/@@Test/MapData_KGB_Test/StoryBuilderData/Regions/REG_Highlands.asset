@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RegionName: REG_Highlands
   RoomBranch: 2
-  DefaultMinCount: 13
-  DefaultMaxCount: 15
-  BaseHeightLevel: 3
+  DefaultMinCount: 30
+  DefaultMaxCount: 35
+  BaseHeightLevel: 4
   TerrainNoise:
     MinBumps: 0.5
     MaxBumps: 1.5

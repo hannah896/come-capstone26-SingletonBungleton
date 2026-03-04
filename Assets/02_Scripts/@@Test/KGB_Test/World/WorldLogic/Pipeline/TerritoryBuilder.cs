@@ -49,14 +49,16 @@ public class TerritoryBuilder
         public Vector2 Position;
         public float RegionNoiseFactor;
         public RegionData RegionData;
+        public float TerritoryWeight; // ★ 추가: 영토 확장 가중치
 
-        public NodeSpatialData(int index, Node node)
+        public NodeSpatialData(int index, Node node, float territoryWeight)
         {
             Index = index;
             Position = node.Position;
             RegionData = node.RegionData;
             // 노드별 노이즈 팩터를 미리 계산
             RegionNoiseFactor = Mathf.Sin(index * 0.7f) * 0.5f + 0.5f;
+            TerritoryWeight = territoryWeight;
         }
     }
     #endregion
@@ -106,46 +108,10 @@ public class TerritoryBuilder
         }
     }
 
-    #region Phase 0: Spatial Grid Initialization
     /// <summary>
-    /// 공간 분할 그리드 초기화
+    /// 노드들을 타일 그리드에 맞게 스케일링 및 이동하여 배치
     /// </summary>
-    private void SpatialGrid()
-    {
-        var nodes = _graphResult.Nodes;
-        if (nodes == null || nodes.Count == 0) return;
-
-        // 맵 면적 기반으로 적절한 셀 크기 계산
-        float mapArea = _worldLogicData.TileGridSize.x * _worldLogicData.TileGridSize.y;
-        float avgAreaPerNode = mapArea / nodes.Count;
-        float baseRadius = Mathf.Sqrt(avgAreaPerNode / Mathf.PI);
-        float maxTerritoryRadius = baseRadius * 2.0f;
-
-        // 셀 크기는 최대 영역 반경의 2배로 설정 (검색 효율 최적화)
-        int cellSize = Mathf.Max(10, Mathf.CeilToInt(maxTerritoryRadius * 2f));
-
-        _nodeSpatialGrid = new SpatialGrid<NodeSpatialData>(
-            _worldLogicData.TileGridSize.x,
-            _worldLogicData.TileGridSize.y,    
-            cellSize
-        );
-
-        // 노드 데이터 캐싱 및 그리드에 등록
-        _nodeSpatialCache = new List<NodeSpatialData>(nodes.Count);
-
-        for (int i = 0; i < nodes.Count; i++)
-        {
-            var spatialData = new NodeSpatialData(i, nodes[i]);
-            _nodeSpatialCache.Add(spatialData);
-
-            // 경계 문제 방지를 위해 인접 셀에도 등록
-            _nodeSpatialGrid.AddToNeighbors(spatialData, nodes[i].Position);
-        }
-
-        Debug.Log($"[TilePartitioner] SpatialGrid 초기화 완료 - 셀 크기: {cellSize}, 노드 수: {nodes.Count}");
-    }
-    #endregion
-
+    /// <returns></returns>
     #region Phase 1: Fit Nodes to Grid
     private async UniTask FitNodesToTileGridAsync()
     {
@@ -223,7 +189,59 @@ public class TerritoryBuilder
     }
     #endregion
 
-    #region Phase 2: Noise Map Generation
+    #region Phase 2: Spatial Grid Initialization
+    /// <summary>
+    /// 공간 분할 그리드 초기화
+    /// </summary>
+    private void SpatialGrid()
+    {
+        var nodes = _graphResult.Nodes;
+        if (nodes == null || nodes.Count == 0) return;
+
+        // 맵 면적 기반으로 적절한 서치 셀 크기 계산
+        float mapArea = _worldLogicData.TileGridSize.x * _worldLogicData.TileGridSize.y;
+        float avgAreaPerNode = mapArea / nodes.Count;
+        float baseRadius = Mathf.Sqrt(avgAreaPerNode / Mathf.PI);
+        float maxTerritoryRadius = baseRadius * 2.0f;
+
+        // 셀 크기는 최대 영역 반경의 2배로 설정 (검색 효율 최적화)
+        int cellSize = Mathf.Max(10, Mathf.CeilToInt(maxTerritoryRadius * 2f));
+
+        _nodeSpatialGrid = new SpatialGrid<NodeSpatialData>(
+            _worldLogicData.TileGridSize.x,
+            _worldLogicData.TileGridSize.y,
+            cellSize
+        );
+
+        Dictionary<RegionData, int> regionSizes = nodes
+            .Where(n => n.RegionData != null)
+            .GroupBy(n => n.RegionData)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        int minRoomCount = Mathf.Max(1, regionSizes.Values.Min());
+
+        float expansionPower = 10.0f;
+
+        // 노드 데이터 캐싱 및 그리드에 등록
+        _nodeSpatialCache = new List<NodeSpatialData>(nodes.Count);
+
+        for (int i = 0; i < nodes.Count; i++)
+        {
+            int roomCount = regionSizes.ContainsKey(nodes[i].RegionData) ? regionSizes[nodes[i].RegionData] : 1;
+            float ratio = (float)roomCount / minRoomCount;
+
+            float weight = (Mathf.Sqrt(ratio) - 1f) * expansionPower;
+
+            var spatialData = new NodeSpatialData(i, nodes[i], weight);
+            _nodeSpatialCache.Add(spatialData);
+            _nodeSpatialGrid.AddToNeighbors(spatialData, nodes[i].Position);
+        }
+
+        Debug.Log($"[TilePartitioner] SpatialGrid 초기화 완료 - 셀 크기: {cellSize}, 노드 수: {nodes.Count}");
+    }
+    #endregion
+
+    #region Phase 3: Noise Map Generation
     private async UniTask GenerateNoiseWorldAsync()
     {
         var seedChannel = (int)WorldSeedChannel.Territory_GenerateNoiseWorld;
@@ -270,7 +288,7 @@ public class TerritoryBuilder
     }
     #endregion
 
-    #region Phase 3: Voronoi Partitioning with Noise
+    #region Phase 4: Voronoi Partitioning with Noise
     private async UniTask AssignTerritoriesAsync()
     {
         var nodes = _graphResult.Nodes;
@@ -437,7 +455,7 @@ public class TerritoryBuilder
     }
 
     /// <summary>
-    /// ★ [최적화] SpatialGrid를 활용한 최근접 노드 검색
+    /// SpatialGrid를 활용한 최근접 노드 검색
     /// </summary>
     private (int idx1, float dist1, int idx2, float dist2) FindTopTwoNodesOptimized(
         Vector2 tilePos, int x, int y)
@@ -461,11 +479,13 @@ public class TerritoryBuilder
         {
             float distance = Vector2.Distance(tilePos, spatialData.Position);
 
+            float weightedDistance = distance - spatialData.TerritoryWeight;
+
             // 조기 종료 최적화
             if (distance - _partiSettings.noiseStrength > dist2) continue;
 
             // 노이즈가 적용된 거리
-            float distortedDistance = distance + (noiseOffset * spatialData.RegionNoiseFactor);
+            float distortedDistance = weightedDistance + (noiseOffset * spatialData.RegionNoiseFactor);
 
             if (distortedDistance < dist1)
             {
@@ -487,7 +507,7 @@ public class TerritoryBuilder
     }
     #endregion
 
-    #region Phase 4: Border and Ocean Processing
+    #region Phase 5: Border and Ocean Processing
     private async UniTask ProcessBordersAsync()
     {
         int processedCount = 0;
@@ -574,7 +594,7 @@ public class TerritoryBuilder
     #endregion
 
 
-    #region Phase 5: Assign Tiles to Regions
+    #region Phase 6: Assign Tiles to Regions
     /// <summary>
     /// 타일 데이터를 각 노드의 RegionData에 할당하여 소유 타일 목록 구축  
     /// </summary>

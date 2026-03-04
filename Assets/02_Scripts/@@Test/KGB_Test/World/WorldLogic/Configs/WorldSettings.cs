@@ -53,7 +53,8 @@ public class WorldSettings : ScriptableObject
     [Tooltip("각 지형 등급(Tier)별 실제 높이 블록 설정")]
     [SerializeField] private float Height_Plains = 20.0f;
     [SerializeField] private float Height_Hills = 45.0f;
-    [SerializeField] private float Height_Highlands = 80.0f;
+    [SerializeField] private float Height_Mesa = 60.0f;
+    [SerializeField] private float Height_Highlands = 90.0f;
 
     [Header("Advanced Settings")]
     //[Range(0.5f, 2f)]
@@ -222,8 +223,9 @@ public enum HeightLevel
 { 
     Ocean,      
     Plains,               
-    Hills,              
-    Highlands,          
+    Hills,
+    Mesa,
+    Highlands,        
 }
 
 
@@ -233,21 +235,22 @@ public enum WorldSeedChannel
     Story_TryProcessNextRegionAsync = 102,
     Story_ApplyWorldLoopAsync = 103,
 
-    Region_ArrangeRegionNodes = 201,
     Region_GetDirectionAwayFromGrandparent = 202,
     Region_PickParentRoom = 203,
     Region_AssignEssentialRooms = 204,
     Region_GenerateRoomsForRegion = 205,
     Region_CreateLoopsAsync = 206,
 
-    Territory_GenerateNoiseWorld = 301,
+    Force_ArrangeRegionNodes = 301,
 
-    Height_BuildRegionFrequencyCache = 401,
-    Height_GenerateHeightMapAsync = 402,
+    Territory_GenerateNoiseWorld = 401,
 
-    Disposer_SpawnRegionObjects = 501,
-    Disposer_SuffleList = 502,
-    Disposer_WeightedRandom = 503,
-    Disposer_GeneratePoissonPoints = 504,
+    Height_BuildRegionFrequencyCache = 501,
+    Height_GenerateHeightMapAsync = 502,
+
+    Disposer_SpawnRegionObjects = 601,
+    Disposer_SuffleList = 602,
+    Disposer_WeightedRandom = 603,
+    Disposer_GeneratePoissonPoints = 604,
 }
 #endregion

@@ -15,7 +15,7 @@ MonoBehaviour:
   RegionName: REG_Swamp
   RoomBranch: 1
   DefaultMinCount: 7
-  DefaultMaxCount: 9
+  DefaultMaxCount: 10
   BaseHeightLevel: 1
   TerrainNoise:
     MinBumps: 0.5
