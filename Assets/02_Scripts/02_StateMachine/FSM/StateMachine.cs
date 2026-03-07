@@ -6,16 +6,10 @@ public class StateMachine<T> where T : StateBase
     protected T currentState;
     public virtual T CurrentState { get => currentState; protected set => currentState = value; }
 
-    public Action Update;
-    public Action FixedUpdate;
-
     public virtual void Init(T state)
     { 
         CurrentState = state;
         CurrentState.OnEnter();
-
-        FixedUpdate += CurrentState.FixedUpdate;
-        Update += CurrentState.Update;
     }
 
     public virtual void ChangeState(T Nextstate)
@@ -25,18 +19,25 @@ public class StateMachine<T> where T : StateBase
         EnterNextState(Nextstate);
     }
 
-    protected void ExitCurrentState()
+    // LoopManager와 호환되는 메서드
+    public virtual void OnUpdate(float deltaTime)
     {
-        CurrentState?.OnExit();
-        Update -= CurrentState.Update;
-        FixedUpdate -= CurrentState.FixedUpdate;
+        CurrentState?.Update();
     }
 
-    protected void EnterNextState(T Nextstate)
+    public virtual void OnGameUpdate(float deltaTime)
+    {
+        CurrentState?.FixedUpdate();
+    }
+
+    protected virtual void EnterNextState(T Nextstate)
     {
         CurrentState = Nextstate;
         CurrentState?.OnEnter();
-        Update += CurrentState.Update;
-        FixedUpdate += CurrentState.FixedUpdate;
+    }
+
+    protected virtual void ExitCurrentState()
+    {
+        CurrentState?.OnExit();
     }
 }

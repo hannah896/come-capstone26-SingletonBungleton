@@ -35,6 +35,8 @@ public class LoopManager : CoreManager
     #endregion
 
     #region Events
+    // 0.02초마다 호출되는 FixedUpdate 이벤트
+    public event Action<float> OnFixedUpdate;
 
     // 매 프레임 호출되는 이벤트
     public event Action<float> OnUpdate;
@@ -44,7 +46,6 @@ public class LoopManager : CoreManager
 
     // 매 프레임 호출되는 이벤트
     public event Action<float> OnLateUpdate;
-
     #endregion
 
     #region Update
@@ -72,6 +73,11 @@ public class LoopManager : CoreManager
     public void LateUpdate(float deltaTime)
     {
         OnLateUpdate?.Invoke(deltaTime);
+    }
+
+    public void FixedUpdate(float deltaTime)
+    {
+        OnFixedUpdate?.Invoke(deltaTime);
     }
     #endregion
 

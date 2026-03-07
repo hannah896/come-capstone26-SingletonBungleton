@@ -1,17 +1,15 @@
 using UnityEngine;
 
-public class RootStateMachine : StateMachine<StateBase>
+public class RootStateMachine<R, S> : StateMachine<R> where R : RootStateBase where S : SubStateBase
 {
-    public SubStateMachine SubStateMachine { get; private set; }
-    public override StateBase CurrentState { get => base.CurrentState; protected set => base.CurrentState = value; }
+    public S SubStateMachine { get; private set; }
 
-    public Entity Entity;
-    public override void ChangeState(StateBase Nextstate)
+    public override void ChangeState(R Nextstate)
     {
         base.ChangeState(Nextstate);
     }
 
-    public override void Init(StateBase state)
+    public override void Init(R state)
     {
         base.Init(state);
     }
