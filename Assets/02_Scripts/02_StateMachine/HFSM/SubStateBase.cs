@@ -1,25 +1,18 @@
-using UnityEngine;
-
-public class SubStateBase : StateBase
+/// <summary>
+/// HFSM 하위 상태 기본 클래스
+/// TEntity: 이 상태를 소유하는 엔티티 타입
+/// </summary>
+public abstract class SubStateBase<TEntity> : StateBase where TEntity : class
 {
-    public SubStateBase(StateMachine<StateBase> stateMachine) : base(stateMachine) { }
-    public override void OnEnter()
+    protected TEntity Entity { get; private set; }
+
+    protected SubStateBase(TEntity entity)
     {
-        Main.Loop.OnGameUpdate += Update;
+        Entity = entity;
     }
 
-    public override void OnExit()
-    {
-        Main.Loop.OnGameUpdate -= Update;
-    }
-
-    public override void Update(float time = 1)
-    {
-
-    }
-
-    public override void FixedUpdate(float time = 1)
-    {
-
-    }
+    public override void OnEnter() { }
+    public override void OnExit() { }
+    public override void Update(float time = 1.0f) { }
+    public override void FixedUpdate(float time = 1.0f) { }
 }

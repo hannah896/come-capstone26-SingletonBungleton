@@ -1,23 +1,12 @@
-using UnityEngine;
-
 /// <summary>
-/// 플레이어 상태의 기본 클래스
+/// 플레이어 루트 상태의 기본 클래스
 /// </summary>
-public abstract class PlayerRootStateBase: RootStateBase
+public abstract class PlayerRootStateBase : RootStateBase<Player>
 {
-    protected Player player;
-    protected PlayerRootStateMachine machine;
+    protected PlayerRootStateMachine Machine { get; private set; }
 
-    protected PlayerRootStateBase(StateMachine<StateBase> machine) : base(machine)
+    protected PlayerRootStateBase(PlayerRootStateMachine machine) : base(machine.Owner)
     {
-        this.player = this.machine?.Player;
-    }
-
-    public virtual void FixedUpdate()
-    {
-    }
-
-    public virtual void Update()
-    {
+        Machine = machine;
     }
 }

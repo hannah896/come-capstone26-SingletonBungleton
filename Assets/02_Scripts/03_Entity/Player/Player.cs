@@ -5,6 +5,7 @@ public class Player : MonoBehaviour
     private PlayerRootStateMachine machine;
     private Animator animator;
     private Rigidbody rb;
+    private PlayerStat stat;
 
     public Animator Animator => animator;
     public PlayerAnimData AnimData => machine.AnimData;
@@ -19,49 +20,36 @@ public class Player : MonoBehaviour
 
     private void Awake()
     {
-        machine = new(this, animator);
-
+        machine = new PlayerRootStateMachine(this, animator);
     }
 
     private void Start()
     {
-        Init();
-    }
-
-
-    /// <summary>
-    /// 처음 생성될때 Player의 상태 머신을 초기화하는 메서드입니다.
-    /// </summary>
-    private void Init()
-    {
-        //PlayerStateMachine 초기화
-        machine = new PlayerRootStateMachine(this, animator);
-        machine.Init(AnimData.IdleState);
+        // 상태 인스턴스 생성 및 초기 상태 설정
+        var idleState = new PlayerIdleState(machine);
+        machine.Init(idleState);
     }
 
     private void OnEnable()
-    { 
-        // LoopManager의 이벤트에 Player의 업데이트 메서드 등록
+    {
+        // LoopManager에 업데이트 등록 (Player에서만 관리)
         Main.Loop.OnGameUpdate += OnLoopGameUpdate;
         Main.Loop.OnUpdate += OnLoopUpdate;
     }
 
     private void OnDisable()
     {
-        // LoopManager의 이벤트에서 등록 해제
         Main.Loop.OnGameUpdate -= OnLoopGameUpdate;
         Main.Loop.OnUpdate -= OnLoopUpdate;
     }
 
     private void OnLoopUpdate(float deltaTime)
     {
-        // StateMachine의 Update 호출 (상태 로직)
-        machine.CurrentState?.Update();
+        machine.OnUpdate(deltaTime);
     }
 
     private void OnLoopGameUpdate(float deltaTime)
     {
-        // StateMachine의 FixedUpdate 호출 (물리 및 게임 속도 적용)
-        machine.CurrentState?.FixedUpdate();
+        machine.OnGameUpdate(deltaTime);
     }
 }

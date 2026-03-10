@@ -5,31 +5,26 @@ using UnityEngine;
 /// </summary>
 public class PlayerIdleState : PlayerRootStateBase
 {
-    public PlayerIdleState(StateMachine<StateBase> stateMachine) : base(stateMachine)
-    {
-    }
+    public PlayerIdleState(PlayerRootStateMachine machine) : base(machine) { }
 
     public override void OnEnter()
     {
-        //Idle 애니메이션 재생
-        if (machine != null && machine.AnimData != null)
-        {
-            machine.AnimData.PlayLocomotionAnimation(machine.AnimData.AnimHashKey.Idle);
-        }
+        base.OnEnter();
+        Machine.AnimData.PlayLocomotionAnimation(Machine.AnimData.AnimHashKey.Idle);
     }
 
     public override void OnExit()
     {
-        // Idle 종료 시 처리
+        base.OnExit();
     }
 
-    public override void Update()
+    public override void Update(float time = 1.0f)
     {
-        // TODO: 입력에 따라 다른 상태로 전환
+        base.Update(time);
     }
 
-    public override void FixedUpdate()
+    public override void FixedUpdate(float time = 1.0f)
     {
-        // 물리 업데이트
+        base.FixedUpdate(time);
     }
 }

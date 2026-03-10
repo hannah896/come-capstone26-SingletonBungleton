@@ -1,36 +1,33 @@
-using UnityEngine;
-
-public class RootStateBase : StateBase
+/// <summary>
+/// HFSM 루트 상태 기본 클래스
+/// 내부에 SubStateMachine을 소유하여 하위 상태를 관리
+/// </summary>
+public abstract class RootStateBase<TEntity> : StateBase where TEntity : class
 {
-    protected SubStateMachine subStateMachine;
+    protected TEntity Entity { get; private set; }
+    protected SubStateMachine<TEntity> SubStateMachine { get; private set; }
 
-    protected SubStateMachine SubStateMachine => subStateMachine;
-
-
-    public RootStateBase(StateMachine<StateBase> stateMachine) : base(stateMachine)
+    protected RootStateBase(TEntity entity)
     {
-        subStateMachine = new SubStateMachine(this);
+        Entity = entity;
+        SubStateMachine = new SubStateMachine<TEntity>();
     }
 
-
-    public override void OnEnter()
-    {
-        Main.Loop.OnGameUpdate += Update;
-    }
+    public override void OnEnter() { }
 
     public override void OnExit()
     {
-        subStateMachine.Exit?.Invoke();
-        Main.Loop.OnGameUpdate -= Update;
+        SubStateMachine.ExitCurrentState();
     }
 
-    public override void FixedUpdate(float time = 1)
+    // 루트 상태의 Update/FixedUpdate가 하위 상태 머신도 구동
+    public override void Update(float time = 1.0f)
     {
-
+        SubStateMachine.OnUpdate(time);
     }
 
-    public override void Update(float time = 1)
+    public override void FixedUpdate(float time = 1.0f)
     {
-
+        SubStateMachine.OnGameUpdate(time);
     }
 }

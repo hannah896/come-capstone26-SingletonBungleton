@@ -1,34 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-public class PlayerSubStateBase : SubStateBase
+/// <summary>
+/// 플레이어 하위 상태의 기본 클래스
+/// </summary>
+public abstract class PlayerSubStateBase : SubStateBase<Player>
 {
-    public PlayerSubStateBase(StateMachine<StateBase> stateMachine) : base(stateMachine)
-    {
-    }
+    protected PlayerRootStateMachine Machine { get; private set; }
 
-    protected override StateBase currentState => base.currentState;
-
-    public override void FixedUpdate(float time = 1)
+    protected PlayerSubStateBase(PlayerRootStateMachine machine) : base(machine.Owner)
     {
-        base.FixedUpdate(time);
-    }
-
-    public override void OnEnter()
-    {
-        base.OnEnter();
-    }
-
-    public override void OnExit()
-    {
-        base.OnExit();
-    }
-
-    public override void Update(float time = 1)
-    {
-        base.Update(time);
+        Machine = machine;
     }
 }
