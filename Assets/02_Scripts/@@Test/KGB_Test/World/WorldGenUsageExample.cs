@@ -127,41 +127,35 @@ public class WorldGenUsageExample : MonoBehaviour
             }
 
             _worldSettings.WorldSeed = _currentSeed;
-            _worldSettings.WorldSize = WorldSize.Huge;
+            _worldSettings.WorldSize = WorldSize.Large;
             switch (difficulty)
             {
                 case 1: // 가지 : 최대, 순환 : 항상
-                    Debug.Log("가지 : 최대, 순환 : 항상");
                     _worldSettings.WorldBranch = WorldBranchSetting.Most;
                     _worldSettings.WorldLoop = WorldLoopSetting.Always;
                     break;
 
                 case 2: // 가지 : 절대, 순환 : 절대
-                    Debug.Log("가지 : 절대, 순환 : 절대");
                     _worldSettings.WorldBranch = WorldBranchSetting.Never;
                     _worldSettings.WorldLoop = WorldLoopSetting.Never;
                     break;
 
                 case 3: // 가지 : 기본, 순환 : 항상
-                    Debug.Log("가지 : 기본, 순환 : 항상");
                     _worldSettings.WorldBranch = WorldBranchSetting.Default;
                     _worldSettings.WorldLoop = WorldLoopSetting.Always;
                     break;
 
                 case 4: // 가지 최대, 순환 : 기본
-                    Debug.Log("가지 : 최대, 순환 : 기본");
                     _worldSettings.WorldBranch = WorldBranchSetting.Most;
                     _worldSettings.WorldLoop = WorldLoopSetting.Default;
                     break;
 
                 case 5: // 가지 : 절대, 순환 : 항상
-                    Debug.Log("가지 : 절대, 순환 : 항상");
                     _worldSettings.WorldBranch = WorldBranchSetting.Never;
                     _worldSettings.WorldLoop = WorldLoopSetting.Always;
                     break;
 
                 case 6: // 가지 : 최대, 순환 : 절대
-                    Debug.Log("가지 : 최대, 순환 : 절대");
                     _worldSettings.WorldBranch = WorldBranchSetting.Most;
                     _worldSettings.WorldLoop = WorldLoopSetting.Never;
                     break;
@@ -173,6 +167,7 @@ public class WorldGenUsageExample : MonoBehaviour
             }
 
             await _worldLogicDirector.GenerateWorldLogicWithSettings(_worldSettings, _cts.Token);
+            Debug.Log($"월드 생성 완료. 시드: {_worldSettings.WorldSeed}, 크기: {_worldSettings.WorldSize}, 가지: {_worldSettings.WorldBranch}, 순환: {_worldSettings.WorldLoop}");
 
             var graphData = _worldLogicDirector.GetWorldGraphData();
             var logicData = _worldLogicDirector.GetWorldLogicData();

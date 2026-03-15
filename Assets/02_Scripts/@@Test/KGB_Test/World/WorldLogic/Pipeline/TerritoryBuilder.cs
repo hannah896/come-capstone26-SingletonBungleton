@@ -13,8 +13,7 @@ using UnityEngine;
 public class TerritoryBuilder
 {
     #region Constants
-    private const float DEFAULT_PADDING = 0.1f;
-    private const float MIN_DIMENSION_SIZE = 0.1f;
+
     private const float DEFAULT_SEPARATION_GAP = 3.0f;
     private const int NOISE_OCTAVES = 3;
     private const float NOISE_AMPLITUDE_DECAY = 0.5f;
@@ -23,6 +22,7 @@ public class TerritoryBuilder
     public const int BORDER_MARKER = -2;
     private const float OCEAN_NOISE_SCALE = 0.1f;
     private const int SMOOTHING_DIRECTIONS = 4;
+    private const float MAX_LAND_DISTANCE = 30f; 
     #endregion
 
     #region Fields
@@ -33,7 +33,7 @@ public class TerritoryBuilder
     private CancellationToken _ct;
 
     private SpatialGrid<NodeSpatialData> _nodeSpatialGrid;
-    private List<NodeSpatialData> _nodeSpatialCache;
+    private List<NodeSpatialData> _nodeSpatialCache;                
     private static readonly int[] _dx = { -1, 1, 0, 0 };
     private static readonly int[] _dy = { 0, 0, -1, 1 };
     #endregion
@@ -49,7 +49,7 @@ public class TerritoryBuilder
         public Vector2 Position;
         public float RegionNoiseFactor;
         public RegionData RegionData;
-        public float TerritoryWeight; // ★ 추가: 영토 확장 가중치
+        public float TerritoryWeight; // ★ 추가: 영토 확장 가중치: 노드가 많은 지역에 속할수록 영토가 넓어지는 효과 (밀집 지역 확장, 고립 지역 축소)
 
         public NodeSpatialData(int index, Node node, float territoryWeight)
         {
@@ -80,17 +80,22 @@ public class TerritoryBuilder
             _worldLogicData = logicData;
             _ct = ct;
 
-            await FitNodesToTileGridAsync();
+            //await FitNodesToTileGridAsync();
 
             SpatialGrid();
 
+            // 노이즈 맵 생성 - 경계 왜곡과 자연스러운 타일 할당을 위해(기존 보로노이 분할에 노이즈 추가)
             await GenerateNoiseWorldAsync();
 
             await AssignTerritoriesAsync();
 
+            await CleanUpOrphanTilesAsync();
+
             await ProcessBordersAsync();
 
             await AssignOwnedTilesToRegionsAsync();
+
+            await GenerateInfluenceMapAsync();
 
             return _worldLogicData;
         }
@@ -108,88 +113,9 @@ public class TerritoryBuilder
         }
     }
 
-    /// <summary>
-    /// 노드들을 타일 그리드에 맞게 스케일링 및 이동하여 배치
-    /// </summary>
-    /// <returns></returns>
-    #region Phase 1: Fit Nodes to Grid
-    private async UniTask FitNodesToTileGridAsync()
-    {
-        var nodes = _graphResult.Nodes;
-        if (nodes == null || nodes.Count == 0) return;
 
-        // 1. 현재 노드들의 범위(Bounds) 계산
-        float minX = float.MaxValue, maxX = float.MinValue;
-        float minY = float.MaxValue, maxY = float.MinValue;
 
-        foreach (var node in nodes)
-        {
-            if (node.Position.x < minX) minX = node.Position.x;
-            if (node.Position.x > maxX) maxX = node.Position.x;
-            if (node.Position.y < minY) minY = node.Position.y;
-            if (node.Position.y > maxY) maxY = node.Position.y;
-        }
-
-        // 2. 현재 그래프의 크기
-        float currentWidth = maxX - minX;
-        float currentHeight = maxY - minY;
-
-        if (currentWidth < MIN_DIMENSION_SIZE) currentWidth = 1f;
-        if (currentHeight < MIN_DIMENSION_SIZE) currentHeight = 1f;
-
-        // 3. 목표 월드 크기 (가장자리에 여백 둠)
-        float targetWidth = _worldLogicData.TileGridSize.x * (1f - DEFAULT_PADDING * 2);
-        float targetHeight = _worldLogicData.TileGridSize.y * (1f - DEFAULT_PADDING * 2);
-
-        // 4. 스케일 비율 계산 (비율 유지하면서 꽉 차게)
-        float scaleX = targetWidth / currentWidth;
-        float scaleY = targetHeight / currentHeight;
-        float finalScale = Mathf.Min(scaleX, scaleY);
-
-        // 5. 중심점 이동 계산
-        Vector2 currentCenter = new Vector2((minX + maxX) * 0.5f, (minY + maxY) * 0.5f);
-        Vector2 targetCenter = new Vector2(_worldLogicData.TileGridSize.x * 0.5f, _worldLogicData.TileGridSize.y * 0.5f);
-
-        // 6. 좌표 변환 적용
-        foreach (var node in nodes)
-        {
-            Vector2 relativePos = node.Position - currentCenter;
-            node.Position = targetCenter + (relativePos * finalScale);
-        }
-
-        // 7. 검증
-        ValidateNodePositions(nodes);
-
-        if (_worldSettings.EnableStepByStep)
-            await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
-    }
-
-    /// <summary>
-    /// 노드 위치 검증
-    /// </summary>
-    private void ValidateNodePositions(List<Node> nodes)
-    {
-        if (nodes == null || nodes.Count == 0) return;
-
-        bool hasInvalidNode = false;
-        foreach (var node in nodes)
-        {
-            if (node.Position.x < 0 || node.Position.x > _worldLogicData.TileGridSize.x ||
-                node.Position.y < 0 || node.Position.y > _worldLogicData.TileGridSize.y)
-            {
-                Debug.LogError($"🚨 노드가 맵 범위를 벗어남: {node.Position} (맵 크기: {_worldLogicData.TileGridSize})");
-                hasInvalidNode = true;
-            }
-        }
-
-        if (!hasInvalidNode)
-        {
-            Debug.Log($"✅ 모든 노드가 맵 범위 내에 배치됨 (첫 노드: {nodes[0].Position})");
-        }
-    }
-    #endregion
-
-    #region Phase 2: Spatial Grid Initialization
+    #region Phase 1: Spatial Grid Initialization
     /// <summary>
     /// 공간 분할 그리드 초기화
     /// </summary>
@@ -199,7 +125,7 @@ public class TerritoryBuilder
         if (nodes == null || nodes.Count == 0) return;
 
         // 맵 면적 기반으로 적절한 서치 셀 크기 계산
-        float mapArea = _worldLogicData.TileGridSize.x * _worldLogicData.TileGridSize.y;
+        float mapArea = _worldLogicData.TerrainSize.x * _worldLogicData.TerrainSize.y;
         float avgAreaPerNode = mapArea / nodes.Count;
         float baseRadius = Mathf.Sqrt(avgAreaPerNode / Mathf.PI);
         float maxTerritoryRadius = baseRadius * 2.0f;
@@ -208,8 +134,8 @@ public class TerritoryBuilder
         int cellSize = Mathf.Max(10, Mathf.CeilToInt(maxTerritoryRadius * 2f));
 
         _nodeSpatialGrid = new SpatialGrid<NodeSpatialData>(
-            _worldLogicData.TileGridSize.x,
-            _worldLogicData.TileGridSize.y,
+            _worldLogicData.TerrainSize.x,
+            _worldLogicData.TerrainSize.y,
             cellSize
         );
 
@@ -241,7 +167,11 @@ public class TerritoryBuilder
     }
     #endregion
 
-    #region Phase 3: Noise Map Generation
+    /// <summary>
+    /// 노이즈 맵 생성 - 타일별로 다중 옥타브 펄린 노이즈 계산하여 자연스러운 변형 추가
+    /// </summary>
+    /// <returns></returns>
+    #region Phase 2: Noise Map Generation
     private async UniTask GenerateNoiseWorldAsync()
     {
         var seedChannel = (int)WorldSeedChannel.Territory_GenerateNoiseWorld;
@@ -251,9 +181,9 @@ public class TerritoryBuilder
 
         int processedCount = 0;
 
-        for (int x = 0; x < _worldLogicData.TileGridSize.x; x++)
+        for (int x = 0; x < _worldLogicData.TerrainSize.x; x++)
         {
-            for (int y = 0; y < _worldLogicData.TileGridSize.y; y++)
+            for (int y = 0; y < _worldLogicData.TerrainSize.y; y++)
             {
                 float sampleX = (x + offsetX) * _partiSettings.noiseScale;
                 float sampleY = (y + offsetY) * _partiSettings.noiseScale;
@@ -288,7 +218,11 @@ public class TerritoryBuilder
     }
     #endregion
 
-    #region Phase 4: Voronoi Partitioning with Noise
+    /// <summary>
+    /// 터레인 타일에 가장 가까운 노드를 찾아서 영토 할당 - 보로노이 분할 + 노이즈 왜곡 + 연결된 지역 분리 로직 포함
+    /// </summary>
+    /// <returns></returns>
+    #region Phase 3: AssignTerritoriesAsync
     private async UniTask AssignTerritoriesAsync()
     {
         var nodes = _graphResult.Nodes;
@@ -300,7 +234,7 @@ public class TerritoryBuilder
 
         HashSet<(RegionData, RegionData)> connectedRegions = BuildConnectedRegionsSet();
 
-        float mapArea = _worldLogicData.TileGridSize.x * _worldLogicData.TileGridSize.y;
+        float mapArea = _worldLogicData.TerrainSize.x * _worldLogicData.TerrainSize.y;
         float avgAreaPerNode = mapArea / nodes.Count;
         float baseRadius = Mathf.Sqrt(avgAreaPerNode / Mathf.PI);
         float maxConnectedDist = 0f;
@@ -358,9 +292,9 @@ public class TerritoryBuilder
         int processedCount = 0;
         int landCount = 0;
 
-        for (int x = 0; x < _worldLogicData.TileGridSize.x; x++)
+        for (int x = 0; x < _worldLogicData.TerrainSize.x; x++)
         {
-            for (int y = 0; y < _worldLogicData.TileGridSize.y; y++)
+            for (int y = 0; y < _worldLogicData.TerrainSize.y; y++)
             {
                 _ct.ThrowIfCancellationRequested();
 
@@ -406,9 +340,9 @@ public class TerritoryBuilder
     /// </summary>
     private void InitializeOceanWorld()
     {
-        for (int x = 0; x < _worldLogicData.TileGridSize.x; x++)
+        for (int x = 0; x < _worldLogicData.TerrainSize.x; x++)
         {
-            for (int y = 0; y < _worldLogicData.TileGridSize.y; y++)
+            for (int y = 0; y < _worldLogicData.TerrainSize.y; y++)
             {
                 _worldLogicData.TerritoryWorld[x, y] = OCEAN_MARKER;
             }
@@ -507,22 +441,92 @@ public class TerritoryBuilder
     }
     #endregion
 
+    #region Phase 4: Orphan Tile Cleanup
+    /// <summary>
+    /// 노이즈로 인해 발생한 고립된 섬(Orphan) 타일들을 주변 영토로 병합
+    /// </summary>
+    private async UniTask CleanUpOrphanTilesAsync()
+    {
+        int width = _worldLogicData.TerrainSize.x;
+        int height = _worldLogicData.TerrainSize.y;
+        int[,] newTerritory = new int[width, height];
+
+        // 원본 배열 복사해서 작업 (동시에 변경되면 계산이 꼬임 방지)
+        Array.Copy(_worldLogicData.TerritoryWorld, newTerritory, _worldLogicData.TerritoryWorld.Length);
+
+        // 8방향 탐색용 (대각선 포함)
+        int[] dx8 = { -1, 0, 1, -1, 1, -1, 0, 1 };
+        int[] dy8 = { -1, -1, -1, 0, 0, 1, 1, 1 };
+
+        int cleanedCount = 0;
+
+        for (int x = 1; x < width - 1; x++)
+        {
+            for (int y = 1; y < height - 1; y++)
+            {
+                int currentOwner = _worldLogicData.TerritoryWorld[x, y];
+
+                // 바다는 정화 대상에서 제외
+                if (currentOwner == OCEAN_MARKER) continue;
+
+                Dictionary<int, int> neighborCounts = new Dictionary<int, int>();
+                int sameOwnerCount = 0;
+
+                // 주변 8방향 조사
+                for (int i = 0; i < 8; i++)
+                {
+                    int nx = x + dx8[i];
+                    int ny = y + dy8[i];
+                    int neighborOwner = _worldLogicData.TerritoryWorld[nx, ny];
+
+                    if (neighborOwner == currentOwner)
+                        sameOwnerCount++;
+
+                    if (neighborOwner != OCEAN_MARKER)
+                    {
+                        if (!neighborCounts.ContainsKey(neighborOwner))
+                            neighborCounts[neighborOwner] = 0;
+                        neighborCounts[neighborOwner]++;
+                    }
+                }
+
+                // ★ 핵심: 내 주변 8칸 중 나랑 같은 구역이 2칸 이하라면 고립된 것으로 판단
+                if (sameOwnerCount <= 2 && neighborCounts.Count > 0)
+                {
+                    // 주변에서 가장 많이 인접한 구역을 찾아서 편입됨
+                    int majorityOwner = neighborCounts.OrderByDescending(kv => kv.Value).First().Key;
+                    newTerritory[x, y] = majorityOwner;
+                    cleanedCount++;
+                }
+            }
+        }
+
+        // 정화된 배열로 덮어쓰기
+        _worldLogicData.TerritoryWorld = newTerritory;
+        Debug.Log($"[TerritoryBuilder] 알박기 타일 정화 완료: {cleanedCount}개 타일 수정됨");
+
+        if (_worldSettings.EnableStepByStep)
+            await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
+    }
+
+    #endregion
+
     #region Phase 5: Border and Ocean Processing
     private async UniTask ProcessBordersAsync()
     {
         int processedCount = 0;
-        float halfWidth = _worldLogicData.TileGridSize.x * 0.5f;
-        float halfHeight = _worldLogicData.TileGridSize.y * 0.5f;
+        float halfWidth = _worldLogicData.TerrainSize.x * 0.5f;
+        float halfHeight = _worldLogicData.TerrainSize.y * 0.5f;
 
-        for (int x = 0; x < _worldLogicData.TileGridSize.x; x++)
+        for (int x = 0; x < _worldLogicData.TerrainSize.x; x++)
         {
-            for (int y = 0; y < _worldLogicData.TileGridSize.y; y++)
+            for (int y = 0; y < _worldLogicData.TerrainSize.y; y++)
             {
                 _ct.ThrowIfCancellationRequested();
 
                 // 가장자리 거리 계산 최적화
-                float edgeDistanceX = Mathf.Min(x, _worldLogicData.TileGridSize.x - 1 - x) / halfWidth;
-                float edgeDistanceY = Mathf.Min(y, _worldLogicData.TileGridSize.y - 1 - y) / halfHeight;
+                float edgeDistanceX = Mathf.Min(x, _worldLogicData.TerrainSize.x - 1 - x) / halfWidth;
+                float edgeDistanceY = Mathf.Min(y, _worldLogicData.TerrainSize.y - 1 - y) / halfHeight;
                 float edgeDistance = Mathf.Min(edgeDistanceX, edgeDistanceY);
 
                 float oceanNoise = _worldLogicData.NoiseWorld[x, y] / _partiSettings.noiseStrength * OCEAN_NOISE_SCALE;
@@ -551,14 +555,14 @@ public class TerritoryBuilder
 
     private async UniTask MarkBorderTilesAsync()
     {
-        _worldLogicData.BorderWorld = new int[_worldLogicData.TileGridSize.x, _worldLogicData.TileGridSize.y];
+        _worldLogicData.BorderWorld = new int[_worldLogicData.TerrainSize.x, _worldLogicData.TerrainSize.y];
         //System.Array.Copy(_territoryWorld, _borderWorld, _territoryWorld.Length);
 
         int processedCount = 0;
 
-        for (int x = 1; x < _worldLogicData.TileGridSize.x - 1; x++)
+        for (int x = 1; x < _worldLogicData.TerrainSize.x - 1; x++)
         {
-            for (int y = 1; y < _worldLogicData.TileGridSize.y - 1; y++)
+            for (int y = 1; y < _worldLogicData.TerrainSize.y - 1; y++)
             {
                 _ct.ThrowIfCancellationRequested();
 
@@ -592,8 +596,7 @@ public class TerritoryBuilder
         }
     }
     #endregion
-
-
+    
     #region Phase 6: Assign Tiles to Regions
     /// <summary>
     /// 타일 데이터를 각 노드의 RegionData에 할당하여 소유 타일 목록 구축  
@@ -611,9 +614,9 @@ public class TerritoryBuilder
 
         int processedCount = 0;
 
-        for (int x = 0; x < _worldLogicData.TileGridSize.x; x++)
+        for (int x = 0; x < _worldLogicData.TerrainSize.x; x++)
         {
-            for (int y = 0; y < _worldLogicData.TileGridSize.y; y++)
+            for (int y = 0; y < _worldLogicData.TerrainSize.y; y++)
             {
                 int nodeIndex = _worldLogicData.TerritoryWorld[x, y];       // 타일에 할당된 노드 인덱스
                 if (nodeIndex >= 0 && nodeIndex < nodes.Count)
@@ -634,6 +637,104 @@ public class TerritoryBuilder
             await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
     }
     #endregion
+
+    private async UniTask GenerateInfluenceMapAsync()
+    {
+        int width = _worldLogicData.TerrainSize.x;
+        int height = _worldLogicData.TerrainSize.y;
+
+        int[,] distanceToOcean = new int[width, height];
+        bool[,] visited = new bool[width, height];
+        Queue<Vector2Int> queue = new Queue<Vector2Int>();
+
+        // 1. 바다(OCEAN_MARKER) 타일 큐에 넣기
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                if (_worldLogicData.TerritoryWorld[x, y] == OCEAN_MARKER)
+                {
+                    distanceToOcean[x, y] = 0;
+                    visited[x, y] = true;
+                    queue.Enqueue(new Vector2Int(x, y));
+                }
+                else
+                {
+                    distanceToOcean[x, y] = int.MaxValue;
+                }
+            }
+        }
+
+        // 2. BFS로 해안선 거리 계산 (육지 전체의 뼈대 잡기)
+        while (queue.Count > 0)
+        {
+            Vector2Int current = queue.Dequeue();
+            int currentDist = distanceToOcean[current.x, current.y];
+
+            for (int d = 0; d < 4; d++)
+            {
+                int nx = current.x + _dx[d];
+                int ny = current.y + _dy[d];
+
+                if (nx >= 0 && nx < width && ny >= 0 && ny < height)
+                {
+                    if (!visited[nx, ny] && _worldLogicData.TerritoryWorld[nx, ny] >= 0)
+                    {
+                        visited[nx, ny] = true;
+                        distanceToOcean[nx, ny] = currentDist + 1;
+                        queue.Enqueue(new Vector2Int(nx, ny));
+                    }
+                }
+            }
+        }
+
+        // 3. '바다에서 가장 멀리 떨어진 거리(MaxDepth)' 찾기
+        Dictionary<int, int> regionMaxDepth = new Dictionary<int, int>();
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                int owner = _worldLogicData.TerritoryWorld[x, y];
+                if (owner >= 0)
+                {
+                    if (!regionMaxDepth.ContainsKey(owner)) regionMaxDepth[owner] = 1; // 0나누기 방지
+                    if (distanceToOcean[x, y] > regionMaxDepth[owner])
+                    {
+                        regionMaxDepth[owner] = distanceToOcean[x, y];
+                    }
+                }
+            }
+        }
+
+        // 4. 영토 크기에 완벽히 비례하는 영향력(Influence) 정규화
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                int owner = _worldLogicData.TerritoryWorld[x, y];
+
+                _worldLogicData.DistanceToOceanWorld[x, y] = distanceToOcean[x, y];
+
+                if (owner >= 0)
+                {
+                    // 고정값 대신, 내 영토가 가진 최대 깊이를 분모로 사용
+                    // 단, 거대 대륙의 경우 해변이 무한히 넓어지는 것을 막기 위해 MAX_LAND_DISTANCE로 제한
+                    float currentMaxDepth = Mathf.Min(regionMaxDepth[owner], MAX_LAND_DISTANCE);
+
+                    float inf = (float)distanceToOcean[x, y] / currentMaxDepth;
+
+                    _worldLogicData.InfluenceWorld[x, y] = Mathf.SmoothStep(0f, 1.2f, Mathf.Clamp01(inf));
+                }
+                else
+                {
+                    _worldLogicData.InfluenceWorld[x, y] = 0f;
+                }
+            }
+        }
+
+        Debug.Log("[TerritoryBuilder] 영토 맞춤형 영향력 맵 생성 완료");
+        if (_worldSettings.EnableStepByStep) await UniTask.Yield(_ct);
+    }
 
 
 }

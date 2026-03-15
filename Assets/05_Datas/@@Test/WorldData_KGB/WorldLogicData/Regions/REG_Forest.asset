@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9c763dd1fd61394a9706354fc4ef7c9, type: 3}
+  m_Name: REG_Forest
+  m_EditorClassIdentifier: 
+  RegionName: REG_Forest
+  RoomBranch: 1
+  DefaultMinCount: 17
+  DefaultMaxCount: 20
+  BaseHeightLevel: 1
+  TerrainNoiseParameters: {fileID: 11400000, guid: a3b712f4feaa75446891640c0d87e244, type: 2}
+  EntranceRoom: {fileID: 0}
+  EssentialRooms: []
+  DefaultRooms:
+  - {fileID: 11400000, guid: 974366f48b25bb14785c4a7a42eb5095, type: 2}
+  LockIDs:
+  - LOCK_TIER2
+  GivenKeyIDs:
+  - KEY_TIER3

@@ -48,6 +48,13 @@ public class WorldGraphData
         return _nodeConnections.Count(conn => conn.ParentNode == parentNode);
     }
 
+    public Node GetParentNode(Node childNode)
+    {
+        var connection = _nodeConnections.FirstOrDefault(conn => conn.ChildNode == childNode);
+        return connection != null ? connection.ParentNode : null;
+    }
+
+
     public NodeConnection CreateConnection(Node parent, Node child)
     {
         if (AreConnected(parent, child)) return null;

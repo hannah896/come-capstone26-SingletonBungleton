@@ -78,28 +78,38 @@ public class WorldLogicDirector : MonoBehaviour
         try
         {
             Debug.Log($"=== 월드 생성 시작: {_storyData.StoryName}===");
-            Debug.Log($" 전체 타일 개수 : {_worldSettings.GetTileGridSize()}, Branch: {_worldSettings.WorldBranch}, Loop: {_worldSettings.WorldLoop}");
 
             _worldGraphData = new WorldGraphData();
 
-            Vector2Int gridSize = _worldSettings.GetTileGridSize();
-            _worldLogicData = new WorldLogicData(gridSize);
+            Vector2Int worldSize = _worldSettings.GetWorldSize();
+            _worldLogicData = new WorldLogicData(worldSize);
 
-            // 1단계: Region Graph 생성 (StoryGenerator에 위임)
+            // 1단계: Region노드들을 생성하여 Story 구조를 그래프로 표현
             await GenerateStoryAsync(ct);
             Debug.Log($"1단계 완료: Region Graph 생성 ({_worldGraphData.Nodes.Count})");
-            
-            // 2단계: Convert Rooms (RegionGenerator에 위임. 각 Task들의 Room 생성
+            // 2단계: Region 노드들을 Room들의 집합으로 변환 (RegionData -> RoomData, 노드 연결 갱신)
             await ConvertRegionToRoomsAsync(ct);
             Debug.Log($"2단계 완료: Region 변환 ({_worldGraphData.Nodes.Count}개 Room)");
-            // 각 region에 몇개의 room이 배치되었는지 디버그
-            //Debug.Log($"Region별 Room 개수: " + string.Join(", ", _worldGraphData.Nodes.Select(n => $"{n.RegionData.RegionName}: {n.Rooms.Count}개")));
-
-            // 3단계 : Force Simulation (ForceSimulator에 위임. 노드 위치 조정)
+            // 3단계 : Force Simulation : 노드 위치를 Force Simulation으로 조정하여 자연스러운 배치 만들기
             await ForceSimulationAsync(ct);
             Debug.Log($"3단계 완료: Force Simulation 완료");
 
-            // 4단계: 보로노이 분할 
+            /*
+            Debug.Log($"=== 글로벌 뼈대 완성 (노드 수: {_worldGraphData.Nodes.Count}) ===");
+
+            // startRegion의 청크 좌표 계산
+            Vector2 startRegionPos = _worldGraphData.Nodes[0].Position; // 예시로 첫 번째 노드를 시작점으로 사용
+            int startChunkX = Mathf.FloorToInt(startRegionPos.x / _worldLogicData.ChunkSize);
+            int startChunkY = Mathf.FloorToInt(startRegionPos.y / _worldLogicData.ChunkSize);
+
+            //TODO: ChunkStreamingManager 에 넘겨서 플레이어 주변 청크만 생성하도록 하기
+            Vector2Int startChunkPos = new Vector2Int(startChunkX, startChunkY);
+
+            // 중앙의 3x3 (9개) 청크만 먼저 생성
+            await GenerateChunksAreaAsync(startChunkPos, 1, ct);
+            */
+
+            // 4단계: 그래프 노드들을 기반으로 보로노이 분할하여 영토 할당 
             await TerritoryBuildAsync(ct);
             Debug.Log($"4단계 완료: 보로노이 분할 완료");
 
@@ -111,8 +121,8 @@ public class WorldLogicDirector : MonoBehaviour
             await SpawnObjectsAsync(ct);
             int disposeCount = _worldDisposeDatas != null ? _worldDisposeDatas.Count : 0;
             Debug.Log($"6단계 완료: {disposeCount}개 오브젝트 배치");
-            
-            Debug.Log($"=== 월드 생성 완료: 시드 {_worldSettings.WorldSeed} ===");
+
+            Debug.Log($"World Logic 생성 완료!");
         }
         catch (System.OperationCanceledException)
         {
@@ -147,6 +157,37 @@ public class WorldLogicDirector : MonoBehaviour
         _worldGraphData = await _forceSimulator.ForceSimulateAsync(_worldGraphData, _worldSettings, ct);
     }
     #endregion
+
+
+    /// <summary>
+    /// 4 ~ 6단계 로컬화 : 특정 청크 주변 영역에 대해서만 보로노이 분할, 높이 맵 생성, 오브젝트 배치를 수행
+    /// </summary>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    /// 
+    public async UniTask GenerateChunksAreaAsync(Vector2Int centerChunk, int radius, CancellationToken ct)
+    {
+        for (int cx = centerChunk.x - radius; cx <= centerChunk.x + radius; cx++)
+        {
+            for (int cy = centerChunk.y - radius; cy <= centerChunk.y + radius; cy++)
+            {
+                Vector2Int chunkCoord = new Vector2Int(cx, cy);
+                ChunkData chunkData = _worldLogicData.GetOrCreateChunk(chunkCoord);
+
+                // TODO: 4~6단계를 이 ChunkData 단위로 실행하도록 넘겨줍니다.
+                // 4단계: 영향력 맵 생성 (기존 TerritoryBuilder 개편)
+                // await _territoryBuilder.BuildChunkInfluenceAsync(chunkData, _worldGraphData, _worldSettings, ct);
+
+                // 5단계: 노이즈 및 고도 적용 (기존 HeightBuilder 개편)
+                // await _heightBuilder.BuildChunkHeightAsync(chunkData, _worldGraphData, _worldSettings, ct);
+
+                // 6단계: 오브젝트 배치
+                // await _objectDisposer.SpawnObjectsInChunkAsync(chunkData, _worldGraphData, _worldSettings, ct);
+            }
+        }
+        Debug.Log($"청크 베이킹 완료! (중심: {centerChunk}, 반경: {radius})");
+    }
+
     #region 4단계: 영토 분할
     private async UniTask TerritoryBuildAsync(CancellationToken ct)
     {
@@ -154,7 +195,7 @@ public class WorldLogicDirector : MonoBehaviour
     }
     #endregion
 
-    #region 5단계: 타일 디테일 처리 (노이즈, 높이, 경계)
+    #region 5단계: 높이 맵 생성
     private async UniTask HeightBuildAsync(CancellationToken ct)
     {
         _worldLogicData = await _heightBuilder.HeightBuildAsync(_worldGraphData, _worldLogicData, _worldSettings, ct);
@@ -201,19 +242,17 @@ public class WorldLogicDirector : MonoBehaviour
         if (_showMapBounds)
         {
             Gizmos.color = Color.cyan;
-            Vector3 center = new Vector3(_worldSettings.GetRealWorldSize().x / 2f, 0, _worldSettings.GetRealWorldSize().y / 2f);
-            Vector3 size = new Vector3(_worldSettings.GetRealWorldSize().x, 0, _worldSettings.GetRealWorldSize().y);
+            Vector3 center = new Vector3(_worldSettings.GetWorldSize().x / 2f, 0, _worldSettings.GetWorldSize().y / 2f);
+            Vector3 size = new Vector3(_worldSettings.GetWorldSize().x, 0, _worldSettings.GetWorldSize().y);
             Gizmos.DrawWireCube(center, size);
         }
 
-        int tileSize = _worldSettings.TileUnitSize;
-        float halfTile = tileSize / 2f;
 
         // 1. 노드 중심점 그리기
         foreach (var node in _worldGraphData.Nodes)
         {
-            float worldX = (node.Position.x * tileSize) + halfTile;
-            float worldZ = (node.Position.y * tileSize) + halfTile;
+            float worldX = node.Position.x;
+            float worldZ = node.Position.y;
             Vector3 nodePos = new Vector3(worldX, 0, worldZ);
 
             if (_useHeightVisualization && _worldLogicData?.HeightWorld != null)
@@ -225,7 +264,7 @@ public class WorldLogicDirector : MonoBehaviour
             }
 
             Gizmos.color = node.RoomData != null ? node.RoomData.DebugColor : Color.white;
-            Gizmos.DrawSphere(nodePos, tileSize * 0.8f);
+            Gizmos.DrawSphere(nodePos, 1.0f);
 
 #if UNITY_EDITOR
             if (_showRegionNames && node.RegionData != null)
@@ -238,10 +277,10 @@ public class WorldLogicDirector : MonoBehaviour
                 style.alignment = TextAnchor.MiddleCenter;
 
                 // 노드보다 살짝 위쪽에 텍스트 배치 (높이는 조절 가능)
-                Vector3 labelPos = nodePos + Vector3.up * (tileSize * 1.5f);
+                Vector3 labelPos = nodePos + Vector3.up * 1.5f;
 
                 // 화면에 텍스트 렌더링
-                UnityEditor.Handles.Label(labelPos, $"{ node.RegionData.RegionName}: {node.RoomDepth}", style);
+                UnityEditor.Handles.Label(labelPos, $"{ node.RegionData.RegionName}: {node.RoomDepth}, x:{nodePos.x} y:{nodePos.y} z:{nodePos.z}", style);
             }
 #endif
         }
@@ -253,10 +292,13 @@ public class WorldLogicDirector : MonoBehaviour
             foreach (var conn in _worldGraphData.NodeConnections)
             {
                 if (conn.ParentNode == null || conn.ChildNode == null) continue;
-                float startX = (conn.ParentNode.Position.x * tileSize) + halfTile;
-                float startZ = (conn.ParentNode.Position.y * tileSize) + halfTile;
-                float endX = (conn.ChildNode.Position.x * tileSize) + halfTile;
-                float endZ = (conn.ChildNode.Position.y * tileSize) + halfTile;
+                var parentNode = conn.ParentNode;
+                var childNode = conn.ChildNode;
+
+                float startX = parentNode.Position.x;
+                float startZ = parentNode.Position.y;
+                float endX = childNode.Position.x;
+                float endZ = childNode.Position.y;
 
                 Vector3 start = new Vector3(startX, 0, startZ);
                 Vector3 end = new Vector3(endX, 0, endZ);
@@ -264,13 +306,25 @@ public class WorldLogicDirector : MonoBehaviour
                 // 높이 적용
                 if (_useHeightVisualization && _worldLogicData?.HeightWorld != null)
                 {
-                    int startTileX = Mathf.RoundToInt(conn.ParentNode.Position.x);
-                    int startTileY = Mathf.RoundToInt(conn.ParentNode.Position.y);
-                    int endTileX = Mathf.RoundToInt(conn.ChildNode.Position.x);
-                    int endTileY = Mathf.RoundToInt(conn.ChildNode.Position.y);
+                    int startTileX = Mathf.RoundToInt(parentNode.Position.x);
+                    int startTileY = Mathf.RoundToInt(parentNode.Position.x);
+                    int endTileX = Mathf.RoundToInt(childNode.Position.x);
+                    int endTileY = Mathf.RoundToInt(childNode.Position.y);
 
                     start.y = _worldLogicData.GetHeightAt(startTileX, startTileY);
                     end.y = _worldLogicData.GetHeightAt(endTileX, endTileY);
+                }
+
+                if(parentNode.RoomData != null && childNode.RoomData != null)
+                {
+                    // 연결된 두 노드의 Room 색상 평균으로 선 색상 설정
+                    Color startColor = parentNode.RoomData.DebugColor;
+                    Color endColor = childNode.RoomData.DebugColor;
+                    Gizmos.color = Color.Lerp(startColor, endColor, 0.5f);
+                }
+                else
+                {
+                    Gizmos.color = Color.white; // 기본 흰색
                 }
 
                 Gizmos.DrawLine(start, end);
@@ -292,8 +346,6 @@ public class WorldLogicDirector : MonoBehaviour
         int widthX = territory.GetLength(0);
         int widthY = territory.GetLength(1);
 
-        int tileSize = _worldSettings.TileUnitSize;
-        int tileHeight = _worldSettings.TileUnitHeight;
 
         // 성능을 위해 스텝 건너뛰기 (전체 다 그리면 렉 걸림)
         int step = Mathf.Max(1, Mathf.Min(widthX, widthY) / 100);
@@ -324,15 +376,15 @@ public class WorldLogicDirector : MonoBehaviour
                     Gizmos.color = c;
                 }
 
-                float worldX = x * tileSize + tileSize / 2f;
-                float WorldZ = y * tileSize + tileSize / 2f;
+                float worldX = x;
+                float WorldZ = y;
 
-                float worldY = height * tileHeight;
+                float worldY = height;
 
                 Vector3 cubePos = new Vector3(worldX, worldY, WorldZ);
 
                 // Y= -0.1f에 바닥처럼 그림
-                Gizmos.DrawCube(cubePos, Vector3.one * tileSize * step);
+                Gizmos.DrawCube(cubePos, Vector3.one * step);
             }
         }
     }

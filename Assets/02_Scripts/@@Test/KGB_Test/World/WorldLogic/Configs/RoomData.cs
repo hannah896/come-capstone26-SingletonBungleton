@@ -12,8 +12,9 @@ public class RoomData : ScriptableObject
     [Header("Assets")]
     // GameObject 직접 참조 대신 키값(string) 사용
     [SerializeField] public string TopTileKey;    // 예: "Tile_Grass_Top"
+    [SerializeField] public List<string> TopTileKeys;
     [SerializeField] public string CliffTileKey;  // 예: "Tile_Dirt_Cliff"
-    [SerializeField] public string WaterTileKey;  // 예: "Tile_Water"
+    [SerializeField] public string SedimentTileKey;  // 예: 
 
     [Header("1. Essential Objects (필수 배치)")]
     // 예: 보스, 웜홀, 금광맥 (개수 보장)

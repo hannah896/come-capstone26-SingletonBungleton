@@ -5,7 +5,10 @@ using Cysharp.Threading.Tasks;
 
 public class TerrainBuilder
 {
-    private const float MAX_TERRAIN_HEIGHT = 150f; // 최대 지형 높이 (필요에 따라 조정)
+    WorldLogicData _logicData;
+    WorldGraphData _graphData;
+    WorldSettings _settings;
+
     public async UniTask<(TerrainData, GameObject)> BuildTerrainAsync(
         WorldLogicData logicData,
         WorldGraphData graphData,
@@ -14,24 +17,29 @@ public class TerrainBuilder
     {
         Debug.Log("⛰️ [TerrainBuilder] 지형 융기 연산 시작...");
 
-        int gridX = logicData.TileGridSize.x;
-        int gridY = logicData.TileGridSize.y;
+        _logicData = logicData;
+        _graphData = graphData;
+        _settings = settings;
+
+        int gridX = logicData.TerrainSize.x;
+        int gridY = logicData.TerrainSize.y;
+        float maxHeight = _settings.GetHeight(HeightLevel.Max);
 
         // 1. TerrainData 생성 및 해상도 설정
         TerrainData terrainData = new TerrainData();
 
-        // 유니티 지형 해상도는 배열의 크기와 동일해야 합니다. (정사각형 권장)
+        // 유니티 지형 해상도는 배열의 크기와 동일해야 함.
         int resolution = Mathf.Max(gridX, gridY);
         terrainData.heightmapResolution = resolution;
 
         // 2. 실제 월드 사이즈(Transform 크기) 설정
-        // 반드시 heightmapResolution을 먼저 설정한 뒤에 size를 줘야 버그가 안 납니다!
-        float worldSizeX = gridX * settings.TileUnitSize;
-        float worldSizeZ = gridY * settings.TileUnitSize;
-        terrainData.size = new Vector3(worldSizeX, MAX_TERRAIN_HEIGHT, worldSizeZ);
+        // 반드시 heightmapResolution을 먼저 설정한 뒤에 size를 줘야 버그가 안 남.
+        float worldSizeX = gridX;
+        float worldSizeZ = gridY;
+        terrainData.size = new Vector3(worldSizeX, maxHeight, worldSizeZ);
 
         // 3. 높이 데이터 변환 
-        // ⚠️ 유니티 SetHeights는 [y, x] 순서의 2차원 배열을 받습니다!
+        // ⚠️ 유니티 SetHeights는 [y, x] 순서의 2차원 배열을 받음
         float[,] unityHeights = new float[resolution, resolution];
 
         int processedCount = 0;
@@ -43,10 +51,10 @@ public class TerrainBuilder
             {
                 float logicHeight = logicData.HeightWorld[x, y];
 
-                // ⚠️ 0.0f ~ 1.0f 사이의 비율로 정규화 (Normalize)
-                float normalizedHeight = logicHeight / MAX_TERRAIN_HEIGHT;
+                // 0.0f ~ 1.0f 사이의 비율로 정규화 (Normalize)
+                float normalizedHeight = logicHeight / maxHeight;
 
-                // ⚠️ 인덱스를 [y, x]로 뒤집어서 대입!
+                // 인덱스를 [y, x]로 뒤집어서 대입
                 unityHeights[y, x] = normalizedHeight;
             }
 

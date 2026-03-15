@@ -6,6 +6,9 @@ using UnityEngine;
 
 public class ForceSimulator
 {
+    private const float DEFAULT_PADDING = 0.1f;
+    private const float MIN_DIMENSION_SIZE = 0.1f;
+
     private WorldSettings _worldSettings;
     private WorldGraphData _simulationResult;
     private CancellationToken _ct;
@@ -48,13 +51,13 @@ public class ForceSimulator
         foreach (var kvp in clusterSizes)
         {
             float ratio = (float)kvp.Value / minRoomCount;
-            _regionMultipliers[kvp.Key] = ratio;
+            _regionMultipliers[kvp.Key] = ratio;                //값 예시) 1.0(가장 방이 적은 구역), 1.5, 2.0, 3.0, ... (방이 많을 수록 배수가 커짐)
         }
 
         // ★ 2단계: 살 붙이기 (배치된 시작 방들 주변에 나머지 방들을 흩뿌림)
         await ScatterRoomsByRegionAsync(startRoomNodes);
 
-        //_simulationResult.Nodes = await RunForceSimulationAsync(_simulationResult.Nodes, _macroSettings, _ct);
+        _simulationResult.Nodes = await RunForceSimulationAsync(_simulationResult.Nodes, _macroSettings, _ct);
 
         // ★ 3단계: 팝콘 튀기기
         _simulationResult.Nodes = await RunForceSimulationAsync(_simulationResult.Nodes, _fastSettings, _ct);
@@ -64,6 +67,8 @@ public class ForceSimulator
 
         // ★ 5단계: 루프 절단 (마지막으로 부모-자식 관계를 Depth 기준으로 정리하여 루프 제거)
         await CutLoopConnections();
+
+        await FitNodesToTileGridAsync();
 
         return _simulationResult;
     }
@@ -93,7 +98,11 @@ public class ForceSimulator
                 if (node.Depth == 1) // Start Node의 경우 작은 범위 내에 배치
                     node.Position = GetInsideUnitCircle(prng) * _microSettings.idealEdgeLength;
                 else
-                    node.Position = GetInsideUnitCircle(prng) * _macroSettings.idealEdgeLength;
+                {
+                    Node parentNode = _simulationResult.GetParentNode(node);
+                    var safeDirection = GetDirectionAwayFromGrandparent(parentNode, _simulationResult.NodeConnections, prng);
+                    node.Position = safeDirection * _macroSettings.idealEdgeLength;
+                }
             }
         }
         else
@@ -144,8 +153,10 @@ public class ForceSimulator
             {
                 // 중심점 주변으로 오밀조밀하게 흩뿌림
                 float scatterRadius = _microSettings.idealEdgeLength * _regionMultipliers[node.RegionData];
+                Node parentNode = _simulationResult.GetParentNode(node);
+                var safeDirection = GetDirectionAwayFromGrandparent(parentNode, _simulationResult.NodeConnections, prng);
 
-                Vector2 randomOffset = GetInsideUnitCircle(prng) * scatterRadius;
+                Vector2 randomOffset = safeDirection * scatterRadius;
                 node.Position = myStartNode.Position + randomOffset;
             }
         }
@@ -201,9 +212,17 @@ public class ForceSimulator
                 float currentRepulsion = forceSettings.repulsionStrength;
 
                 // ★ 두 방이 같은 구역 소속이라면, 미리 계산해둔 배수를 곱함
-                if (nodes[i].RegionData != null && nodes[i].RegionData == nodes[j].RegionData)
+                if (nodes[i].RegionData != null && nodes[j].RegionData != null)
                 {
-                    currentRepulsion *= _regionMultipliers[nodes[i].RegionData];
+                    if (nodes[i].RegionData == nodes[j].RegionData)
+                    {
+                        // 같은 구역: 기존에 계산해둔 배수를 곱함 (보통 뭉치게 둠)
+                        currentRepulsion *= _regionMultipliers[nodes[i].RegionData];
+                    }
+                    else
+                    {
+                        currentRepulsion *= _regionMultipliers[nodes[i].RegionData] * _regionMultipliers[nodes[j].RegionData];
+                    }
                 }
 
                 // 공식: Force = Strength / distance^2
@@ -300,43 +319,40 @@ public class ForceSimulator
         return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * r;
     }
 
-    //private Vector2 GetDirectionAwayFromGrandparent(
-    //    Node parentNode,
-    //    List<NodeConnection> existingConnections
-    //    )
-    //{
-    //    Vector2 baseDirection;
+    private Vector2 GetDirectionAwayFromGrandparent(
+        Node parentNode,
+        List<NodeConnection> existingConnections,
+        System.Random prng
+        )
+    {
+        Vector2 baseDirection;
 
-    //    // 1. 할아버지 노드 찾기 (부모가 Child로 되어 있는 연결 찾기)
-    //    var parentConnection = existingConnections.FirstOrDefault(c => c.ChildNode == parentNode);
+        // 1. 할아버지 노드 찾기 (부모가 Child로 되어 있는 연결 찾기)
+        var parentConnection = existingConnections.FirstOrDefault(c => c.ChildNode == parentNode);
 
-    //    // 랜덤 시드 설정 (부모 노드의 인덱스 + 메서드 채널 번호)
-    //    var seedChannel = (int)WorldSeedChannel.Region_GetDirectionAwayFromGrandparent;
-    //    var prng = new System.Random(_worldSettings.WorldSeed + seedChannel);
+        if (parentConnection != null)
+        {
+            // 할아버지 -> 부모 방향 (이게 '전방' 기준)
+            baseDirection = (parentNode.Position - parentConnection.ParentNode.Position).normalized;
+        }
+        else
+        {
+            // 할아버지가 없음 (부모가 시작 방임) -> 그냥 완전 랜덤 방향
+            baseDirection = GetInsideUnitCircle(prng).normalized;
+            // 0 벡터 방지
+            if (baseDirection == Vector2.zero) baseDirection = Vector2.up;
+        }
 
-    //    if (parentConnection != null)
-    //    {
-    //        // 할아버지 -> 부모 방향 (이게 '전방' 기준)
-    //        baseDirection = (parentNode.Position - parentConnection.ParentNode.Position).normalized;
-    //    }
-    //    else
-    //    {
-    //        // 할아버지가 없음 (부모가 시작 방임) -> 그냥 완전 랜덤 방향
-    //        baseDirection = GetInsideUnitCircle(prng).normalized;
-    //        // 0 벡터 방지
-    //        if (baseDirection == Vector2.zero) baseDirection = Vector2.up;
-    //    }
+        // 2. 랜덤 각도 생성 ( -120도 ~ +120도 )
+        float randomAngle = prng.Next(-120, 121);
 
-    //    // 2. 랜덤 각도 생성 ( -120도 ~ +120도 )
-    //    float randomAngle = prng.Next(-120, 121);
+        // 3. 벡터 회전 
+        // Z축을 기준으로 randomAngle만큼 회전시킴
+        Quaternion rotation = Quaternion.Euler(0, 0, randomAngle);
+        Vector2 finalDirection = rotation * baseDirection;
 
-    //    // 3. 벡터 회전 
-    //    // Z축을 기준으로 randomAngle만큼 회전시킴
-    //    Quaternion rotation = Quaternion.Euler(0, 0, randomAngle);
-    //    Vector2 finalDirection = rotation * baseDirection;
-
-    //    return finalDirection.normalized;
-    //}
+        return finalDirection.normalized;
+    }
     #endregion
 
     #region Phase 3: Loop Cutting
@@ -355,6 +371,87 @@ public class ForceSimulator
 
         if (_worldSettings.EnableStepByStep)
             await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
+    }
+    #endregion
+
+    /// <summary>
+    /// 노드들을 타일 그리드에 맞게 스케일링 및 이동하여 배치
+    /// </summary>
+    /// <returns></returns>
+    #region Phase 1: Fit Nodes to Grid
+    private async UniTask FitNodesToTileGridAsync()
+    {
+        var nodes = _simulationResult.Nodes;
+        if (nodes == null || nodes.Count == 0) return;
+
+        // 1. 현재 노드들의 범위(Bounds) 계산
+        float minX = float.MaxValue, maxX = float.MinValue;
+        float minY = float.MaxValue, maxY = float.MinValue;
+
+        foreach (var node in nodes)
+        {
+            if (node.Position.x < minX) minX = node.Position.x;
+            if (node.Position.x > maxX) maxX = node.Position.x;
+            if (node.Position.y < minY) minY = node.Position.y;
+            if (node.Position.y > maxY) maxY = node.Position.y;
+        }
+
+        // 2. 현재 그래프의 크기
+        float currentWidth = maxX - minX;
+        float currentHeight = maxY - minY;
+
+        if (currentWidth < MIN_DIMENSION_SIZE) currentWidth = 1f;
+        if (currentHeight < MIN_DIMENSION_SIZE) currentHeight = 1f;
+
+        // 3. 목표 월드 크기 (가장자리에 여백 둠)
+        float targetWidth = _worldSettings.GetWorldSize().x * (1f - DEFAULT_PADDING * 2);
+        float targetHeight = _worldSettings.GetWorldSize().y * (1f - DEFAULT_PADDING * 2);
+
+        // 4. 스케일 비율 계산 (비율 유지하면서 꽉 차게)
+        float scaleX = targetWidth / currentWidth;
+        float scaleY = targetHeight / currentHeight;
+        float finalScale = Mathf.Min(scaleX, scaleY);
+
+        // 5. 중심점 이동 계산
+        Vector2 currentCenter = new Vector2((minX + maxX) * 0.5f, (minY + maxY) * 0.5f);
+        Vector2 targetCenter = new Vector2(_worldSettings.GetWorldSize().x * 0.5f, _worldSettings.GetWorldSize().y * 0.5f);
+
+        // 6. 좌표 변환 적용
+        foreach (var node in nodes)
+        {
+            Vector2 relativePos = node.Position - currentCenter;
+            node.Position = targetCenter + (relativePos * finalScale);
+        }
+
+        // 7. 검증
+        ValidateNodePositions(nodes);
+
+        if (_worldSettings.EnableStepByStep)
+            await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
+    }
+
+    /// <summary>
+    /// 노드 위치 검증
+    /// </summary>
+    private void ValidateNodePositions(List<Node> nodes)
+    {
+        if (nodes == null || nodes.Count == 0) return;
+
+        bool hasInvalidNode = false;
+        foreach (var node in nodes)
+        {
+            if (node.Position.x < 0 || node.Position.x > _worldSettings.GetWorldSize().x ||
+                node.Position.y < 0 || node.Position.y > _worldSettings.GetWorldSize().y)
+            {
+                Debug.LogError($"🚨 노드가 맵 범위를 벗어남: {node.Position} (맵 크기: {_worldSettings.GetWorldSize()})");
+                hasInvalidNode = true;
+            }
+        }
+
+        if (!hasInvalidNode)
+        {
+            Debug.Log($"✅ 모든 노드가 맵 범위 내에 배치됨 (첫 노드: {nodes[0].Position})");
+        }
     }
     #endregion
 

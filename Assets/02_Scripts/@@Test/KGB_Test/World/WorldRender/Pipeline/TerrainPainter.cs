@@ -40,7 +40,7 @@ public class TerrainPainter
             loadTasks.Add(Extensions.LoadAssetAsync<TerrainLayer>(key, AssetCacheType.NonRequired, ct));
         }
 
-        // 모든 텍스처가 로드될 때까지 대기 (WhenAll을 쓰면 병렬로 로드되어 훨씬 빠릅니다!)
+        // 모든 텍스처가 로드될 때까지 대기
         TerrainLayer[] loadedLayers = await UniTask.WhenAll(loadTasks);
 
         // 3. [인덱스 매핑] TerrainData에 레이어 등록 및 딕셔너리에 인덱스 캐싱
@@ -49,7 +49,6 @@ public class TerrainPainter
 
         for (int i = 0; i < loadedLayers.Length; i++)
         {
-            // _loadedKeys와 loadedLayers는 순서가 동일하게 보장됩니다.
             _layerIndexMap[_loadedKeys[i]] = i;
         }
 
@@ -73,8 +72,8 @@ public class TerrainPainter
                 // 알파맵 좌표를 논리 그리드(TerritoryWorld) 좌표로 변환
                 float normX = (float)x / alphaWidth;
                 float normY = (float)y / alphaHeight;
-                int gridX = Mathf.Clamp(Mathf.RoundToInt(normX * logicData.TileGridSize.x), 0, logicData.TileGridSize.x - 1);
-                int gridY = Mathf.Clamp(Mathf.RoundToInt(normY * logicData.TileGridSize.y), 0, logicData.TileGridSize.y - 1);
+                int gridX = Mathf.Clamp(Mathf.RoundToInt(normX * logicData.TerrainSize.x), 0, logicData.TerrainSize.x - 1);
+                int gridY = Mathf.Clamp(Mathf.RoundToInt(normY * logicData.TerrainSize.y), 0, logicData.TerrainSize.y - 1);
 
                 // 현재 좌표가 속한 구역(Node)의 인덱스 가져오기
                 int nodeIndex = logicData.TerritoryWorld[gridX, gridY];
@@ -104,6 +103,58 @@ public class TerrainPainter
             // 프레임 드랍(스파이크)을 방지하기 위해 100줄마다 한 프레임 쉼
             if (y % 100 == 0) await UniTask.Yield(ct);
         }
+
+        // ---------------------------------------------------------
+        // 5.5 [알파맵 스무딩] 구역 경계선 텍스처 자연스럽게 섞기 (Splatmap Blur)
+        // ---------------------------------------------------------
+        int blurRadius = 1; // 섞이는 반경 (값이 클수록 텍스처 경계가 넓고 부드럽게 그라데이션 됩니다)
+        float[,,] blurredAlphamaps = new float[alphaWidth, alphaHeight, numLayers];
+
+        for (int y = 0; y < alphaHeight; y++)
+        {
+            for (int x = 0; x < alphaWidth; x++)
+            {
+                float[] sum = new float[numLayers];
+                int count = 0;
+
+                // 주변 픽셀들의 가중치 합산 (Box Blur 기법)
+                for (int dy = -blurRadius; dy <= blurRadius; dy++)
+                {
+                    for (int dx = -blurRadius; dx <= blurRadius; dx++)
+                    {
+                        int nx = Mathf.Clamp(x + dx, 0, alphaWidth - 1);
+                        int ny = Mathf.Clamp(y + dy, 0, alphaHeight - 1);
+
+                        for (int l = 0; l < numLayers; l++)
+                        {
+                            sum[l] += alphamaps[ny, nx, l];
+                        }
+                        count++;
+                    }
+                }
+
+                // 평균값을 내고, 모든 레이어의 가중치 총합이 정확히 1.0이 되도록 정규화(Normalize)
+                float totalWeight = 0f;
+                for (int l = 0; l < numLayers; l++)
+                {
+                    float avg = sum[l] / count;
+                    blurredAlphamaps[y, x, l] = avg;
+                    totalWeight += avg;
+                }
+
+                if (totalWeight > 0f)
+                {
+                    for (int l = 0; l < numLayers; l++)
+                    {
+                        blurredAlphamaps[y, x, l] /= totalWeight;
+                    }
+                }
+            }
+            if (y % 100 == 0) await UniTask.Yield(ct);
+        }
+
+        // 완성된 원본 알파맵을 블러 처리된 부드러운 알파맵으로 싹 교체
+        alphamaps = blurredAlphamaps;
 
         // 6. [적용] 터레인에 최종 알파맵 덮어씌우기
         terrainData.SetAlphamaps(0, 0, alphamaps);

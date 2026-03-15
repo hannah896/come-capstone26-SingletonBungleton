@@ -99,8 +99,8 @@ public class RegionGenerator
                 _regionToCluster.TryGetValue(childRegion, out var childCluster) && childCluster.Count > 0)
             {
                 // 부모의 출구(Exit) <-> 자식의 입구(Entrance)
-                Node bridgeStart = parentCluster.OrderByDescending(n => n.RoomDepth).First();
-                Node bridgeEnd = childCluster.OrderBy(n => n.RoomDepth).First();
+                Node bridgeStart = parentCluster.OrderByDescending(n => n.RoomDepth).First();       // 부모 클러스터에서 RoomDepth가 가장 깊은 방을 출구로 선택
+                Node bridgeEnd = childCluster.OrderBy(n => n.RoomDepth).First();                    // 자식 클러스터에서 RoomDepth가 가장 얕은 방을 입구로 선택
 
                 // 다리 연결 추가
                 _regionResult.NodeConnections.Add(new NodeConnection(bridgeStart, bridgeEnd));
@@ -144,7 +144,7 @@ public class RegionGenerator
 
         while (cluster.Count < defaultRoomCount)
         {
-            Node parentNode = PickParentRoom(cluster, regionData.RoomBranch);
+            Node parentNode = PickParentRoom(cluster, regionData.RoomBranch, prng);
             if (parentNode == null) break;
 
 
@@ -168,10 +168,8 @@ public class RegionGenerator
 
         return (cluster, clusterConnections);
     }
-    private Node PickParentRoom(List<Node> placedRooms, RegionBranch branch)
+    private Node PickParentRoom(List<Node> placedRooms, RegionBranch branch, System.Random prng)
     {
-        var seedChannel = (int)WorldSeedChannel.Region_PickParentRoom;
-        var prng = new System.Random(_worldSettings.WorldSeed + seedChannel);
         switch (branch)
         {
             case RegionBranch.Least: // 뱀 (Line)
@@ -184,8 +182,8 @@ public class RegionGenerator
 
             case RegionBranch.Default: // 랜덤 (Tree)
             default:
-                // 아무거나 랜덤 선택 (단, 너무 입구쪽만 걸리지 않게 약간의 가중치 조절 가능)
-                return placedRooms[prng.Next(0, placedRooms.Count)];
+                // 아무거나 랜덤 선택 
+                return prng.NextDouble() < 0.5 ? placedRooms.Last() : placedRooms.OrderBy(n => n.RoomDepth).ThenBy(n => prng.NextDouble()).First();
         }
     }
 
@@ -223,6 +221,10 @@ public class RegionGenerator
     }
     #endregion
 
+    /// <summary>
+    /// 클러스터 내부에 루프 연결 생성 : 같은 Region 내에서 Room 간 추가 연결을 만들어 그래프를 더 복잡하게 만듦
+    /// </summary>
+    /// <returns></returns>
     #region Phase 2: Region Loop Creation
     private async UniTask CreateLoopsAsync()
     {
@@ -233,7 +235,7 @@ public class RegionGenerator
         _regionResult.RebuildAdjacency();
 
         float loopChance = _worldSettings.GetLoopMultiplier();
-        int maxDepthDifference = 1;
+        int maxDepthDifference = 0;
 
         int maxConnectionsPerNode = 3; // 한 방이 가질 수 있는 최대 연결(문) 개수
 
@@ -264,7 +266,7 @@ public class RegionGenerator
 
                     // 조건 B: RoomDepth 차이 검사
                     int depthDiff = Mathf.Abs(nodeA.RoomDepth - nodeB.RoomDepth);
-                    if (depthDiff > maxDepthDifference) continue;
+                    if (depthDiff >= maxDepthDifference) continue;
 
                     // 조건 C: 각 노드의 연결 수 검사 (너무 많은 연결 방지)
                     int connA = _regionResult.NodeConnections.Count(c => c.ParentNode == nodeA || c.ChildNode == nodeA);

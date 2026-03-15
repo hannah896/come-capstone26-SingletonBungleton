@@ -10,26 +10,18 @@ public class WorldSettings : ScriptableObject
     [SerializeField] public int WorldSeed = 0; // 월드 시드 (랜덤 시드로 덮어쓰기됨)
 
     [Header("Map Size")]
-    [SerializeField] private int tileGridSmall = 255;    
-    [SerializeField] private int tileGridMedium = 513;  
-    [SerializeField] private int tileGridLarge = 1025;   
+    [SerializeField] private int worldSmall = 255;    
+    [SerializeField] private int worldMedium;  
+    [SerializeField] private int worldLarge;   
 
     private WorldSize _worldSize = WorldSize.Medium;
     public WorldSize WorldSize { get => _worldSize; set => _worldSize = value; }
 
-    [Header("Optimization")]
-    [Tooltip("1개의 타일이 차지하는 유닛 크기 (예: 4면 1타일 = 4x4 WorldUnit)")]
-    [SerializeField] private int _tileUnitSize = 2; 
-    [SerializeField] private int _tileUnitHeight; // 타일 높이   
-    public int TileUnitSize { get => _tileUnitSize; set => _tileUnitSize = Mathf.Max(1, value); } 
-    public int TileUnitHeight { get => _tileUnitSize / 2;}
-
-
     [Header("Land Branch")]
-    [SerializeField] private float branchNever = 0f;
-    [SerializeField] private float branchLeast = 0.4f;
-    [SerializeField] private float branchDefault = 0.6f;
-    [SerializeField] private float branchMost = 0.8f;
+    [SerializeField] private float branchNever;
+    [SerializeField] private float branchLeast;
+    [SerializeField] private float branchDefault;
+    [SerializeField] private float branchMost;
     private WorldBranchSetting _worldBranch = WorldBranchSetting.Default;
     public WorldBranchSetting WorldBranch
     {
@@ -43,18 +35,19 @@ public class WorldSettings : ScriptableObject
     }
 
     [Header("Land Loop")]
-    [SerializeField] private float loopNever = 0f;
-    [SerializeField] private float loopDefault = 0.5f;
-    [SerializeField] private float loopAlways = 1.0f;
+    [SerializeField] private float loopNever;
+    [SerializeField] private float loopDefault;
+    [SerializeField] private float loopAlways;
     private WorldLoopSetting _worldLoop = WorldLoopSetting.Default;
     public WorldLoopSetting WorldLoop { get => _worldLoop; set => _worldLoop = value; }
 
     [Header("Terrain Height Settings")]
     [Tooltip("각 지형 등급(Tier)별 실제 높이 블록 설정")]
-    [SerializeField] private float Height_Plains = 20.0f;
-    [SerializeField] private float Height_Hills = 45.0f;
-    [SerializeField] private float Height_Mesa = 60.0f;
-    [SerializeField] private float Height_Highlands = 90.0f;
+    [SerializeField] private float Height_Plains;
+    [SerializeField] private float Height_Hills;
+    [SerializeField] private float Height_Mesa;
+    [SerializeField] private float Height_Highlands;
+    [SerializeField] private float Hegiht_Max;
 
     [Header("Advanced Settings")]
     //[Range(0.5f, 2f)]
@@ -75,21 +68,15 @@ public class WorldSettings : ScriptableObject
 
 
     #region Getters for World Settings
-    public Vector2Int GetTileGridSize()
+    public Vector2Int GetWorldSize()
     {
         return _worldSize switch
         {
-            WorldSize.Small => new Vector2Int(tileGridSmall, tileGridSmall),
-            WorldSize.Medium => new Vector2Int(tileGridMedium, tileGridMedium),
-            WorldSize.Large => new Vector2Int(tileGridLarge, tileGridLarge),
-            _ => new Vector2Int(tileGridMedium, tileGridMedium)
+            WorldSize.Small => new Vector2Int(worldSmall, worldSmall),
+            WorldSize.Medium => new Vector2Int(worldMedium, worldMedium),
+            WorldSize.Large => new Vector2Int(worldLarge, worldLarge),
+            _ => new Vector2Int(worldMedium, worldMedium)
         };
-    }
-
-    public Vector2 GetRealWorldSize()
-    {
-        Vector2Int grid = GetTileGridSize();
-        return new Vector2(grid.x * TileUnitSize, grid.y * TileUnitSize);
     }
 
     public float GetBranchMultiplier()
@@ -122,7 +109,9 @@ public class WorldSettings : ScriptableObject
             case HeightLevel.Ocean: return -2.0f; // 바다 깊이 고정
             case HeightLevel.Plains: return Height_Plains;
             case HeightLevel.Hills: return Height_Hills;
+            case HeightLevel.Mesa: return Height_Mesa;
             case HeightLevel.Highlands: return Height_Highlands;
+            case HeightLevel.Max: return Hegiht_Max;
             default: return 0.0f;
         }
     }
@@ -156,7 +145,7 @@ public class PartitionSettings
 {
     [Header("Noise Settings")]
     public float noiseScale = 0.1f;          // 펄린 노이즈 스케일
-    public float noiseStrength = 25f;        // 노이즈가 거리에 미치는 영향력
+    public float noiseStrength = 15f;        // 노이즈가 거리에 미치는 영향력
 
     [Header("Border Settings")]
     public int borderWidth = 2;              // 영역 경계 두께
@@ -191,6 +180,16 @@ public class NoiseParams
     [Tooltip("지형의 굴곡이 최대 몇 블록 높이까지 생기는가?")]
     public float HeightVarianceBlocks;
 
+    [Header("Fractal Noise (fBm) Settings")]
+    [Tooltip("노이즈 겹침 횟수 (1이면 매끄러움, 높을수록 원래의 노이즈 값 안에서 요동침.)")]
+    public int Octaves;
+
+    [Tooltip("다음 옥타브의 진폭(영향력) 감소 비율 (기본 0.4~0.5)")]
+    public float Persistence;
+
+    [Tooltip("다음 옥타브의 주파수(촘촘함) 증가 비율 (기본 1.5~2.0)")]
+    public float Lacunarity;
+
 }
 #endregion
 
@@ -199,8 +198,7 @@ public enum WorldSize
 {
     Small,
     Medium,
-    Large,
-    Huge
+    Large
 }
 
 public enum WorldBranchSetting
@@ -225,7 +223,8 @@ public enum HeightLevel
     Plains,               
     Hills,
     Mesa,
-    Highlands,        
+    Highlands, 
+    Max
 }
 
 
