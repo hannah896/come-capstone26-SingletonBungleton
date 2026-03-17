@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks;
+using LandformStrategys;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.NetworkInformation;
@@ -7,6 +8,7 @@ using UnityEditor.Localization.Plugins.XLIFF.V12;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UIElements;
+using static Unity.Cinemachine.NoiseSettings;
 
 /// <summary>
 /// 높이맵 생성, 경계선 처리 등 타일별 세부 데이터를 생성하는 클래스
@@ -39,6 +41,14 @@ public class HeightBuilder
 
     private static readonly int[] _dx = { -1, 1, 0, 0, -1, -1, 1, 1 };
     private static readonly int[] _dy = { 0, 0, -1, 1, -1, 1, -1, 1 };
+
+    private Dictionary<LandformType, ILandformStrategy> _heightStrategies = new()
+    {
+        { LandformType.Default, new DefaultStrategy() },
+        { LandformType.Mountain, new MountainStrategy() },
+        { LandformType.Highlands, new HighlandsStrategy() },
+    };
+
     #endregion
 
     public async UniTask<WorldLogicData> HeightBuildAsync(
@@ -125,14 +135,15 @@ public class HeightBuilder
 
             NoiseParameters noiseParams = region.TerrainNoiseParameters;
             float amplitude = noiseParams.HeightVarianceBlocks;                     // 진폭
+
             float regionDiameter = Mathf.Max(1f, Mathf.Sqrt(tiles.Count));          // 지역의 대략적인 지름 (노이즈 주파수 계산에 사용)
             int bumps = prng.Next((int)noiseParams.MinBumps, (int)noiseParams.MaxBumps + 1);
             float frequency = bumps / regionDiameter;
 
             // 옥타브 노이즈 파라미터
             int octaves = noiseParams.Octaves;
-            float persistence = noiseParams.Persistence;
-            float lacunarity = noiseParams.Lacunarity;
+            //float persistence = noiseParams.Persistence;
+            //float lacunarity = noiseParams.Lacunarity;
             Vector2[] octaveOffsets = new Vector2[octaves];
             for (int i = 0; i < octaves; i++)
             {
@@ -141,8 +152,6 @@ public class HeightBuilder
                 float offY = (float)prng.NextDouble() * 20000f - 10000f;
                 octaveOffsets[i] = new Vector2(offX, offY);
             }
-
-
             // Region의 기본 높이 가져오기
             float targetBaseHeight = _worldSettings.GetHeight(region.BaseHeightLevel);
 
@@ -151,83 +160,42 @@ public class HeightBuilder
                 float baseSampleX = (tile.x + offsetX) * frequency;
                 float baseSampleY = (tile.y + offsetY) * frequency;
 
-                //===========================================================
-                float noiseSum = 0f;
-                float maxWeight = 0f;
-
-                float octaveWeight = 1f;
-                float octaveFreq = 1f;
-
-
-
-                // 2. 옥타브를 겹쳐서 디테일(자글자글함) 만들기
-                for (int i = 0; i < octaves; i++)
-                {
-                    float sampleX = baseSampleX * octaveFreq + octaveOffsets[i].x;
-                    float sampleY = baseSampleY * octaveFreq + octaveOffsets[i].y;
-                    float n = Mathf.PerlinNoise(sampleX, sampleY);
-
-                    // 진폭(HeightVarianceBlocks)이 20 이상인 '산' 구역일 경우 뾰족한 능선으로 깎음
-                    if (amplitude >= 30f)
-                    {
-                        n = 1f - Mathf.Abs(n * 2f - 1f);
-                        n = n * n; // 경사를 더 가파르게
-                    }
-
-                    noiseSum += n * octaveWeight;
-                    maxWeight += octaveWeight;
-
-                    octaveWeight *= persistence; // 다음 굴곡은 영향력을 줄임
-                    octaveFreq *= lacunarity;   // 다음 굴곡은 더 자잘하게 만듦
-                }
-
-                // 0.0 ~ 1.0 사이로 정규화
-                float normalizedNoise = noiseSum / maxWeight;
-
-                // 3. 평지와 산의 높이 방식 분리 (중요!)
-                float noiseValue;
-                if (amplitude >= 30f)
-                {
-                    // [산악 지대] 땅이 파이지 않고, 기준 높이에서 위로만 솟아오르게 함 (0.0 ~ 1.0)
-                    noiseValue = normalizedNoise;
-                }
-                else
-                {
-                    // [평지/언덕] 기준 높이를 중심으로 위아래로 부드럽게 굽이침 (-1.0 ~ 1.0)
-                    noiseValue = (normalizedNoise * 2f) - 1f;
-                }
-
-                // 4. 가장자리 감쇠 (Edge Fade) - 구역 밖으로 산이 튀어나가는 것 방지
                 float distToEdge = distanceToEdge[tile];
                 float edgeFade = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(distToEdge / UPLIFT_EDGE_FADE_DISTANCE));
 
-                // 5. ⭐️ 최종 적용: 정규화된 노이즈 형태에 유저가 설정한 진폭(amplitude)을 곱해 실제 높이를 줌
-                float heightNoise = noiseValue * amplitude * edgeFade;
-                float rawFinalHeight = targetBaseHeight + heightNoise;
-
-                float influence = _worldLogicData.InfluenceWorld[tile.x, tile.y];
-                float finalHeight = Mathf.Lerp(minHeight, rawFinalHeight, influence);
-
-                if (amplitude >= 30f)
+                // ==========================================================
+                // 1. Context 포장
+                // ==========================================================
+                HeightContext ctx = new HeightContext
                 {
-                    float terraceStep = 8f;         // 계단 한 칸의 높이 (값이 클수록 거대한 층이 생김)
-                    float terraceSharpness = 4.0f;  // 계단 모서리의 날카로움 (값이 클수록 직각 절벽에 가까워짐)
+                    BaseSampleX = baseSampleX,
+                    BaseSampleY = baseSampleY,
+                    OctaveOffsets = octaveOffsets,
+                    TargetBaseHeight = targetBaseHeight,                            // 어느 정도이 높이에서 부터 융기 시작할지
+                    MinHeight = minHeight,                                          // 땅의 최소 높이 (Plains의 절반)
+                    DistToEdge = distToEdge,                                        // Region 경계에서의 거리
+                    EdgeFade = edgeFade,                                            // 경계에서 멀어질수록 노이즈가 완전히 적용되도록 하는 페이드 값 (0~1)
+                    CoastlineInfluence = _worldLogicData.CoastlineInfluenceWorld[tile.x, tile.y],
+                    EdgeInfluence = _worldLogicData.RegionEdgeInfluenceWorld[tile.x, tile.y],
+                    NoiseParams = noiseParams
+                };
 
-                    float h = finalHeight / terraceStep;     // 높이를 계단 간격으로 나눠서 몇 층인지 계산
-                    float currentStep = Mathf.Floor(h);      // 정수부 (현재 층수)
-                    float fractionalPart = h - currentStep;  // 소수부 (층과 층 사이의 위치 0.0 ~ 1.0)
-
-                    // 소수부에 곡선(Smooth)을 주어 모서리가 살짝 둥근 계단을 만듭니다.
-                    float smoothFraction = Mathf.Clamp01((fractionalPart - 0.5f) * terraceSharpness + 0.5f);
-
-                    // 최종 높이를 다시 계단식으로 조립
-                    finalHeight = (currentStep + smoothFraction) * terraceStep;
+                // ==========================================================
+                // 2. 전략 객체 호출 
+                // ==========================================================
+                if (!_heightStrategies.TryGetValue(region.LandformType, out var strategy))
+                {
+                    strategy = _heightStrategies[LandformType.Default];
                 }
 
+                float finalHeight = strategy.ModifyHeight(ctx);
 
                 _worldLogicData.HeightWorld[tile.x, tile.y] = Mathf.Max(minHeight, finalHeight);
             }
         }
+
+
+
 
         if (_worldSettings.EnableStepByStep)
             await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
@@ -438,8 +406,7 @@ public class HeightBuilder
 
                     float currentHeight = readMap[x, y];
                     float sum = currentHeight;
-                    int count = 1;
-
+                    float weightSum = 1.0f; // count 대신 weightSum 사용
                     for (int d = 0; d < SMOOTHING_DIRECTIONS; d++)
                     {
                         int nx = x + _dx[d];
@@ -452,13 +419,12 @@ public class HeightBuilder
                             {
                                 float weight = (neighborHeight < currentHeight) ? 3.0f : 0.2f;
 
-                                sum += neighborHeight;
-                                count++;
-
+                                sum += neighborHeight * weight;
+                                weightSum += weight;
                             }
                         }
                     }
-                    writeMap[x, y] = sum / count;
+                    writeMap[x, y] = sum / weightSum;
 
                 }
             }

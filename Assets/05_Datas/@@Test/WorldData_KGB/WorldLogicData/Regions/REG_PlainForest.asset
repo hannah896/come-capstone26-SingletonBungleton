@@ -17,6 +17,7 @@ MonoBehaviour:
   DefaultMinCount: 17
   DefaultMaxCount: 20
   BaseHeightLevel: 1
+  LandformType: 0
   TerrainNoiseParameters: {fileID: 11400000, guid: 80a664fd0c61d744c8420670fea78707, type: 2}
   EntranceRoom: {fileID: 0}
   EssentialRooms: []

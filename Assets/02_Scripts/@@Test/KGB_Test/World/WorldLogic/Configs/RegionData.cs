@@ -13,8 +13,11 @@ public class RegionData : ScriptableObject
     public int DefaultMaxCount;
 
     [Header("Height Settings")]
-    [Tooltip("이 지역의 지형 등급을 선택하세요.")]
+    [Tooltip("이 지역이 어떤 높이에서 융기되는지 설정하세요. (예: Plains, Highlands)")]
     public HeightLevel BaseHeightLevel = HeightLevel.Plains;
+
+    [Tooltip("이 지역의 지형 형태(적용될 생성 전략)를 선택하세요.")]
+    public LandformType LandformType = LandformType.Default;
 
     [Tooltip("지형 생성 노이즈 파라미터 (직접 조정)")]
     public NoiseParameters TerrainNoiseParameters;
@@ -74,5 +77,12 @@ public enum RegionBranch
     Least,
     Default,
     Most,
+}
+
+public enum LandformType
+{
+    Default,    // 일반 평원/언덕 (DefaultStrategy)
+    Mountain,   // 계단식 산맥 (MountainStrategy)
+    Highlands   // 테푸이 고원 (HighlandsStrategy)
 }
 #endregion

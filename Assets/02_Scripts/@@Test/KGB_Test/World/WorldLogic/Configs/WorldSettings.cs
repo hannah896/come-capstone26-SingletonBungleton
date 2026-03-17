@@ -42,10 +42,9 @@ public class WorldSettings : ScriptableObject
     public WorldLoopSetting WorldLoop { get => _worldLoop; set => _worldLoop = value; }
 
     [Header("Terrain Height Settings")]
-    [Tooltip("각 지형 등급(Tier)별 실제 높이 블록 설정")]
+    [Tooltip("기반 높이 설정")]
+    [SerializeField] private float Height_Ocean;    
     [SerializeField] private float Height_Plains;
-    [SerializeField] private float Height_Hills;
-    [SerializeField] private float Height_Mesa;
     [SerializeField] private float Height_Highlands;
     [SerializeField] private float Hegiht_Max;
 
@@ -106,10 +105,8 @@ public class WorldSettings : ScriptableObject
     {
         switch (heightLevel)
         {
-            case HeightLevel.Ocean: return -2.0f; // 바다 깊이 고정
+            case HeightLevel.Ocean: return Height_Ocean; // 바다 깊이 고정
             case HeightLevel.Plains: return Height_Plains;
-            case HeightLevel.Hills: return Height_Hills;
-            case HeightLevel.Mesa: return Height_Mesa;
             case HeightLevel.Highlands: return Height_Highlands;
             case HeightLevel.Max: return Hegiht_Max;
             default: return 0.0f;

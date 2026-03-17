@@ -22,6 +22,4 @@ public class NoiseParameters : ScriptableObject
 
     [Tooltip("다음 옥타브의 주파수(촘촘함) 증가 비율 (기본 1.5~2.0)")]
     public float Lacunarity;
-
-
 }

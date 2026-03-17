@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MinBumps: 1
   MaxBumps: 2
-  HeightVarianceBlocks: 55
+  HeightVarianceBlocks: 50
   Octaves: 5
   Persistence: 0.4
   Lacunarity: 1.8

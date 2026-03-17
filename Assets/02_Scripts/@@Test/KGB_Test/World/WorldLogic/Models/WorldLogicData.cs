@@ -17,7 +17,10 @@ public class WorldLogicData
     public float[,] NoiseWorld { get; set; }    // 펄린 노이즈 캐시
 
     public int[,] DistanceToOceanWorld { get; set; } // 해안선으로부터의 타일 칸 수
-    public float[,] InfluenceWorld { get; set; }     // 해안선 거리 기반 영향력 (0.0 ~ 1.0)
+    public float[,] CoastlineInfluenceWorld { get; set; }     // 해안선 거리 기반 영향력 (0.4 ~ 1.2)
+
+    public float [,] DistanceToRegionEdgeWorld { get; set; } // 지역 경계로부터의 타일 칸 수
+    public float[,] RegionEdgeInfluenceWorld { get; set; } // 지역 경계 거리 기반 영향력 (0.0 ~ 1.0)
 
     public WorldLogicData(Vector2Int gridSize, int chunkSize = 64)
     {
@@ -30,7 +33,9 @@ public class WorldLogicData
         BorderWorld = new int[gridSize.x, gridSize.y];
         NoiseWorld = new float[gridSize.x, gridSize.y];
         DistanceToOceanWorld = new int[gridSize.x, gridSize.y];
-        InfluenceWorld = new float[gridSize.x, gridSize.y];
+        CoastlineInfluenceWorld = new float[gridSize.x, gridSize.y];
+        DistanceToRegionEdgeWorld = new float [gridSize.x, gridSize.y];
+        RegionEdgeInfluenceWorld = new float[gridSize.x, gridSize.y];
     }
 
     /// <summary>

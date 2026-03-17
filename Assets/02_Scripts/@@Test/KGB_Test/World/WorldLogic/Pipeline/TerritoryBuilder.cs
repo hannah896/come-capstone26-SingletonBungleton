@@ -34,8 +34,15 @@ public class TerritoryBuilder
 
     private SpatialGrid<NodeSpatialData> _nodeSpatialGrid;
     private List<NodeSpatialData> _nodeSpatialCache;                
-    private static readonly int[] _dx = { -1, 1, 0, 0 };
-    private static readonly int[] _dy = { 0, 0, -1, 1 };
+    private static readonly int[] _dx4 = { -1, 1, 0, 0 };
+    private static readonly int[] _dy4 = { 0, 0, -1, 1 };
+
+    // ★ 추가: 8방향 (영토 테두리 등 정밀 연산용)
+    private static readonly int[] _dx8 = { -1, 1, 0, 0, -1, -1, 1, 1 };
+    private static readonly int[] _dy8 = { 0, 0, -1, 1, -1, 1, -1, 1 };
+    // 대각선(인덱스 4~7)은 거리 1.414f, 상하좌우(인덱스 0~3)는 거리 1.0f
+    private static readonly float[] _dist8 = { 1.0f, 1.0f, 1.0f, 1.0f, 1.414f, 1.414f, 1.414f, 1.414f };
+
     #endregion
 
 
@@ -572,8 +579,8 @@ public class TerritoryBuilder
                 bool isBorder = false;
                 for (int d = 0; d < SMOOTHING_DIRECTIONS; d++)
                 {
-                    int nx = x + _dx[d];
-                    int ny = y + _dy[d];
+                    int nx = x + _dx4[d];
+                    int ny = y + _dy4[d];
 
                     if (_worldLogicData.TerritoryWorld[nx, ny] != currentRegion && _worldLogicData.TerritoryWorld[nx, ny] != OCEAN_MARKER)
                     {
@@ -638,43 +645,74 @@ public class TerritoryBuilder
     }
     #endregion
 
+    #region Phase 7: Influence Map Generation
     private async UniTask GenerateInfluenceMapAsync()
     {
         int width = _worldLogicData.TerrainSize.x;
         int height = _worldLogicData.TerrainSize.y;
 
+        // 해안선(Ocean) 까지의 거리 계산용 데이터
         int[,] distanceToOcean = new int[width, height];
         bool[,] visited = new bool[width, height];
-        Queue<Vector2Int> queue = new Queue<Vector2Int>();
+        Queue<Vector2Int> queueOcean = new Queue<Vector2Int>();
+
+        // 영토 경계선(Edge) 까지의 거리 계산용 데이터
+        float[,] distanceToEdge = new float[width, height];
+        bool[,] visitedEdge = new bool[width, height];
+        Queue<Vector2Int> queueEdge = new Queue<Vector2Int>();
+
 
         // 1. 바다(OCEAN_MARKER) 타일 큐에 넣기
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
+                int owner = _worldLogicData.TerritoryWorld[x, y];
                 if (_worldLogicData.TerritoryWorld[x, y] == OCEAN_MARKER)
                 {
                     distanceToOcean[x, y] = 0;
                     visited[x, y] = true;
-                    queue.Enqueue(new Vector2Int(x, y));
+                    queueOcean.Enqueue(new Vector2Int(x, y));
+                    distanceToEdge[x, y] = 0f;
                 }
                 else
                 {
                     distanceToOcean[x, y] = int.MaxValue;
+                    distanceToEdge[x, y] = float.MaxValue;
+
+                    bool isBorder = false;
+                    // ★ Fields의 8방향 상수 사용
+                    for (int d = 0; d < 8; d++)
+                    {
+                        int nx = x + _dx8[d];
+                        int ny = y + _dy8[d];
+                        if (nx < 0 || nx >= width || ny < 0 || ny >= height || _worldLogicData.TerritoryWorld[nx, ny] != owner)
+                        {
+                            isBorder = true;
+                            break;
+                        }
+                    }
+
+                    if (isBorder)
+                    {
+                        distanceToEdge[x, y] = 0f;
+                        visitedEdge[x, y] = true;
+                        queueEdge.Enqueue(new Vector2Int(x, y));
+                    }
                 }
             }
         }
 
-        // 2. BFS로 해안선 거리 계산 (육지 전체의 뼈대 잡기)
-        while (queue.Count > 0)
+        // 2-1 . BFS로 해안선 거리 계산 (육지 전체의 뼈대 잡기)
+        while (queueOcean.Count > 0)
         {
-            Vector2Int current = queue.Dequeue();
+            Vector2Int current = queueOcean.Dequeue();
             int currentDist = distanceToOcean[current.x, current.y];
 
             for (int d = 0; d < 4; d++)
             {
-                int nx = current.x + _dx[d];
-                int ny = current.y + _dy[d];
+                int nx = current.x + _dx4[d];
+                int ny = current.y + _dy4[d];
 
                 if (nx >= 0 && nx < width && ny >= 0 && ny < height)
                 {
@@ -682,14 +720,41 @@ public class TerritoryBuilder
                     {
                         visited[nx, ny] = true;
                         distanceToOcean[nx, ny] = currentDist + 1;
-                        queue.Enqueue(new Vector2Int(nx, ny));
+                        queueOcean.Enqueue(new Vector2Int(nx, ny));
                     }
                 }
             }
         }
+        // 2-2. BFS로 영토 경계선까지의 거리 계산 (영토 내부의 세밀한 영향력 계산용)
+        while (queueEdge.Count>0)
+        {
+            Vector2Int current = queueEdge.Dequeue();
+            float currentDist = distanceToEdge[current.x, current.y];
+            int myOwner = _worldLogicData.TerritoryWorld[current.x, current.y];
 
-        // 3. '바다에서 가장 멀리 떨어진 거리(MaxDepth)' 찾기
-        Dictionary<int, int> regionMaxDepth = new Dictionary<int, int>();
+            for (int d = 0; d < 8; d++)
+            {
+                int nx = current.x + _dx8[d]; // ★ Fields 상수
+                int ny = current.y + _dy8[d]; // ★ Fields 상수
+
+                if (nx >= 0 && nx < width && ny >= 0 && ny < height)
+                {
+                    if (!visitedEdge[nx, ny] && _worldLogicData.TerritoryWorld[nx, ny] == myOwner)
+                    {
+                        visitedEdge[nx, ny] = true;
+                        // ★ Fields에 정의해둔 대각선 가중치(_dist8)를 깔끔하게 더함
+                        distanceToEdge[nx, ny] = currentDist + _dist8[d];
+                        queueEdge.Enqueue(new Vector2Int(nx, ny));
+                    }
+                }
+            }
+        }
+        // ==========================================================
+        // 3. [통합 for문] 각 영토별 최대 깊이(MaxDepth) 구하기
+        // ==========================================================
+        Dictionary<int, int> regionMaxOceanDepth = new Dictionary<int, int>();
+        Dictionary<int, float> regionMaxEdgeDepth = new Dictionary<int, float>();
+
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -697,16 +762,22 @@ public class TerritoryBuilder
                 int owner = _worldLogicData.TerritoryWorld[x, y];
                 if (owner >= 0)
                 {
-                    if (!regionMaxDepth.ContainsKey(owner)) regionMaxDepth[owner] = 1; // 0나누기 방지
-                    if (distanceToOcean[x, y] > regionMaxDepth[owner])
-                    {
-                        regionMaxDepth[owner] = distanceToOcean[x, y];
-                    }
+                    // 바다 깊이 갱신
+                    if (!regionMaxOceanDepth.ContainsKey(owner)) regionMaxOceanDepth[owner] = 1;
+                    if (distanceToOcean[x, y] > regionMaxOceanDepth[owner])
+                        regionMaxOceanDepth[owner] = distanceToOcean[x, y];
+
+                    // 경계선 깊이 갱신
+                    if (!regionMaxEdgeDepth.ContainsKey(owner)) regionMaxEdgeDepth[owner] = 1f;
+                    if (distanceToEdge[x, y] > regionMaxEdgeDepth[owner])
+                        regionMaxEdgeDepth[owner] = distanceToEdge[x, y];
                 }
             }
         }
 
-        // 4. 영토 크기에 완벽히 비례하는 영향력(Influence) 정규화
+        // ==========================================================
+        // 4. [통합 for문] 바구니에 담기 & 정규화(0~1)
+        // ==========================================================
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -715,26 +786,31 @@ public class TerritoryBuilder
 
                 _worldLogicData.DistanceToOceanWorld[x, y] = distanceToOcean[x, y];
 
-                if (owner >= 0)
+                if (owner >= 0)     // 육지 타일인 경우
                 {
-                    // 고정값 대신, 내 영토가 가진 최대 깊이를 분모로 사용
-                    // 단, 거대 대륙의 경우 해변이 무한히 넓어지는 것을 막기 위해 MAX_LAND_DISTANCE로 제한
-                    float currentMaxDepth = Mathf.Min(regionMaxDepth[owner], MAX_LAND_DISTANCE);
+                    // 4-1. 전역 영향력 (바다 기준)
+                    float currentMaxOceanDepth = Mathf.Min(regionMaxOceanDepth[owner], MAX_LAND_DISTANCE);
+                    float coastPercentage = (float)distanceToOcean[x, y] / currentMaxOceanDepth;
+                    _worldLogicData.CoastlineInfluenceWorld[x, y] = Mathf.SmoothStep(0.4f, 1.2f, Mathf.Clamp01(coastPercentage));   // SmoothStep : 3x^2 - 2x^3 형태의 곡선으로 보정
 
-                    float inf = (float)distanceToOcean[x, y] / currentMaxDepth;
-
-                    _worldLogicData.InfluenceWorld[x, y] = Mathf.SmoothStep(0f, 1.2f, Mathf.Clamp01(inf));
+                    // 4-2. 지역 영향력 (영토 경계선 기준) ★ 추가된 데이터
+                    _worldLogicData.DistanceToRegionEdgeWorld[x, y] = distanceToEdge[x, y];
+                    float edgePercentage = distanceToEdge[x, y] / regionMaxEdgeDepth[owner];
+                    _worldLogicData.RegionEdgeInfluenceWorld[x, y] = Mathf.Clamp01(edgePercentage);
                 }
                 else
                 {
-                    _worldLogicData.InfluenceWorld[x, y] = 0f;
+                    _worldLogicData.CoastlineInfluenceWorld[x, y] = 0f;
+                    _worldLogicData.DistanceToRegionEdgeWorld[x, y] = 0f;
+                    _worldLogicData.RegionEdgeInfluenceWorld[x, y] = 0f;
                 }
             }
         }
+
 
         Debug.Log("[TerritoryBuilder] 영토 맞춤형 영향력 맵 생성 완료");
         if (_worldSettings.EnableStepByStep) await UniTask.Yield(_ct);
     }
 
-
+    #endregion
 }
