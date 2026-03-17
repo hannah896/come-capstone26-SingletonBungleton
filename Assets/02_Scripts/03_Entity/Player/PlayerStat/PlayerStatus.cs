@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class PlayerStat
+public class PlayerStatus
 {
     #region Fields
     #region 체력
@@ -46,7 +46,7 @@ public class PlayerStat
     #endregion
     #endregion
 
-    public PlayerStat(PlayerStatData data)
+    public PlayerStatus(PlayerStatData data)
     {
         // EntityStatData 필드
         MaxHp = data.MaxHP;

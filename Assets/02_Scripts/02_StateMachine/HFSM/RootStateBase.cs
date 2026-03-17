@@ -17,7 +17,7 @@ public abstract class RootStateBase<TEntity> : StateBase where TEntity : class
 
     public override void OnExit()
     {
-        SubStateMachine.ExitCurrentState();
+        SubStateMachine?.ExitCurState?.Invoke();
     }
 
     // 루트 상태의 Update/FixedUpdate가 하위 상태 머신도 구동
