@@ -1,23 +1,22 @@
 using UnityEngine;
 
-/// <summary>
 /// 아이템 데이터 테스트용 매니저
 /// - U 키: 전체 아이템 목록 출력
 /// - T 키: 도구 사용 테스트
 /// - W 키: 무기 공격 테스트
-/// </summary>
+
 public class ItemDataTestManager : MonoBehaviour
 {
-    [Header("=== 생존도구 데이터 ===")]
+    [Header("생존도구 데이터")]
     public ItemDataSO[] survivalToolData;
 
-    [Header("=== 전투도구 데이터 ===")]
+    [Header("전투도구 데이터")]
     public ItemDataSO[] combatGearData;
 
-    [Header("=== 자원 데이터 ===")]
+    [Header("자원 데이터")]
     public ItemDataSO[] resourceData;
 
-    [Header("=== 전리품 데이터 ===")]
+    [Header("전리품 데이터")]
     public ItemDataSO[] lootData;
 
     // 테스트용 아이템 인스턴스
@@ -26,7 +25,7 @@ public class ItemDataTestManager : MonoBehaviour
 
     void Start()
     {
-        Debug.Log("=== 아이템 시스템 테스트 시작 ===");
+        Debug.Log("아이템 시스템 테스트 시작");
         Debug.Log("U 키: 전체 아이템 목록");
         Debug.Log("T 키: 도구 테스트");
         Debug.Log("W 키: 무기 테스트");
@@ -55,9 +54,7 @@ public class ItemDataTestManager : MonoBehaviour
         }
     }
 
-    /// <summary>
     /// 테스트용 아이템 인스턴스 생성
-    /// </summary>
     void CreateTestItems()
     {
         // 도끼 생성 (첫 번째 생존도구)
@@ -83,32 +80,28 @@ public class ItemDataTestManager : MonoBehaviour
         }
     }
 
-    /// <summary>
     /// 전체 아이템 데이터 출력
-    /// </summary>
     void PrintAllItems()
     {
-        Debug.Log("\n=== 📦 생존도구 ===");
+        Debug.Log("\n=== 생존도구 ===");
         PrintItemArray(survivalToolData);
 
-        Debug.Log("\n=== ⚔️ 전투도구 ===");
+        Debug.Log("\n=== 전투도구 ===");
         PrintItemArray(combatGearData);
 
-        Debug.Log("\n=== 🪨 자원 ===");
+        Debug.Log("\n=== 자원 ===");
         PrintItemArray(resourceData);
 
-        Debug.Log("\n=== 🥩 전리품 ===");
+        Debug.Log("\n=== 전리품 ===");
         PrintItemArray(lootData);
     }
 
-    /// <summary>
     /// 아이템 배열 출력
-    /// </summary>
     void PrintItemArray(ItemDataSO[] items)
     {
         if (items == null || items.Length == 0)
         {
-            Debug.Log("  (아이템 없음)");
+            Debug.Log("아이템 없음");
             return;
         }
 
@@ -131,9 +124,7 @@ public class ItemDataTestManager : MonoBehaviour
         }
     }
 
-    /// <summary>
     /// 도구 사용 테스트
-    /// </summary>
     void TestTool()
     {
         if (testTool == null)
@@ -150,9 +141,8 @@ public class ItemDataTestManager : MonoBehaviour
         Debug.Log($"사용 후: {testTool.ToString()}");
     }
 
-    /// <summary>
+
     /// 무기 공격 테스트
-    /// </summary>
     void TestWeapon()
     {
         if (testWeapon == null)

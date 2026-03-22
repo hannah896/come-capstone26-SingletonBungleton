@@ -579,6 +579,7 @@ GameObject:
   m_Component:
   - component: {fileID: 920097693}
   - component: {fileID: 920097692}
+  - component: {fileID: 920097694}
   m_Layer: 0
   m_Name: ItemTestManager
   m_TagString: Untagged
@@ -637,6 +638,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &920097694
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 920097691}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de3ab5d5245bdd443a1558362e75923f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  testResource: {fileID: 11400000, guid: 64bd351efb9aecd468e2cd3ba48367e7, type: 2}
+  testFood: {fileID: 11400000, guid: 1fecbb54b066d744a880f37039875517, type: 2}
+  testTool: {fileID: 11400000, guid: ddbbce5581b91654598a8c87aa7a4a0f, type: 2}
+  testTree: {fileID: 659148874}
 --- !u!1001 &2493757622790397280
 PrefabInstance:
   m_ObjectHideFlags: 0
