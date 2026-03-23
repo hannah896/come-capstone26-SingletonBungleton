@@ -2,35 +2,32 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    private PlayerRootStateMachine machine;
-    private Animator animator;
-    private Rigidbody rb;
-    private PlayerStatus stat;
-    private PlayerInputData inputData;
-
-    #region Ground Check
-    [SerializeField] private float groundCheckDistance = 0.2f;
-    [SerializeField] private LayerMask groundLayer;
-    private bool isGrounded;
-    #endregion
+    [SerializeField] private PlayerRootStateMachine machine;
+    [SerializeField] private Animator animator;
+    [SerializeField] private PlayerMotor motor;
+    [SerializeField] private PlayerStatus stat;
+    [SerializeField] private PlayerInputData inputData;
 
     public Animator Animator => animator;
-    public Rigidbody Rb => rb;
+    public PlayerMotor Motor => motor;
     public PlayerAnimData AnimData => machine.AnimData;
     public PlayerInputData InputData => inputData;
     public PlayerStatus Stat => stat;
-    public bool IsGrounded => isGrounded;
+    public bool IsGrounded => motor != null && motor.IsGrounded;
 
     private void OnValidate()
     {
         if (animator == null)
-            animator = GetComponent<Animator>();
-        if (rb == null)
-            rb = GetComponent<Rigidbody>();
+            animator = GetComponentInChildren<Animator>();
+        if (motor == null)
+            motor = GetComponent<PlayerMotor>();
     }
 
     private void Awake()
     {
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
+        motor = GetComponent<PlayerMotor>();
         inputData = new PlayerInputData();
         machine = new PlayerRootStateMachine(this, animator);
     }
@@ -42,9 +39,9 @@ public class Player : MonoBehaviour
         handler.Bind(inputData);
         Main.Input.AddInput<InputActions_PlayerInputHandler>();
 
-        // 초기 상태: Ground
-        var groundState = new PlayerGroundState(machine);
-        machine.Init(groundState);
+        // 초기 상태: Locomotion
+        var locomotionState = new PlayerLocomotionState(machine);
+        machine.Init(locomotionState);
     }
 
     private void OnEnable()
@@ -62,27 +59,13 @@ public class Player : MonoBehaviour
 
     private void OnLoopUpdate(float deltaTime)
     {
-        UpdateGroundCheck();
         machine.OnUpdate(deltaTime);
+        motor.Tick(deltaTime);
         inputData.ConsumeEventInputs();
     }
 
     private void OnLoopGameUpdate(float deltaTime)
     {
         machine.OnGameUpdate(deltaTime);
-    }
-
-    /// <summary>
-    /// Raycast를 이용한 착지 감지
-    /// </summary>
-    private void UpdateGroundCheck()
-    {
-        var capsule = GetComponent<CapsuleCollider>();
-        Vector3 rayOrigin = transform.position + Vector3.up * (capsule.bounds.extents.y - groundCheckDistance);
-        isGrounded = Physics.Raycast(rayOrigin, Vector3.down, groundCheckDistance, groundLayer);
-        
-        // 디버그 표시
-        if (isGrounded)
-            Debug.Log("Grounded");
     }
 }

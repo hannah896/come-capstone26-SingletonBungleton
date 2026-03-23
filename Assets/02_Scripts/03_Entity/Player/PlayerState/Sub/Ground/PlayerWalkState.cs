@@ -5,6 +5,8 @@ using UnityEngine;
 /// </summary>
 public class PlayerWalkState : PlayerSubStateBase
 {
+    private const float rotationSpeed = 10f;
+
     public PlayerWalkState(PlayerRootStateMachine machine) : base(machine) { }
 
     public override void OnEnter()
@@ -23,7 +25,7 @@ public class PlayerWalkState : PlayerSubStateBase
     {
         base.Update(time);
 
-        var ground = GetRootState<PlayerGroundState>();
+        var ground = GetRootState<PlayerLocomotionState>();
         if (ground == null) return;
 
         if (!Input.HasMoveInput)
@@ -31,6 +33,11 @@ public class PlayerWalkState : PlayerSubStateBase
             ground.ChangeToIdle();
             return;
         }
+
+        // 카메라 기준 이동
+        Vector3 dir = CalcCameraRelativeDir(Input.MoveInput);
+        Entity.Motor.SetHorizontalVelocity(dir, Entity.Stat.MoveSpeed);
+        Entity.Motor.RotateToward(dir, rotationSpeed, time);
 
         if (Input.SprintHeld)
         {

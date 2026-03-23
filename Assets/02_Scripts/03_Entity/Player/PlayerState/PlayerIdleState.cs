@@ -23,9 +23,12 @@ public class PlayerIdleState : PlayerSubStateBase
     {
         base.Update(time);
 
+        // 정지 상태: 수평 속도 0
+        Entity.Motor.SetHorizontalVelocity(Vector3.zero, 0f);
+
         if (Input.HasMoveInput)
         {
-            var ground = GetRootState<PlayerGroundState>();
+            var ground = GetRootState<PlayerLocomotionState>();
             if (ground == null) return;
 
             if (Input.SprintHeld)

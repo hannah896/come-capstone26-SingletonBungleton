@@ -3,6 +3,10 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "PlayerStatData", menuName = "Scriptable Objects/PlayerStatData")]
 public class PlayerStatData : EntityStatData
 {
+    [Header("이동 확장")]
+    public float SprintMultiplier = 1.5f;
+    public float JumpForce = 8f;
+
     [Header("허기")]
     public float MaxHunger;
     public float CurHunger;

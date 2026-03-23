@@ -3,11 +3,11 @@ using UnityEngine.InputSystem;
 
 /// <summary>
 /// 플레이어 입력 콜백을 받아 PlayerInputData에 기록하는 핸들러
+/// 이동 로직은 포함하지 않는다 — 데이터 기록만 담당
 /// </summary>
 public class InputActions_PlayerInputHandler : InputActions
 {
     private PlayerInputData inputData;
-    private Player _player;
 
     public InputActions_PlayerInputHandler(InputManager manager) : base(manager) { }
 
@@ -61,9 +61,6 @@ public class InputActions_PlayerInputHandler : InputActions
     {
         if (inputData == null) return;
         inputData.MoveInput = ctx.ReadValue<Vector2>();
-        var speed = _player.Stat.MoveSpeed;
-
-        _player.Rb.MovePosition(_player.transform.position + new Vector3(inputData.MoveInput.x*, 0, inputData.MoveInput.y) * Time.deltaTime * 5f);
     }
 
     private void OnMoveCanceled(InputAction.CallbackContext ctx)

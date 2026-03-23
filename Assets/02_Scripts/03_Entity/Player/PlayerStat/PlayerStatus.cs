@@ -16,6 +16,8 @@ public class PlayerStatus
 
     #region 이동
     public float MoveSpeed { get; private set; }
+    public float SprintMultiplier { get; private set; }
+    public float JumpForce { get; private set; }
     #endregion
 
     #region 허기
@@ -55,6 +57,8 @@ public class PlayerStatus
         Defense = data.Defense;
         MinAttackPeriod = data.MinAttackPeriod;
         MoveSpeed = data.MoveSpeed;
+        SprintMultiplier = data.SprintMultiplier;
+        JumpForce = data.JumpForce;
 
         // 허기
         MaxHunger = data.MaxHunger;
