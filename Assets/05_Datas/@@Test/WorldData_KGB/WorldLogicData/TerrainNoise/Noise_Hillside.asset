@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7537f5576bb47534a92da3165a258cf4, type: 3}
   m_Name: Noise_Hillside
   m_EditorClassIdentifier: 
-  MinBumps: 1
-  MaxBumps: 2
-  HeightVarianceBlocks: 20
-  Octaves: 3
-  Persistence: 0.7
-  Lacunarity: 2
+  MinBumps: 2
+  MaxBumps: 3
+  HeightVarianceBlocks: 15
+  Octaves: 1
+  Persistence: 0.3
+  Lacunarity: 1.5

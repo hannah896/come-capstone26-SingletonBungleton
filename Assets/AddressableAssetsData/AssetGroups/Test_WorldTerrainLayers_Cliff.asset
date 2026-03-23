@@ -15,7 +15,7 @@ MonoBehaviour:
   m_GroupName: Test_WorldTerrainLayers_Cliff
   m_GUID: b63b3c32022292c48a7fbe0635ba454f
   m_SerializeEntries:
-  - m_GUID: f716f456807e6d3459bff747adc3961b
+  - m_GUID: 41a9aadaa8751404eacfe5300c130ad3
     m_Address: Highlands_Cliff
     m_ReadOnly: 0
     m_SerializedLabels: []

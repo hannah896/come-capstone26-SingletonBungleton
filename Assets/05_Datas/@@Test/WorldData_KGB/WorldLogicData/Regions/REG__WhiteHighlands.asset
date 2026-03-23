@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: REG__WhiteHighlands
   m_EditorClassIdentifier: 
   RegionName: REG__WhiteHighlands
-  RoomBranch: 1
-  DefaultMinCount: 7
-  DefaultMaxCount: 10
-  BaseHeightLevel: 4
-  LandformType: 0
-  TerrainNoiseParameters: {fileID: 11400000, guid: 736b82d83ae125f409fc0547fd1ae2e9, type: 2}
+  RoomBranch: 2
+  DefaultMinCount: 45
+  DefaultMaxCount: 50
+  BaseHeightLevel: 2
+  LandformType: 3
+  TerrainNoiseParameters: {fileID: 11400000, guid: 02e7df28f142f074fa4ee75d78846999, type: 2}
   EntranceRoom: {fileID: 0}
   EssentialRooms: []
   DefaultRooms:

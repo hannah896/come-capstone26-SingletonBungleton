@@ -412,9 +412,10 @@ MonoBehaviour:
   _drawGizmos: 1
   _showConnections: 1
   _showMapBounds: 1
-  _drawTerritoryGrid: 0
-  _useHeightVisualization: 0
+  _drawTerritoryGrid: 1
+  _useHeightVisualization: 1
   _showRegionNames: 1
+  _influenceDebugType: 0
 --- !u!4 &2114054889
 Transform:
   m_ObjectHideFlags: 0

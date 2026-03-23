@@ -18,7 +18,7 @@ MonoBehaviour:
   TopTileKey: Highlands_Top
   TopTileKeys:
   - Highlands_Top1
-  CliffTileKey: 
+  CliffTileKey: Highlands_Cliff
   SedimentTileKey: 
   EssentialObjects: []
   WeightedObjects: []

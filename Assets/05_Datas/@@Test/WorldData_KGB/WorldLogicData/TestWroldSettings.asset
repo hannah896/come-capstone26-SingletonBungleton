@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: TestWroldSettings
   m_EditorClassIdentifier: 
   CurrentStory: {fileID: 11400000, guid: 1286a88dc4584c44497a3905a9366d92, type: 2}
-  WorldSeed: -1915240662
-  worldSmall: 255
-  worldMedium: 255
+  WorldSeed: -1999444449
+  worldSmall: 513
+  worldMedium: 1025
   worldLarge: 1025
   branchNever: 0
   branchLeast: 0.4
@@ -24,32 +24,19 @@ MonoBehaviour:
   loopNever: 0
   loopDefault: 0.5
   loopAlways: 1
+  Height_Ocean: 0
   Height_Plains: 5
-  Height_Hills: 30
   Height_Mesa: 90
-  Height_Highlands: 100
+  Height_Highlands: 120
   Hegiht_Max: 200
-  MacroSettings:
-    simulationIterations: 150
-    repulsionStrength: 600
-    attractionStrength: 0.1
-    idealEdgeLength: 20
-    dampingFactor: 0.9
-    minNodeDistance: 10
-  MicroSettings:
-    simulationIterations: 150
-    repulsionStrength: 200
-    attractionStrength: 0.1
-    idealEdgeLength: 5
-    dampingFactor: 0.9
-    minNodeDistance: 10
-  FastSettings:
-    simulationIterations: 50
-    repulsionStrength: 50
-    attractionStrength: 0.1
-    idealEdgeLength: 5
-    dampingFactor: 0.9
-    minNodeDistance: 10
+  ForceSimulatorSettings:
+    macroLengthRatio: 1
+    macroRepulsionFactor: 2
+    microLengthRatio: 1.5
+    microRepulsionFactor: 1.5
+    iterationMultiplier: 3
+    minIterations: 150
+    maxIterations: 400
   PartitionSettings:
     noiseScale: 0.1
     noiseStrength: 15

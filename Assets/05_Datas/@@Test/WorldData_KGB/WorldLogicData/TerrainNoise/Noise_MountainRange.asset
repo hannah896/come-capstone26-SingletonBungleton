@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Noise_MountainRange
   m_EditorClassIdentifier: 
   MinBumps: 1
-  MaxBumps: 2
-  HeightVarianceBlocks: 50
+  MaxBumps: 1.5
+  HeightVarianceBlocks: 55
   Octaves: 5
   Persistence: 0.4
-  Lacunarity: 1.8
+  Lacunarity: 1.5

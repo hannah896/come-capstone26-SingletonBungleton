@@ -8,7 +8,8 @@ using UnityEngine;
 /// </summary>
 public class WorldGenUsageExample : MonoBehaviour
 {
-    [SerializeField] private WorldLogicDirector _worldLogicDirector;
+    [SerializeField] private WorldGraphDirector _worldLogicDirector;
+    [SerializeField] private WorldChunkDirector _worldChunkDirector;
     [SerializeField] private WorldRenderDirector _worldRenderDirector;
     [SerializeField] private WorldSettings _worldSettings;
 
@@ -33,7 +34,7 @@ public class WorldGenUsageExample : MonoBehaviour
         _cts = new CancellationTokenSource();
 
         if (_worldLogicDirector == null)
-            _worldLogicDirector = Extensions.GetOrAddComponent<WorldLogicDirector>(this.gameObject);
+            _worldLogicDirector = Extensions.GetOrAddComponent<WorldGraphDirector>(this.gameObject);
         if (_worldRenderDirector == null)
             _worldRenderDirector = Extensions.GetOrAddComponent<WorldRenderDirector>(this.gameObject);
 

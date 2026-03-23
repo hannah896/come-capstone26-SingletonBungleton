@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RegionName: REG_Swamp
   RoomBranch: 1
-  DefaultMinCount: 7
-  DefaultMaxCount: 10
+  DefaultMinCount: 12
+  DefaultMaxCount: 15
   BaseHeightLevel: 1
   LandformType: 0
   TerrainNoiseParameters: {fileID: 11400000, guid: d7967fcf49c131d45996fcb6b59f4cd3, type: 2}

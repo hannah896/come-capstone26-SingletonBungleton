@@ -24,6 +24,6 @@ MonoBehaviour:
   DefaultRooms:
   - {fileID: 11400000, guid: b9649c54027a4c44bbfac336352efcd0, type: 2}
   LockIDs:
-  - LOCK_TIER3
+  - LOCK_TIER2
   GivenKeyIDs:
-  - KEY_TIER4
+  - KEY_TIER3

@@ -13,17 +13,17 @@ MonoBehaviour:
   m_Name: REG__Mesa
   m_EditorClassIdentifier: 
   RegionName: REG__Mesa
-  RoomBranch: 1
+  RoomBranch: 2
   DefaultMinCount: 10
   DefaultMaxCount: 13
   BaseHeightLevel: 3
   LandformType: 0
-  TerrainNoiseParameters: {fileID: 11400000, guid: 736b82d83ae125f409fc0547fd1ae2e9, type: 2}
+  TerrainNoiseParameters: {fileID: 11400000, guid: 02e7df28f142f074fa4ee75d78846999, type: 2}
   EntranceRoom: {fileID: 0}
   EssentialRooms: []
   DefaultRooms:
   - {fileID: 11400000, guid: fddfeb7d4ba52044598c6a8ec0c38a08, type: 2}
   LockIDs:
-  - LOCK_TIER2
+  - LOCK_TIER4
   GivenKeyIDs:
-  - KEY_TIER3
+  - KEY_TIER5

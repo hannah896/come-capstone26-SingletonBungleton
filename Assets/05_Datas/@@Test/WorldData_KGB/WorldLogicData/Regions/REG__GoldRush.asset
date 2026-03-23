@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RegionName: REG__GoldRush
   RoomBranch: 1
-  DefaultMinCount: 17
-  DefaultMaxCount: 20
+  DefaultMinCount: 13
+  DefaultMaxCount: 15
   BaseHeightLevel: 1
   LandformType: 1
   TerrainNoiseParameters: {fileID: 11400000, guid: 0aebf5a6f5ffb90488ec241c6afd0d9e, type: 2}

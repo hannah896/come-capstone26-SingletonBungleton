@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7537f5576bb47534a92da3165a258cf4, type: 3}
   m_Name: Noise_Desert
   m_EditorClassIdentifier: 
-  MinBumps: 8
-  MaxBumps: 10
+  MinBumps: 5
+  MaxBumps: 7
   HeightVarianceBlocks: 15
-  Octaves: 4
+  Octaves: 2
   Persistence: 0.5
   Lacunarity: 2
