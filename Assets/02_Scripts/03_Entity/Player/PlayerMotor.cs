@@ -26,25 +26,25 @@ public class PlayerMotor : MonoBehaviour
 
     #region 외부 접근 프로퍼티
 
-    /// <summary> 전체 속도 (수평 + 수직) </summary>
+    // 전체 속도 (수평 + 수직)
     public Vector3 Velocity => cc != null ? cc.velocity : Vector3.zero;
 
-    /// <summary> 현재 수직 속도 </summary>
+    // 현재 수직 속도
     public float VerticalVelocity => gravity.CurrentVerticalVelocity;
 
-    /// <summary> 지면 접촉 여부 </summary>
+    // 지면 접촉 여부
     public bool IsGrounded => groundDetector.IsGrounded;
 
-    /// <summary> 코요테 타임 적용 지면 판정 </summary>
+    // 코요테 타임 적용 지면 판정
     public bool WasGroundedRecently => groundDetector.WasGroundedRecently;
 
-    /// <summary> 경사면 위에 있는지 </summary>
+    // 경사면 위에 있는지
     public bool IsOnSlope => groundDetector.IsOnSlope;
 
-    /// <summary> 가파른 경사면인지 </summary>
+    // 가파른 경사면인지
     public bool IsSteepSlope => groundDetector.IsSteepSlope;
 
-    /// <summary> 현재 경사 각도 </summary>
+    // 현재 경사 각도 
     public float SlopeAngle => groundDetector.SlopeAngle;
 
     #endregion
@@ -154,6 +154,6 @@ public class PlayerMotor : MonoBehaviour
 
     private void ApplyPosition(float deltaTime)
     {
-
+        transform.position += moveVelocity * deltaTime;
     }
 }

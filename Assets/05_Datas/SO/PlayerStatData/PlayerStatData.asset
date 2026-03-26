@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4881d371a736dbb40a0852dae8ffc7dd, type: 3}
+  m_Name: PlayerStatData
+  m_EditorClassIdentifier: 
+  MaxHP: 150
+  CurHP: 150
+  MoveSpeed: 5
+  AttackDamage: 0
+  Defense: 0
+  MinAttackPeriod: 0
+  SprintMultiplier: 1.5
+  JumpForce: 8
+  MaxHunger: 150
+  CurHunger: 150
+  HungerDrain: 0
+  HungerHPDecreaseRate: 0
+  MaxMental: 200
+  CurMental: 200
+  MentalDecreaseRate: 0
+  Temperature: 0
+  ColdHPDecreaseRate: 0
+  HotHPDecreaseRate: 0
+  MaxColdTemperature: 0
+  MaxHotTemperature: 0
+  Wetness: 0
+  MaxWetness: 0
+  WetnessTemperatureDecreaseRate: 0
+  WaterProofWetness: 0

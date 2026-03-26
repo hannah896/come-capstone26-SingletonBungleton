@@ -8,6 +8,7 @@ using UnityEngine.InputSystem;
 public class InputActions_PlayerInputHandler : InputActions
 {
     private PlayerInputData inputData;
+    private PlayerMotor motor;
 
     public InputActions_PlayerInputHandler(InputManager manager) : base(manager) { }
 

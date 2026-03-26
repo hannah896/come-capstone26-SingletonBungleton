@@ -31,4 +31,5 @@ public class PlayerStatData : EntityStatData
     public float Wetness;
     public float MaxWetness; // 견딜 수 있는 마지노선 습도
     public float WetnessTemperatureDecreaseRate; // 습도가 높아졌을 때 체온 감소 비율
+    public float WaterProofWetness; // 방수가 되는 습도 수치
 }

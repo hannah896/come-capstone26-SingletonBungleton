@@ -45,6 +45,7 @@ public class PlayerStatus
     public float Wetness { get; private set; }
     public float MaxWetness { get; private set; }
     public float WetnessTemperatureDecreaseRate { get; private set; }
+    public float WaterproofRate { get; private set; }
     #endregion
     #endregion
 
