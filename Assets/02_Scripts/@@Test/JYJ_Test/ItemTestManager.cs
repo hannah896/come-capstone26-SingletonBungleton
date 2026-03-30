@@ -10,6 +10,10 @@ public class ItemTestManager : MonoBehaviour
     [Header("테스트할 채집 오브젝트")]
     public GatherableObject testTree;
 
+    [Header("크래프팅 테스트")]
+    public RecipeDataSO testRecipe;
+
+
     private void Update()
     {
         // 숫자키로 테스트
@@ -19,6 +23,7 @@ public class ItemTestManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha4)) TestGather();
         if (Input.GetKeyDown(KeyCode.Alpha5)) TestRemove();
         if (Input.GetKeyDown(KeyCode.Alpha6)) TestDurability();
+        if (Input.GetKeyDown(KeyCode.Alpha7)) TestCraft();
     }
 
     // 1키 — 재료 아이템 추가 (스택 테스트)
@@ -63,5 +68,14 @@ public class ItemTestManager : MonoBehaviour
         // 인벤토리에 도끼가 있는지 확인
         bool has = InventoryManager.Instance.HasItem(testTool);
         Debug.Log($"[테스트] 도끼 보유: {has}, 수량: {InventoryManager.Instance.GetItemCount(testTool)}");
+    }
+
+    // 7키 — 크래프팅 테스트
+    void TestCraft()
+    {
+        if (testRecipe == null) { Debug.Log("[테스트] 레시피 연결 안 됨!"); return; }
+        bool can = CraftingManager.Instance.CanCraft(testRecipe);
+        Debug.Log($"[테스트] 제작 가능: {can}");
+        if (can) CraftingManager.Instance.Craft(testRecipe);
     }
 }

@@ -19,6 +19,8 @@ public class InventoryManager : MonoBehaviour
 
     // UI가 이 이벤트를 구독해서 자동으로 갱신
     public event System.Action OnInventoryChanged;
+    public event System.Action<ItemDataSO, int> OnInventoryFull;
+
 
     private void Awake()
     {
@@ -66,8 +68,9 @@ public class InventoryManager : MonoBehaviour
             int emptyIdx = GetEmptySlotIndex();
             if (emptyIdx == -1)
             {
-                Debug.Log("[인벤토리] 가득 참!");
-                return false;
+                Debug.Log("[인벤토리] 가득 참! 바닥에 드랍합니다.");
+                OnInventoryFull?.Invoke(itemData, amount);
+                return false; return false;
             }
 
             int stackSize = itemData.isStackable
