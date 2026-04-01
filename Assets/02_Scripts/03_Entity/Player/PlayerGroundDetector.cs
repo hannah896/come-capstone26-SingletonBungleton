@@ -2,6 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// SphereCast 기반 지면/경사 감지
+/// 울퉁불퉁한 테레인도 안정적으로 감지
 /// </summary>
 public class PlayerGroundDetector
 {
@@ -9,7 +10,7 @@ public class PlayerGroundDetector
     private readonly Transform transform;
 
     // 설정값
-    private readonly float checkDistance = 0.3f;
+    private float checkDistance = 0.5f;  // 0.3 → 0.5로 증가 (울퉁불퉁한 지형 대응)
     private readonly float maxSlopeAngle = 45f;
     private readonly float coyoteTimeDuration = 0.15f;
     private readonly LayerMask groundLayer;
@@ -39,8 +40,10 @@ public class PlayerGroundDetector
         float radius = cc.radius * 0.9f;
         Vector3 origin = transform.position + Vector3.up * (cc.center.y);
 
-        if (Physics.SphereCast(origin, radius, Vector3.down, out groundHit,
-            cc.center.y - radius + cc.skinWidth + checkDistance, groundLayer))
+        // 더 큰 거리에서 지면 감지 (울퉁불퉁한 테레인 대응)
+        float maxDistance = cc.center.y - radius + cc.skinWidth + checkDistance;
+
+        if (Physics.SphereCast(origin, radius, Vector3.down, out groundHit, maxDistance, groundLayer))
         {
             IsGrounded = true;
             GroundNormal = groundHit.normal;

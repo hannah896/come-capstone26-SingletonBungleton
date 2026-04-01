@@ -5,7 +5,10 @@ public class Player : MonoBehaviour
     [SerializeField] private PlayerRootStateMachine machine;
     [SerializeField] private Animator animator;
     [SerializeField] private PlayerMotor motor;
+
     [SerializeField] private PlayerStatus stat;
+    [SerializeField] private PlayerStatData statData;
+    
     [SerializeField] private PlayerInputData inputData;
 
     public Animator Animator => animator;
@@ -23,25 +26,39 @@ public class Player : MonoBehaviour
             motor = GetComponent<PlayerMotor>();
     }
 
-    private void Awake()
+    private async void Awake()
     {
-        if (animator == null)
-            animator = GetComponentInChildren<Animator>();
-        motor = GetComponent<PlayerMotor>();
+        var _statData = statData != null ? statData : await Extensions.LoadAssetAsync<PlayerStatData>("PlayerStatData");
+        stat = new(_statData);
+
         inputData = new PlayerInputData();
         machine = new PlayerRootStateMachine(this, animator);
+        
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log("[Player] Initialized - Motor: " + (motor != null) + ", Animator: " + (animator != null));
+#endif
     }
 
-    private void Start()
+    private async void Start()
     {
+        // InputManager 초기화 완료 대기
+        while (!Main.Input.IsInitialized)
+        {
+            await Cysharp.Threading.Tasks.UniTask.Delay(10);
+        }
+
         // InputHandler 바인딩 및 활성화
         var handler = Main.Input.GetOrCreateAction<InputActions_PlayerInputHandler>();
-        handler.Bind(inputData);
+        handler.Bind(this, inputData);
         Main.Input.AddInput<InputActions_PlayerInputHandler>();
 
         // 초기 상태: Locomotion
         var locomotionState = new PlayerLocomotionState(machine);
         machine.Init(locomotionState);
+        
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log("[Player] Started - Locomotion State initialized");
+#endif
     }
 
     private void OnEnable()
@@ -59,8 +76,10 @@ public class Player : MonoBehaviour
 
     private void OnLoopUpdate(float deltaTime)
     {
+        if (motor == null) return;
+        
         machine.OnUpdate(deltaTime);
-        motor.Tick(deltaTime);
+        motor.Tick(deltaTime);  // 중력 시뮬레이션, 착지 감지, 이동 수행
         inputData.ConsumeEventInputs();
     }
 
@@ -68,4 +87,36 @@ public class Player : MonoBehaviour
     {
         machine.OnGameUpdate(deltaTime);
     }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    private void OnGUI()
+    {
+        if (motor == null) return;
+        
+        string debugInfo = 
+            $"=== Player Debug ===\n" +
+            $"IsGrounded: {motor.IsGrounded}\n" +
+            $"WasGroundedRecently: {motor.WasGroundedRecently}\n" +
+            $"VerticalVelocity: {motor.VerticalVelocity:F2}\n" +
+            $"HorizontalVelocity: {motor.Velocity.magnitude - Mathf.Abs(motor.VerticalVelocity):F2}\n" +
+            $"Position: {transform.position:F2}\n" +
+            $"IsOnSlope: {motor.IsOnSlope}\n" +
+            $"SlopeAngle: {motor.SlopeAngle:F1}°";
+        
+        GUI.Label(new Rect(10, 10, 250, 180), debugInfo);
+        
+        // CharacterController 정보
+        var cc = GetComponent<CharacterController>();
+        if (cc != null)
+        {
+            GUI.Label(new Rect(10, 190, 250, 120),
+                $"=== CharacterController ===\n" +
+                $"Radius: {cc.radius:F2}\n" +
+                $"Height: {cc.height:F2}\n" +
+                $"Center: {cc.center:F2}\n" +
+                $"SkinWidth: {cc.skinWidth:F2}\n" +
+                $"Velocity: {cc.velocity.magnitude:F2}");
+        }
+    }
+#endif
 }

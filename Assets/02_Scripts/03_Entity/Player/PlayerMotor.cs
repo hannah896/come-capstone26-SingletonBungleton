@@ -3,6 +3,7 @@ using UnityEngine;
 /// <summary>
 /// CharacterController 기반 이동/물리 총괄
 /// 상태(State)는 "어디로, 얼마나 빠르게" 결정하고, Motor가 실제 이동을 수행한다.
+/// 공중에서는 수평 속도가 누적되어 관성이 있다.
 /// </summary>
 [RequireComponent(typeof(CharacterController))]
 public class PlayerMotor : MonoBehaviour
@@ -13,12 +14,19 @@ public class PlayerMotor : MonoBehaviour
     [Header("가파른 경사면 미끄러짐")]
     [SerializeField] private float steepSlopeSlideSpeed = 5f;
 
+    [Header("공중 가속")]
+    [SerializeField] private float airAcceleration = 2f;  // 공중에서의 가속 (관성 시뮬레이션)
+    [SerializeField] private float airDamping = 0.95f;    // 공중에서의 감속 (공기 저항)
+
     private CharacterController cc;
     private PlayerGroundDetector groundDetector;
     private PlayerGravity gravity;
 
     // 상태에서 설정하는 수평 속도
     private Vector3 moveVelocity;
+    
+    // 공중에서 누적되는 수평 속도 (관성)
+    private Vector3 airVelocity;
 
     // 회전 관련
     private Vector3 pendingRotationDir;
@@ -54,6 +62,7 @@ public class PlayerMotor : MonoBehaviour
         cc = GetComponent<CharacterController>();
         groundDetector = new PlayerGroundDetector(cc, transform, groundLayer);
         gravity = new PlayerGravity();
+        airVelocity = Vector3.zero;
     }
 
     #region 상태에서 호출하는 메서드
@@ -108,7 +117,25 @@ public class PlayerMotor : MonoBehaviour
         gravity.Update(deltaTime, IsGrounded);
 
         // 3. 최종 속도 계산
-        Vector3 finalVelocity = moveVelocity;
+        Vector3 finalVelocity = Vector3.zero;
+
+        if (IsGrounded)
+        {
+            // 지면: 상태가 설정한 속도만 사용
+            finalVelocity = moveVelocity;
+            airVelocity = Vector3.zero;  // 공중 속도 리셋
+        }
+        else
+        {
+            // 공중: 입력 속도와 관성 속도를 합산
+            // 입력 방향으로 점진적으로 가속 (airAcceleration)
+            // 기존 속도에 감속 적용 (airDamping)
+            
+            airVelocity = Vector3.Lerp(airVelocity, moveVelocity, airAcceleration * deltaTime);
+            airVelocity *= airDamping;  // 매 프레임 약간의 공기 저항
+            
+            finalVelocity = airVelocity;
+        }
 
         // 4. 경사면 보정
         if (IsOnSlope && gravity.CurrentVerticalVelocity <= 0f)
@@ -137,7 +164,7 @@ public class PlayerMotor : MonoBehaviour
         // 8. 회전 처리
         ApplyRotation(deltaTime);
 
-        // 9. 다음 프레임을 위해 수평 속도 초기화
+        // 9. 다음 프레임을 위해 수평 입력 속도 초기화 (상태가 매 프레임 설정)
         moveVelocity = Vector3.zero;
     }
 
@@ -150,10 +177,5 @@ public class PlayerMotor : MonoBehaviour
             transform.rotation, targetRot, pendingRotationSpeed * deltaTime);
 
         pendingRotationDir = Vector3.zero;
-    }
-
-    private void ApplyPosition(float deltaTime)
-    {
-        transform.position += moveVelocity * deltaTime;
     }
 }

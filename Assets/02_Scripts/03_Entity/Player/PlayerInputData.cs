@@ -6,22 +6,33 @@ using UnityEngine;
 /// </summary>
 public class PlayerInputData
 {
-    // 연속 입력 (매 프레임 유지)
+    #region 연속 입력 (매 프레임 유지)
+    
     public Vector2 MoveInput { get; set; }
     public Vector2 LookInput { get; set; }
     public bool SprintHeld { get; set; }
 
-    // 이벤트 입력 (한 프레임만 유효)
+    #endregion
+
+    #region 이벤트 입력 (한 프레임만 유효 - ConsumeEventInputs에서 리셋)
+    
     public bool JumpPressed { get; set; }
     public bool AttackPressed { get; set; }
     public bool CrouchPressed { get; set; }
     public bool InteractPressed { get; set; }
 
-    // 파생 프로퍼티
+    #endregion
+
+    #region 파생 프로퍼티
+    
     public bool HasMoveInput => MoveInput.sqrMagnitude > 0.01f;
 
+    #endregion
+
+    #region Public Methods
+
     /// <summary>
-    /// 이벤트 입력 플래그를 리셋한다. Player의 Update 끝에서 호출.
+    /// 이벤트 입력 플래그를 리셋한다. Player의 OnLoopUpdate 끝에서 호출.
     /// </summary>
     public void ConsumeEventInputs()
     {
@@ -30,4 +41,6 @@ public class PlayerInputData
         CrouchPressed = false;
         InteractPressed = false;
     }
+
+    #endregion
 }
