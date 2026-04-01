@@ -47,6 +47,11 @@ MonoBehaviour:
     - EveryScene
     - default
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9d20080a9d1637c43a9619f8fbc3666f
+    m_Address: Player
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 9ebcd66ab4045844187672673de88087
     m_Address: Canvas_Hud
     m_ReadOnly: 0
