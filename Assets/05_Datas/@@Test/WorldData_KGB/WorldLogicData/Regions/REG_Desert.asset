@@ -13,15 +13,13 @@ MonoBehaviour:
   m_Name: REG_Desert
   m_EditorClassIdentifier: 
   RegionName: REG_Desert
-  RoomBranch: 1
-  DefaultMinCount: 12
-  DefaultMaxCount: 15
+  TerritoryScale: 3
+  Density: 0.6
+  POICandidates: []
   BaseHeightLevel: 1
+  LandformType: 0
+  BiomeData: {fileID: 11400000, guid: de7d983a1e6edf1478e740568ce4c4c3, type: 2}
   TerrainNoiseParameters: {fileID: 11400000, guid: 8f967042e18a6b04aa5a80c07b0e8c7c, type: 2}
-  EntranceRoom: {fileID: 0}
-  EssentialRooms: []
-  DefaultRooms:
-  - {fileID: 11400000, guid: 002b4fc75e786e44da058de45c0a226f, type: 2}
   LockIDs:
   - LOCK_TIER2
   GivenKeyIDs:

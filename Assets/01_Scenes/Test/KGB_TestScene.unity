@@ -135,6 +135,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 766496620589869234, guid: 69fe7908d90821d439766ca2ac705353, type: 3}
+      propertyPath: m_TagString
+      value: Player
+      objectReference: {fileID: 0}
     - target: {fileID: 766496620589905042, guid: 69fe7908d90821d439766ca2ac705353, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -393,8 +397,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _worldLogicDirector: {fileID: 0}
+  _worldChunkDirector: {fileID: 0}
   _worldRenderDirector: {fileID: 0}
   _worldSettings: {fileID: 0}
+  _demoPlayer: {fileID: 0}
   _lastPressedDifficulty: -1
   _currentSeed: 0
 --- !u!114 &2114054887

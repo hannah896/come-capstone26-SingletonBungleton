@@ -25,6 +25,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: c7acd6563e02d3041b80d1e8798a94f7, type: 2}
   - {fileID: 11400000, guid: e1144d790981abb43bb82f98b7f3d114, type: 2}
   - {fileID: 11400000, guid: 7a64158aea3e9c04db4c2101163db9e1, type: 2}
+  - {fileID: 11400000, guid: c872d515c0870774f89edc8eaee291bd, type: 2}
   SideRegions:
   - {fileID: 11400000, guid: dc6420da9f322be46bef55ea06123e70, type: 2}
   - {fileID: 11400000, guid: 5360f1f9f8ce938409ba6fc3aa4ec555, type: 2}

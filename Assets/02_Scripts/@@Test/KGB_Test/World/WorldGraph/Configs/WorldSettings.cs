@@ -10,12 +10,16 @@ public class WorldSettings : ScriptableObject
     [SerializeField] public int WorldSeed = 0; // 월드 시드 (랜덤 시드로 덮어쓰기됨)
 
     [Header("Map Size")]
-    [SerializeField] private int worldSmall = 255;    
+    [SerializeField] private int worldSmall;    
     [SerializeField] private int worldMedium;  
-    [SerializeField] private int worldLarge;   
+    [SerializeField] private int worldLarge;
+    [SerializeField] private int chunkSize;
+
 
     private WorldSize _worldSize = WorldSize.Medium;
     public WorldSize WorldSize { get => _worldSize; set => _worldSize = value; }
+
+    public int ChunkSize { get => chunkSize; }
 
     [Header("Land Branch")]
     [SerializeField] private float branchNever;
@@ -69,10 +73,10 @@ public class WorldSettings : ScriptableObject
     {
         return _worldSize switch
         {
-            WorldSize.Small => new Vector2Int(worldSmall, worldSmall),
-            WorldSize.Medium => new Vector2Int(worldMedium, worldMedium),
-            WorldSize.Large => new Vector2Int(worldLarge, worldLarge),
-            _ => new Vector2Int(worldMedium, worldMedium)
+            WorldSize.Small => new Vector2Int(worldSmall + 1, worldSmall + 1),
+            WorldSize.Medium => new Vector2Int(worldMedium + 1, worldMedium + 1),
+            WorldSize.Large => new Vector2Int(worldLarge + 1, worldLarge + 1),
+            _ => new Vector2Int(worldMedium + 1, worldMedium + 1)
         };
     }
 
@@ -242,14 +246,10 @@ public enum WorldSeedChannel
     ForceSimulator = 301,
 
     //TODO: 그래프 이후 3단계는 청크 단위로 나누기
-    Territory_GenerateNoiseWorld = 401,
+    TerritoryBuilder = 401,
 
-    Height_BuildRegionFrequencyCache = 501,
-    Height_GenerateHeightMapAsync = 502,
+    HeightBuilder = 501,
 
-    Disposer_SpawnRegionObjects = 601,
-    Disposer_SuffleList = 602,
-    Disposer_WeightedRandom = 603,
-    Disposer_GeneratePoissonPoints = 604,
+    ObjectDisposer = 601,
 }
 #endregion

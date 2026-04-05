@@ -29,14 +29,14 @@ public class StoryGenerator : IGraphPipelineStage
     /// <summary>
     /// 외부 호출 메서드 : StoryData와 Lock & Key 시스템을 이용하여 Story 생성
     /// </summary>
-    public async UniTask<WorldGraphData> ExecuteAsync(
-        WorldGraphData graphData, 
+    public async UniTask ExecuteAsync(
+        WorldGenContext ctx,
         CancellationToken ct)
     {
-        
+
         try
         {
-            _storyResult = graphData;
+            _storyResult = ctx.GraphData;
             _storyData = _worldSettings.CurrentStory;
             _ct = ct;
 
@@ -44,25 +44,26 @@ public class StoryGenerator : IGraphPipelineStage
             // Phase 1: 고정 Region들 생성 및 연결
             await GenerateFixedRegionsAsync();
 
-            // Phase 2: 사이드 Task들 생성 및 연결
+            // Phase 2: 사이드 Region 생성 및 연결
             await GenerateSideRegionsAsync();
 
-            
             // Phase 3: World Loop 적용
             await ApplyWorldLoopAsync();
 
+            // Phase 4: 각 노드에 POI Data 등록
+            //await AllocatePOIToRegionsAsync();
+
             Debug.Log($"Story '{_storyData.StoryName}' 생성 완료! 총 Region 수: {_storyResult.Nodes.Count}, Loop 적용 여부: {_storyResult.IsLooped}");
 
-            return _storyResult;
+            
         }
         catch (System.OperationCanceledException)
         {
             Debug.Log($"Story '{_storyData.StoryName}' 생성이 취소되었습니다.");
-            return null;
         }
     }
 
-   
+
     #region Helper Methods 
 
     private Node PickParentNode()
@@ -76,7 +77,7 @@ public class StoryGenerator : IGraphPipelineStage
         {
             case WorldBranchSetting.Never:
                 return _storyResult.Nodes.Last();
-                
+
             case WorldBranchSetting.Least:
                 return candidates.OrderByDescending(n => n.Depth).First();
 
@@ -92,10 +93,7 @@ public class StoryGenerator : IGraphPipelineStage
 
     private async UniTask<bool> TryProcessNextRegionAsync(List<RegionData> candidateRegions)
     {
-        // [디버깅 로그 추가] 현재 내가 가진 열쇠 목록 출력
-        //Debug.Log($"[StoryGen] 현재 보유 키: {string.Join(", ", _availableKeys)}");
 
-        // [디버깅 로그 추가] 후보 지역들이 열리는지 검사
         foreach (var region in candidateRegions)
         {
             bool isOpen = region.IsUnlockable(_availableKeys);
@@ -204,13 +202,13 @@ public class StoryGenerator : IGraphPipelineStage
     private async UniTask GenerateSideRegionsAsync()
     {
         // 1. 메인 스토리 구역의 일정 비율만큼 사이드 구역 배치
-        int maxSideRegions = Mathf.RoundToInt(_storyData.FixedRegions.Count*_storyData.SideRegionRatio);
-        
+        int maxSideRegions = Mathf.RoundToInt(_storyData.FixedRegions.Count * _storyData.SideRegionRatio);
+
         var candidateSideRegions = _storyData.SideRegions.ToList();
 
         int placedCount = 0;
 
-        for (int i = 0 ; i < maxSideRegions ; i ++)
+        for (int i = 0; i < maxSideRegions; i++)
         {
             if (placedCount >= maxSideRegions) break;
 
@@ -220,7 +218,7 @@ public class StoryGenerator : IGraphPipelineStage
             {
                 placedCount++;
             }
-            
+
         }
     }
 
@@ -236,7 +234,7 @@ public class StoryGenerator : IGraphPipelineStage
         // 그래프의 인접 정보 갱신
         _storyResult.RebuildAdjacency();
 
-        // 2. 확률 체크 (Don't Starve는 기본 50% 또는 설정값)
+        // 2. 확률 체크
         if (_prng.NextDouble() > _worldSettings.GetLoopMultiplier()) return;
 
         // 3. 시작 노드와 끝 노드 찾기
@@ -259,5 +257,12 @@ public class StoryGenerator : IGraphPipelineStage
 
 
 
+    #endregion
+
+    #region Phase 4 : POI Data Allocation
+    //private async UniTask AllocatePOIToRegionsAsync()
+    //{
+        
+    //}
     #endregion
 }

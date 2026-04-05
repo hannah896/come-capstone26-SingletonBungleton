@@ -14,7 +14,7 @@ public struct InfluenceData
 /// </summary>
 public class WorldLogicData
 {
-    public int ChunkSize { get; private set; } = 64; // 1개 청크의 가로세로 크기
+    public int ChunkSize { get; private set; } // 1개 청크의 가로세로 크기
     public Vector2Int TerrainSize { get; private set; }
 
     private ConcurrentDictionary<Vector2Int, ChunkData> _chunks = new();
@@ -28,7 +28,7 @@ public class WorldLogicData
     public InfluenceData[,] CoastlineDataWorld { get; set; }     // 해안선 거리 기반 영향력 (0.4 ~ 1.2)
     public InfluenceData[,] RegionEdgeDataWorld { get; set; } // 지역 경계 거리 기반 영향력 (0.0 ~ 1.0)
 
-    public WorldLogicData(Vector2Int gridSize, int chunkSize = 64)
+    public WorldLogicData(Vector2Int gridSize, int chunkSize)
     {
         TerrainSize = gridSize;
         ChunkSize = chunkSize;
@@ -44,6 +44,8 @@ public class WorldLogicData
         RegionEdgeDataWorld = new InfluenceData[gridSize.x, gridSize.y];
     }
 
+
+
     /// <summary>
     /// 특정 청크 좌표의 데이터를 가져오거나 새로 생성합니다.
     /// </summary>
@@ -57,7 +59,7 @@ public class WorldLogicData
     /// <param name="x"></param>
     /// <param name="y"></param>
     /// <returns></returns>
-    public Vector2Int GetChunkCoordFromTile(int tileX, int tileY)
+    public Vector2Int GetChunkCoord(int tileX, int tileY)
     {
         return new Vector2Int(Mathf.FloorToInt((float)tileX / ChunkSize), Mathf.FloorToInt((float)tileY / ChunkSize));
     }
@@ -65,7 +67,7 @@ public class WorldLogicData
     public float GetHeightAt(int x, int y)
     {
         // 
-        Vector2Int chunkCoord = GetChunkCoordFromTile(x, y);
+        Vector2Int chunkCoord = GetChunkCoord(x, y);
         if (_chunks.TryGetValue(chunkCoord, out var chunk))
         {
             // 월드 좌표를 청크 내부 로컬 좌표로 변환
@@ -81,19 +83,11 @@ public class WorldLogicData
     }
 
 
-
     public int GetRegionAt(int x, int y)
     {
         if (x < 0 || x >= TerrainSize.x || y < 0 || y >= TerrainSize.y)
             return -1; // OCEAN_MARKER
         return TerritoryWorld[x, y];
     }
-
-    //public float GetHeightAt(int x, int y)
-    //{
-    //    if (HeightWorld == null) return 0f;
-    //    if (x < 0 || x >= TerrainSize.x || y < 0 || y >= TerrainSize.y)
-    //        return 0f;
-    //    return HeightWorld[x, y];
-    //}
+    
 }

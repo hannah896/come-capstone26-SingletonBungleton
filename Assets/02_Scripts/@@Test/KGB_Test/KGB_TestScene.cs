@@ -10,6 +10,8 @@ public class KGB_TestScene : SceneBase
         // 씬 진입 시 실행될 로직 (필요 시 작성)
         Debug.Log("[KGB_TestScene] Scene Entered");
 
+        
+
     }
 
     public override void ExitScene()

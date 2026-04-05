@@ -7,7 +7,5 @@ public interface IGraphPipelineStage
 {
     
     void Initialize(WorldSettings settings);  // 클래스별 채널 관리는 각자 책임
-    UniTask<WorldGraphData> ExecuteAsync(
-        WorldGraphData graphData,
-        CancellationToken ct);
+    UniTask ExecuteAsync(WorldGenContext graphData, CancellationToken ct);
 }

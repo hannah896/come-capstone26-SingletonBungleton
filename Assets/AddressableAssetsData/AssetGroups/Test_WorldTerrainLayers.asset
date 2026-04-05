@@ -45,8 +45,23 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 22bd516efa069a045a3a2ea76962a5ed
+    m_Address: AN_Sum_Rock
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 2cb30f89a9b5f9b42b56cf4c18f11eed
     m_Address: AN_Win_Ice_3
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 39f8b9e8aaafa0841a7d83892ea3e3f4
+    m_Address: AN_Aut_Leaves
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 47a059cf343d18a49af7b80b395451bd
+    m_Address: AN_Aut_Ground_2
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -57,6 +72,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 6bdc1bb87a12480478dcecefd4e38b79
     m_Address: AN_Win_Snow_1
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6cb94fe356b18b245851120f4beac95e
+    m_Address: AN_Sum_Grass_2
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -75,6 +95,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b1afa7c9f9e154f42b91b28a300b3c17
+    m_Address: AN_Aut_Grass_4
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: eeed2e6a0b31ffb4ca0d866cfc53af2b
     m_Address: AN_Win_Rocks
     m_ReadOnly: 0
@@ -82,6 +107,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: f11b6083d8d5ccc49bee78e322cc64b6
     m_Address: AN_Win_Ice_2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fc7d1e021cd316d4d9c845671c26caf6
+    m_Address: AN_Win_Ground
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

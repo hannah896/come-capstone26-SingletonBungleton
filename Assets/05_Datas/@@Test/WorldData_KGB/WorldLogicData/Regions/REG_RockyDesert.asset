@@ -13,15 +13,13 @@ MonoBehaviour:
   m_Name: REG_RockyDesert
   m_EditorClassIdentifier: 
   RegionName: REG_RockyDesert
-  RoomBranch: 1
-  DefaultMinCount: 12
-  DefaultMaxCount: 17
+  TerritoryScale: 3
+  Density: 0.6
+  POICandidates: []
   BaseHeightLevel: 1
+  LandformType: 0
+  BiomeData: {fileID: 11400000, guid: 6b97a215d97490e4bbadbd341ab1cc11, type: 2}
   TerrainNoiseParameters: {fileID: 11400000, guid: 8f967042e18a6b04aa5a80c07b0e8c7c, type: 2}
-  EntranceRoom: {fileID: 0}
-  EssentialRooms: []
-  DefaultRooms:
-  - {fileID: 11400000, guid: 6cc94798621a983478680f4e5265ba05, type: 2}
   LockIDs:
   - LOCK_TIER2
   GivenKeyIDs:

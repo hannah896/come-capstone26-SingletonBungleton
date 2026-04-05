@@ -13,16 +13,13 @@ MonoBehaviour:
   m_Name: REG_WhiteForest
   m_EditorClassIdentifier: 
   RegionName: REG_WhiteForest
-  RoomBranch: 1
-  DefaultMinCount: 17
-  DefaultMaxCount: 20
+  TerritoryScale: 3
+  Density: 0.6
+  POICandidates: []
   BaseHeightLevel: 1
   LandformType: 2
+  BiomeData: {fileID: 11400000, guid: c250a80decb30e94598533028a43ae84, type: 2}
   TerrainNoiseParameters: {fileID: 11400000, guid: a3b712f4feaa75446891640c0d87e244, type: 2}
-  EntranceRoom: {fileID: 0}
-  EssentialRooms: []
-  DefaultRooms:
-  - {fileID: 11400000, guid: 32b8207142318da4f8246d355461f54d, type: 2}
   LockIDs:
   - LOCK_TIER5
   GivenKeyIDs: []

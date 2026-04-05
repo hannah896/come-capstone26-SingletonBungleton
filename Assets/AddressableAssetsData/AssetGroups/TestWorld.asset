@@ -50,11 +50,6 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 2298382dd33b20d4a987990d85f5bf27
-    m_Address: Sand_1
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 297b24f3e02a9884fb599c29c2976e3d
     m_Address: Autumn_grass_2
     m_ReadOnly: 0
@@ -87,11 +82,6 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 4dfed9443d504fc429cf67d561c30379
     m_Address: Autumn_roots_1
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 64c7e257167b55446a6b0a820bf57e20
-    m_Address: Dark_rock_1
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -145,11 +135,6 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 82ddc8998a8f6e848a4a3454c876bf13
-    m_Address: Grass_1
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 832bab9559ecd7a4295c3db254c5aa76
     m_Address: Mud_2
     m_ReadOnly: 0
@@ -157,11 +142,6 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 893f91067bc714f4f8fba6c789712e0b
     m_Address: Winter_rock_1
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 8f6787815430f52408419697a620ef84
-    m_Address: Rock_1
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -177,11 +157,6 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 96dc3b8f1183fff49b5df3879dc61992
     m_Address: Dark_grass_1
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 999aa0b02215f784cbb71995d9eca913
-    m_Address: Dark_mud_2
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -235,11 +210,6 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: d1b99701c4e1c3d44a161b4bf032d69a
-    m_Address: Autumn_mud_1
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e321bff13d85b204ca5b727782f1e4b6
     m_Address: Roots_2
     m_ReadOnly: 0
@@ -255,16 +225,6 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: ee6fa0488e5405745b19316540be1664
-    m_Address: Rock_4
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: f0cfda433d0ba184583d79e0b1e8d8e3
-    m_Address: Desert_rock_1
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: f1ecb88964578114da6f298223709881
     m_Address: Dark_mud_1
     m_ReadOnly: 0
@@ -272,11 +232,6 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: f716f456807e6d3459bff747adc3961b
     m_Address: AN_Sum_Ground_3
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: f72a840f9f0991747a2d10c3c220bd27
-    m_Address: Snow_1
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

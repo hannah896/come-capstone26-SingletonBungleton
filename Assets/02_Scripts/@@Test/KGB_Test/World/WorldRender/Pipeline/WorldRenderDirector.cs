@@ -3,76 +3,154 @@ using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 
-public class WorldRenderDirector : MonoBehaviour
+
+public interface IChunkRenderer
 {
-    #region Worker Fields
+    UniTask AddChunkRenderAsync(ChunkData chunk);
+    void UnloadChunk(Vector2Int coord);
+}
+public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
+{
     private TerrainBuilder _terrainBuilder;
     private TerrainPainter _terrainPainter;
-    // private ObjectSpawner _objectSpawner;
-    #endregion
+    private TerrainLayerLoader _layerLoader;
 
-    #region 
-    TerrainData _terrainData;
-    GameObject _terrainGO;
-    #endregion
+    //  전역 세팅 캐싱
+    private WorldSettings _settings;
+    private WorldGraphData _graphData;
+    private TerrainLayerPalette _layerPalette;
+    private CancellationToken _ct;
 
+    // 관리 중인 청크 딕셔너리 (파괴할 때 필요함)
+    private Dictionary<Vector2Int, GameObject> _activeTerrains = new();
+    private Dictionary<Vector2Int, TerrainData> _activeTerrainDatas = new();
+    private HashSet<Vector2Int> _requestedChunks = new();
 
-    async void Start()
+    // WorldChunkDirector가 씬 시작 시 가장 먼저 호출해 줄 초기화 함수
+    public async UniTask InitializeAsync(WorldSettings settings, WorldGraphData graphData, CancellationToken ct)
     {
-        await UniTask.WaitUntil(() => Main.Instance != null);
+        _settings = settings;
+        _graphData = graphData;
+        _ct = ct;
 
-        InitializeServices();
-    }
-
-    private void InitializeServices()
-    {
         _terrainBuilder = new TerrainBuilder();
         _terrainPainter = new TerrainPainter();
-        // _objectSpawner = new ObjectSpawner();
+        _layerLoader = new TerrainLayerLoader(); // ★ 인스턴스 생성
+
+        // 청크 100개를 그려도 에셋 로드는 처음에 딱 1번만 하도록
+        // 렌더링 파이프라인 0단계: 물감 준비
+        _layerPalette = await _layerLoader.LoadLayersAsync(_graphData, ct);
+        Debug.Log("🎨 [WorldRenderDirector] 렌더링 시스템 초기화 및 에셋 로드 완료!");
     }
 
     /// <summary>
-    /// 외부(UsageExample)에서 호출할 렌더링 메인 함수
+    /// WorldChunkDirector가 "이 청크 그려줘!" 라고 할 때마다 호출
     /// </summary>
-    public async UniTask RenderWorldAsync(
-        WorldLogicData logicData,
-        WorldGraphData graphData,
-        List<DisposeData> disposeDatas,
-        WorldSettings settings,
-        CancellationToken ct)
+    public async UniTask AddChunkRenderAsync(ChunkData chunk)
     {
-        Debug.Log("🎨 월드 렌더링 파이프라인 시작!");
+        if (_activeTerrains.ContainsKey(chunk.ChunkCoord) || _requestedChunks.Contains(chunk.ChunkCoord)) return;
 
-        // 기존에 렌더링된 메쉬나 오브젝트가 있다면 싹 다 지우기 (초기화)
-        ClearRenderedWorld();
+        _requestedChunks.Add(chunk.ChunkCoord);
 
-        // 1. 지형(Terrain) 생성 및 높이맵 데이터 적용
-        (_terrainData, _terrainGO) = await _terrainBuilder.BuildTerrainAsync(logicData, graphData, settings, ct);
+        // 1. 지형 융기 (Terrain 생성)
+        var (terrainData, terrainGO) = await _terrainBuilder.BuildChunkTerrainAsync(chunk, _settings, _ct);
+        // 2. 텍스처 페인팅 (로컬 데이터 기반)
+        await _terrainPainter.PaintChunkTerrainAsync(terrainData, chunk, _graphData, _layerPalette, _ct);
 
-        // 2. 지형 텍스처 페인팅
-        await _terrainPainter.PaintTerrainAsync(_terrainData, logicData, graphData, settings, ct);
+        // 3. 오브젝트 스폰 (TODO: ObjectSpawner에게 chunk.DisposedObjects 전달하여 Instantiate)
 
-        // 3. 프리팹 오브젝트 스폰
-        // await _objectSpawner.SpawnObjectsAsync(spawnData, ...);
 
-        Debug.Log("✨ 월드 렌더링 완료!");
+        if (!_requestedChunks.Contains(chunk.ChunkCoord))
+        {
+            // 즉시 폐기 처리
+            Destroy(terrainGO);
+            Destroy(terrainData);
+            return;
+        }
+
+        // 관리 목록에 등록하고 깔끔하게 폴더 정리
+        _activeTerrains[chunk.ChunkCoord] = terrainGO;
+        _activeTerrainDatas[chunk.ChunkCoord] = terrainData;
+        terrainGO.transform.SetParent(this.transform);
+
+        UpdateNeighbors(chunk.ChunkCoord);
     }
 
-    private void ClearRenderedWorld()
+    private void UpdateNeighbors(Vector2Int coord)
     {
-        // 1. 기존 지형 게임 오브젝트 파괴
-        if (_terrainGO != null)
+        if (!_activeTerrains.TryGetValue(coord, out GameObject currentGO)) return;
+        Terrain current = currentGO.GetComponent<Terrain>();
+
+        // 상하좌우 이웃 찾기
+        _activeTerrains.TryGetValue(coord + Vector2Int.left, out GameObject left);
+        _activeTerrains.TryGetValue(coord + Vector2Int.right, out GameObject right);
+        _activeTerrains.TryGetValue(coord + Vector2Int.up, out GameObject top);
+        _activeTerrains.TryGetValue(coord + Vector2Int.down, out GameObject bottom);
+
+        // 나의 이웃 설정
+        current.SetNeighbors(
+            left?.GetComponent<Terrain>(),
+            top?.GetComponent<Terrain>(), // 유니티는 Z+가 Top
+            right?.GetComponent<Terrain>(),
+            bottom?.GetComponent<Terrain>()
+        );
+
+        // ★ 중요: 내 이웃들도 나를 이웃으로 다시 등록해야 함 (양방향 연결)
+        left?.GetComponent<Terrain>().SetNeighbors(null, null, current, null);
+        right?.GetComponent<Terrain>().SetNeighbors(current, null, null, null);
+        top?.GetComponent<Terrain>().SetNeighbors(null, null, null, current);
+        bottom?.GetComponent<Terrain>().SetNeighbors(null, current, null, null);
+    }
+
+    /// <summary>
+    /// WorldChunkDirector가 "이 청크 멀어졌으니까 지워!" 라고 할 때 호출
+    /// </summary>
+    public void UnloadChunk(Vector2Int coord)
+    {
+        if (_activeTerrains.TryGetValue(coord, out GameObject terrainGO))
         {
-            Destroy(_terrainGO);
-            _terrainGO = null;
+            Destroy(terrainGO); // 혹은 Object Pool로 반납
+            _activeTerrains.Remove(coord);
         }
 
-        // 2. 메모리에 남은 TerrainData 에셋 해제 (메모리 릭 방지)
-        if (_terrainData != null)
+        if (_activeTerrainDatas.TryGetValue(coord, out TerrainData terrainData))
         {
-            Destroy(_terrainData);
-            _terrainData = null;
-            _terrainPainter.ReleasePaintedLayers();
+            Destroy(terrainData); // ★ 중요: TerrainData를 파괴하지 않으면 메모리 누수 발생!
+            _activeTerrainDatas.Remove(coord);
         }
+    }
+
+    private void OnDestroy()
+    {
+        if (_layerPalette != null && _layerPalette.LoadedKeys != null)
+        {
+            foreach (var key in _layerPalette.LoadedKeys)
+            {
+                Extensions.Release(key);
+            }
+            _layerPalette.LoadedKeys.Clear();
+            _layerPalette.IndexMap.Clear();
+            _layerPalette.Layers = null;
+            _layerPalette = null;
+        }
+    }
+
+    /// <summary>
+    /// 새로운 맵을 생성하기 전, 기존에 띄워둔 모든 청크(지형)를 메모리에서 깔끔하게 날려줍니다.
+    /// </summary>
+    public void ClearAllChunks()
+    {
+        foreach (var terrainGO in _activeTerrains.Values)
+        {
+            if (terrainGO != null) Destroy(terrainGO);
+        }
+        foreach (var terrainData in _activeTerrainDatas.Values)
+        {
+            if (terrainData != null) Destroy(terrainData);
+        }
+
+        _activeTerrains.Clear();
+        _activeTerrainDatas.Clear();
+        _requestedChunks.Clear();
     }
 }

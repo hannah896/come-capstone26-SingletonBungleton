@@ -13,16 +13,13 @@ MonoBehaviour:
   m_Name: REG__WhiteHighlands
   m_EditorClassIdentifier: 
   RegionName: REG__WhiteHighlands
-  RoomBranch: 2
-  DefaultMinCount: 45
-  DefaultMaxCount: 50
+  TerritoryScale: 4.5
+  Density: 0.6
+  POICandidates: []
   BaseHeightLevel: 2
   LandformType: 3
+  BiomeData: {fileID: 11400000, guid: c250a80decb30e94598533028a43ae84, type: 2}
   TerrainNoiseParameters: {fileID: 11400000, guid: 02e7df28f142f074fa4ee75d78846999, type: 2}
-  EntranceRoom: {fileID: 0}
-  EssentialRooms: []
-  DefaultRooms:
-  - {fileID: 11400000, guid: 32b8207142318da4f8246d355461f54d, type: 2}
   LockIDs:
   - LOCK_TIER4
   GivenKeyIDs:

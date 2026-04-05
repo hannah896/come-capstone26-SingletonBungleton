@@ -13,16 +13,13 @@ MonoBehaviour:
   m_Name: REG_Swamp
   m_EditorClassIdentifier: 
   RegionName: REG_Swamp
-  RoomBranch: 1
-  DefaultMinCount: 12
-  DefaultMaxCount: 15
+  TerritoryScale: 4
+  Density: 0.6
+  POICandidates: []
   BaseHeightLevel: 1
   LandformType: 0
+  BiomeData: {fileID: 11400000, guid: 7895e50afd469a54fb2326562fb98221, type: 2}
   TerrainNoiseParameters: {fileID: 11400000, guid: d7967fcf49c131d45996fcb6b59f4cd3, type: 2}
-  EntranceRoom: {fileID: 0}
-  EssentialRooms: []
-  DefaultRooms:
-  - {fileID: 11400000, guid: 98cc574f3c75ba342af42fb9073503c8, type: 2}
   LockIDs:
   - LOCK_TIER5
   GivenKeyIDs: []

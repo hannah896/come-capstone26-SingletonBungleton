@@ -118,15 +118,18 @@ public class Node
 {
     public int Index = -1;
     public int Depth = -1;
-    public int RoomDepth = -1;
 
     public Vector2 Position;
     public Vector2 Velocity;
     public Vector2 Force;
 
-
     public RegionData RegionData;
-    public RoomData RoomData;
+    public BiomeData BiomeData // RegionData에서 BiomeData 참조
+    {
+        get => RegionData != null ? RegionData.BiomeData : null;
+    }
+
+    public List<POIData> AllocatedPOIDatas; 
 
 
     // 소유 타일 목록

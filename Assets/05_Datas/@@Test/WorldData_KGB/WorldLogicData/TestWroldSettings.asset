@@ -13,10 +13,11 @@ MonoBehaviour:
   m_Name: TestWroldSettings
   m_EditorClassIdentifier: 
   CurrentStory: {fileID: 11400000, guid: 1286a88dc4584c44497a3905a9366d92, type: 2}
-  WorldSeed: -1999444449
-  worldSmall: 513
-  worldMedium: 1025
-  worldLarge: 1025
+  WorldSeed: 353917787
+  worldSmall: 512
+  worldMedium: 1024
+  worldLarge: 1024
+  chunkSize: 64
   branchNever: 0
   branchLeast: 0.4
   branchDefault: 0.6

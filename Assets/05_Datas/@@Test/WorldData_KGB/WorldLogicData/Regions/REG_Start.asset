@@ -13,16 +13,13 @@ MonoBehaviour:
   m_Name: REG_Start
   m_EditorClassIdentifier: 
   RegionName: REG_Start
-  RoomBranch: 2
-  DefaultMinCount: 8
-  DefaultMaxCount: 10
+  TerritoryScale: 1
+  Density: 0.6
+  POICandidates: []
   BaseHeightLevel: 1
   LandformType: 0
+  BiomeData: {fileID: 11400000, guid: a69a979d2a9d5a7458250a943f313896, type: 2}
   TerrainNoiseParameters: {fileID: 11400000, guid: 736b82d83ae125f409fc0547fd1ae2e9, type: 2}
-  EntranceRoom: {fileID: 0}
-  EssentialRooms: []
-  DefaultRooms:
-  - {fileID: 11400000, guid: 0bd0e6916e9f96b419c88332494e7264, type: 2}
   LockIDs:
   - LOCK_NONE
   GivenKeyIDs:

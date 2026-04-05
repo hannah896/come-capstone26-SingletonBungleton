@@ -15,13 +15,13 @@ public class ChunkData
     public float[,] NoiseMap { get; set; }
 
     // 오브젝트 배치 데이터 (해당 청크에 속한 배치물들)
-    public List<DisposeData> DisposedObjects { get; set; } = new();
+    public List<PlacementData> PlacementDatas { get; set; } = new();
 
     public ChunkData(Vector2Int coord, int chunkSize)
     {
         ChunkCoord = coord;
-        TerritoryMap = new int[chunkSize, chunkSize];
-        HeightMap = new float[chunkSize, chunkSize];
-        NoiseMap = new float[chunkSize, chunkSize];
+        TerritoryMap = new int[chunkSize + 1, chunkSize + 1];
+        HeightMap = new float[chunkSize + 1, chunkSize + 1];
+        NoiseMap = new float[chunkSize + 1, chunkSize + 1];
     }
 }

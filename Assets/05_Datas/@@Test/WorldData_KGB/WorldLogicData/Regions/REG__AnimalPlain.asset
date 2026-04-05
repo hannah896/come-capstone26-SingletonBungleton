@@ -13,16 +13,13 @@ MonoBehaviour:
   m_Name: REG__AnimalPlain
   m_EditorClassIdentifier: 
   RegionName: REG__AnimalPlain
-  RoomBranch: 1
-  DefaultMinCount: 7
-  DefaultMaxCount: 10
+  TerritoryScale: 3
+  Density: 0.6
+  POICandidates: []
   BaseHeightLevel: 1
   LandformType: 0
+  BiomeData: {fileID: 11400000, guid: 32590653c56100048b7f43addb7308fc, type: 2}
   TerrainNoiseParameters: {fileID: 11400000, guid: d7967fcf49c131d45996fcb6b59f4cd3, type: 2}
-  EntranceRoom: {fileID: 0}
-  EssentialRooms: []
-  DefaultRooms:
-  - {fileID: 11400000, guid: b9649c54027a4c44bbfac336352efcd0, type: 2}
   LockIDs:
   - LOCK_TIER2
   GivenKeyIDs:

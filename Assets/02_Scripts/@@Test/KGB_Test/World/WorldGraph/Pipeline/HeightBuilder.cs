@@ -13,7 +13,7 @@ using static Unity.Cinemachine.NoiseSettings;
 /// <summary>
 /// 높이맵 생성, 경계선 처리 등 타일별 세부 데이터를 생성하는 클래스
 /// </summary>
-public class HeightBuilder
+public class HeightBuilder : IGraphPipelineStage
 {
     #region Constants
     private const float SEA_DEEP_HEIGHT = -50f;
@@ -37,6 +37,7 @@ public class HeightBuilder
     private WorldSettings _worldSettings;
     private WorldGraphData _graphResult;
     private WorldLogicData _worldLogicData;
+    private System.Random _prng;
     private CancellationToken _ct;
 
     private static readonly int[] _dx = { -1, 1, 0, 0, -1, -1, 1, 1 };
@@ -52,16 +53,18 @@ public class HeightBuilder
 
     #endregion
 
-    public async UniTask<WorldLogicData> HeightBuildAsync(
-        WorldGraphData result,
-        WorldLogicData mapData,
-        WorldSettings worldSettings,
+    public void Initialize(WorldSettings settings)
+    {
+        _worldSettings = settings;
+        _prng = new System.Random(settings.WorldSeed + (int)WorldSeedChannel.HeightBuilder);
+    }
+    public async UniTask ExecuteAsync(
+        WorldGenContext ctx,
         CancellationToken ct
         )
     {
-        _graphResult = result;
-        _worldSettings = worldSettings;
-        _worldLogicData = mapData;
+        _graphResult = ctx.GraphData;
+        _worldLogicData = ctx.LogicData;
         _ct = ct;
 
         await InitializeHeightMapAsync();
@@ -72,7 +75,6 @@ public class HeightBuilder
 
         await SmoothHeightWorldAsync();
 
-        return _worldLogicData;
     }
 
     #region Phase 0: Initialize HeightMap
@@ -94,11 +96,9 @@ public class HeightBuilder
     #region Phase 1 : Generate Height Map
     private async UniTask GenerateHeightMapAsync()
     {
-        var seedChannel = (int)WorldSeedChannel.Height_GenerateHeightMapAsync;
-        var prng = new System.Random(_worldSettings.WorldSeed + seedChannel);
 
-        float offsetX = (float)prng.NextDouble() * 200000f - 100000f;
-        float offsetY = (float)prng.NextDouble() * 200000f - 100000f;
+        float offsetX = (float)_prng.NextDouble() * 200000f - 100000f;
+        float offsetY = (float)_prng.NextDouble() * 200000f - 100000f;
 
 
         // 평지의 기준 높이 
@@ -134,7 +134,7 @@ public class HeightBuilder
             float amplitude = noiseParams.HeightVarianceBlocks;                     // 진폭
 
             float regionDiameter = Mathf.Max(1f, Mathf.Sqrt(tiles.Count));          // 지역의 대략적인 지름 (노이즈 주파수 계산에 사용)
-            int bumps = prng.Next((int)noiseParams.MinBumps, (int)noiseParams.MaxBumps + 1);
+            int bumps = _prng.Next((int)noiseParams.MinBumps, (int)noiseParams.MaxBumps + 1);
             float frequency = bumps / regionDiameter;           // 맵이 넓을 수록 노이즈가 더 자주 변함.
 
             // 옥타브 노이즈 회수
@@ -144,8 +144,8 @@ public class HeightBuilder
             for (int i = 0; i < octaves; i++)
             {
                 // 너무 큰 값을 넣으면 PerlinNoise가 버그를 낼 수 있으므로 적절한 범위로 오프셋
-                float offX = (float)prng.NextDouble() * 20000f - 10000f;
-                float offY = (float)prng.NextDouble() * 20000f - 10000f;
+                float offX = (float)_prng.NextDouble() * 20000f - 10000f;
+                float offY = (float)_prng.NextDouble() * 20000f - 10000f;
                 octaveOffsets[i] = new Vector2(offX, offY);
             }
             // Region의 기본 높이 가져오기

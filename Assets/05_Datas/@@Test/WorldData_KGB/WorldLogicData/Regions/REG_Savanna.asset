@@ -13,16 +13,13 @@ MonoBehaviour:
   m_Name: REG_Savanna
   m_EditorClassIdentifier: 
   RegionName: REG_Savanna
-  RoomBranch: 1
-  DefaultMinCount: 12
-  DefaultMaxCount: 17
+  TerritoryScale: 3
+  Density: 0.6
+  POICandidates: []
   BaseHeightLevel: 1
   LandformType: 0
+  BiomeData: {fileID: 11400000, guid: a233b36018affa345b8681d9eb7db959, type: 2}
   TerrainNoiseParameters: {fileID: 11400000, guid: d7967fcf49c131d45996fcb6b59f4cd3, type: 2}
-  EntranceRoom: {fileID: 0}
-  EssentialRooms: []
-  DefaultRooms:
-  - {fileID: 11400000, guid: 88de7a631009d7a43b5cac20106b7e40, type: 2}
   LockIDs:
   - LOCK_TIER3
   GivenKeyIDs:
