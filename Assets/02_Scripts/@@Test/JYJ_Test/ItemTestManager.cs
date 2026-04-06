@@ -24,6 +24,8 @@ public class ItemTestManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha5)) TestRemove();
         if (Input.GetKeyDown(KeyCode.Alpha6)) TestDurability();
         if (Input.GetKeyDown(KeyCode.Alpha7)) TestCraft();
+        if (Input.GetKeyDown(KeyCode.Alpha8)) TestCategoryFilter();
+        if (Input.GetKeyDown(KeyCode.Alpha9)) TestCraftableFilter();
     }
 
     // 1키 — 재료 아이템 추가 (스택 테스트)
@@ -77,5 +79,27 @@ public class ItemTestManager : MonoBehaviour
         bool can = CraftingManager.Instance.CanCraft(testRecipe);
         Debug.Log($"[테스트] 제작 가능: {can}");
         if (can) CraftingManager.Instance.Craft(testRecipe);
+    }
+
+    // 8키 — 카테고리별 레시피 출력
+    void TestCategoryFilter()
+    {
+        foreach (RecipeCategory category in System.Enum.GetValues(typeof(RecipeCategory)))
+        {
+            var recipes = CraftingManager.Instance.GetRecipesByCategory(category);
+            if (recipes.Count == 0) continue;
+            Debug.Log($"[카테고리: {category}]");
+            foreach (var r in recipes)
+                Debug.Log($"  - {r.recipeName}");
+        }
+    }
+
+    // 9키 — 현재 제작 가능한 레시피만 출력
+    void TestCraftableFilter()
+    {
+        var craftable = CraftingManager.Instance.GetCraftableRecipes();
+        Debug.Log($"[제작 가능 레시피: {craftable.Count}개]");
+        foreach (var r in craftable)
+            Debug.Log($"  - {r.recipeName}");
     }
 }
