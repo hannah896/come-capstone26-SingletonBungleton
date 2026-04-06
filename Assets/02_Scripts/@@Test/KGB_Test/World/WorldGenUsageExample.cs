@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks;
+using System;
 using System.Threading;
 using UnityEditorInternal;
 using UnityEngine;
@@ -152,28 +153,53 @@ public class WorldGenUsageExample : MonoBehaviour
             // 3단계: 플레이어 스폰 좌표 계산
             // ==========================================================
             Vector2Int mapSize = _worldSettings.GetWorldSize();
-            int centerX = Mathf.RoundToInt(mapSize.x * 0.5f);
-            int centerZ = Mathf.RoundToInt(mapSize.y * 0.5f);
+            int startingX = Mathf.RoundToInt(mapSize.x * 0.5f); // 기본값: 맵 중앙
+            int startingZ = Mathf.RoundToInt(mapSize.y * 0.5f); // 기본값: 맵 중앙
 
-            // 플레이어가 서 있을 곳의 청크 좌표를 알아냅니다.
-            Vector2Int spawnChunkCoord = logicData.GetChunkCoord(centerX, centerZ);
+            bool foundStartRegion = false;
+
+            // 1. 그래프 노드들을 뒤져서 StartRegion을 찾습니다.
+            foreach (var node in graphData.Nodes)
+            {
+                // (주의) RegionData에 정의된 타입이나 이름 프로퍼티에 맞게 수정해주세요!
+                // 예: node.RegionData.RegionType == RegionType.Start
+                if (node.RegionData.RegionName.Contains("Start"))
+                {
+                    if (node.OwnedTiles.Count > 0)
+                    {
+                        // 2. StartRegion에 속한 타일들의 평균 위치(무게중심)를 계산하여 스폰 지점으로 삼습니다.
+                        long sumX = 0;
+                        long sumY = 0;
+                        foreach (Vector2Int tile in node.OwnedTiles)
+                        {
+                            sumX += tile.x;
+                            sumY += tile.y;
+                        }
+                        startingX = (int)(sumX / node.OwnedTiles.Count);
+                        startingZ = (int)(sumY / node.OwnedTiles.Count);
+                        foundStartRegion = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!foundStartRegion)
+            {
+                Debug.LogWarning("🚨 StartRegion을 찾지 못해 맵 중앙 좌표를 사용합니다.");
+            }
+            else
+            {
+                Debug.Log($"✅ StartRegion 탐색 성공! 스폰 타일 좌표: ({startingX}, {startingZ})");
+            }
+
+            // 찾아낸 타일 좌표를 바탕으로 청크 좌표를 계산합니다.
+            Vector2Int spawnChunkCoord = logicData.GetChunkCoord(startingX, startingZ);
 
             // ==========================================================
-            // 4단계: 청크 디렉터 초기화 및 스폰 지역 확정 렌더링 대기
+            // 4단계: 플레이어 탐색 및 StartRegion으로 우선 텔레포트!
             // ==========================================================
-            _worldChunkDirector.Initialize(logicData, _worldRenderDirector);
-
-            await _worldChunkDirector.LoadInitialSpawnAreaAsync(spawnChunkCoord);
-
-            // ==========================================================
-            // 5단계: 비활성화된 플레이어 자동 탐색 및 소환
-            // ==========================================================
-
-            // 5-1. 플레이어를 아직 못 찾았다면 씬에서 찾아옵니다.
             if (_demoPlayer == null)
             {
-                // 유니티의 SceneManager를 이용해 하이어라키 최상위(Root)에 있는 오브젝트들을 모두 뒤집니다.
-                // (이 방식을 쓰면 비활성화(SetActive(false)) 되어 있는 객체도 찾아낼 수 있습니다!)
                 foreach (GameObject rootObj in UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects())
                 {
                     if (rootObj.CompareTag("Player"))
@@ -184,18 +210,28 @@ public class WorldGenUsageExample : MonoBehaviour
                 }
             }
 
-            // 5-2. 찾아낸 플레이어를 스폰 위치로 옮기고 켭니다.
             if (_demoPlayer != null)
             {
-                _demoPlayer.transform.position = new Vector3(centerX, 10f, centerZ);
+                // 청크를 부르기 전에 플레이어부터 지정된 위치로 옮깁니다.
+                _demoPlayer.transform.position = new Vector3(startingX, 10f, startingZ);
                 _demoPlayer.SetActive(true);
-                Debug.Log("🎯 플레이어 자동 탐색 및 안전 스폰 완료!");
+
+                // ChunkDirector에게 타겟 갱신
+                _worldChunkDirector.SetTarget(_demoPlayer.transform);
+                Debug.Log("🎯 플레이어 StartRegion 자동 탐색 및 안전 스폰 완료!");
             }
             else
             {
-                // 혹시라도 태그 설정을 깜빡하셨을 때를 대비한 경고
                 Debug.LogWarning("🚨 하이어라키에 'Player' 태그를 가진 오브젝트가 없습니다!");
             }
+
+            // ==========================================================
+            // 5단계: 청크 디렉터 초기화 및 스폰 지역 확정 렌더링 대기
+            // ==========================================================
+            _worldChunkDirector.Initialize(logicData, _worldRenderDirector);
+
+            // 이제 플레이어가 제자리에 있으니, 해당 위치의 청크를 로딩합니다.
+            await _worldChunkDirector.LoadInitialSpawnAreaAsync(spawnChunkCoord);
 
         }
         catch (System.OperationCanceledException)

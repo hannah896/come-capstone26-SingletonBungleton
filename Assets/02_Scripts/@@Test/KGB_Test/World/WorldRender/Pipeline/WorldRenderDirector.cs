@@ -96,10 +96,26 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
         );
 
         // ★ 중요: 내 이웃들도 나를 이웃으로 다시 등록해야 함 (양방향 연결)
-        left?.GetComponent<Terrain>().SetNeighbors(null, null, current, null);
-        right?.GetComponent<Terrain>().SetNeighbors(current, null, null, null);
-        top?.GetComponent<Terrain>().SetNeighbors(null, null, null, current);
-        bottom?.GetComponent<Terrain>().SetNeighbors(null, current, null, null);
+        if (left != null)
+        {
+            Terrain t = left.GetComponent<Terrain>();
+            t.SetNeighbors(t.leftNeighbor, t.topNeighbor, current, t.bottomNeighbor);
+        }
+        if (right != null)
+        {
+            Terrain t = right.GetComponent<Terrain>();
+            t.SetNeighbors(current, t.topNeighbor, t.rightNeighbor, t.bottomNeighbor);
+        }
+        if (top != null)
+        {
+            Terrain t = top.GetComponent<Terrain>();
+            t.SetNeighbors(t.leftNeighbor, t.topNeighbor, t.rightNeighbor, current);
+        }
+        if (bottom != null)
+        {
+            Terrain t = bottom.GetComponent<Terrain>();
+            t.SetNeighbors(t.leftNeighbor, current, t.rightNeighbor, t.bottomNeighbor);
+        }
     }
 
     /// <summary>
@@ -107,6 +123,8 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
     /// </summary>
     public void UnloadChunk(Vector2Int coord)
     {
+        // 요청 목록에서 지움
+        _requestedChunks.Remove(coord);
         if (_activeTerrains.TryGetValue(coord, out GameObject terrainGO))
         {
             Destroy(terrainGO); // 혹은 Object Pool로 반납
