@@ -16,6 +16,7 @@ public class TerrainBuilder
 
         TerrainData terrainData = new TerrainData();
         terrainData.heightmapResolution = chunkSize + 1;
+        terrainData.alphamapResolution = chunkSize * 2;
         terrainData.size = new Vector3(chunkSize, maxHeight, chunkSize);
 
         float[,] unityHeights = new float[chunkSize + 1, chunkSize + 1];

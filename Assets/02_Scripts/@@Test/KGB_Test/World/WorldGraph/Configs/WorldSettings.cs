@@ -172,9 +172,6 @@ public class DisposeSettings
     [Header("Poisson Disk Sampling")]
     public float minObjectDistance = 2f;     // 오브젝트 간 최소 거리
     public int maxSamplingAttempts = 30;     // 푸아송 샘플링 시도 횟수
-
-    [Header("Performance")]
-    public int batchSize = 100;              // 비동기 처리 배치 크기
 }
 #endregion
 #region Height Noise Parameters

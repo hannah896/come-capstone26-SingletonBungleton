@@ -95,7 +95,7 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
             bottom?.GetComponent<Terrain>()
         );
 
-        // ★ 중요: 내 이웃들도 나를 이웃으로 다시 등록해야 함 (양방향 연결)
+        // 내 이웃들도 나를 이웃으로 다시 등록해야 함 (양방향 연결)
         if (left != null)
         {
             Terrain t = left.GetComponent<Terrain>();

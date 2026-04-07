@@ -16,7 +16,7 @@ public class ObjectDisposer : IGraphPipelineStage
     private DisposeSettings _disposeSettings;
     private List<PlacementData> _placementResults = new();
     private System.Random _prng;
-
+    private System.Diagnostics.Stopwatch _stopwatch = new();
 
     public void Initialize(WorldSettings settings)
     {
@@ -38,6 +38,8 @@ public class ObjectDisposer : IGraphPipelineStage
         var nodes = ctx.GraphData.Nodes;
         if (nodes == null) return;
 
+        _stopwatch.Restart();   //타이머 시작
+
         foreach (var node in nodes)
         {
             ct.ThrowIfCancellationRequested();
@@ -54,6 +56,7 @@ public class ObjectDisposer : IGraphPipelineStage
 
             await SpawnRegionObjectsAsync(node, ct);
         }
+        _stopwatch.Stop();
         ctx.PlacementDatas = new List<PlacementData>(_placementResults);
     }
 
@@ -67,7 +70,7 @@ public class ObjectDisposer : IGraphPipelineStage
         RegionData regionData = node.RegionData;
         float density = regionData.Density;  //TODO: 자원별 밀도 조절 기능 추가 시 여기에 반영(Settings에 Dictionary<string, float> 등)
 
-        // 푸아송 디스크 샘플링으로 배치 가능 위치 생성
+        // 푸아송 디스크 샘플링으로 배치 가능 위치 생성 (Region 노드가 가진 타일 범위 내에서)
         List<Vector2Int> validPositions = await GeneratePoissonPointsAsync(
             node.OwnedTiles,
             density,
@@ -135,9 +138,10 @@ public class ObjectDisposer : IGraphPipelineStage
                     });
                 }
 
-                if (i % _disposeSettings.batchSize == 0)
+                if (_stopwatch.ElapsedMilliseconds > 10)
                 {
                     await UniTask.Yield(ct);
+                    _stopwatch.Restart();
                 }
             }
         }
@@ -181,6 +185,7 @@ public class ObjectDisposer : IGraphPipelineStage
         Vector2Int startPoint = availableTiles[_prng.Next(0, availableTiles.Count)];
         InsertPoint(startPoint, grid, activeList, result, minX, minY, cellSize);
 
+        float sqrMinDistance = adjustedMinDistance * adjustedMinDistance;
         int processedCount = 0;
 
         while (activeList.Count > 0)
@@ -203,7 +208,7 @@ public class ObjectDisposer : IGraphPipelineStage
                 Vector2Int candidate = new Vector2Int(newX, newY);
 
                 // 유효성 검사
-                if (tileSet.Contains(candidate) && IsValidPoissonPoint(candidate, grid, adjustedMinDistance, minX, minY, cellSize, gridWidth, gridHeight))
+                if (tileSet.Contains(candidate) && IsValidPoissonPoint(candidate, grid, sqrMinDistance, minX, minY, cellSize, gridWidth, gridHeight))
                 {
                     InsertPoint(candidate, grid, activeList, result, minX, minY, cellSize);
                     foundValid = true;
@@ -213,13 +218,15 @@ public class ObjectDisposer : IGraphPipelineStage
 
             if (!foundValid)
             {
-                activeList.RemoveAt(randomIndex);
+                activeList[randomIndex] = activeList[activeList.Count - 1];
+                activeList.RemoveAt(activeList.Count - 1);
             }
 
             processedCount++;
-            if (processedCount % _disposeSettings.batchSize == 0)
+            if (_stopwatch.ElapsedMilliseconds > 10)
             {
                 await UniTask.Yield(ct);
+                _stopwatch.Restart();
             }
         }
 
@@ -239,7 +246,7 @@ public class ObjectDisposer : IGraphPipelineStage
         }
     }
 
-    private bool IsValidPoissonPoint(Vector2Int candidate, Vector2Int?[,] grid, float minDistance, int minX, int minY, float cellSize, int gridWidth, int gridHeight)
+    private bool IsValidPoissonPoint(Vector2Int candidate, Vector2Int?[,] grid, float sqrMinDistance, int minX, int minY, float cellSize, int gridWidth, int gridHeight)
     {
         int gridX = Mathf.FloorToInt((candidate.x - minX) / cellSize);
         int gridY = Mathf.FloorToInt((candidate.y - minY) / cellSize);
@@ -258,8 +265,10 @@ public class ObjectDisposer : IGraphPipelineStage
                     Vector2Int? neighbor = grid[nx, ny];
                     if (neighbor.HasValue)
                     {
-                        float distance = Vector2Int.Distance(candidate, neighbor.Value);
-                        if (distance < minDistance)
+                        float dxDist = candidate.x - neighbor.Value.x;
+                        float dyDist = candidate.y - neighbor.Value.y;
+                        float sqrDistance = (dxDist * dxDist) + (dyDist * dyDist);
+                        if (sqrDistance < sqrMinDistance)
                             return false;
                     }
                 }
