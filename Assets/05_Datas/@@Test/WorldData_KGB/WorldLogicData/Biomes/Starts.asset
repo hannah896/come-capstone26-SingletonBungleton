@@ -15,6 +15,7 @@ MonoBehaviour:
   BiomeType: 0
   DebugColor: {r: 0.16470589, g: 0.16470589, b: 0.16470589, a: 1}
   TopKey: Plains_Top
+  AltKey: Plains_Alt
   CliffKey: 
   SedimentKey: 
   DetailKeys: []

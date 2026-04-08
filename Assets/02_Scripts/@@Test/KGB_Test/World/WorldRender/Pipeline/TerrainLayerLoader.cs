@@ -23,6 +23,8 @@ public class TerrainLayerLoader
             {
                 if (!string.IsNullOrEmpty(node.BiomeData.TopKey))
                     uniqueTileKeys.Add(node.BiomeData.TopKey);
+                if (!string.IsNullOrEmpty(node.BiomeData.AltKey))
+                    uniqueTileKeys.Add(node.BiomeData.AltKey);
                 if (!string.IsNullOrEmpty(node.BiomeData.CliffKey))
                     uniqueTileKeys.Add(node.BiomeData.CliffKey);
             }

@@ -11,6 +11,7 @@ public class BiomeData : ScriptableObject
     [Header("Assets")]
     // GameObject 직접 참조 대신 키값(string) 사용
     [SerializeField] public string TopKey;    // 예: "Forest_Top", "Desert_Top"
+    [SerializeField] public string AltKey;    // 예: "Forest_Top", "Desert_Top"
     [SerializeField] public string CliffKey;  // 예: "Highlands_Cliff", "Forest_Cliff"
     [SerializeField] public string SedimentKey;
 

@@ -75,11 +75,6 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 6cb94fe356b18b245851120f4beac95e
-    m_Address: AN_Sum_Grass_2
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 70d20ef6decc3954cb561d3c1f39f93b
     m_Address: AN_Sum_Ground_1
     m_ReadOnly: 0
@@ -87,11 +82,6 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 7ba7a9aa8917d4c439ab6ff79695f78c
     m_Address: AN_Aut_Grass_3
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: aa5ebd5f624ae4b4095b6cdccd95b67e
-    m_Address: AN_Aut_Grass_2
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

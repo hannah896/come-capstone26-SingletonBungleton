@@ -5,7 +5,7 @@ using Cysharp.Threading.Tasks;
 public class WorldChunkDirector : MonoBehaviour
 {
     [Header("Settings")]
-    [SerializeField] private int _loadDistance = 2;
+    [SerializeField] private int _loadDistance = 5;
     [SerializeField] private Transform _trackTarget;
 
     private IChunkRenderer _renderDirector;

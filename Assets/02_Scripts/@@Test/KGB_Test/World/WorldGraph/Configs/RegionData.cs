@@ -30,7 +30,7 @@ public class RegionData : ScriptableObject
     [Tooltip("이 지역의 지형 형태(적용될 생성 전략)를 선택하세요.")]
     public LandformType LandformType = LandformType.Default;
 
-    public BiomeData BiomeData; // 이 지역의 바이옴 데이터 (예: Forest, Desert)s
+    public BiomeData BiomeData; // 이 지역의 바이옴 데이터 (예: Forest, Desert)
 
 
 

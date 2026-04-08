@@ -15,6 +15,7 @@ MonoBehaviour:
   BiomeType: 5
   DebugColor: {r: 1, g: 0.09736635, b: 0, a: 1}
   TopKey: Savanna_Top
+  AltKey: Savanna_Alt
   CliffKey: 
   SedimentKey: 
   DetailKeys: []

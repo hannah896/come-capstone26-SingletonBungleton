@@ -15,6 +15,7 @@ MonoBehaviour:
   BiomeType: 7
   DebugColor: {r: 1, g: 0.472049, b: 0, a: 1}
   TopKey: Highlnads_Top
+  AltKey: Highlnads_Alt
   CliffKey: Highlands_Cliff
   SedimentKey: 
   DetailKeys: []

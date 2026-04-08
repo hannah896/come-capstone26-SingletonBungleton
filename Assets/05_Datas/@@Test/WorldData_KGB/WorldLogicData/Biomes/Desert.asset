@@ -15,6 +15,7 @@ MonoBehaviour:
   BiomeType: 2
   DebugColor: {r: 1, g: 0.9583559, b: 0, a: 1}
   TopKey: Desert_Top
+  AltKey: Desert_Alt
   CliffKey: 
   SedimentKey: 
   DetailKeys: []

@@ -15,11 +15,6 @@ MonoBehaviour:
   m_GroupName: TestWorld
   m_GUID: 7c2227872ff95c847baa74abf8db50e9
   m_SerializeEntries:
-  - m_GUID: 07006984562b6df4d854e75308fd6ae6
-    m_Address: Desert_ground_1
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 1154870b7c4c970469dcdb21281732dd
     m_Address: Desert_tile_1
     m_ReadOnly: 0
@@ -32,11 +27,6 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 17737b6beeaa9a049b1da852b3b4b18c
     m_Address: Mud_6
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 1a1244577c8a8b14295cca29dfb72d3f
-    m_Address: Snow_2
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -160,11 +150,6 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 9e38586d2250c024dbe2862a9583fbdf
-    m_Address: Mud_1
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: a5e57a3a587379d4babb6507f72cf3d5
     m_Address: Mud_4
     m_ReadOnly: 0
@@ -177,11 +162,6 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: b968c1264b95fea4aa8aba31f56ca55e
     m_Address: Sand_3
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: c233b4616eb0b244bafcd627580eb2dd
-    m_Address: Sand_2
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -205,11 +185,6 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: d100a289a278d6b45b9d22d3e95144c0
-    m_Address: Rock_3
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e321bff13d85b204ca5b727782f1e4b6
     m_Address: Roots_2
     m_ReadOnly: 0
@@ -225,18 +200,8 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: f1ecb88964578114da6f298223709881
-    m_Address: Dark_mud_1
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: f716f456807e6d3459bff747adc3961b
     m_Address: AN_Sum_Ground_3
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: faa5ef4eade0336408d27e4e78ebf1a6
-    m_Address: Grass_2
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

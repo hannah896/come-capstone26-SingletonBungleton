@@ -15,8 +15,23 @@ MonoBehaviour:
   m_GroupName: Test_WorldTerrainLayers_Top
   m_GUID: 6987663f12ee81f48b5473d3d8b55db4
   m_SerializeEntries:
+  - m_GUID: 07006984562b6df4d854e75308fd6ae6
+    m_Address: RockyDesert_Top
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1a1244577c8a8b14295cca29dfb72d3f
+    m_Address: Snow_Alt
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 2298382dd33b20d4a987990d85f5bf27
     m_Address: Desert_Top
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6cb94fe356b18b245851120f4beac95e
+    m_Address: Plains_Alt
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -35,6 +50,26 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9e38586d2250c024dbe2862a9583fbdf
+    m_Address: Savanna_Alt
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: aa5ebd5f624ae4b4095b6cdccd95b67e
+    m_Address: Highlands_Alt
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c233b4616eb0b244bafcd627580eb2dd
+    m_Address: Desert_Alt
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d100a289a278d6b45b9d22d3e95144c0
+    m_Address: Rocky_Alt
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: d1b99701c4e1c3d44a161b4bf032d69a
     m_Address: Savanna_Top
     m_ReadOnly: 0
@@ -46,7 +81,12 @@ MonoBehaviour:
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: f0cfda433d0ba184583d79e0b1e8d8e3
-    m_Address: RockyDesert_Top
+    m_Address: RockyDesert_Alt
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f1ecb88964578114da6f298223709881
+    m_Address: Swamp_Alt
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -57,6 +97,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: f72a840f9f0991747a2d10c3c220bd27
     m_Address: Snow_Top
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: faa5ef4eade0336408d27e4e78ebf1a6
+    m_Address: Forest_Alt
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

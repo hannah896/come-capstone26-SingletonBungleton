@@ -15,6 +15,7 @@ MonoBehaviour:
   BiomeType: 6
   DebugColor: {r: 0.5278817, g: 0.5698112, b: 0.5278817, a: 1}
   TopKey: RockyDesert_Top
+  AltKey: RockyDesert_Alt
   CliffKey: 
   SedimentKey: 
   DetailKeys: []

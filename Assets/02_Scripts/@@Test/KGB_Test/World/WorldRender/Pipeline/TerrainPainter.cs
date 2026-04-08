@@ -26,9 +26,11 @@ public class TerrainPainter
         public int HeightmapHeight;
         public float3 TerrainSize;
 
+        public float2 ChunkWorldPos;
+
         [ReadOnly] public NativeArray<float> HeightMap;
         [ReadOnly] public NativeArray<int> TerritoryMap;
-        [ReadOnly] public NativeArray<int2> NodeLayerIndices;
+        [ReadOnly] public NativeArray<int3> NodeLayerIndices;
 
         [NativeDisableParallelForRestriction] 
         public NativeArray<float> Alphamap;
@@ -44,21 +46,34 @@ public class TerrainPainter
             float normX = (float)x / (AlphaWidth - 1);
             float normY = (float)y / (AlphaHeight - 1);
 
-            // C++ 엔진을 거치지 않고 Job 내부에서 경사도를 직접 수학적으로 계산 
-            float steepness = CalculateSteepness(normX, normY);
+            // ★ 1. 현재 픽셀의 절대적인 월드 좌표 계산
+            float worldX = ChunkWorldPos.x + normX * TerrainSize.x;
+            float worldZ = ChunkWorldPos.y + normY * TerrainSize.z;
 
+            // ★ 2. 매크로 노이즈(펄린 노이즈) 계산
+            float noiseScale = 0.05f; // 숫자가 작을수록 구름(얼룩)이 거대해짐
+            float rawNoise = noise.cnoise(new float2(worldX, worldZ) * noiseScale);
+            float macroNoise = math.unlerp(-1f, 1f, rawNoise); // -1~1 값을 0~1로 변환
+
+            float steepness = CalculateSteepness(normX, normY);
             float cliffWeight = math.smoothstep(0f, 1f, math.unlerp(MinCliffAngle, MaxCliffAngle, steepness));
-            float topWeight = 1f - cliffWeight;
+            float totalTopWeight = 1f - cliffWeight;
+
+            // ★ 4. 노이즈를 바탕으로 평지 물감(TopWeight)을 2개로 쪼개기
+            float mainTopWeight = totalTopWeight * macroNoise;
+            float altTopWeight = totalTopWeight * (1f - macroNoise);
 
             int nodeIndex = TerritoryMap[localY * ChunkSize + localX];
             int topIndex = 0;
+            int altIndex = 0;
             int cliffIndex = 0;
 
             if (nodeIndex >= 0 && nodeIndex < NodeLayerIndices.Length)
             {
-                int2 indices = NodeLayerIndices[nodeIndex];
+                int3 indices = NodeLayerIndices[nodeIndex];
                 topIndex = indices.x;
-                cliffIndex = indices.y;
+                altIndex = indices.y; // AltIndex 꺼내기
+                cliffIndex = indices.z;
             }
 
             int baseIdx = (y * AlphaWidth + x) * NumLayers;
@@ -70,7 +85,8 @@ public class TerrainPainter
 
             if (nodeIndex >= 0 && nodeIndex < NodeLayerIndices.Length)
             {
-                Alphamap[baseIdx + topIndex] += topWeight;
+                Alphamap[baseIdx + topIndex] += mainTopWeight;
+                Alphamap[baseIdx + altIndex] += altTopWeight;
                 Alphamap[baseIdx + cliffIndex] += cliffWeight;
             }
             else
@@ -210,16 +226,23 @@ public class TerrainPainter
         }
         // 노드별 레이어 인덱스 매핑 생성 (노드 인덱스 -> (TopLayer, CliffLayer) 인덱스)
         int nodeCount = graphData.Nodes.Count;
-        NativeArray<int2> nodeLayerIndices = new NativeArray<int2>(nodeCount, Allocator.TempJob);
+        NativeArray<int3> nodeLayerIndices = new NativeArray<int3>(nodeCount, Allocator.TempJob);
         for (int i = 0; i < nodeCount; i++)
         {
             var node = graphData.Nodes[i];
-            int tIdx = 0, cIdx = 0;
+            int tIdx = 0, aIdx = 0, cIdx = 0;
+
             if (!string.IsNullOrEmpty(node.BiomeData?.TopKey) && palette.IndexMap.TryGetValue(node.BiomeData.TopKey, out int t)) tIdx = t;
+
+            // ★ AltKey 매핑 (에디터에서 비워뒀다면 자동으로 TopKey로 덮어씌워서 에러 방지)
+            if (!string.IsNullOrEmpty(node.BiomeData?.AltKey) && palette.IndexMap.TryGetValue(node.BiomeData.AltKey, out int a)) aIdx = a;
+            else aIdx = tIdx;
+
             if (!string.IsNullOrEmpty(node.BiomeData?.CliffKey) && palette.IndexMap.TryGetValue(node.BiomeData.CliffKey, out int c)) cIdx = c;
             else cIdx = tIdx;
 
-            nodeLayerIndices[i] = new int2(tIdx, cIdx);
+            // int3로 포장
+            nodeLayerIndices[i] = new int3(tIdx, aIdx, cIdx);
         }
 
         NativeArray<float> alpha1D = new NativeArray<float>(totalPixels * numLayers, Allocator.TempJob);
@@ -239,6 +262,9 @@ public class TerrainPainter
             HeightmapWidth = hWidth,
             HeightmapHeight = hHeight,
             TerrainSize = terrainData.size,
+
+            ChunkWorldPos = new float2(chunk.ChunkCoord.x * chunkSize, chunk.ChunkCoord.y * chunkSize),
+
             HeightMap = heightMap,
             TerritoryMap = territoryMap,
             NodeLayerIndices = nodeLayerIndices,
