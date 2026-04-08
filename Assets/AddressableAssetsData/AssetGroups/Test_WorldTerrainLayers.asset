@@ -1,0 +1,118 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Test_WorldTerrainLayers
+  m_EditorClassIdentifier: 
+  m_GroupName: Test_WorldTerrainLayers
+  m_GUID: 6795acd0173e0f94eab826646b709e77
+  m_SerializeEntries:
+  - m_GUID: 00e333f5bbdb80b41b54aec266a4436b
+    m_Address: AN_Win_Ice_1
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 0350d45054b1d4943bd19c653ac0f416
+    m_Address: AN_Sum_Path
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 13561bf7ac141a64d80a15511aa13916
+    m_Address: AN_Aut_Path
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 18857b064544b3b43950f849c90e8c00
+    m_Address: AN_Sum_Ground_2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1c18f67b16f3e4049803310f4efd39cc
+    m_Address: AN_Aut_Ground_1
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 21d97758953e08346a15174ddc380c32
+    m_Address: AN_Sum_Ground_4
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 22bd516efa069a045a3a2ea76962a5ed
+    m_Address: AN_Sum_Rock
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2cb30f89a9b5f9b42b56cf4c18f11eed
+    m_Address: AN_Win_Ice_3
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 39f8b9e8aaafa0841a7d83892ea3e3f4
+    m_Address: AN_Aut_Leaves
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 47a059cf343d18a49af7b80b395451bd
+    m_Address: AN_Aut_Ground_2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6b4f1ef816302b94d9a33699eb252218
+    m_Address: AN_Win_Path
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6bdc1bb87a12480478dcecefd4e38b79
+    m_Address: AN_Win_Snow_1
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 70d20ef6decc3954cb561d3c1f39f93b
+    m_Address: AN_Sum_Ground_1
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7ba7a9aa8917d4c439ab6ff79695f78c
+    m_Address: AN_Aut_Grass_3
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b1afa7c9f9e154f42b91b28a300b3c17
+    m_Address: AN_Aut_Grass_4
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: eeed2e6a0b31ffb4ca0d866cfc53af2b
+    m_Address: AN_Win_Rocks
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f11b6083d8d5ccc49bee78e322cc64b6
+    m_Address: AN_Win_Ice_2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fc7d1e021cd316d4d9c845671c26caf6
+    m_Address: AN_Win_Ground
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fde7b2ee78deb944bbed0b3609972867
+    m_Address: AN_Win_Snow_2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: d49714acbe7dc4846b65422625851c9a, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 2b2b34747d77b9b4a92b21500b22d6a4, type: 2}
+    - {fileID: 11400000, guid: ebd9bbbf800c3d6498b8d1428329f51c, type: 2}

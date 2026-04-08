@@ -1,0 +1,46 @@
+using System.Collections.Generic;
+using UnityEngine;
+using System.Threading;
+using Cysharp.Threading.Tasks;
+
+public class TerrainBuilder
+{
+
+    public async UniTask<(TerrainData, GameObject)> BuildChunkTerrainAsync(
+    ChunkData chunk,
+    WorldSettings settings,
+    CancellationToken ct)
+    {
+        int chunkSize = settings.ChunkSize; // 64
+        float maxHeight = settings.GetHeight(HeightLevel.Max);
+
+        TerrainData terrainData = new TerrainData();
+        terrainData.heightmapResolution = chunkSize + 1;
+        terrainData.alphamapResolution = chunkSize * 2;
+        terrainData.size = new Vector3(chunkSize, maxHeight, chunkSize);
+
+        float[,] unityHeights = new float[chunkSize + 1, chunkSize + 1];
+
+        // 1. 청크 로컬 데이터만 순회
+        for (int x = 0; x <=chunkSize; x++)
+        {
+            for (int y = 0; y <= chunkSize; y++)
+            {
+                unityHeights[y, x] = chunk.HeightMap[x, y] / maxHeight;
+            }
+        }
+
+        terrainData.SetHeights(0, 0, unityHeights);
+
+        // 2. Terrain 게임 오브젝트 생성
+        GameObject terrainGO = Terrain.CreateTerrainGameObject(terrainData);
+        terrainGO.name = $"Chunk_Terrain_{chunk.ChunkCoord.x}_{chunk.ChunkCoord.y}";
+
+        // ★ 3. 핵심: 청크 좌표를 실제 월드 좌표로 변환하여 배치!
+        float worldX = chunk.ChunkCoord.x * chunkSize;
+        float worldZ = chunk.ChunkCoord.y * chunkSize;
+        terrainGO.transform.position = new Vector3(worldX, 0, worldZ);
+
+        return (terrainData, terrainGO);
+    }
+}
