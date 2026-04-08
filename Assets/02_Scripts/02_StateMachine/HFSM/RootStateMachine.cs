@@ -1,18 +1,15 @@
-using UnityEngine;
-
-public class RootStateMachine : StateMachine<StateBase>
+/// <summary>
+/// HFSM 루트 상태 머신
+/// TEntity: 소유 엔티티, TRoot: 루트 상태 타입
+/// </summary>
+public class RootStateMachine<TEntity, TRoot> : StateMachine<TRoot>
+    where TEntity : class
+    where TRoot : RootStateBase<TEntity>
 {
-    public SubStateMachine SubStateMachine { get; private set; }
-    public override StateBase CurrentState { get => base.CurrentState; protected set => base.CurrentState = value; }
+    public TEntity Owner { get; private set; }
 
-    public Entity Entity;
-    public override void ChangeState(StateBase Nextstate)
+    public RootStateMachine(TEntity owner)
     {
-        base.ChangeState(Nextstate);
-    }
-
-    public override void Init(StateBase state)
-    {
-        base.Init(state);
+        Owner = owner;
     }
 }

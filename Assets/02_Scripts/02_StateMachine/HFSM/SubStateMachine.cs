@@ -1,25 +1,15 @@
 using System;
-using UnityEngine;
 
-public class SubStateMachine : StateMachine<SubStateBase>
+/// <summary>
+/// HFSM 하위 상태 머신
+/// RootStateBase가 내부적으로 소유하며, 하위 상태들을 관리
+/// </summary>
+public class SubStateMachine<TEntity> : StateMachine<SubStateBase<TEntity>> where TEntity : class
 {
-    protected RootStateBase rootStateBase;
-    public override SubStateBase CurrentState { get => base.CurrentState; protected set => base.CurrentState = value; }
-
-    public Action Exit;
-
-    public SubStateMachine(RootStateBase rootStateBase)
+    public Action ExitCurState => ExitCurrentState;
+    protected override void ExitCurrentState()
     {
-        this.rootStateBase = rootStateBase;
-    }
-
-    public override void ChangeState(SubStateBase Nextstate)
-    {
-        base.ChangeState(Nextstate);
-    }
-
-    public override void Init(SubStateBase state)
-    {
-        base.Init(state);
+        CurrentState?.OnExit();
+        CurrentState = null;
     }
 }

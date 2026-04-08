@@ -43,6 +43,13 @@ MonoBehaviour:
   - m_GUID: 9970d44de5554e341ae2127826775a49
     m_Address: AudioManager
     m_ReadOnly: 0
+    m_SerializedLabels:
+    - EveryScene
+    - default
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9d20080a9d1637c43a9619f8fbc3666f
+    m_Address: Player
+    m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 9ebcd66ab4045844187672673de88087
