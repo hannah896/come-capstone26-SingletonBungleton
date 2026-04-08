@@ -2,14 +2,26 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
+    #region State
     [SerializeField] private PlayerRootStateMachine machine;
-    [SerializeField] private Animator animator;
-    [SerializeField] private PlayerMotor motor;
+    #endregion
 
+    #region Animation
+    [SerializeField] private Animator animator;
+    #endregion
+
+    #region Move
+    [SerializeField] private PlayerMotor motor;
+    #endregion
+
+    #region Status& Data
     [SerializeField] private PlayerStatus stat;
     [SerializeField] private PlayerStatData statData;
-    
+    #endregion
+
+    #region Input
     [SerializeField] private PlayerInputData inputData;
+    #endregion
 
     public Animator Animator => animator;
     public PlayerMotor Motor => motor;

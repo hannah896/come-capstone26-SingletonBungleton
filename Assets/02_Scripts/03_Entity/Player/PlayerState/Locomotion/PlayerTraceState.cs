@@ -13,12 +13,14 @@ public class PlayerTraceState : PlayerSubStateBase
     public override void OnEnter()
     {
         base.OnEnter();
+        Machine.AnimData.PlayLocomotionAnimation(Machine.AnimData.AnimHashKey.Trace);
         Debug.Log("[State] Trace 진입");
     }
 
     public override void OnExit()
     {
         base.OnExit();
+        Machine.AnimData.StopAnimation(Machine.AnimData.AnimHashKey.Trace);
         Debug.Log("[State] Trace 퇴장");
     }
 

@@ -3,10 +3,12 @@ using UnityEngine;
 public class PlayerAnimHashKey
 {
     #region ParameterNames
-    private readonly string idle = "idle";
-    private readonly string walk = "walk";
-    private readonly string trace = "trace";
-    private readonly string run = "run";
+    // 애니메이터 Trigger 파라미터명과 정확히 일치해야 함 (대소문자 구분)
+    private readonly string idle = "Idle";
+    private readonly string walk = "Walk";
+    private readonly string trace = "Trace";
+    private readonly string run = "Run";
+    private readonly string jump = "Jump";
 
     private readonly string pick = "pick";
     private readonly string mine = "mine";
@@ -17,10 +19,10 @@ public class PlayerAnimHashKey
     private readonly string inspect = "inspect";
     private readonly string build = "build";
 
-    private readonly string attack = "attack";
+    private readonly string attack = "Attack";
     private readonly string sleep = "sleep";
-    private readonly string dead = "dead";
-    private readonly string hurt = "hurt";
+    private readonly string dead = "Dead";
+    private readonly string hurt = "Hurt";
     #endregion
 
     #region HashProperties
@@ -28,6 +30,7 @@ public class PlayerAnimHashKey
     public int Walk { get; private set; }
     public int Trace { get; private set; }
     public int Run { get; private set; }
+    public int Jump { get; private set; }
 
     public int Pick { get; private set; }
     public int Mine { get; private set; }
@@ -51,6 +54,7 @@ public class PlayerAnimHashKey
         Walk = Animator.StringToHash(walk);
         Trace = Animator.StringToHash(trace);
         Run = Animator.StringToHash(run);
+        Jump = Animator.StringToHash(jump);
 
         // Action
         Pick = Animator.StringToHash(pick);

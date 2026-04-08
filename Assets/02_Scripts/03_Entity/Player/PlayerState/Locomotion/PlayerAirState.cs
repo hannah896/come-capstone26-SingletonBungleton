@@ -14,12 +14,14 @@ public class PlayerAirState : PlayerSubStateBase
     public override void OnEnter()
     {
         base.OnEnter();
+        Machine.AnimData.PlayLocomotionAnimation(Machine.AnimData.AnimHashKey.Jump);
         Debug.Log("[State] Air 진입");
     }
 
     public override void OnExit()
     {
         base.OnExit();
+        Machine.AnimData.StopAnimation(Machine.AnimData.AnimHashKey.Jump);
         Debug.Log("[State] Air 퇴장");
     }
 

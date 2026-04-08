@@ -10,12 +10,14 @@ public class PlayerIdleState : PlayerSubStateBase
     public override void OnEnter()
     {
         base.OnEnter();
+        Machine.AnimData.PlayLocomotionAnimation(Machine.AnimData.AnimHashKey.Idle);
         Debug.Log("[State] Idle 진입");
     }
 
     public override void OnExit()
     {
         base.OnExit();
+        Machine.AnimData.StopAnimation(Machine.AnimData.AnimHashKey.Idle);
         Debug.Log("[State] Idle 퇴장");
     }
 

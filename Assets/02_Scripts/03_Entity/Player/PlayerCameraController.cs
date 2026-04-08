@@ -2,8 +2,8 @@ using UnityEngine;
 
 /// <summary>
 /// 3인칭 카메라 컨트롤러
-/// Cinemachine과 함께 사용하며, 마우스 입력으로 카메라 회전을 제어한다.
-/// CinemachineCamera의 Follow/LookAt은 이 스크립트의 cameraPivot을 따르도록 설정한다.
+/// Player와 분리되어 독립적으로 작동합니다.
+/// 마우스 입력으로 카메라 회전을 제어합니다.
 /// </summary>
 public class PlayerCameraController : MonoBehaviour
 {
@@ -53,3 +53,4 @@ public class PlayerCameraController : MonoBehaviour
         transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
     }
 }
+

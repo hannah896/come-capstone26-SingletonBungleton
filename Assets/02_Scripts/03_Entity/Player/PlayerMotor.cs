@@ -41,19 +41,19 @@ public class PlayerMotor : MonoBehaviour
     public float VerticalVelocity => gravity.CurrentVerticalVelocity;
 
     // 지면 접촉 여부
-    public bool IsGrounded => groundDetector.IsGrounded;
+    public bool IsGrounded => groundDetector != null && groundDetector.IsGrounded;
 
     // 코요테 타임 적용 지면 판정
-    public bool WasGroundedRecently => groundDetector.WasGroundedRecently;
+    public bool WasGroundedRecently => groundDetector != null && groundDetector.WasGroundedRecently;
 
     // 경사면 위에 있는지
-    public bool IsOnSlope => groundDetector.IsOnSlope;
+    public bool IsOnSlope => groundDetector != null && groundDetector.IsOnSlope;
 
     // 가파른 경사면인지
-    public bool IsSteepSlope => groundDetector.IsSteepSlope;
+    public bool IsSteepSlope => groundDetector != null && groundDetector.IsSteepSlope;
 
-    // 현재 경사 각도 
-    public float SlopeAngle => groundDetector.SlopeAngle;
+    // 현재 경사 각도
+    public float SlopeAngle => groundDetector != null ? groundDetector.SlopeAngle : 0f;
 
     #endregion
 

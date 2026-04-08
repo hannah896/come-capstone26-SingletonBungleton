@@ -31,10 +31,7 @@ public abstract class PlayerSubStateBase : SubStateBase<Player>
 
         Transform cam = Camera.main != null ? Camera.main.transform : null;
         if (cam == null)
-        {
-            // 카메라 없으면 월드 기준
             return new Vector3(input.x, 0f, input.y).normalized;
-        }
 
         Vector3 forward = Vector3.ProjectOnPlane(cam.forward, Vector3.up).normalized;
         Vector3 right = Vector3.ProjectOnPlane(cam.right, Vector3.up).normalized;

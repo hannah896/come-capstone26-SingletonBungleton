@@ -12,12 +12,14 @@ public class PlayerWalkState : PlayerSubStateBase
     public override void OnEnter()
     {
         base.OnEnter();
+        Machine.AnimData.PlayLocomotionAnimation(Machine.AnimData.AnimHashKey.Walk);
         Debug.Log("[State] Walk 진입");
     }
 
     public override void OnExit()
     {
         base.OnExit();
+        Machine.AnimData.StopAnimation(Machine.AnimData.AnimHashKey.Walk);
         Debug.Log("[State] Walk 퇴장");
     }
 

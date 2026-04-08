@@ -12,12 +12,14 @@ public class PlayerRunState : PlayerSubStateBase
     public override void OnEnter()
     {
         base.OnEnter();
+        Machine.AnimData.PlayLocomotionAnimation(Machine.AnimData.AnimHashKey.Run);
         Debug.Log("[State] Run 진입");
     }
 
     public override void OnExit()
     {
         base.OnExit();
+        Machine.AnimData.StopAnimation(Machine.AnimData.AnimHashKey.Run);
         Debug.Log("[State] Run 퇴장");
     }
 
