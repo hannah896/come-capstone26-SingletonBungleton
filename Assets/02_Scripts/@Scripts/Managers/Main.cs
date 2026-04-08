@@ -189,6 +189,12 @@ public class Main : MonoBehaviour
 
     #region MonoBehaviour Callbacks
 
+    private void FixedUpdate()
+    {
+        if (!Loop.IsInitialized) return;
+        Loop.FixedUpdate(UnityEngine.Time.deltaTime);
+    }
+
     // 매 프레임 업데이트
     private void Update()
     {
@@ -196,6 +202,12 @@ public class Main : MonoBehaviour
 
         Loop.Update(UnityEngine.Time.deltaTime);
         Loop.GameUpdate(UnityEngine.Time.deltaTime);
+    }
+
+    private void LateUpdate()
+    {
+        if (!Loop.IsInitialized) return;
+        Loop.LateUpdate(UnityEngine.Time.deltaTime);
     }
     #endregion
 

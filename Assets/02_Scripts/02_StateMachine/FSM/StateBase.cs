@@ -1,22 +1,9 @@
+using UnityEngine;
 
 public abstract class StateBase
 {
-    protected StateMachine<StateBase> stateMachine;
-
-    protected StateBase currentState => stateMachine.CurrentState;
-
-
-    public StateBase(StateMachine<StateBase> stateMachine)
-    {
-        this.stateMachine = stateMachine;
-    }
-
-
     public abstract void OnEnter();
-
     public abstract void OnExit();
-
-    public abstract void FixedUpdate();
-
-    public abstract void Update();
+    public abstract void Update(float time = 1.0f);
+    public abstract void FixedUpdate(float time = 1.0f);
 }
