@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 629431fde81975a4ab8e2dd975d846e1, type: 3}
+  m_Name: TestStoryData
+  m_EditorClassIdentifier: 
+  StoryName: 
+  FixedRegionIDs: []
+  SideRegionIDs: []
+  StartRegionID: 
+  FixedRegions:
+  - {fileID: 11400000, guid: 86f114e322879c543bfb150b7a8dfbf9, type: 2}
+  - {fileID: 11400000, guid: 47966728e30a62c4c920d6fd458a1cce, type: 2}
+  - {fileID: 11400000, guid: 9aeda91f7f47d66419a86138d183fbf7, type: 2}
+  - {fileID: 11400000, guid: cc8693dd3bff0ba499456306e0c2ade1, type: 2}
+  - {fileID: 11400000, guid: 9f6fb8754db30024db1e4ecaeee94c16, type: 2}
+  - {fileID: 11400000, guid: c7acd6563e02d3041b80d1e8798a94f7, type: 2}
+  - {fileID: 11400000, guid: e1144d790981abb43bb82f98b7f3d114, type: 2}
+  - {fileID: 11400000, guid: 7a64158aea3e9c04db4c2101163db9e1, type: 2}
+  SideRegions:
+  - {fileID: 11400000, guid: dc6420da9f322be46bef55ea06123e70, type: 2}
+  - {fileID: 11400000, guid: 5360f1f9f8ce938409ba6fc3aa4ec555, type: 2}
+  - {fileID: 11400000, guid: 76a8f039887a8384aa5adb6d8f3a3a40, type: 2}
+  - {fileID: 11400000, guid: b5ca8a9dab7d72b49928aa4244a23101, type: 2}
+  - {fileID: 11400000, guid: e53713c146f55754d8d9aff9e1ff32be, type: 2}
+  - {fileID: 11400000, guid: 640e28a74a9310643b7f752e953acfb9, type: 2}
+  - {fileID: 11400000, guid: 2b4fb09c3ae7d6a4cb1fc5dade7a2964, type: 2}
+  - {fileID: 11400000, guid: dd3a3e90dbd4b304a941b23f481324bd, type: 2}
+  SideRegionRatio: 0.5
+  StartRegion: {fileID: 11400000, guid: c872d515c0870774f89edc8eaee291bd, type: 2}
