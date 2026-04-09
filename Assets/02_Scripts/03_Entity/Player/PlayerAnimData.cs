@@ -3,14 +3,13 @@ using UnityEngine;
 public class PlayerAnimData
 {
     private Animator animator;
-    private PlayerAnimHashKey animHashKey;
+    private PlayerAnimHashKey animHashKey = new();
 
     public PlayerAnimHashKey AnimHashKey => animHashKey;
 
     public PlayerAnimData(Animator animator)
     {
         this.animator = animator;
-        this.animHashKey = new PlayerAnimHashKey();
     }
 
     /// <summary>
