@@ -15,11 +15,15 @@ public class PlayerInputData
     #endregion
 
     #region 이벤트 입력 (한 프레임만 유효 - ConsumeEventInputs에서 리셋)
-    
+
     public bool JumpPressed { get; set; }
     public bool AttackPressed { get; set; }
     public bool CrouchPressed { get; set; }
     public bool InteractPressed { get; set; }
+
+    // 자원 오브젝트 클릭 → 자동 이동 요청
+    public bool TracePressed { get; set; }
+    public Vector3 TraceDestination { get; set; }
 
     #endregion
 
@@ -40,6 +44,7 @@ public class PlayerInputData
         AttackPressed = false;
         CrouchPressed = false;
         InteractPressed = false;
+        TracePressed = false;
     }
 
     #endregion

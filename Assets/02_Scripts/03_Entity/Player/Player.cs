@@ -16,7 +16,6 @@ public class Player : MonoBehaviour
 
     #region Status& Data
     [SerializeField] private PlayerStatus stat;
-    [SerializeField] private PlayerStatData statData;
     #endregion
 
     #region Input
@@ -27,12 +26,18 @@ public class Player : MonoBehaviour
     [SerializeField] private PlayerFirstPersonCameraController fpCameraController;
     #endregion
 
+    #region Trace
+    [SerializeField] private PlayerTracer playerTracer;
+    #endregion
+
+    #region Properties
     public Animator Animator => animator;
     public PlayerMotor Motor => motor;
     public PlayerAnimData AnimData => machine.AnimData;
     public PlayerInputData InputData => inputData;
     public PlayerStatus Stat => stat;
     public bool IsGrounded => motor != null && motor.IsGrounded;
+    #endregion
 
     private void OnValidate()
     {
@@ -40,11 +45,13 @@ public class Player : MonoBehaviour
             animator = GetComponentInChildren<Animator>();
         if (motor == null)
             motor = GetComponent<PlayerMotor>();
+        if (playerTracer == null)
+            playerTracer = GetComponent<PlayerTracer>();
     }
 
     private async void Awake()
     {
-        var _statData = statData != null ? statData : await Extensions.LoadAssetAsync<PlayerStatData>("PlayerStatData");
+        var _statData = await Extensions.LoadAssetAsync<PlayerStatData>("PlayerStatData");
         stat = new(_statData);
 
         inputData = new PlayerInputData();
@@ -71,6 +78,9 @@ public class Player : MonoBehaviour
         fpCameraController?.Bind(inputData, transform);
         if (fpCameraController != null)
             await fpCameraController.InitCameraAsync();
+
+        // Trace 레이캐스터 바인딩
+        playerTracer?.Bind(inputData);
 
         // 초기 상태: Locomotion
         var locomotionState = new PlayerLocomotionState(machine);
