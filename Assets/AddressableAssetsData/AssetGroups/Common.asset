@@ -30,6 +30,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6730271c0743e984180a8f3b5f582e1a
+    m_Address: FP_CinemachineCamera
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 6b2e9ed6fce4a2648909e3bba7491ec5
     m_Address: UI_Screen_Iap
     m_ReadOnly: 0

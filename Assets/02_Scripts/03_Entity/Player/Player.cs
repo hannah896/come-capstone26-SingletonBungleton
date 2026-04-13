@@ -23,6 +23,10 @@ public class Player : MonoBehaviour
     [SerializeField] private PlayerInputData inputData;
     #endregion
 
+    #region Camera
+    [SerializeField] private PlayerFirstPersonCameraController fpCameraController;
+    #endregion
+
     public Animator Animator => animator;
     public PlayerMotor Motor => motor;
     public PlayerAnimData AnimData => machine.AnimData;
@@ -50,7 +54,6 @@ public class Player : MonoBehaviour
         Debug.Log("[Player] Initialized - Motor: " + (motor != null) + ", Animator: " + (animator != null));
 #endif
     }
-
     private async void Start()
     {
         // InputManager 초기화 완료 대기
@@ -63,6 +66,11 @@ public class Player : MonoBehaviour
         var handler = Main.Input.GetOrCreateAction<InputActions_PlayerInputHandler>();
         handler.Bind(this, inputData);
         Main.Input.AddInput<InputActions_PlayerInputHandler>();
+
+        // 1인칭 카메라 컨트롤러 바인딩 및 카메라 동적 생성
+        fpCameraController?.Bind(inputData, transform);
+        if (fpCameraController != null)
+            await fpCameraController.InitCameraAsync();
 
         // 초기 상태: Locomotion
         var locomotionState = new PlayerLocomotionState(machine);

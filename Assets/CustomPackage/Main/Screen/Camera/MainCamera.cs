@@ -1,3 +1,4 @@
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 public class MainCamera
@@ -10,7 +11,7 @@ public class MainCamera
         Object = obj;
     }
 
-    public async void GenerateObject()
+    public async UniTask GenerateObjectAsync()
     {
         GameObject obj = await Main.Resource.LoadAssetAsync<GameObject>("MainCameraObject");
         Object = MonoBehaviour.Instantiate(obj).GetComponent<MainCameraObject>();

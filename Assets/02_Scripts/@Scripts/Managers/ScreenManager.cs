@@ -64,7 +64,7 @@ public class ScreenManager : CoreManager
             if (_mainCamera == null)
             {
                 _mainCamera = new();
-                _mainCamera.GenerateObject();
+                _mainCamera.GenerateObjectAsync().Forget();
             }
             return _mainCamera;
         }
@@ -91,7 +91,7 @@ public class ScreenManager : CoreManager
         if (_mainCamera == null)
         {
             _mainCamera = new();
-            _mainCamera.GenerateObject();
+            await _mainCamera.GenerateObjectAsync();
         }
     }
 
