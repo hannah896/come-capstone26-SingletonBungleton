@@ -190,7 +190,7 @@ public class WorldGraphDirector : MonoBehaviour
         }
 
         // 2. 연결선 그리기
-        if (graphData.NodeConnections != null)
+        if (_showConnections && graphData.NodeConnections != null)
         {
             Gizmos.color = Color.white;
             foreach (var conn in graphData.NodeConnections)

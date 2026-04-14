@@ -1,5 +1,6 @@
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using UnityEngine;
 
@@ -12,14 +13,24 @@ public interface IChunkRenderer
 public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
 {
     private TerrainBuilder _terrainBuilder;
-    private TerrainPainter _terrainPainter;
+
     private TerrainLayerLoader _layerLoader;
+    private TerrainPainter _terrainPainter;
+
+    private TerrainDetailLoader _detailLoader; // ★ 추가
+    private TerrainDetailPainter _detailPainter;
+
 
     //  전역 세팅 캐싱
     private WorldSettings _settings;
     private WorldGraphData _graphData;
+
     private TerrainLayerPalette _layerPalette;
+    private TerrainDetailPalette _detailPalette; 
+        
+
     private CancellationToken _ct;
+
 
     // 관리 중인 청크 딕셔너리 (파괴할 때 필요함)
     private Dictionary<Vector2Int, GameObject> _activeTerrains = new();
@@ -34,13 +45,31 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
         _ct = ct;
 
         _terrainBuilder = new TerrainBuilder();
+        
+        _layerLoader = new TerrainLayerLoader(); // 인스턴스 생성
         _terrainPainter = new TerrainPainter();
-        _layerLoader = new TerrainLayerLoader(); // ★ 인스턴스 생성
+
+        _detailLoader = new TerrainDetailLoader(); // 인스턴스 생성
+        _detailPainter = new TerrainDetailPainter();
 
         // 청크 100개를 그려도 에셋 로드는 처음에 딱 1번만 하도록
         // 렌더링 파이프라인 0단계: 물감 준비
-        _layerPalette = await _layerLoader.LoadLayersAsync(_graphData, ct);
+        var layerTask = _layerLoader.LoadLayersAsync(_graphData, ct);
+        var detailTask = _detailLoader.LoadDetailsAsync(_graphData, ct);
+
+        // 텍스처와 풀 이미지를 동시에 로드합니다.
+        var (layerResult, detailResult) = await UniTask.WhenAll(layerTask, detailTask);
+
+        _layerPalette = layerResult;
+        _detailPalette = detailResult;
+
         Debug.Log("🎨 [WorldRenderDirector] 렌더링 시스템 초기화 및 에셋 로드 완료!");
+
+        Debug.Log($"현재 등록된 텍스처 총 개수: {_layerPalette.Layers.Length}");
+        foreach (var key in _layerPalette.LoadedKeys)
+        {
+            Debug.Log($"등록된 레이어 이름: {key} (인덱스: {_layerPalette.IndexMap[key]})");
+        }
     }
 
     /// <summary>
@@ -51,11 +80,28 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
         if (_activeTerrains.ContainsKey(chunk.ChunkCoord) || _requestedChunks.Contains(chunk.ChunkCoord)) return;
 
         _requestedChunks.Add(chunk.ChunkCoord);
+        Stopwatch chunkStopwatch = Stopwatch.StartNew();
+        long terrainBuildMs = 0;
+        long texturePaintMs = 0;
+        long detailPaintMs = 0;
+        long flushMs = 0;
 
         // 1. 지형 융기 (Terrain 생성)
-        var (terrainData, terrainGO) = await _terrainBuilder.BuildChunkTerrainAsync(chunk, _settings, _ct);
+        var (terrainData, terrainGO) = await _terrainBuilder.BuildChunkTerrainAsync(chunk, _settings, _ct);        // 2. 텍스처 페인팅 (로컬 데이터 기반)
+        terrainBuildMs = chunkStopwatch.ElapsedMilliseconds;
+
         // 2. 텍스처 페인팅 (로컬 데이터 기반)
         await _terrainPainter.PaintChunkTerrainAsync(terrainData, chunk, _graphData, _layerPalette, _ct);
+        texturePaintMs = chunkStopwatch.ElapsedMilliseconds - terrainBuildMs;
+
+        // 2.5 디테일 페인팅 (육지 셀에 바이옴 DetailKeys 전부 적용)
+        await _detailPainter.PaintChunkDetailsAsync(terrainData, chunk, _graphData, _detailPalette, _ct);
+        detailPaintMs = chunkStopwatch.ElapsedMilliseconds - terrainBuildMs - texturePaintMs;
+        terrainGO.GetComponent<Terrain>()?.Flush();
+        flushMs = chunkStopwatch.ElapsedMilliseconds - terrainBuildMs - texturePaintMs - detailPaintMs;
+
+        Debug.Log($"[WorldRenderDirector] chunk:{chunk.ChunkCoord} buildMs:{terrainBuildMs} textureMs:{texturePaintMs} detailMs:{detailPaintMs} flushMs:{flushMs} totalMs:{chunkStopwatch.ElapsedMilliseconds}");
+
 
         // 3. 오브젝트 스폰 (TODO: ObjectSpawner에게 chunk.DisposedObjects 전달하여 Instantiate)
 
@@ -150,6 +196,17 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
             _layerPalette.IndexMap.Clear();
             _layerPalette.Layers = null;
             _layerPalette = null;
+        }
+        if (_detailPalette != null && _detailPalette.LoadedKeys != null)
+        {
+            foreach (var key in _detailPalette.LoadedKeys)
+            {
+                Extensions.Release(key);
+            }
+            _detailPalette.LoadedKeys.Clear();
+            _detailPalette.IndexMap.Clear();
+            _detailPalette.Prototypes = null;
+            _detailPalette = null;
         }
     }
 

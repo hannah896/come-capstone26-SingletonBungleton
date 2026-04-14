@@ -13,10 +13,10 @@ public class BiomeData : ScriptableObject
     [SerializeField] public string TopKey;    // 예: "Forest_Top", "Desert_Top"
     [SerializeField] public string AltKey;    // 예: "Forest_Top", "Desert_Top"
     [SerializeField] public string CliffKey;  // 예: "Highlands_Cliff", "Forest_Cliff"
-    [SerializeField] public string SedimentKey;
 
     // 터레인 위에 배치되는 디테일 오브젝트들 (예: 풀, 꽃)
     [SerializeField] public List<string> DetailKeys;    // 예: "Detail_Grass", "Detail_Flower"
+    [SerializeField] public List<string> DecoKeys;      // 예: "Deco_Rock", "Deco_Tree"
 
 }
 public enum BiomeType

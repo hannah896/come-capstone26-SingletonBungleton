@@ -15,6 +15,11 @@ MonoBehaviour:
   m_GroupName: TestWorld
   m_GUID: 7c2227872ff95c847baa74abf8db50e9
   m_SerializeEntries:
+  - m_GUID: 06ad496ab5d3c364a926c4829102be61
+    m_Address: CustomTerrainMat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 1154870b7c4c970469dcdb21281732dd
     m_Address: Desert_tile_1
     m_ReadOnly: 0

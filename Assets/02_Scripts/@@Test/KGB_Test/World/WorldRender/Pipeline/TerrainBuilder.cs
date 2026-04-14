@@ -5,6 +5,9 @@ using Cysharp.Threading.Tasks;
 
 public class TerrainBuilder
 {
+    private const int DEFAULT_DETAIL_RESOLUTION = 1024;
+    private const int DEFAULT_DETAIL_RESOLUTION_PER_PATCH = 16;
+    private const float DEFAULT_DETAIL_OBJECT_DISTANCE = 200f;
 
     public async UniTask<(TerrainData, GameObject)> BuildChunkTerrainAsync(
     ChunkData chunk,
@@ -17,6 +20,7 @@ public class TerrainBuilder
         TerrainData terrainData = new TerrainData();
         terrainData.heightmapResolution = chunkSize + 1;
         terrainData.alphamapResolution = chunkSize * 2;
+        terrainData.SetDetailResolution(DEFAULT_DETAIL_RESOLUTION, DEFAULT_DETAIL_RESOLUTION_PER_PATCH);   // (a,b) a : 1개의 터레인에 대한 그리드 수, b : 패치 크기 
         terrainData.size = new Vector3(chunkSize, maxHeight, chunkSize);
 
         float[,] unityHeights = new float[chunkSize + 1, chunkSize + 1];
@@ -35,6 +39,13 @@ public class TerrainBuilder
         // 2. Terrain 게임 오브젝트 생성
         GameObject terrainGO = Terrain.CreateTerrainGameObject(terrainData);
         terrainGO.name = $"Chunk_Terrain_{chunk.ChunkCoord.x}_{chunk.ChunkCoord.y}";
+
+        // 추가 : 터레인 설정
+        Terrain terrain = terrainGO.GetComponent<Terrain>();
+        terrain.drawTreesAndFoliage = true;
+        terrain.detailObjectDensity = 1.0f;     // 0~1
+        terrain.detailObjectDistance = DEFAULT_DETAIL_OBJECT_DISTANCE;
+
 
         // ★ 3. 핵심: 청크 좌표를 실제 월드 좌표로 변환하여 배치!
         float worldX = chunk.ChunkCoord.x * chunkSize;

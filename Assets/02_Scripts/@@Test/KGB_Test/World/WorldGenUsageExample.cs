@@ -22,6 +22,7 @@ public class WorldGenUsageExample : MonoBehaviour
     private string _worldSettingLabel = "TestWorldSettings";
 
     private CancellationTokenSource _cts;
+    private bool _isWorldSettingsLoaded;
 
     void OnDestroy()
     {
@@ -56,14 +57,17 @@ public class WorldGenUsageExample : MonoBehaviour
                 AssetCacheType.Required,
                 ct
             );
+            _isWorldSettingsLoaded = (_worldSettings != null);
             Debug.Log("StoryWorldSettings 로드 완료");
         }
         catch (System.OperationCanceledException)
         {
+            _isWorldSettingsLoaded = false;
             Debug.Log("StoryWorldSettings 로드 취소됨");
         }
         catch (System.Exception e)
         {
+            _isWorldSettingsLoaded = false;
             Debug.LogError($"StoryWorldSettings 로드 실패: {e.Message}");
         }
     }
@@ -87,6 +91,12 @@ public class WorldGenUsageExample : MonoBehaviour
         _cts?.Cancel();
         _cts?.Dispose();
         _cts = new CancellationTokenSource();
+
+        if (!_isWorldSettingsLoaded || _worldSettings == null)
+        {
+            Debug.LogWarning("WorldSettings가 아직 로드되지 않았습니다.");
+            return;
+        }
 
         try
         {
@@ -196,7 +206,7 @@ public class WorldGenUsageExample : MonoBehaviour
             Vector2Int spawnChunkCoord = logicData.GetChunkCoord(startingX, startingZ);
 
             // ==========================================================
-            // 4단계: 플레이어 탐색 및 StartRegion으로 우선 텔레포트!
+            // 4단계: 플레이어 탐색 및 StartRegion으로 
             // ==========================================================
             if (_demoPlayer == null)
             {
