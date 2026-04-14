@@ -24,7 +24,7 @@ MonoBehaviour:
   bootyType: 0
   foodType: 1
   isStackable: 1
-  maxStack: 64
+  maxStack: 30
   equipSlot: 0
   hasDurability: 0
   maxDurability: 0

@@ -70,7 +70,7 @@ public class InventoryManager : MonoBehaviour
             {
                 Debug.Log("[인벤토리] 가득 참! 바닥에 드랍합니다.");
                 OnInventoryFull?.Invoke(itemData, amount);
-                return false; return false;
+                return false;
             }
 
             int stackSize = itemData.isStackable
@@ -85,7 +85,7 @@ public class InventoryManager : MonoBehaviour
         OnInventoryChanged?.Invoke();
         return true;
     }
-
+    
     // 인벤토리에서 아이템 제거
     public bool RemoveItem(ItemDataSO itemData, int amount = 1)
     {

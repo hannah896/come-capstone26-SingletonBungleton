@@ -43,7 +43,6 @@ public class Item_Food : Item
             {
                 _isExpired = true;
                 Debug.Log($"[음식] {itemData.itemName}이(가) 상했습니다!");
-                // TODO: 아이콘 변경, 먹으면 페널티 적용
             }
         }
     }

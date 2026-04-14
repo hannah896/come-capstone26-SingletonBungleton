@@ -25,9 +25,8 @@ public class Item_CombatGear : Item, IEquipable
     }
 
     [Header("=== 활 전용 ===")]
-    [Tooltip("화살 프리팹")] //나중에 추가
+    [Tooltip("화살 프리팹")]
     public GameObject arrowPrefab;
-
     [Tooltip("발사 위치")]
     public Transform firePoint;
 
@@ -36,11 +35,10 @@ public class Item_CombatGear : Item, IEquipable
     protected override void Init()
     {
         base.Init();
-        if (itemData != null && itemData.hasDurability)
+        if (itemData == null) return;
+        if (itemData.hasDurability)
             _currentDurability = (int)itemData.maxDurability;
-
-        if (itemData != null)
-            combatGearType = itemData.combatGearType;
+        combatGearType = itemData.combatGearType;
     }
 
     public override void Init(ItemDataSO data)

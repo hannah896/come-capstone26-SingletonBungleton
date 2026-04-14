@@ -13,6 +13,11 @@ public class ItemTestManager : MonoBehaviour
     [Header("크래프팅 테스트")]
     public RecipeDataSO testRecipe;
 
+    [Header("내구도 파괴 테스트")]
+    public ItemDataSO testToolSO;
+
+    [Header("음식 섭취 테스트")]
+    public ItemDataSO testFoodSO;
 
     private void Update()
     {
@@ -26,6 +31,8 @@ public class ItemTestManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha7)) TestCraft();
         if (Input.GetKeyDown(KeyCode.Alpha8)) TestCategoryFilter();
         if (Input.GetKeyDown(KeyCode.Alpha9)) TestCraftableFilter();
+        if (Input.GetKeyDown(KeyCode.Alpha0)) TestDurabilityBreak();
+        if (Input.GetKeyDown(KeyCode.Q)) TestEatFood();
     }
 
     // 1키 — 재료 아이템 추가 (스택 테스트)
@@ -101,5 +108,50 @@ public class ItemTestManager : MonoBehaviour
         Debug.Log($"[제작 가능 레시피: {craftable.Count}개]");
         foreach (var r in craftable)
             Debug.Log($"  - {r.recipeName}");
+    }
+
+    // 0키 — 내구도 반복 소모 → 파괴 확인
+    void TestDurabilityBreak()
+    {
+        if (testToolSO == null) { Debug.Log("[테스트] 도구 SO 연결 안 됨!"); return; }
+        if (!InventoryManager.Instance.HasItem(testToolSO))
+        {
+            InventoryManager.Instance.AddItem(testToolSO, 1);
+            Debug.Log($"[테스트] {testToolSO.itemName} 인벤토리 추가");
+            return;
+        }
+        GameObject tempObj = new GameObject("TempTool");
+        var tool = tempObj.AddComponent<Item_SurvivalTool>();
+        tool.Init(testToolSO);
+
+        Debug.Log($"[테스트] 내구도 파괴 테스트 시작 ({tool.CurrentDurability}/{testToolSO.maxDurability})");
+
+        int maxTries = 200;
+        while (tool != null && maxTries-- > 0)
+            tool.UseDurability(10);
+
+        Debug.Log("[테스트] 내구도 파괴 완료");
+    }
+
+
+    // Q키 — 음식 먹기 테스트
+    void TestEatFood()
+    {
+        if (testFoodSO == null) { Debug.Log("[테스트] 음식 SO 연결 안 됨!"); return; }
+
+        if (!InventoryManager.Instance.HasItem(testFoodSO))
+        {
+            InventoryManager.Instance.AddItem(testFoodSO, 1);
+            Debug.Log($"[테스트] {testFoodSO.itemName} 인벤토리 추가");
+            return;
+        }
+
+        GameObject tempObj = new GameObject("TempFood"); //임시 음식 생성
+        var food = tempObj.AddComponent<Item_Food>();
+        food.Init(testFoodSO);
+        food.Eat();
+
+        Debug.Log($"[테스트] {testFoodSO.itemName} 섭취 완료!");
+        Debug.Log($"[테스트] 배고픔 +{testFoodSO.hungerRestore} / 체력 +{testFoodSO.healthRestore} / 정신력 +{testFoodSO.sanityRestore}");
     }
 }
