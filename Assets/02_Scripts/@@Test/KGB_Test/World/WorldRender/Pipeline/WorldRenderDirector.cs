@@ -87,15 +87,17 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
         long flushMs = 0;
 
         // 1. 지형 융기 (Terrain 생성)
-        var (terrainData, terrainGO) = await _terrainBuilder.BuildChunkTerrainAsync(chunk, _settings, _ct);        // 2. 텍스처 페인팅 (로컬 데이터 기반)
+        var (terrainData, terrainGO) = await _terrainBuilder.BuildChunkTerrainAsync(chunk, _settings, _ct);        
         terrainBuildMs = chunkStopwatch.ElapsedMilliseconds;
 
         // 2. 텍스처 페인팅 (로컬 데이터 기반)
         await _terrainPainter.PaintChunkTerrainAsync(terrainData, chunk, _graphData, _layerPalette, _ct);
+
         texturePaintMs = chunkStopwatch.ElapsedMilliseconds - terrainBuildMs;
 
         // 2.5 디테일 페인팅 (육지 셀에 바이옴 DetailKeys 전부 적용)
         await _detailPainter.PaintChunkDetailsAsync(terrainData, chunk, _graphData, _detailPalette, _ct);
+
         detailPaintMs = chunkStopwatch.ElapsedMilliseconds - terrainBuildMs - texturePaintMs;
         terrainGO.GetComponent<Terrain>()?.Flush();
         flushMs = chunkStopwatch.ElapsedMilliseconds - terrainBuildMs - texturePaintMs - detailPaintMs;
