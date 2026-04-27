@@ -48,8 +48,8 @@ public class Item_Food : Item
         }
     }
 
-    /// 음식 먹기 (플레이어가 인벤토리에서 사용 시 호출)
-    public void Eat()
+    /// 음식 먹기 (인벤토리 슬롯에서 사용 시 호출)
+    public void Eat(PlayerStatus stat)
     {
         if (_isExpired)
         {
@@ -59,9 +59,9 @@ public class Item_Food : Item
         }
 
         Debug.Log($"[음식] {itemData.itemName} 섭취!");
-        ApplySurvivalEffects();  // 부모 클래스의 배고픔/체력/정신력 회복
+        ApplySurvivalEffects(stat);
 
-        int removed = RemoveStack(1);
+        RemoveStack(1);
         if (stackCount <= 0)
             Destroy(gameObject);
     }

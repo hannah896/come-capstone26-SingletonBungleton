@@ -4,7 +4,7 @@
     "com.brogrammist.jsam": "https://github.com/jackyyang09/Simple-Unity-Audio-Manager.git#master",
     "com.coffee.softmask-for-ugui": "https://github.com/mob-sakai/SoftMaskForUGUI.git?path=Packages/src",
     "com.coffee.ui-effect": "5.10.8",
-    "com.coffee.ui-particle": "4.11.4",
+    "com.coffee.ui-particle": "4.12.1",
     "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
     "com.google.firebase.analytics": "https://github.com/GameWorkstore/com.google.firebase.analytics.git",
     "com.google.firebase.app": "https://github.com/GameWorkstore/com.google.firebase.app.git",

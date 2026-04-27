@@ -16,19 +16,28 @@ public class Player : MonoBehaviour
 
     #region Status& Data
     [SerializeField] private PlayerStatus stat;
-    [SerializeField] private PlayerStatData statData;
     #endregion
 
     #region Input
     [SerializeField] private PlayerInputData inputData;
     #endregion
 
+    #region Camera
+    [SerializeField] private PlayerFirstPersonCameraController fpCameraController;
+    #endregion
+
+    #region Trace
+    [SerializeField] private PlayerTracer playerTracer;
+    #endregion
+
+    #region Properties
     public Animator Animator => animator;
     public PlayerMotor Motor => motor;
     public PlayerAnimData AnimData => machine.AnimData;
     public PlayerInputData InputData => inputData;
     public PlayerStatus Stat => stat;
     public bool IsGrounded => motor != null && motor.IsGrounded;
+    #endregion
 
     private void OnValidate()
     {
@@ -36,21 +45,23 @@ public class Player : MonoBehaviour
             animator = GetComponentInChildren<Animator>();
         if (motor == null)
             motor = GetComponent<PlayerMotor>();
+        if (playerTracer == null)
+            playerTracer = GetComponent<PlayerTracer>();
     }
 
     private async void Awake()
     {
-        var _statData = statData != null ? statData : await Extensions.LoadAssetAsync<PlayerStatData>("PlayerStatData");
-        stat = new(_statData);
-
+        // machine과 inputData는 동기적으로 먼저 생성 (Start()가 await 복귀 전에 실행될 수 있으므로)
         inputData = new PlayerInputData();
         machine = new PlayerRootStateMachine(this, animator);
+
+        var _statData = await Extensions.LoadAssetAsync<PlayerStatData>("PlayerStatData");
+        stat = new(_statData);
         
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[Player] Initialized - Motor: " + (motor != null) + ", Animator: " + (animator != null));
 #endif
     }
-
     private async void Start()
     {
         // InputManager 초기화 완료 대기
@@ -63,6 +74,14 @@ public class Player : MonoBehaviour
         var handler = Main.Input.GetOrCreateAction<InputActions_PlayerInputHandler>();
         handler.Bind(this, inputData);
         Main.Input.AddInput<InputActions_PlayerInputHandler>();
+
+        // 1인칭 카메라 컨트롤러 바인딩 및 카메라 동적 생성
+        fpCameraController?.Bind(inputData, transform);
+        if (fpCameraController != null)
+            await fpCameraController.InitCameraAsync();
+
+        // Trace 레이캐스터 바인딩
+        playerTracer?.Bind(inputData);
 
         // 초기 상태: Locomotion
         var locomotionState = new PlayerLocomotionState(machine);
@@ -88,16 +107,20 @@ public class Player : MonoBehaviour
 
     private void OnLoopUpdate(float deltaTime)
     {
-        if (motor == null) return;
-        
+        if (motor == null || machine == null) return;
+
         machine.OnUpdate(deltaTime);
         motor.Tick(deltaTime);  // 중력 시뮬레이션, 착지 감지, 이동 수행
-        inputData.ConsumeEventInputs();
+        inputData?.ConsumeEventInputs();
     }
 
     private void OnLoopGameUpdate(float deltaTime)
     {
         machine.OnGameUpdate(deltaTime);
+
+        if (stat == null) return;
+        stat.UpdateHunger(deltaTime);
+        stat.UpdateMental(deltaTime);
     }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

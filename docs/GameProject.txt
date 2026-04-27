@@ -1,0 +1,269 @@
+🎋 기획(문)서
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📌 개요
+  장르  : 로그라이트 생존 멀티플레이
+  방향  : 생존(Survival) 기반 탐험 + 제작(Crafting) + 성장(Progression)
+  레퍼런스 : 돈스타브(Don't Starve) 구조 기반
+  엔진  : Unity 6 (6000.0.60f1) / URP
+  시점  : 1인칭 백뷰
+  멀티  : 1~4인 P2P (Photon Fusion)
+  게임명 : 미정
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🗂 구현 현황 (2026-04 기준)
+  [완료]  플레이어 이동 (Locomotion HFSM)
+  [완료]  1인칭 카메라 (PlayerFirstPersonCameraController)
+  [완료]  자원 Trace 자동이동 (PlayerTracer → PlayerTraceState)
+  [완료]  허기·정신력 런타임 감소 (PlayerStatus.UpdateHunger / UpdateMental)
+  [완료]  크래프팅 데이터 구조 (ItemDataSO, RecipeDataSO)
+  [진행중] 아이템 인벤토리 (InventoryManager)
+  [진행중] 월드 맵 생성 (WorldGraph - KKB 브랜치)
+  [미구현] 전투 / 보스 시스템
+  [미구현] 시간·달 시스템 (TimeManager 기반 구조만 존재)
+  [미구현] 멀티플레이 플레이어 동기화
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. 차별화 포인트
+  - 달 보스 시스템 (보름달마다 보스 등장, 난이도 점진 증가)
+  - 최종 보스 & 엔딩
+  - 멀티 협동 생존 루프
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+2. 핵심 시스템
+
+  ┌─────────────────────────────────────────────────┐
+  │ 2.1 생존 관리 시스템                              │
+  │ 구현 파일: PlayerStatData.cs / PlayerStatus.cs   │
+  └─────────────────────────────────────────────────┘
+
+  2.1.1 배고픔 (Hunger)
+    수치
+      최대값   : HungerDrain × DayDurationMinutes(12분) × 2
+      감소량   : HungerDrain / 60f × deltaTime  (분당 감소)
+    회복      : 음식 섭취
+    디버프    : 배고픔 = 0 → 체력 HungerHPDecreaseRate × deltaTime 감소
+    루프 의도  : 탐험 → 식량 수급 → 생존
+
+  2.1.2 정신력 (Mental)
+    수치
+      감소량   : MentalDecreaseRate × deltaTime  (초당 감소)
+    회복      : 수면 / 안전지대 / 음식 / NPC 상호작용
+    디버프
+      - 방어력 감소
+      - 공격력 감소
+      - 경직 증가
+      - 졸음 상태
+      - 랜덤 아이템 소실
+
+  2.1.3 체력 (HP)
+    회복      : 아이템 / 수면
+    디버프    : HP = 0 → 사망 (Dead 상태 전환)
+
+  2.1.4 체온 (Temperature)
+    상태      : 정상 / 추위 / 더위
+    디버프
+      - 추위(< MaxColdTemperature): ColdHPDecreaseRate × deltaTime 체력 감소
+      - 더위(> MaxHotTemperature): HotHPDecreaseRate × deltaTime 체력 감소
+      - 이동속도 감소
+    조절
+      - 상승: 불, 의복
+      - 하강: 그늘, 냉각
+
+  2.1.5 습도 (Wetness)
+    최대값    : MaxWetness
+    효과
+      - 체온 감소 가속 (WetnessTemperatureDecreaseRate)
+      - 정신력 감소
+      - 음식 부패 증가
+
+  ┌──────────────────────────────────────────────┐
+  │ 2.2 시간 시스템                               │
+  │ 구현 파일: TimeManager.cs / NyoTimer          │
+  └──────────────────────────────────────────────┘
+
+  하루 구조 (현실 24분 = 게임 1일, 기획상 12분 기준)
+    아침  : 자원 수집 최적
+    오후  : NPC 활동
+    황혼  : 시야 감소
+    새벽  : 매우 위험
+
+  달 시스템
+    - 보름달 시 만월 보스 등장
+    - 달이 차오를수록 난이도 점진 증가
+    ※ 미구현 (MoonSystem 설계 필요)
+
+  ┌──────────────────────────────────────────────┐
+  │ 2.3 전투 시스템                               │
+  │ 구현 파일: 미구현 (PlayerAttackState 뼈대만)  │
+  └──────────────────────────────────────────────┘
+
+  만월 보스
+    - 패턴 & 기믹 랜덤
+    - 처치 시 특수 자원 획득
+
+  거점 보스
+    - 아이템 소모로 소환
+
+  최종 보스
+    - 엔딩 트리거
+
+  전투 입력
+    - F키 / 마우스 클릭 공격
+    - 가장 가까운 적 자동 타겟
+
+  ┌──────────────────────────────────────────────┐
+  │ 2.4 자원 시스템                               │
+  │ 구현 파일: GatherableObject.cs / ItemDataSO  │
+  └──────────────────────────────────────────────┘
+
+  1) 재생 자원
+    - 일정 시간 후 재생 (respawnInterval)
+    - 예: 나무, 식물, 돌
+
+  2) 유한 자원
+    - 고갈 시 사라짐
+    - 보스 처치 전까지 복구 없음
+
+  3) 무한 자원
+    - 조건 충족 시 계속 생산
+    - 예: 제작대 연계 생산
+
+  ┌──────────────────────────────────────────────────┐
+  │ 2.5 크래프팅 시스템                               │
+  │ 구현 파일: CraftingManager.cs / RecipeDataSO.cs  │
+  └──────────────────────────────────────────────────┘
+
+  UI 구조   : 탭 기반 (조건 충족 레시피만 표시)
+
+  카테고리
+    - Tools
+    - Light
+    - Survival
+    - Weapons
+    - Structures
+    - Moon
+
+  제작 방식
+    - 즉시 제작
+    - 설치형 제작 (배치 후 완성)
+
+  연구 시스템 (해금 단계)
+    1단계: 생존 제작대
+    2단계: 달 연성대
+    3단계: 월광 제단
+
+  제작 흐름
+    자원 획득 → 레시피 조건 충족 → 제작 선택 → 결과 생성
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3. 플레이어
+
+  ┌──────────────────────────────────────────────────────────┐
+  │ 3.1 상태 머신 (HFSM)                                      │
+  │ 구현 파일: PlayerRootStateMachine.cs / PlayerState/*     │
+  └──────────────────────────────────────────────────────────┘
+
+  PlayerState (Root)
+  ├─ Locomotion            ← PlayerLocomotionState
+  │   ├─ Idle              ← PlayerIdleState
+  │   ├─ Walk              ← PlayerWalkState
+  │   ├─ Run               ← PlayerRunState
+  │   ├─ Trace             ← PlayerTraceState  (마우스 클릭 자동이동)
+  │   └─ Air               ← PlayerAirState    (점프/낙하)
+  ├─ Action                ← PlayerActionState
+  │   ├─ Pick              ← PlayerPickState
+  │   ├─ Mine              ← PlayerMineState
+  │   ├─ Chop              ← PlayerChopState
+  │   ├─ Dig               ← PlayerDigState
+  │   ├─ Ignite            ← PlayerIgniteState
+  │   ├─ Cook              ← PlayerCookState
+  │   ├─ Inspect           ← PlayerInspectState
+  │   └─ Build             ← PlayerBuildState
+  ├─ Attack                ← PlayerAttackState (F키/마우스)
+  ├─ Combat                ← PlayerCombatState
+  ├─ Sleep                 ← PlayerSleepState  (체력·정신력 회복)
+  ├─ Hurt                  ← PlayerHurtState   (넉백)
+  └─ Dead                  ← PlayerDeadState   (HP=0)
+
+  ┌────────────────────────────────────────┐
+  │ 3.2 인벤토리                            │
+  │ 구현 파일: InventoryManager.cs         │
+  └────────────────────────────────────────┘
+
+  일반 슬롯  : 15칸
+  장착 슬롯  : 3칸 (머리 / 가슴 / 손)
+
+  ┌──────────────────────────────────────────────────────┐
+  │ 3.3 캐릭터 특성                                       │
+  │ 구현 파일: PlayerStatData.cs (ScriptableObject별 설정) │
+  └──────────────────────────────────────────────────────┘
+
+  기본      : 밸런스형
+  생존 특화  : 허기 감소 느림 / 정신력 감소 느림
+  전투 특화  : 공격력·체력 증가 / 흡혈
+  하드코어   : 모든 스탯 감소 (엔딩 후 해금)
+
+  ┌──────────────────┐
+  │ 3.4 몬스터 등급   │
+  └──────────────────┘
+
+  우호형  : 비선공
+  중립형  : 비선공
+  적대형  : 선공
+  보스    : 만월/거점/최종
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+4. 아이템
+  구현 파일: Item.cs / Item_Food.cs / Item_CombatGear.cs / Item_SurvivalTool.cs
+
+  건축물  : 화덕, 텐트, 제작대, 상자
+  음식    : 유통기한 존재 (Item_Food.freshnessDecayRate)
+  도구    : 곡괭이, 도끼 (내구도 있음)
+  무기    : (전투 시스템 구현 시 확장)
+  방어구  : (전투 시스템 구현 시 확장)
+  자원    : 나무, 돌, 금, 식물
+  전리품  : 고기, 가죽, 보스 재료
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+5. 월드 시스템
+  구현 파일: (KKB 브랜치 WorldGraph 진행중)
+
+  맵 생성  : 해시 기반 시드 → 지형 구조 고정, 오브젝트 위치 랜덤
+  바이옴   : 숲, 초원, 사막 (추가 예정)
+  미니맵   : M키 UI, 플레이어 위치 표시
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+6. Unity 아키텍처 참고
+
+  매니저 구조 (Main.cs 중앙 허브)
+    PrimaryManager  : ResourceManager, DataManager, UIManager, JSAMManager
+    CoreManager     : PoolManager, ScreenManager, LoopManager, InputManager, NetworkManager, TimeManager
+    ContentManager  : GameManager, SceneManagerEx
+
+  주요 패턴
+    - 커스텀 루프    : Main.Loop.OnGameUpdate / OnUpdate (Unity Update() 직접 사용 안 함)
+    - 비동기 처리    : UniTask (async UniTask)
+    - 에셋 로딩     : Addressables (ResourceManager 래퍼)
+    - 네트워킹      : Photon Fusion (P2P)
+
+  구현 예정 스크립트
+    - WorldManager
+    - TimeSystem (TimeManager 확장)
+    - MoonSystem
+    - BossSpawnSystem
+    - MonsterAI (NavMesh 기반, 시간대별 행동 변화)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+7. 기대 효과
+  - 달·시간 시스템 기반 차별화된 생존 루프
+  - 멀티 협동 플레이 확장성
+  - 로그라이트 요소(랜덤 맵·보스 패턴)로 반복 플레이 유도

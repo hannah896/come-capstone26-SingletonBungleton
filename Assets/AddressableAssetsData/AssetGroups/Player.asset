@@ -15,6 +15,11 @@ MonoBehaviour:
   m_GroupName: Player
   m_GUID: 39e80898be23f8d44bbdc593ad1790fa
   m_SerializeEntries:
+  - m_GUID: 0c73b7027f3c0744cac9350aec620f8f
+    m_Address: Main Camera
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: d4041a8e28d31644d9d86ed0f5037fd6
     m_Address: PlayerStatData
     m_ReadOnly: 0

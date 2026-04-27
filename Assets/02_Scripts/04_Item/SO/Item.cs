@@ -78,13 +78,13 @@ public abstract class Item : MonoBehaviour
 
     #region 생존 효과 (음식)
 
-    /// 먹었을 때 배고픔/체력/정신력 회복
-    protected virtual void ApplySurvivalEffects()
+    /// 먹었을 때 PlayerStatus에 배고픔/체력/정신력 회복
+    protected virtual void ApplySurvivalEffects(PlayerStatus stat)
     {
-        // TODO: SurvivalManager.Instance.AddHunger(itemData.hungerRestore) 등으로 교체
-        if (itemData.hungerRestore > 0) Debug.Log($"[음식] 배고픔 +{itemData.hungerRestore}");
-        if (itemData.healthRestore > 0) Debug.Log($"[음식] 체력 +{itemData.healthRestore}");
-        if (itemData.sanityRestore > 0) Debug.Log($"[음식] 정신력 +{itemData.sanityRestore}");
+        if (stat == null) return;
+        if (itemData.hungerRestore > 0) stat.RestoreHunger(itemData.hungerRestore);
+        if (itemData.healthRestore > 0) stat.RestoreHp(itemData.healthRestore);
+        if (itemData.sanityRestore > 0) stat.RestoreMental(itemData.sanityRestore);
     }
     #endregion
 
