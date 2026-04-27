@@ -91,5 +91,36 @@ public class PlayerStatus
         CurrentHp = Mathf.Max(CurrentHp - finalDamage, 0f);
     }
 
+    /// <summary>
+    /// 허기를 시간 경과에 따라 감소시킵니다.
+    /// HungerDrain은 분당 감소량이므로 초당으로 환산합니다.
+    /// 허기가 0이 되면 HungerHPDecreaseRate 비율로 체력을 감소시킵니다.
+    /// </summary>
+    public void UpdateHunger(float deltaTime)
+    {
+        CurrentHunger = Mathf.Max(CurrentHunger - HungerDrain / 60f * deltaTime, 0f);
+
+        if (CurrentHunger <= 0f)
+            CurrentHp = Mathf.Max(CurrentHp - HungerHPDecreaseRate * deltaTime, 0f);
+    }
+
+    /// <summary>
+    /// 정신력을 시간 경과에 따라 감소시킵니다.
+    /// MentalDecreaseRate는 초당 감소량입니다.
+    /// </summary>
+    public void UpdateMental(float deltaTime)
+    {
+        CurrentMental = Mathf.Max(CurrentMental - MentalDecreaseRate * deltaTime, 0f);
+    }
+
+    public void RestoreHunger(float amount)
+        => CurrentHunger = Mathf.Min(CurrentHunger + amount, MaxHunger);
+
+    public void RestoreHp(float amount)
+        => CurrentHp = Mathf.Min(CurrentHp + amount, MaxHp);
+
+    public void RestoreMental(float amount)
+        => CurrentMental = Mathf.Min(CurrentMental + amount, MaxMental);
+
     public bool IsDead => CurrentHp <= 0f;
 }

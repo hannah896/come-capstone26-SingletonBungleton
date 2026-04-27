@@ -41,7 +41,9 @@
       "Bash(bash /tmp/reposition_nodes.sh)",
       "Bash(.uloop/uloop.exe control-play-mode:*)",
       "Bash(where uloop:*)",
-      "Bash(grep -l \"CinemachineBrain\\\\|CinemachineCamera\" Assets/CustomPackage/Main/Screen/Camera/Prefabs/*.prefab)"
+      "Bash(grep -l \"CinemachineBrain\\\\|CinemachineCamera\" Assets/CustomPackage/Main/Screen/Camera/Prefabs/*.prefab)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(m['name'],'->',[a['name'] for a in m.get\\('actions',[]\\)]\\) for m in d.get\\('maps',[]\\)]\")",
+      "Bash(uloop fix *)"
     ]
   }
 }

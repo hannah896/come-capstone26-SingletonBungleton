@@ -25,6 +25,9 @@ public class PlayerInputData
     public bool TracePressed { get; set; }
     public Vector3 TraceDestination { get; set; }
 
+    // 상호작용 도달 시 수행할 액션 타입
+    public ActionType PendingAction { get; set; }
+
     #endregion
 
     #region 파생 프로퍼티

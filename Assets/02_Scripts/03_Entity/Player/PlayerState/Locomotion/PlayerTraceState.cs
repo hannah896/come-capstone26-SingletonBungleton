@@ -50,6 +50,15 @@ public class PlayerTraceState : PlayerSubStateBase
         if (toTarget.magnitude < arrivalThreshold)
         {
             Entity.Motor.SetHorizontalVelocity(Vector3.zero, 0f);
+
+            // 대기 중인 액션이 있으면 Action 루트 상태로 전환
+            if (Input.PendingAction != ActionType.None)
+            {
+                Machine.ChangeState(new PlayerActionState(Machine, Input.PendingAction));
+                Input.PendingAction = ActionType.None;
+                return;
+            }
+
             locomotion.ChangeToIdle();
             return;
         }

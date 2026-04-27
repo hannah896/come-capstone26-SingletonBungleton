@@ -2,6 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// 뽑기 상태 (Sub, Action 하위)
+/// Kevin Iglesias: HumanM@FarmingWithPlow01_R - Begin/Loop/Stop (Farming)
 /// </summary>
 public class PlayerDigState : PlayerSubStateBase
 {
@@ -10,18 +11,21 @@ public class PlayerDigState : PlayerSubStateBase
     public override void OnEnter()
     {
         base.OnEnter();
+        Machine.AnimData.PlayActionAnimation(Machine.AnimData.AnimHashKey.Dig);
         Debug.Log("[State] Dig 진입");
     }
 
     public override void OnExit()
     {
         base.OnExit();
+        Machine.AnimData.ResetActionTrigger(Machine.AnimData.AnimHashKey.Dig);
         Debug.Log("[State] Dig 퇴장");
     }
 
     public override void Update(float time = 1)
     {
         base.Update(time);
-        // TODO: 뽑기 애니메이션 완료 시 Action 종료
+        if (Machine.AnimData.IsActionAnimationCompleted())
+            Machine.ChangeState(new PlayerLocomotionState(Machine));
     }
 }

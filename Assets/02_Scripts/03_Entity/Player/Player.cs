@@ -51,11 +51,12 @@ public class Player : MonoBehaviour
 
     private async void Awake()
     {
-        var _statData = await Extensions.LoadAssetAsync<PlayerStatData>("PlayerStatData");
-        stat = new(_statData);
-
+        // machine과 inputData는 동기적으로 먼저 생성 (Start()가 await 복귀 전에 실행될 수 있으므로)
         inputData = new PlayerInputData();
         machine = new PlayerRootStateMachine(this, animator);
+
+        var _statData = await Extensions.LoadAssetAsync<PlayerStatData>("PlayerStatData");
+        stat = new(_statData);
         
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[Player] Initialized - Motor: " + (motor != null) + ", Animator: " + (animator != null));
@@ -106,16 +107,20 @@ public class Player : MonoBehaviour
 
     private void OnLoopUpdate(float deltaTime)
     {
-        if (motor == null) return;
-        
+        if (motor == null || machine == null) return;
+
         machine.OnUpdate(deltaTime);
         motor.Tick(deltaTime);  // 중력 시뮬레이션, 착지 감지, 이동 수행
-        inputData.ConsumeEventInputs();
+        inputData?.ConsumeEventInputs();
     }
 
     private void OnLoopGameUpdate(float deltaTime)
     {
         machine.OnGameUpdate(deltaTime);
+
+        if (stat == null) return;
+        stat.UpdateHunger(deltaTime);
+        stat.UpdateMental(deltaTime);
     }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

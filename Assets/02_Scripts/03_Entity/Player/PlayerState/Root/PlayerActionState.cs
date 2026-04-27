@@ -6,13 +6,32 @@ using UnityEngine;
 /// </summary>
 public class PlayerActionState : PlayerRootStateBase
 {
-    public PlayerActionState(PlayerRootStateMachine machine) : base(machine) { }
+    private readonly ActionType actionType;
+
+    public PlayerActionState(PlayerRootStateMachine machine, ActionType actionType) : base(machine)
+    {
+        this.actionType = actionType;
+    }
 
     public override void OnEnter()
     {
         base.OnEnter();
-        Debug.Log("[State] Action 진입");
-        // TODO: 상호작용 타입에 따라 적절한 Sub 상태로 초기화
+        Debug.Log($"[State] Action 진입 - {actionType}");
+
+        PlayerSubStateBase subState = actionType switch
+        {
+            ActionType.Pick    => new PlayerPickState(Machine),
+            ActionType.Mine    => new PlayerMineState(Machine),
+            ActionType.Chop    => new PlayerChopState(Machine),
+            ActionType.Dig     => new PlayerDigState(Machine),
+            ActionType.Ignite  => new PlayerIgniteState(Machine),
+            ActionType.Cook    => new PlayerCookState(Machine),
+            ActionType.Inspect => new PlayerInspectState(Machine),
+            ActionType.Build   => new PlayerBuildState(Machine),
+            _                  => new PlayerPickState(Machine),
+        };
+
+        SubStateMachine.Init(subState);
     }
 
     public override void OnExit()
@@ -23,7 +42,6 @@ public class PlayerActionState : PlayerRootStateBase
 
     public override void Update(float time = 1)
     {
-        // TODO: 행동 완료 시 Locomotion으로 복귀
         base.Update(time);
     }
 }

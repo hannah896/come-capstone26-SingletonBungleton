@@ -1,41 +1,32 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class InventoryUI : MonoBehaviour
+/// <summary>
+/// 인벤토리 팝업 UI.
+/// UIManager PopupLayer에 올라가며, GameScene에서 Tab 키로 열고 닫는다.
+/// 프리팹을 Addressables에 "UI_Popup_Inventory" 키로 등록 필요 (에디터 작업).
+/// </summary>
+public class UI_Popup_Inventory : UI_Popup
 {
     [Header("슬롯 설정")]
     [SerializeField] private GameObject slotPrefab;
     [SerializeField] private Transform slotContainer;
 
-    [Header("열기 키")]
-    [SerializeField] private KeyCode toggleKey = KeyCode.Tab;
+    private List<InventorySlotUI> _slotUIs = new();
 
-    private List<InventorySlotUI> _slotUIs = new List<InventorySlotUI>();
-    private bool _isOpen = false;
-
-    private void Start()
+    public override bool Initialize()
     {
+        if (!base.Initialize()) return false;
+
         BuildUI();
         InventoryManager.Instance.OnInventoryChanged += RefreshUI;
-        gameObject.SetActive(false);
-    }
-
-    private void Update()
-    {
-        if (Input.GetKeyDown(toggleKey)) Toggle();
+        return true;
     }
 
     private void OnDestroy()
     {
         if (InventoryManager.Instance != null)
             InventoryManager.Instance.OnInventoryChanged -= RefreshUI;
-    }
-
-    private void Toggle()
-    {
-        _isOpen = !_isOpen;
-        gameObject.SetActive(_isOpen);
-        if (_isOpen) RefreshUI();
     }
 
     private void BuildUI()
