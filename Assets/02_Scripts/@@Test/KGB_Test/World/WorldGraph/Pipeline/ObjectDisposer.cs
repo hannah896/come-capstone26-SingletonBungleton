@@ -19,8 +19,8 @@ public class ObjectDisposer : IGraphPipelineStage
     public void Initialize(WorldSettings settings)
     {
         _worldSettings = settings;
-        _disposeSettings = settings.DisposeSettings;
-        _prng = new System.Random(settings.WorldSeed + (int)WorldSeedChannel.ObjectDisposer);
+        _disposeSettings = _worldSettings.DisposeSettings;
+        _prng = new System.Random(_worldSettings.WorldSeed + (int)WorldSeedChannel.ObjectDisposer);
 
     }
 
@@ -52,6 +52,7 @@ public class ObjectDisposer : IGraphPipelineStage
             if (node.RegionData.Density <= 0f)
                 continue;
 
+            //null체크 후 오브젝트 배치
             await SpawnRegionObjectsAsync(node, ct);
         }
         _stopwatch.Stop();
@@ -82,10 +83,11 @@ public class ObjectDisposer : IGraphPipelineStage
 
         int positionIndex = 0;
 
-        
-        // ★ 통합된 Rule을 Fixed(필수 개수)와 Weighted(가중치)로 나눔
-        var fixedRules = regionData.PlacementRules?.Where(r => !r.isWeighted).ToList() ?? new List<PlacementRule>();
-        var weightedRules = regionData.PlacementRules?.Where(r => r.isWeighted).ToList() ?? new List<PlacementRule>();
+        if (regionData.RegionPlacementRule == null || regionData.RegionPlacementRule.Rules == null)
+            return;
+        // 통합된 Rule을 Fixed(필수 개수)와 Weighted(가중치)로 나눔
+        var fixedRules = regionData.RegionPlacementRule.Rules?.Where(r => !r.isWeighted).ToList() ?? new List<PlacementRule>();
+        var weightedRules = regionData.RegionPlacementRule.Rules?.Where(r => r.isWeighted).ToList() ?? new List<PlacementRule>();
 
         // 1. Fixed Objects 배치 (확정 개수 보장)
         foreach (var rule in fixedRules)

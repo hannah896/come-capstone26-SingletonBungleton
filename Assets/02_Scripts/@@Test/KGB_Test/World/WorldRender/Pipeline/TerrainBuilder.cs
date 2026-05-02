@@ -10,9 +10,10 @@ public class TerrainBuilder
     private const float DEFAULT_DETAIL_OBJECT_DISTANCE = 200f;
 
     public async UniTask<(TerrainData, GameObject)> BuildChunkTerrainAsync(
-    ChunkData chunk,
-    WorldSettings settings,
-    CancellationToken ct)
+        ChunkData chunk,
+        WorldSettings settings,
+        GameObject reuseTerrain = null,
+        CancellationToken ct = default)
     {
         int chunkSize = settings.ChunkSize; // 64
         float maxHeight = settings.GetHeight(HeightLevel.Max);
@@ -26,7 +27,7 @@ public class TerrainBuilder
         float[,] unityHeights = new float[chunkSize + 1, chunkSize + 1];
 
         // 1. 청크 로컬 데이터만 순회
-        for (int x = 0; x <=chunkSize; x++)
+        for (int x = 0; x <= chunkSize; x++)
         {
             for (int y = 0; y <= chunkSize; y++)
             {
@@ -36,16 +37,44 @@ public class TerrainBuilder
 
         terrainData.SetHeights(0, 0, unityHeights);
 
-        // 2. Terrain 게임 오브젝트 생성
-        GameObject terrainGO = Terrain.CreateTerrainGameObject(terrainData);
+        // 2. Terrain 게임 오브젝트 생성/재사용
+        GameObject terrainGO = reuseTerrain;
+        Terrain terrain = null;
+
+        if (terrainGO == null)
+        {
+            terrainGO = Terrain.CreateTerrainGameObject(terrainData);
+            terrain = terrainGO.GetComponent<Terrain>();
+        }
+        else
+        {
+            terrainGO.SetActive(true);
+            terrain = terrainGO.GetComponent<Terrain>();
+
+            if (terrain == null)
+            {
+                terrainGO = Terrain.CreateTerrainGameObject(terrainData);
+                terrain = terrainGO.GetComponent<Terrain>();
+            }
+            else
+            {
+                if (terrain.terrainData != null)
+                    Object.Destroy(terrain.terrainData);
+
+                terrain.terrainData = terrainData;
+
+                TerrainCollider collider = terrainGO.GetComponent<TerrainCollider>();
+                if (collider != null)
+                    collider.terrainData = terrainData;
+            }
+        }
+
         terrainGO.name = $"Chunk_Terrain_{chunk.ChunkCoord.x}_{chunk.ChunkCoord.y}";
 
         // 추가 : 터레인 설정
-        Terrain terrain = terrainGO.GetComponent<Terrain>();
         terrain.drawTreesAndFoliage = true;
         terrain.detailObjectDensity = 1.0f;     // 0~1
         terrain.detailObjectDistance = DEFAULT_DETAIL_OBJECT_DISTANCE;
-
 
         // ★ 3. 핵심: 청크 좌표를 실제 월드 좌표로 변환하여 배치!
         float worldX = chunk.ChunkCoord.x * chunkSize;

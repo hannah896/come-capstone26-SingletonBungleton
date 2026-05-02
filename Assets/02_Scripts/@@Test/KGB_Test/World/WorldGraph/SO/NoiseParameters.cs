@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "NoiseParameters", menuName = "ScriptableObjects/TestWorld/Noise Parameters")]
+[CreateAssetMenu(fileName = "NoiseParameters", menuName = "Scriptable Objects/TestWorld/Noise Parameters")]
 public class NoiseParameters : ScriptableObject
 {
     

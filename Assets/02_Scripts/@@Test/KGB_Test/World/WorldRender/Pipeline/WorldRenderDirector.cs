@@ -4,12 +4,12 @@ using System.Diagnostics;
 using System.Threading;
 using UnityEngine;
 
-
 public interface IChunkRenderer
 {
     UniTask AddChunkRenderAsync(ChunkData chunk);
     void UnloadChunk(Vector2Int coord);
 }
+
 public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
 {
     private TerrainBuilder _terrainBuilder;
@@ -19,7 +19,6 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
 
     private TerrainDetailLoader _detailLoader; // ★ 추가
     private TerrainDetailPainter _detailPainter;
-
 
     //  전역 세팅 캐싱
     private WorldSettings _settings;
@@ -36,6 +35,10 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
     private Dictionary<Vector2Int, GameObject> _activeTerrains = new();
     private Dictionary<Vector2Int, TerrainData> _activeTerrainDatas = new();
     private HashSet<Vector2Int> _requestedChunks = new();
+
+    private readonly Stack<GameObject> _terrainPool = new();
+    private Transform _terrainPoolRoot;
+
 
     // WorldChunkDirector가 씬 시작 시 가장 먼저 호출해 줄 초기화 함수
     public async UniTask InitializeAsync(WorldSettings settings, WorldGraphData graphData, CancellationToken ct)
@@ -86,8 +89,10 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
         long detailPaintMs = 0;
         long flushMs = 0;
 
-        // 1. 지형 융기 (Terrain 생성)
-        var (terrainData, terrainGO) = await _terrainBuilder.BuildChunkTerrainAsync(chunk, _settings, _ct);        
+        GameObject pooledTerrain = GetPooledTerrain();
+
+        // 1. 지형 융기 (Terrain 생성/재사용)
+        var (terrainData, terrainGO) = await _terrainBuilder.BuildChunkTerrainAsync(chunk, _settings, pooledTerrain,  _ct);        
         terrainBuildMs = chunkStopwatch.ElapsedMilliseconds;
 
         // 2. 텍스처 페인팅 (로컬 데이터 기반)
@@ -120,6 +125,7 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
         _activeTerrains[chunk.ChunkCoord] = terrainGO;
         _activeTerrainDatas[chunk.ChunkCoord] = terrainData;
         terrainGO.transform.SetParent(this.transform);
+        terrainGO.SetActive(true);
 
         UpdateNeighbors(chunk.ChunkCoord);
     }
@@ -175,8 +181,8 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
         _requestedChunks.Remove(coord);
         if (_activeTerrains.TryGetValue(coord, out GameObject terrainGO))
         {
-            Destroy(terrainGO); // 혹은 Object Pool로 반납
             _activeTerrains.Remove(coord);
+            ReturnTerrainToPool(terrainGO);
         }
 
         if (_activeTerrainDatas.TryGetValue(coord, out TerrainData terrainData))
@@ -184,6 +190,43 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
             Destroy(terrainData); // ★ 중요: TerrainData를 파괴하지 않으면 메모리 누수 발생!
             _activeTerrainDatas.Remove(coord);
         }
+    }
+
+    private GameObject GetPooledTerrain()
+    {
+        if (_terrainPool.Count == 0) return null;
+        return _terrainPool.Pop();
+    }
+
+    private void ReturnTerrainToPool(GameObject terrainGO)
+    {
+        if (terrainGO == null) return;
+
+        EnsureTerrainPoolRoot();
+
+        Terrain terrain = terrainGO.GetComponent<Terrain>();
+        if (terrain != null) terrain.terrainData = null;
+
+        TerrainCollider collider = terrainGO.GetComponent<TerrainCollider>();
+        if (collider != null) collider.terrainData = null;
+
+        terrainGO.SetActive(false);
+        terrainGO.transform.SetParent(_terrainPoolRoot, false);
+        _terrainPool.Push(terrainGO);
+    }
+
+    private void EnsureTerrainPoolRoot()
+    {
+        if (_terrainPoolRoot != null) return;
+
+        GameObject root = GameObject.Find("@TerrainPool_Root");
+        if (root == null)
+        {
+            root = new GameObject("@TerrainPool_Root");
+            root.transform.SetParent(transform, false);
+        }
+
+        _terrainPoolRoot = root.transform;
     }
 
     private void OnDestroy()
@@ -210,6 +253,14 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
             _detailPalette.Prototypes = null;
             _detailPalette = null;
         }
+
+        foreach (var pooled in _terrainPool)
+        {
+            if (pooled != null) Destroy(pooled);
+        }
+        _terrainPool.Clear();
+
+        if (_terrainPoolRoot != null) Destroy(_terrainPoolRoot.gameObject);
     }
 
     /// <summary>
@@ -226,8 +277,20 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
             if (terrainData != null) Destroy(terrainData);
         }
 
+        foreach (var pooled in _terrainPool)
+        {
+            if (pooled != null) Destroy(pooled);
+        }
+        _terrainPool.Clear();
+
         _activeTerrains.Clear();
         _activeTerrainDatas.Clear();
         _requestedChunks.Clear();
+
+        if (_terrainPoolRoot != null)
+        {
+            Destroy(_terrainPoolRoot.gameObject);
+            _terrainPoolRoot = null;
+        }
     }
 }

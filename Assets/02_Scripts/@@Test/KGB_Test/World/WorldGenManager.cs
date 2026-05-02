@@ -7,9 +7,9 @@ using UnityEngine;
 /// <summary>
 /// MapGenerator 사용 예제
 /// </summary>
-public class WorldGenUsageExample : MonoBehaviour
+public class WorldGenManager : MonoBehaviour
 {
-    [SerializeField] private WorldGraphDirector _worldLogicDirector;
+    [SerializeField] private WorldGraphDirector _worldGraphDirector;
     [SerializeField] private WorldChunkDirector _worldChunkDirector;
     [SerializeField] private WorldRenderDirector _worldRenderDirector;
     [SerializeField] private WorldSettings _worldSettings;
@@ -36,8 +36,8 @@ public class WorldGenUsageExample : MonoBehaviour
         _cts = new CancellationTokenSource();
 
         // 3개의 디렉터 모두 컴포넌트 유무 확인 및 부착
-        if (_worldLogicDirector == null)
-            _worldLogicDirector = Extensions.GetOrAddComponent<WorldGraphDirector>(this.gameObject);
+        if (_worldGraphDirector == null)
+            _worldGraphDirector = Extensions.GetOrAddComponent<WorldGraphDirector>(this.gameObject);
         if (_worldRenderDirector == null)
             _worldRenderDirector = Extensions.GetOrAddComponent<WorldRenderDirector>(this.gameObject);
         if (_worldChunkDirector == null)
@@ -146,11 +146,11 @@ public class WorldGenUsageExample : MonoBehaviour
             // ==========================================================
             // 1단계: 논리 데이터 생성 및 청크 분할
             // ==========================================================
-            await _worldLogicDirector.GenerateWorldLogicWithSettings(_worldSettings, _cts.Token);
+            await _worldGraphDirector.GenerateWorldLogicWithSettings(_worldSettings, _cts.Token);
             Debug.Log($"월드 그래프 생성 완료. 시드: {_worldSettings.WorldSeed}");
 
-            var graphData = _worldLogicDirector.GetWorldGraphData();
-            var logicData = _worldLogicDirector.GetWorldLogicData();
+            var graphData = _worldGraphDirector.GetWorldGraphData();
+            var logicData = _worldGraphDirector.GetWorldLogicData();
 
             // ==========================================================
             // 2단계: 렌더 디렉터 초기화 및 에셋 로드 

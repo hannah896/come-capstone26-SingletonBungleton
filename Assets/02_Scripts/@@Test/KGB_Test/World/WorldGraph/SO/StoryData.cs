@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "StoryData", menuName = "ScriptableObjects/TestWorld/Story Data")]
+[CreateAssetMenu(fileName = "StoryData", menuName = "Scriptable Objects/TestWorld/Story Data")]
 public class StoryData : ScriptableObject       
 {
     [Header("Story Info")]

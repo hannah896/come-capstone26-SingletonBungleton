@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-[CreateAssetMenu(fileName = "New Biome Data", menuName = "ScriptableObjects/TestWorld/Biome Data")]
+[CreateAssetMenu(fileName = "New Biome Data", menuName = "Scriptable Objects/TestWorld/Biome Data")]
 public class BiomeData : ScriptableObject
 {
     [Tooltip("이 지역의 바이옴 유형을 선택하세요. (예: Forest, Desert)")]

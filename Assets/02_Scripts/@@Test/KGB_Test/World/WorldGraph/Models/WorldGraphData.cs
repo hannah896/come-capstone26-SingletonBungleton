@@ -3,7 +3,7 @@ using System.Linq;
 using UnityEngine;
 
 /// <summary>
-/// 생성 결과
+/// WorldGraphDirector가 
 /// </summary>
 [System.Serializable]
 public class WorldGraphData

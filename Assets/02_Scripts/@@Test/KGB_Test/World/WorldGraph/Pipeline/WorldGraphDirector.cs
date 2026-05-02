@@ -40,6 +40,7 @@ public class WorldGraphDirector : MonoBehaviour
     {
         _pipeline = new List<IGraphPipelineStage>()
         {
+            // 파이프라인 순서대로 생성자 호출 
             new StoryGenerator(),
             new ForceSimulator(),
             new TerritoryBuilder(),
@@ -66,7 +67,7 @@ public class WorldGraphDirector : MonoBehaviour
     }
     #endregion
 
-    #region Main Pipeline - 전체 흐름 관리
+    #region Pipeline - 전체 흐름 관리
     private async UniTask GenerateWorldLogicAsync(CancellationToken ct)
     {
         if (_worldSettings == null || _storyData == null)

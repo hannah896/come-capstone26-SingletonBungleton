@@ -143,19 +143,25 @@ public class TerritoryBuilder : IGraphPipelineStage
 
             //await FitNodesToTileGridAsync();
 
+            // 최근접 노드 검색 최적화용 공간 그리드 구성
             await SpatialGridAsync();
 
-            // 노이즈 맵 생성 - 경계 왜곡과 자연스러운 타일 할당을 위해(기존 보로노이 분할에 노이즈 추가)
+            // 노이즈 맵 생성 - 타일별로 다중 옥타브 펄린 노이즈로 타일간 거리 왜곡
             await GenerateNoiseWorldAsync();
 
+            // 보로노이 분할 + 노이즈 왜곡 + 연결된 지역 분리 로직으로 타일에 영토 할당
             await AssignTerritoryAsync();
 
+            // 노이즈로 인해 발생한 고립된 섬(Orphan) 타일들을 주변 영토로 병합
             await CleanUpOrphanTilesAsync();
 
+            // 해안선과 영토 경계선 처리 - 맵 가장자리에서 바다 타일로 설정 + 영토 간 경계 타일 마킹
             await ProcessBordersAsync();
 
+            // 타일 데이터를 각 노드의 RegionData에 할당하여 소유 타일 목록 구축
             await AssignOwnedTilesToRegionsAsync();
 
+            // 영향력 맵 생성 - 각 타일이 해안선과 영토 경계선에서 얼마나 떨어져 있는지 계산하여 영향력 값으로 저장
             await GenerateInfluenceMapAsync();
 
         }
@@ -256,7 +262,8 @@ public class TerritoryBuilder : IGraphPipelineStage
     #endregion
 
     /// <summary>
-    /// 노이즈 맵 생성 - 타일별로 다중 옥타브 펄린 노이즈 계산하여 자연스러운 변형 추가
+    /// 노이즈 맵 생성 - 타일별로 다중 옥타브 펄린 노이즈 계산하여 
+    /// 이후 타일 간 거리 계산 시 노이즈로 왜곡하여 자연스러운 경계 형태 유도
     /// </summary>
     /// <returns></returns>
     #region Phase 2: Noise Map Generation
@@ -272,7 +279,7 @@ public class TerritoryBuilder : IGraphPipelineStage
         // 1. Job에 넘겨줄 1차원 배열(NativeArray) 생성 (TempJob으로 선언하여 메모리 누수 원천 차단)
         NativeArray<float> nativeNoise = new NativeArray<float>(totalLength, Allocator.TempJob);
 
-        // 2. 일꾼(Job)들에게 넘겨줄 데이터 포장
+        // 2. Job들에 넘겨줄 데이터 포장
         NoiseGenerationJob job = new NoiseGenerationJob
         {
             NoiseMap = nativeNoise,
@@ -286,7 +293,7 @@ public class TerritoryBuilder : IGraphPipelineStage
             NoiseStrength = _partiSettings.noiseStrength
         };
 
-        // 3. 작업 시작! (64개씩 묶어서 여러 CPU 코어에 던져버림)
+        // 3. 작업 시작 64개씩 묶어서 여러 CPU 코어에 할당
         JobHandle handle = job.Schedule(totalLength, 64);
 
         // 4. 유니티 메인 스레드가 프리즈되지 않도록, 백그라운드에서 작업이 끝날 때까지 비동기로 기다림.
@@ -296,7 +303,7 @@ public class TerritoryBuilder : IGraphPipelineStage
         }
         handle.Complete(); // 작업 완료 보장
 
-        // 5. 완료된 1차원 초고속 연산 결과를 우리의 2D 바구니(NoiseWorld)로  복사
+        // 5. 완료된 1차원 연산 결과를 우리의 2D 바구니(NoiseWorld)로  복사
         int index = 0;
         for (int y = 0; y < height; y++)
         {
@@ -312,52 +319,6 @@ public class TerritoryBuilder : IGraphPipelineStage
         if (_worldSettings.EnableStepByStep)
             await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
     }
-    //private async UniTask GenerateNoiseWorldAsync()
-    //{
-    //    int width = _worldLogicData.TerrainSize.x;
-    //    int height = _worldLogicData.TerrainSize.y;
-    //    int totalLength = width * height;
-
-    //    float offsetX = _prng.Next(-10000, 10000);
-    //    float offsetY = _prng.Next(-10000, 10000);
-
-    //    int processedCount = 0;
-
-    //    for (int x = 0; x < _worldLogicData.TerrainSize.x; x++)
-    //    {
-    //        for (int y = 0; y < _worldLogicData.TerrainSize.y; y++)
-    //        {
-    //            float sampleX = (x + offsetX) * _partiSettings.noiseScale;
-    //            float sampleY = (y + offsetY) * _partiSettings.noiseScale;
-
-    //            // 다중 옥타브 펄린 노이즈
-    //            float noise = 0f;
-    //            float amplitude = 1f;
-    //            float frequency = 1f;
-    //            float maxValue = 0f;
-
-    //            for (int octave = 0; octave < NOISE_OCTAVES; octave++)
-    //            {
-    //                noise += Mathf.PerlinNoise(sampleX * frequency, sampleY * frequency) * amplitude;
-    //                maxValue += amplitude;
-    //                amplitude *= NOISE_AMPLITUDE_DECAY;
-    //                frequency *= NOISE_FREQUENCY_GROWTH;
-    //            }
-
-    //            _worldLogicData.NoiseWorld[x, y] = (noise / maxValue) * _partiSettings.noiseStrength;
-
-    //            processedCount++;
-    //            if (processedCount % _partiSettings.batchSize == 0)
-    //            {
-    //                _ct.ThrowIfCancellationRequested();
-    //                await UniTask.Yield(_ct);
-    //            }
-    //        }
-    //    }
-
-    //    if (_worldSettings.EnableStepByStep)
-    //        await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
-    //}
     #endregion
 
     /// <summary>

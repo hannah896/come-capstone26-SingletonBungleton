@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "New World Settings", menuName = "ScriptableObjects/TestWorld/World Settings")]
+[CreateAssetMenu(fileName = "New World Settings", menuName = "Scriptable Objects/TestWorld/World Settings")]
 public class WorldSettings : ScriptableObject
 {
     [Header("--- Game Context ---")]
