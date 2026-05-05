@@ -16,16 +16,23 @@ public class CraftingManager : MonoBehaviour
         Instance = this;
     }
 
-    // 제작 가능 여부 확인 (재료만 체크)
+    // 제작 가능 여부 확인
     public bool CanCraft(RecipeDataSO recipe)
     {
         if (recipe == null) return false;
 
+        if (recipe.resultItem == null) return false;
+
         foreach (var ingredient in recipe.ingredients)
         {
+            if (ingredient.itemData == null)
+            {
+                Debug.Log($"[크래프팅] {recipe.recipeName} 재료 데이터 없음");
+                return false;
+            }
             if (!InventoryManager.Instance.HasItem(ingredient.itemData, ingredient.amount))
             {
-                Debug.Log($"[크래프팅] {ingredient.itemData.itemName} {ingredient.amount}개 부족!");
+                Debug.Log($"[크래프팅] {ingredient.itemData.itemName} {ingredient.amount}개 부족");
                 return false;
             }
         }
@@ -43,10 +50,13 @@ public class CraftingManager : MonoBehaviour
         bool success = InventoryManager.Instance.AddItem(recipe.resultItem, recipe.resultAmount);
 
         if (success)
-            Debug.Log($"[크래프팅] {recipe.recipeName} 제작 완료!");
+            Debug.Log($"[크래프팅] {recipe.recipeName} 제작 완료");
         else
-            Debug.Log($"[크래프팅] 인벤토리 가득 참!");
-
+        {
+            Debug.Log($"[크래프팅] 인벤토리 가득 참. 재료 반환");
+            foreach (var ingredient in recipe.ingredients)
+                InventoryManager.Instance.AddItem(ingredient.itemData, ingredient.amount);
+        }
         OnCraftingChanged?.Invoke();
         return success;
     }
@@ -67,5 +77,26 @@ public class CraftingManager : MonoBehaviour
         foreach (var recipe in allRecipes)
             if (CanCraft(recipe)) result.Add(recipe);
         return result;
+    }
+
+    // 특정 아이템 제작 레시피 찾기
+    public RecipeDataSO GetRecipeByResult(ItemDataSO resultItem)
+    {
+        foreach (var recipe in allRecipes)
+            if (recipe.resultItem == resultItem) return recipe;
+        return null;
+    }
+
+    // 전체 레시피 목록 출력
+    public void PrintAllRecipes()
+    {
+        Debug.Log($"[크래프팅] 전체 레시피 {allRecipes.Count}개");
+        foreach (var recipe in allRecipes)
+        {
+            string ingredients = "";
+            foreach (var ing in recipe.ingredients)
+                ingredients += $"{ing.itemData?.itemName} x{ing.amount} ";
+            Debug.Log($"  [{recipe.category}] {recipe.recipeName} → 재료: {ingredients}");
+        }
     }
 }

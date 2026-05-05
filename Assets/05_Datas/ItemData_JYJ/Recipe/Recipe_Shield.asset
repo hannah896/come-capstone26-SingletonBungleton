@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 64f7e092734e07b468c75b5208bc1759, type: 3}
-  m_Name: Recipe_CookedMeat
+  m_Name: Recipe_Shield
   m_EditorClassIdentifier: 
-  recipeName: "\uAD6C\uC6B4\uACE0\uAE30"
+  recipeName: "\uBC29\uD328"
   icon: {fileID: 0}
   category: 2
   ingredients:
-  - itemData: {fileID: 11400000, guid: 2dfc70791e0c5204388942da7d3fe05f, type: 2}
-    amount: 1
-  - itemData: {fileID: 11400000, guid: 2dfc70791e0c5204388942da7d3fe05f, type: 2}
-    amount: 1
-  resultItem: {fileID: 11400000, guid: 1fecbb54b066d744a880f37039875517, type: 2}
+  - itemData: {fileID: 11400000, guid: 64bd351efb9aecd468e2cd3ba48367e7, type: 2}
+    amount: 3
+  - itemData: {fileID: 11400000, guid: 9acaa5c28b0f06147905d7eff9260d7f, type: 2}
+    amount: 2
+  resultItem: {fileID: 0}
   resultAmount: 1

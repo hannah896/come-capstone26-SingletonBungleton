@@ -14,22 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_GroupName: Test_WorldTerrainLayers_Cliff
   m_GUID: b63b3c32022292c48a7fbe0635ba454f
-  m_SerializeEntries:
-  - m_GUID: 41a9aadaa8751404eacfe5300c130ad3
-    m_Address: Highlands_Cliff
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 64c7e257167b55446a6b0a820bf57e20
-    m_Address: Cliff_1
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 8f6787815430f52408419697a620ef84
-    m_Address: Cliff_2
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
+  m_SerializeEntries: []
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: d49714acbe7dc4846b65422625851c9a, type: 2}
   m_SchemaSet:
