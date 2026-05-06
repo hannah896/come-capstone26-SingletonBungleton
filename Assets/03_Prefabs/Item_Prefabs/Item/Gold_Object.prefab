@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 3975453250741052780}
   - component: {fileID: 262276571326986911}
   - component: {fileID: 15442170816800061}
+  - component: {fileID: 3394779592988523923}
   m_Layer: 16
   m_Name: Gold_Object
   m_TagString: Untagged
@@ -133,3 +134,18 @@ MonoBehaviour:
   maxHits: 5
   requiredTool: 2
   droppedItemPrefab: {fileID: 7141987332255213446, guid: 550896e55cf888149bf733be49197743, type: 3}
+--- !u!114 &3394779592988523923
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4247813784950203937}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fec30a63d8c2d064aa6f80aa7a97fcdc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  respawnTime: 7200
+  visualObject: {fileID: 4247813784950203937}
+  respawningEffect: {fileID: 0}

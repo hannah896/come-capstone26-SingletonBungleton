@@ -6,7 +6,7 @@ public class GatherableObject : MonoBehaviour
     [System.Serializable]
     public struct DropEntry
     {
-        public ItemDataSO itemData;  //드랍할아이템 연결
+        public ItemDataSO itemData; //드랍할아이템 연결
         [Range(0f, 1f)]
         public float dropChance;  //드랍확률
         public int minAmount;
@@ -20,20 +20,25 @@ public class GatherableObject : MonoBehaviour
 
     [Header("드랍 프리팹")]
     public GameObject droppedItemPrefab;  //인벤 다 차면 바닥에 스폰
-    private int _hits = 0;
 
-    public bool OnHit(SurvivalToolType usedTool)   //PlayerToolUsage에서 호출
+    private int _hits = 0;
+    private ResourceNode _resourceNode;
+
+    private void Awake()
+    {
+        _resourceNode = GetComponent<ResourceNode>();
+    }
+
+    public bool OnHit(SurvivalToolType usedTool)  //PlayerToolUsage에서 호출
     {
         if (requiredTool != SurvivalToolType.None && usedTool != requiredTool)
         {
             Debug.Log($"[채집] {requiredTool} 도구가 필요합니다.");
             return false;
         }
-
         _hits++;
         Debug.Log($"[채집] {gameObject.name} {_hits}/{maxHits}");
-
-        if (_hits >= maxHits )
+        if (_hits >= maxHits)
         {
             Gather();
             return true;
@@ -41,20 +46,19 @@ public class GatherableObject : MonoBehaviour
         return false;
     }
 
-    private void Gather()
+    private void Gather() 
     {
         foreach (var entry in dropTable)
         {
             if (Random.value > entry.dropChance) continue;
             int amount = Random.Range(entry.minAmount, entry.maxAmount + 1);
-
-            // 인벤토리에 추가
             bool added = InventoryManager.Instance.AddItem(entry.itemData, amount);
-
-            // 인벤토리 가득 찼으면 바닥에 드랍
             if (!added) SpawnDroppedItem(entry.itemData, amount);
         }
-        Destroy(gameObject);
+        if (_resourceNode != null)
+            _resourceNode.OnDepleted();
+        else
+            Destroy(gameObject);
     }
 
     private void SpawnDroppedItem(ItemDataSO itemData, int amount)
@@ -64,5 +68,10 @@ public class GatherableObject : MonoBehaviour
         pos.y = transform.position.y + 0.2f;
         var go = Instantiate(droppedItemPrefab, pos, Quaternion.identity);
         go.GetComponent<DroppedItem>().Setup(itemData, amount);
+    }
+
+    public void ResetHits()
+    {
+        _hits = 0;
     }
 }

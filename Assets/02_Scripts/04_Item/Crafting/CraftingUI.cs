@@ -42,9 +42,14 @@ public class CraftingUI : MonoBehaviour
         GetComponent<CanvasGroup>().blocksRaycasts = false;
     }
 
-    private void Update()
+/*    private void Update()
     {
         if (Input.GetKeyDown(toggleKey)) Toggle();
+    }*/
+
+    public void OpenDefault()
+    {
+        ShowCategory(_currentCategory);
     }
 
     private void Toggle()
@@ -55,6 +60,7 @@ public class CraftingUI : MonoBehaviour
         cg.blocksRaycasts = _isOpen;
         if (_isOpen) ShowCategory(_currentCategory);
     }
+
 
     private void ShowCategory(RecipeCategory category)
     {

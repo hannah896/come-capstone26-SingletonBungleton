@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 1345479169571616595}
   - component: {fileID: 9169496216973254093}
   - component: {fileID: 6878570228827773439}
+  - component: {fileID: 7282879556573775989}
   m_Layer: 16
   m_Name: Grass_Object
   m_TagString: Untagged
@@ -129,3 +130,18 @@ MonoBehaviour:
   maxHits: 1
   requiredTool: 0
   droppedItemPrefab: {fileID: 7141987332255213446, guid: 550896e55cf888149bf733be49197743, type: 3}
+--- !u!114 &7282879556573775989
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4139389073717829598}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fec30a63d8c2d064aa6f80aa7a97fcdc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  respawnTime: 1440
+  visualObject: {fileID: 0}
+  respawningEffect: {fileID: 0}
