@@ -10,6 +10,7 @@ public class JYJ_TestScene : SceneBase
     public override async UniTask EnterScene(CancellationToken token)
     {
         await Extensions.Instantiate<AudioManager>("AudioManager");
+
         //var go = new GameObject("ItemTest", typeof(ItemTest));
     }
 
