@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 167338272347002677}
   - component: {fileID: 8082077568248127030}
   - component: {fileID: 5790475771357718921}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -120,7 +120,8 @@ GameObject:
   - component: {fileID: 8454748153621892169}
   - component: {fileID: 8294404233308094092}
   - component: {fileID: 197166541010082422}
-  m_Layer: 0
+  - component: {fileID: -5539985041645699802}
+  m_Layer: 17
   m_Name: Resource_Wood_Charcoal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -206,3 +207,17 @@ MonoBehaviour:
   itemData: {fileID: 0}
   stackCount: 1
   resourceType: 1
+--- !u!114 &-5539985041645699802
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7088679065596465652}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f73c7ce96a0308c4faf61315b357c4a6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemData: {fileID: 11400000, guid: 405e514e4f6943e4fae2d25ad4a5e0b8, type: 2}
+  amount: 1

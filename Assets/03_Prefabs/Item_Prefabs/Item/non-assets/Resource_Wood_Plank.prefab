@@ -12,7 +12,8 @@ GameObject:
   - component: {fileID: 6217207727604675129}
   - component: {fileID: 1282894991770192308}
   - component: {fileID: 4977292668653840046}
-  m_Layer: 0
+  - component: {fileID: -7140164282606444735}
+  m_Layer: 17
   m_Name: Resource_Wood_Plank
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -98,6 +99,20 @@ MonoBehaviour:
   itemData: {fileID: 0}
   stackCount: 1
   resourceType: 2
+--- !u!114 &-7140164282606444735
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3731413996719802003}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f73c7ce96a0308c4faf61315b357c4a6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemData: {fileID: 11400000, guid: 64bd351efb9aecd468e2cd3ba48367e7, type: 2}
+  amount: 1
 --- !u!1 &5613524209430516775
 GameObject:
   m_ObjectHideFlags: 0
@@ -110,7 +125,7 @@ GameObject:
   - component: {fileID: 7512640643137125279}
   - component: {fileID: 8059415072699435305}
   - component: {fileID: 2522900222086014686}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}

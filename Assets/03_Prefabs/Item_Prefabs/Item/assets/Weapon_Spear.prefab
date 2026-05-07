@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3982426335704336452}
   - component: {fileID: 6136114099488518464}
   - component: {fileID: 5028886481152299529}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Weapon_Spear
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -151,6 +151,10 @@ PrefabInstance:
     - target: {fileID: 5474014686464707439, guid: 1a8eaaa38b934ed4dbe357ed598e1318, type: 3}
       propertyPath: m_Name
       value: Spear1H_Medium
+      objectReference: {fileID: 0}
+    - target: {fileID: 5474014686464707439, guid: 1a8eaaa38b934ed4dbe357ed598e1318, type: 3}
+      propertyPath: m_Layer
+      value: 17
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

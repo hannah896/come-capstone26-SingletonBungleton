@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 1854068083732552181}
   - component: {fileID: 6072403894379286616}
   - component: {fileID: 1085749407882600563}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Armor_Shield
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -111,6 +111,10 @@ PrefabInstance:
     - target: {fileID: 466176078827588958, guid: e9ea46be99de08f49b1d7ea40fa98847, type: 3}
       propertyPath: m_Name
       value: Shield_Medium
+      objectReference: {fileID: 0}
+    - target: {fileID: 466176078827588958, guid: e9ea46be99de08f49b1d7ea40fa98847, type: 3}
+      propertyPath: m_Layer
+      value: 17
       objectReference: {fileID: 0}
     - target: {fileID: 951350240802101220, guid: e9ea46be99de08f49b1d7ea40fa98847, type: 3}
       propertyPath: m_LocalPosition.x

@@ -74,3 +74,11 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 /Assets/00_Externals/PremiumAssets
+
+#Claude uloop
+.claude/
+.uloop/
+/.claude
+/.claude
+/.claude
+/.claude

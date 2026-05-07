@@ -11,7 +11,8 @@ GameObject:
   - component: {fileID: 5093190694455046676}
   - component: {fileID: 1009029460935520110}
   - component: {fileID: 7621648570074764800}
-  m_Layer: 0
+  - component: {fileID: -5403432065420224535}
+  m_Layer: 17
   m_Name: Resource_Plant_Grass
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -76,6 +77,20 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &-5403432065420224535
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1875203593042857739}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f73c7ce96a0308c4faf61315b357c4a6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemData: {fileID: 11400000, guid: 1443a72bdfd73b34d94f736cd1780a6d, type: 2}
+  amount: 1
 --- !u!1001 &1013754630185036918
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -87,6 +102,10 @@ PrefabInstance:
     - target: {fileID: 8328427097029787696, guid: 75a05ef7a9bc2bc499e0e476b93bc6c2, type: 3}
       propertyPath: m_Name
       value: Grass_20
+      objectReference: {fileID: 0}
+    - target: {fileID: 8328427097029787696, guid: 75a05ef7a9bc2bc499e0e476b93bc6c2, type: 3}
+      propertyPath: m_Layer
+      value: 17
       objectReference: {fileID: 0}
     - target: {fileID: 8709773650942925450, guid: 75a05ef7a9bc2bc499e0e476b93bc6c2, type: 3}
       propertyPath: m_LocalPosition.x

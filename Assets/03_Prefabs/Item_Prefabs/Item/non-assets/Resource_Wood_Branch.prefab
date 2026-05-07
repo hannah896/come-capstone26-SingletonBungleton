@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 555408372462753819}
   - component: {fileID: 768319345639857401}
   - component: {fileID: 7516615706012419193}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -120,7 +120,8 @@ GameObject:
   - component: {fileID: 6985296179842934832}
   - component: {fileID: 5637709396393408143}
   - component: {fileID: 1797480124120513120}
-  m_Layer: 0
+  - component: {fileID: 5907115664668173091}
+  m_Layer: 17
   m_Name: Resource_Wood_Branch
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -206,3 +207,17 @@ MonoBehaviour:
   itemData: {fileID: 0}
   stackCount: 1
   resourceType: 3
+--- !u!114 &5907115664668173091
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7757682703752552706}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f73c7ce96a0308c4faf61315b357c4a6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemData: {fileID: 11400000, guid: f41232c7538cb644fbe7551b247ff716, type: 2}
+  amount: 1

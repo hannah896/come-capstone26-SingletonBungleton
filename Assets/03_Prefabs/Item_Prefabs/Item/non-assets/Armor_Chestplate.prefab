@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 6094812412458809234}
   - component: {fileID: 7077192549602627473}
   - component: {fileID: 7642233728244191969}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -120,7 +120,7 @@ GameObject:
   - component: {fileID: 4363776827633670908}
   - component: {fileID: 6498589159469624454}
   - component: {fileID: 1355937027616391510}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Armor_Chestplate
   m_TagString: Untagged
   m_Icon: {fileID: 0}

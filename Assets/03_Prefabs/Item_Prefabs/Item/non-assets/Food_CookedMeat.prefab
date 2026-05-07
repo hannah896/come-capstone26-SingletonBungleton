@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 5105702622816126061}
   - component: {fileID: 3508554087204307287}
   - component: {fileID: 8430770991424381037}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Food_CookedMeat
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -112,7 +112,7 @@ GameObject:
   - component: {fileID: 7672645252522063656}
   - component: {fileID: 6021873034057699760}
   - component: {fileID: 4213007647464058675}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}

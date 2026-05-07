@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 253392474401916878}
   - component: {fileID: 9018040751724561178}
   - component: {fileID: 1942339846597407467}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Tool_Pickaxe
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -50,9 +50,7 @@ MonoBehaviour:
   itemData: {fileID: 11400000, guid: 2214542d16abe6d4f833fe41caa772c0, type: 2}
   stackCount: 1
   survivalToolType: 2
-  remainingFuel: 0
-  maxFuel: 0
-  fuelConsumptionRate: 0
+  torchLight: {fileID: 0}
 --- !u!54 &9018040751724561178
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -112,6 +110,10 @@ PrefabInstance:
     - target: {fileID: 8234146512507840093, guid: eb3fa0c9027882b4084517c1a3342a1f, type: 3}
       propertyPath: m_Name
       value: pickaxe
+      objectReference: {fileID: 0}
+    - target: {fileID: 8234146512507840093, guid: eb3fa0c9027882b4084517c1a3342a1f, type: 3}
+      propertyPath: m_Layer
+      value: 17
       objectReference: {fileID: 0}
     - target: {fileID: 8722979952443358439, guid: eb3fa0c9027882b4084517c1a3342a1f, type: 3}
       propertyPath: m_LocalPosition.x

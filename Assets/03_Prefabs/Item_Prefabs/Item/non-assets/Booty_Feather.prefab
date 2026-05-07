@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 305211983572997496}
   - component: {fileID: 5448741367789708753}
   - component: {fileID: 2516176118787450281}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -120,7 +120,8 @@ GameObject:
   - component: {fileID: 1035933662113956002}
   - component: {fileID: 4740830514700835942}
   - component: {fileID: 4395288255355100492}
-  m_Layer: 0
+  - component: {fileID: -1795659360639618262}
+  m_Layer: 17
   m_Name: Booty_Feather
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -207,3 +208,17 @@ MonoBehaviour:
   stackCount: 1
   bootyType: 3
   sourceMonsterName: 
+--- !u!114 &-1795659360639618262
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3204618846965255845}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f73c7ce96a0308c4faf61315b357c4a6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemData: {fileID: 11400000, guid: 591a07624aafd3b49bd884681bbc252f, type: 2}
+  amount: 1

@@ -12,7 +12,8 @@ GameObject:
   - component: {fileID: 4582639446550552151}
   - component: {fileID: 2719892853447622495}
   - component: {fileID: 4993669661722971841}
-  m_Layer: 0
+  - component: {fileID: -3197893110515545685}
+  m_Layer: 17
   m_Name: Booty_RawMeat
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -99,6 +100,20 @@ MonoBehaviour:
   stackCount: 1
   bootyType: 1
   sourceMonsterName: 
+--- !u!114 &-3197893110515545685
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5241942205852143392}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f73c7ce96a0308c4faf61315b357c4a6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemData: {fileID: 11400000, guid: 2dfc70791e0c5204388942da7d3fe05f, type: 2}
+  amount: 1
 --- !u!1 &6180972708401811598
 GameObject:
   m_ObjectHideFlags: 0
@@ -111,7 +126,7 @@ GameObject:
   - component: {fileID: 8644275141160756449}
   - component: {fileID: 6597434363604207500}
   - component: {fileID: 1563384750003960606}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}

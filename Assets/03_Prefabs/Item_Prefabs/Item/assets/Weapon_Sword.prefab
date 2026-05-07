@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 4911806151433843839}
   - component: {fileID: 6214074232569020760}
   - component: {fileID: 6772827334794708063}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Weapon_Sword
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -151,6 +151,10 @@ PrefabInstance:
     - target: {fileID: 3213851043470871558, guid: 5676bdababfc9c144824b1050aa60674, type: 3}
       propertyPath: m_Name
       value: Sword4_Blue
+      objectReference: {fileID: 0}
+    - target: {fileID: 3213851043470871558, guid: 5676bdababfc9c144824b1050aa60674, type: 3}
+      propertyPath: m_Layer
+      value: 17
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
