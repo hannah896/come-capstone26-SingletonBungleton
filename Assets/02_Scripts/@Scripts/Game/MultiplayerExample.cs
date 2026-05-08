@@ -142,7 +142,7 @@ public class MultiplayerExample : MonoBehaviour
         Log("[Network] 로비 접속 완료. 방 생성 중...");
 
         // 2. 방 생성 (Host)
-        var roomResult = await Main.Network.CreateRoomAsync(_roomName, _maxPlayers);
+        var roomResult = await Main.Network.CreateRoomAsync(new RoomCreateArgs(_roomName, _maxPlayers));
         if (!roomResult)
         {
             Log("[Network] 방 생성 실패");
@@ -179,7 +179,7 @@ public class MultiplayerExample : MonoBehaviour
         Log($"[Network] 방 참가 중: {_roomName}");
 
         // 2. 방 참가 (Client)
-        var roomResult = await Main.Network.JoinRoomAsync(_roomName);
+        var roomResult = await Main.Network.JoinRoomAsync(new RoomJoinArgs(_roomName));
         if (!roomResult)
         {
             Log("[Network] 방 참가 실패");

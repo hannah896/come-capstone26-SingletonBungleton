@@ -193,11 +193,9 @@ public class NetworkManager : CoreManager
     /// <summary>
     /// 새로운 방을 생성합니다. 생성자가 호스트가 됩니다.
     /// </summary>
-    /// <param name="roomName">방 이름</param>
-    /// <param name="maxPlayers">최대 플레이어 수</param>
-    public async UniTask<bool> CreateRoomAsync(string roomName, int maxPlayers = 4)
+    public async UniTask<bool> CreateRoomAsync(RoomCreateArgs args)
     {
-        _maxPlayers = maxPlayers;
+        _maxPlayers = args.MaxPlayers;
 
         EnsureRunner();
 
@@ -206,8 +204,8 @@ public class NetworkManager : CoreManager
         var startArgs = new StartGameArgs
         {
             GameMode = GameMode.Host,
-            SessionName = roomName,
-            PlayerCount = maxPlayers,
+            SessionName = args.RoomName,
+            PlayerCount = args.MaxPlayers,
             ObjectProvider = _runner.GetComponent<FusionPoolProvider>()
         };
 
@@ -218,7 +216,7 @@ public class NetworkManager : CoreManager
             SetState(NetworkState.InRoom);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            Debug.Log($"[NetworkManager] Room created: {roomName} (max: {maxPlayers})");
+            Debug.Log($"[NetworkManager] Room created: {args.RoomName} (max: {args.MaxPlayers})");
 #endif
             return true;
         }
@@ -234,8 +232,7 @@ public class NetworkManager : CoreManager
     /// <summary>
     /// 이름으로 방에 참가합니다.
     /// </summary>
-    /// <param name="roomName">참가할 방 이름</param>
-    public async UniTask<bool> JoinRoomAsync(string roomName)
+    public async UniTask<bool> JoinRoomAsync(RoomJoinArgs args)
     {
         EnsureRunner();
 
@@ -244,7 +241,7 @@ public class NetworkManager : CoreManager
         var startArgs = new StartGameArgs
         {
             GameMode = GameMode.Client,
-            SessionName = roomName,
+            SessionName = args.RoomName,
             ObjectProvider = _runner.GetComponent<FusionPoolProvider>()
         };
 
@@ -255,7 +252,7 @@ public class NetworkManager : CoreManager
             SetState(NetworkState.InRoom);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            Debug.Log($"[NetworkManager] Joined room: {roomName}");
+            Debug.Log($"[NetworkManager] Joined room: {args.RoomName}");
 #endif
             return true;
         }
@@ -271,38 +268,9 @@ public class NetworkManager : CoreManager
     /// <summary>
     /// SessionInfo를 통해 방에 참가합니다.
     /// </summary>
-    /// <param name="session">참가할 세션 정보</param>
     public async UniTask<bool> JoinRoomAsync(SessionInfo session)
     {
-        EnsureRunner();
-
-        SetState(NetworkState.Connecting);
-
-        var startArgs = new StartGameArgs
-        {
-            GameMode = GameMode.Client,
-            SessionName = session.Name,
-            ObjectProvider = _runner.GetComponent<FusionPoolProvider>()
-        };
-
-        var result = await _runner.StartGame(startArgs);
-
-        if (result.Ok)
-        {
-            SetState(NetworkState.InRoom);
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            Debug.Log($"[NetworkManager] Joined room via SessionInfo: {session.Name}");
-#endif
-            return true;
-        }
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        Debug.LogError($"[NetworkManager] Failed to join room: {result.ShutdownReason}");
-#endif
-
-        SetState(NetworkState.Disconnected);
-        return false;
+        return await JoinRoomAsync(new RoomJoinArgs(session.Name));
     }
 
     /// <summary>
@@ -557,6 +525,34 @@ public enum NetworkState
     InLobby,       // 로비 (방 탐색 중)
     InRoom,        // 방 참가 완료
     InGame         // 게임 진행 중
+}
+
+/// <summary>
+/// 방 생성 파라미터 (값형식)
+/// </summary>
+public readonly struct RoomCreateArgs
+{
+    public readonly string RoomName;
+    public readonly int MaxPlayers;
+
+    public RoomCreateArgs(string roomName, int maxPlayers = 4)
+    {
+        RoomName = roomName;
+        MaxPlayers = maxPlayers;
+    }
+}
+
+/// <summary>
+/// 방 참가 파라미터 (값형식)
+/// </summary>
+public readonly struct RoomJoinArgs
+{
+    public readonly string RoomName;
+
+    public RoomJoinArgs(string roomName)
+    {
+        RoomName = roomName;
+    }
 }
 
 #endregion

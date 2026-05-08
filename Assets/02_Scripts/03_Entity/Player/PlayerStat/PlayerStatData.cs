@@ -7,11 +7,15 @@ public class PlayerStatData : EntityStatData
     public float SprintMultiplier = 1.5f;
     public float JumpForce = 8f;
 
+    [Header("월드 시간")]
+    public float DayDurationMinutes = 12f; // 현실 기준 하루 길이 (분)
+
     [Header("허기")]
-    public float MaxHunger;
-    public float CurHunger;
-    public float HungerDrain;
-    public float HungerHPDecreaseRate; // 허기가 0이 되었을 때 체력 감소 비율
+    public float HungerDrain;             // 분당 허기 감소량
+    public float HungerHPDecreaseRate;    // 허기가 0이 되었을 때 체력 감소 비율
+
+    // 최대 허기 = 분당허기 * 하루(분) * 2
+    public float MaxHunger => HungerDrain * DayDurationMinutes * 2f;
 
 
     [Header("정신력")]
