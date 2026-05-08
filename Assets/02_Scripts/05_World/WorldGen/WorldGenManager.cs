@@ -25,6 +25,7 @@ public class WorldGenManager : MonoBehaviour
 
     private CancellationTokenSource _cts;
     private bool _isWorldSettingsLoaded;
+    private bool _isStartedWorldGeneration;
 
     public WorldGraphDirector GraphDirector => _worldGraphDirector;
     public WorldSettings WorldSettings => _worldSettings;
@@ -93,6 +94,7 @@ public class WorldGenManager : MonoBehaviour
     /// </summary>
     public async UniTask GenerateWorldByKey(int difficulty)
     {
+        _isStartedWorldGeneration = true;
         _cts?.Cancel();
         _cts?.Dispose();
         _cts = new CancellationTokenSource();
@@ -247,7 +249,10 @@ public class WorldGenManager : MonoBehaviour
 
             // 이제 플레이어가 제자리에 있으니, 해당 위치의 청크를 로딩합니다.
             await _worldChunkDirector.LoadInitialSpawnAreaAsync(spawnChunkCoord);
-            Debug.Log("월드 생성이 완료되었습니다!");   
+            Debug.Log("월드 생성이 완료되었습니다!");
+
+            _simulationManager = Extensions.GetOrAddComponent<WorldSimulationManager>(this.gameObject);
+
             _simulationManager.Initialize(_worldChunkDirector);
         }
         catch (System.OperationCanceledException)
@@ -273,11 +278,10 @@ public class WorldGenManager : MonoBehaviour
 
     void OnDrawGizmos()
     {
-        if (!_drawGizmos || _worldGraphDirector == null || _worldSettings == null) return;
+        if (!_isStartedWorldGeneration || !_drawGizmos || _worldGraphDirector == null || _worldSettings == null) return;
 
         var graphData = _worldGraphDirector.GetWorldGraphData();
         var logicData = _worldGraphDirector.GetWorldLogicData();
-        if (graphData == null || logicData == null) return;
 
         if (_showMapBounds)
         {

@@ -118,9 +118,33 @@ public class WorldGraphDirector : MonoBehaviour
     }
 
     #region Getters
-    public WorldLogicData GetWorldLogicData() => _currentContext.LogicData;
-    public WorldGraphData GetWorldGraphData() => _currentContext.GraphData;   
-    public WorldDisposeData GetWorldDisposeData() => _currentContext.DisposeData;
+    public WorldLogicData GetWorldLogicData()
+    {
+        if (_currentContext.LogicData == null)
+        {
+            Debug.LogError("WorldGenContext가 초기화되지 않았습니다!");
+            return null;
+        }
+        return _currentContext.LogicData;
+    }
+    public WorldGraphData GetWorldGraphData()
+    {
+        if (_currentContext.GraphData == null)
+        {
+            Debug.LogError("WorldGenContext가 초기화되지 않았습니다!");
+            return null;
+        }
+        return _currentContext.GraphData;
+    }
+    public WorldDisposeData GetWorldDisposeData()
+    {
+        if (_currentContext.DisposeData == null)
+        {
+            Debug.LogError("WorldGenContext가 초기화되지 않았습니다!");
+            return null;
+        }
+        return _currentContext.DisposeData;
+    }
     #endregion
 
 }
