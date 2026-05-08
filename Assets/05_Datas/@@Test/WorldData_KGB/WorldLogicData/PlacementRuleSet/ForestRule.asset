@@ -12,16 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5bdf5b2023db67d4aa58ca30033de479, type: 3}
   m_Name: ForestRule
   m_EditorClassIdentifier: 
-  Rules:
-  - prefabKey: 
-    isWeighted: 0
-    weight: 0
-    fixedCount: 0
-  - prefabKey: 
-    isWeighted: 0
-    weight: 0
-    fixedCount: 0
-  - prefabKey: 
-    isWeighted: 0
-    weight: 0
-    fixedCount: 0
+  ObjectRules:
+  - ruleName: Tree
+    prefabKey: Fir_4
+    usePiece: 1
+    pieceShapes:
+    - shape: 0
+      density: 0.1
+    useCluster: 1
+    clusterShapes:
+    - shape: 0
+      density: 0.3
+    clusterDensity: 0.8
+    clusterRadius: 6
+    patternLength: 6
+    curveAngle: 30
+  ItemRules: []
