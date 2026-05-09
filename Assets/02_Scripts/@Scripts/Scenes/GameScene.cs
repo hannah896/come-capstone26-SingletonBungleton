@@ -53,8 +53,6 @@ public class GameScene : SceneBase
     public static StageData CurrentStage { get; private set; }
     public UI_Hud_Game UIHud { get; private set; }
 
-    private UI_Popup_Inventory _inventoryUI;
-
     #endregion
 
     #region Fields
@@ -105,10 +103,6 @@ public class GameScene : SceneBase
         else if (Keyboard.current.fKey.wasPressedThisFrame)
         {
             GameState = GameState.Failed;
-        }
-        else if (Keyboard.current.tabKey.wasPressedThisFrame)
-        {
-            ToggleInventory();
         }
         else if (Keyboard.current.escapeKey.wasPressedThisFrame)
         {
@@ -244,19 +238,6 @@ public class GameScene : SceneBase
     }
 
     #endregion
-
-    private async void ToggleInventory()
-    {
-        if (_inventoryUI != null)
-        {
-            Main.UI.CloseTopPopup();
-            _inventoryUI = null;
-        }
-        else
-        {
-            _inventoryUI = await Extensions.ShowPopup<UI_Popup_Inventory>();
-        }
-    }
 
     private void SetStageData(int stage)
     {

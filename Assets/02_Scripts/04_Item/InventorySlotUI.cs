@@ -1,6 +1,6 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 public class InventorySlotUI : MonoBehaviour
 {
@@ -10,32 +10,82 @@ public class InventorySlotUI : MonoBehaviour
     [SerializeField] private GameObject stackBG;
     [SerializeField] private Image durabilityBar;
 
-    private int _slotIndex;
+    private int slotIndex;
 
     public void Refresh(int index, ItemDataSO itemData, int stack)
     {
-        _slotIndex = index;
+        ResolveReferences();
+        slotIndex = index;
 
         if (itemData == null)
         {
-            iconImage.enabled = false;
-            stackBG.SetActive(false);
-            if (durabilityBar) durabilityBar.gameObject.SetActive(false);
+            Clear();
             return;
         }
 
-        // 아이콘
-        iconImage.enabled = true;
-        if (itemData.icon != null)
+        if (iconImage != null)
+        {
+            bool hasIcon = itemData.icon != null;
+            iconImage.gameObject.SetActive(hasIcon);
+            iconImage.enabled = hasIcon;
             iconImage.sprite = itemData.icon;
+        }
 
-        // 스택 수 (2개 이상일 때만 표시)
         bool showStack = itemData.isStackable && stack > 1;
-        stackBG.SetActive(showStack);
-        if (showStack) stackText.text = stack.ToString();
+        if (stackBG != null) stackBG.SetActive(showStack);
+        if (stackText != null)
+        {
+            stackText.gameObject.SetActive(showStack);
+            stackText.text = showStack ? stack.ToString() : string.Empty;
+        }
 
-        // 내구도 바 (도구/장비만)
-        if (durabilityBar)
+        if (durabilityBar != null)
             durabilityBar.gameObject.SetActive(itemData.hasDurability);
+    }
+
+    private void Clear()
+    {
+        if (iconImage != null)
+        {
+            iconImage.gameObject.SetActive(false);
+            iconImage.enabled = false;
+            iconImage.sprite = null;
+        }
+
+        if (stackBG != null) stackBG.SetActive(false);
+        if (stackText != null) stackText.text = string.Empty;
+        if (durabilityBar != null) durabilityBar.gameObject.SetActive(false);
+    }
+
+    private void ResolveReferences()
+    {
+        if (iconImage == null)
+            iconImage = FindChildComponent<Image>("iconImage");
+        if (iconImage == null)
+            iconImage = FindChildComponent<Image>("UI_Slot_Icon");
+        if (stackText == null)
+            stackText = FindChildComponent<TextMeshProUGUI>("stackText");
+        if (stackText == null)
+            stackText = FindChildComponent<TextMeshProUGUI>("txtButton");
+        if (stackBG == null)
+            stackBG = FindChild("stackBG")?.gameObject;
+        if (durabilityBar == null)
+            durabilityBar = FindChildComponent<Image>("durabilityBar");
+    }
+
+    private T FindChildComponent<T>(string childName) where T : Component
+    {
+        Transform child = FindChild(childName);
+        return child != null ? child.GetComponent<T>() : null;
+    }
+
+    private Transform FindChild(string childName)
+    {
+        Transform[] children = GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < children.Length; i++)
+            if (children[i].name == childName)
+                return children[i];
+
+        return null;
     }
 }

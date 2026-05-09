@@ -22,12 +22,12 @@ public class StateMachine<T> where T : StateBase
     // LoopManager와 호환되는 메서드
     public virtual void OnUpdate(float deltaTime)
     {
-        CurrentState?.Update();
+        CurrentState?.Update(deltaTime);
     }
 
     public virtual void OnGameUpdate(float deltaTime)
     {
-        CurrentState?.FixedUpdate();
+        CurrentState?.FixedUpdate(deltaTime);
     }
 
     protected virtual void EnterNextState(T Nextstate)

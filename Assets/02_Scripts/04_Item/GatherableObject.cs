@@ -49,10 +49,11 @@ public class GatherableObject : MonoBehaviour
             int amount = Random.Range(entry.minAmount, entry.maxAmount + 1);
 
             // 인벤토리에 추가
-            bool added = InventoryManager.Instance.AddItem(entry.itemData, amount);
+            InventoryManager.EnsureInstance();
+            bool added = InventoryManager.Instance.AddItem(entry.itemData, amount, out int remainingAmount);
 
             // 인벤토리 가득 찼으면 바닥에 드랍
-            if (!added) SpawnDroppedItem(entry.itemData, amount);
+            if (!added) SpawnDroppedItem(entry.itemData, remainingAmount);
         }
         Destroy(gameObject);
     }

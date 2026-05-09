@@ -33,6 +33,12 @@ MonoBehaviour:
     m_SerializedLabels:
     - EveryScene
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c4d8527fdeb95da49b6582a14ae1f397
+    m_Address: InventoryUI
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - EveryScene
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 9e4e8c5dc6ff64928bbdd3b1169bbba0
     m_Address: UI_Loading_Iap
     m_ReadOnly: 0

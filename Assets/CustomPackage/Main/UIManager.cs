@@ -108,6 +108,12 @@ public class UIManager : PrimaryManager
         return await _huds.Show<T>(key, ct);
     }
 
+    public async UniTask<T> ShowHudOverlay<T>(string key = null, CancellationToken ct = default) where T : Component
+    {
+        await UniTask.WaitUntil(() => IsInitialized, cancellationToken: ct);
+        return await _huds.ShowOverlay<T>(key, ct);
+    }
+
     /// <summary>
     /// 현재 Hud를 닫습니다.
     /// </summary>
@@ -260,6 +266,38 @@ public class UIManager : PrimaryManager
         }
 
         // 현재 Hud 닫기
+        public async UniTask<T> ShowOverlay<T>(string key, CancellationToken ct) where T : Component
+        {
+            if (_root == null)
+            {
+                try
+                {
+                    await UniTask.WaitUntil(() => _root != null, cancellationToken: ct)
+                                 .Timeout(TimeSpan.FromSeconds(1));
+                }
+                catch (TimeoutException)
+                {
+                    return null;
+                }
+                catch (OperationCanceledException)
+                {
+                    return null;
+                }
+            }
+
+            var prefab = await Main.Resource.LoadAssetAsync<T>(key, AssetCacheType.NonRequired, ct);
+            if (prefab == null) return null;
+
+            var instance = Object.Instantiate(prefab, _root.transform);
+            if (!instance.TryGetComponent<T>(out var comp))
+            {
+                Object.Destroy(instance.gameObject);
+                return null;
+            }
+
+            return comp;
+        }
+
         public void Close()
         {
             if (_current == null) return;

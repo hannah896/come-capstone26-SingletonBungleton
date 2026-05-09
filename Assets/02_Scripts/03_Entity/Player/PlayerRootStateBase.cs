@@ -8,6 +8,7 @@ public abstract class PlayerRootStateBase : RootStateBase<Player>
     protected PlayerRootStateMachine Machine { get; private set; }
     protected PlayerInputData Input => Entity.InputData;
     protected PlayerMotor Motor => Entity.Motor;
+    public string CurrentSubStateName => SubStateMachine?.CurrentState?.GetType().Name ?? "None";
 
     protected PlayerRootStateBase(PlayerRootStateMachine machine) : base(machine.Owner)
     {
