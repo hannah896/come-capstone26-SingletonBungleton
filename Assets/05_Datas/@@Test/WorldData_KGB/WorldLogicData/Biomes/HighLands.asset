@@ -10,12 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4b29b41b2b0ac1442925d390d0edbb35, type: 3}
-  m_Name: HighLands
+  m_Name: Highlands
   m_EditorClassIdentifier: 
   BiomeType: 7
   DebugColor: {r: 1, g: 0.472049, b: 0, a: 1}
   TopKey: Highlnads_Top
-  AltKey: Highlnads_Alt
+  AltKey: Highlands_Alt
   CliffKey: Highlands_Cliff
-  SedimentKey: 
   DetailKeys: []
+  DecoKeys:
+  - Deco_Flowers_2

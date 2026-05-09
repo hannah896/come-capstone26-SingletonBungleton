@@ -17,5 +17,6 @@ MonoBehaviour:
   TopKey: Plains_Top
   AltKey: Plains_Alt
   CliffKey: 
-  SedimentKey: 
-  DetailKeys: []
+  DetailKeys:
+  - Detail_Grass_2
+  DecoKeys: []

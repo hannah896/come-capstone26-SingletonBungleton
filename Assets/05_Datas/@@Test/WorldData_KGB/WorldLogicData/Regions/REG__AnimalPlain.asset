@@ -15,6 +15,7 @@ MonoBehaviour:
   RegionName: REG__AnimalPlain
   TerritoryScale: 3
   Density: 0.6
+  RegionPlacementRule: {fileID: 0}
   POICandidates: []
   BaseHeightLevel: 1
   LandformType: 0

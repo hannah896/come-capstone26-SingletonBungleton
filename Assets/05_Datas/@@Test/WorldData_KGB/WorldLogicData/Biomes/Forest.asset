@@ -17,5 +17,6 @@ MonoBehaviour:
   TopKey: Forest_Top
   AltKey: Forest_Alt
   CliffKey: 
-  SedimentKey: 
-  DetailKeys: []
+  DetailKeys:
+  - Detail_Grass_1
+  DecoKeys: []

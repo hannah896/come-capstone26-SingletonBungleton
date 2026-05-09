@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7537f5576bb47534a92da3165a258cf4, type: 3}
-  m_Name: Noise_HighLands
+  m_Name: Noise_Highlands
   m_EditorClassIdentifier: 
   MinBumps: 1
   MaxBumps: 1

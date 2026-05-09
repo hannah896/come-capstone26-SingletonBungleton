@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Test_WorldSpawn
+  m_EditorClassIdentifier: 
+  m_GroupName: Test_WorldSpawn
+  m_GUID: b0dc5580bd3e65945b189b562a76a9bf
+  m_SerializeEntries:
+  - m_GUID: 47525b05d0712b4448dba24350cc3dd3
+    m_Address: Fir_4
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 81a4ae3b32471cc469f44a6af7acd727
+    m_Address: An_Fir_1
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: d49714acbe7dc4846b65422625851c9a, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: fdacc37dce8072b489bf3cb781874e98, type: 2}
+    - {fileID: 11400000, guid: b67a5e93cac2d194494da39ebb7049b6, type: 2}

@@ -16,10 +16,9 @@ MonoBehaviour:
   m_GUID: d17037975607e1843a64619767d4d57e
   m_SerializeEntries:
   - m_GUID: 90e2c2461b653ee4bb94afa84601909c
-    m_Address: TestWroldSettings
+    m_Address: TestWorldSettings
     m_ReadOnly: 0
-    m_SerializedLabels:
-    - TestWorldSettings
+    m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: d49714acbe7dc4846b65422625851c9a, type: 2}
