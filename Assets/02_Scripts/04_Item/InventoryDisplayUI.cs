@@ -7,11 +7,15 @@ public class InventoryDisplayUI : MonoBehaviour
 {
     [Header("UI 연결")]
     [SerializeField] private Transform slotContainer;
+    [SerializeField] private Transform equipSlotContainer;
     [SerializeField] private PlayerInventory playerInventory;
     [SerializeField] private bool toggleWithTab = true;
     [SerializeField] private bool hideOnStart = false;
 
     private readonly List<InventorySlotUI> slotUIs = new();
+    private InventorySlotUI headSlotUI;
+    private InventorySlotUI chestSlotUI;
+    private InventorySlotUI handSlotUI;
     private CanvasGroup canvasGroup;
     private bool isSubscribed;
     private bool isVisible = true;
@@ -92,10 +96,21 @@ public class InventoryDisplayUI : MonoBehaviour
             if (slotUIs[i] == null) continue;
 
             if (i < count)
+            {
+                slotUIs[i].BindInventorySlot(playerInventory, i);
                 slotUIs[i].Refresh(i, playerInventory.Slots[i], playerInventory.StackCounts[i]);
+            }
             else
+            {
+                slotUIs[i].BindInventorySlot(playerInventory, i);
                 slotUIs[i].Refresh(i, null, 0);
+            }
         }
+
+        RefreshEquipSlot(headSlotUI, EquipSlot.Head);
+        RefreshEquipSlot(chestSlotUI, EquipSlot.Chest);
+        RefreshEquipSlot(handSlotUI, EquipSlot.Hand);
+        RefreshFocus(playerInventory.SelectedSlotIndex);
     }
 
     public void Bind(PlayerInventory inventory)
@@ -109,6 +124,7 @@ public class InventoryDisplayUI : MonoBehaviour
 
         playerInventory.OnInventoryChanged += RefreshUI;
         playerInventory.OnInventoryOpenChanged += SetVisible;
+        playerInventory.OnSelectedSlotChanged += RefreshFocus;
         isSubscribed = true;
 
         SetVisible(playerInventory.IsOpen || !hideOnStart);
@@ -119,29 +135,56 @@ public class InventoryDisplayUI : MonoBehaviour
     {
         canvasGroup = gameObject.GetOrAddComponent<CanvasGroup>();
 
-        if (slotContainer != null) return;
-
         Transform[] children = GetComponentsInChildren<Transform>(true);
         for (int i = 0; i < children.Length; i++)
         {
-            if (children[i].name != "Slots") continue;
-            slotContainer = children[i];
-            return;
+            if (slotContainer == null &&
+                (children[i].name == "Slots" || children[i].name == "InvenSlots"))
+            {
+                slotContainer = children[i];
+            }
+
+            if (equipSlotContainer == null && children[i].name == "EquipSlots")
+                equipSlotContainer = children[i];
         }
     }
 
     private void CollectSlots()
     {
         slotUIs.Clear();
-        if (slotContainer == null) return;
+        headSlotUI = null;
+        chestSlotUI = null;
+        handSlotUI = null;
 
-        foreach (Transform child in slotContainer)
+        if (slotContainer != null)
         {
-            InventorySlotUI slotUI = child.GetComponent<InventorySlotUI>();
-            if (slotUI == null)
-                slotUI = child.gameObject.AddComponent<InventorySlotUI>();
+            foreach (Transform child in slotContainer)
+            {
+                InventorySlotUI slotUI = GetOrAddSlotUI(child);
+                slotUIs.Add(slotUI);
+            }
+        }
 
-            slotUIs.Add(slotUI);
+        if (equipSlotContainer == null) return;
+
+        for (int i = 0; i < equipSlotContainer.childCount; i++)
+        {
+            Transform child = equipSlotContainer.GetChild(i);
+            InventorySlotUI slotUI = GetOrAddSlotUI(child);
+            EquipSlot slot = ResolveEquipSlot(child, i);
+
+            switch (slot)
+            {
+                case EquipSlot.Head:
+                    headSlotUI = slotUI;
+                    break;
+                case EquipSlot.Chest:
+                    chestSlotUI = slotUI;
+                    break;
+                case EquipSlot.Hand:
+                    handSlotUI = slotUI;
+                    break;
+            }
         }
     }
 
@@ -153,6 +196,7 @@ public class InventoryDisplayUI : MonoBehaviour
         {
             playerInventory.OnInventoryChanged -= RefreshUI;
             playerInventory.OnInventoryOpenChanged -= SetVisible;
+            playerInventory.OnSelectedSlotChanged -= RefreshFocus;
         }
 
         isSubscribed = false;
@@ -165,5 +209,51 @@ public class InventoryDisplayUI : MonoBehaviour
             if (slotUIs[i] == null) continue;
             slotUIs[i].Refresh(i, null, 0);
         }
+
+        if (headSlotUI != null) headSlotUI.RefreshEquipment(EquipSlot.Head, null);
+        if (chestSlotUI != null) chestSlotUI.RefreshEquipment(EquipSlot.Chest, null);
+        if (handSlotUI != null) handSlotUI.RefreshEquipment(EquipSlot.Hand, null);
+    }
+
+    private void RefreshEquipSlot(InventorySlotUI slotUI, EquipSlot equipSlot)
+    {
+        if (slotUI == null || playerInventory == null) return;
+
+        slotUI.BindEquipmentSlot(playerInventory, equipSlot);
+        slotUI.RefreshEquipment(equipSlot, playerInventory.GetEquippedItem(equipSlot));
+    }
+
+    private void RefreshFocus(int selectedIndex)
+    {
+        for (int i = 0; i < slotUIs.Count; i++)
+        {
+            if (slotUIs[i] == null) continue;
+            slotUIs[i].SetFocused(i == selectedIndex);
+        }
+    }
+
+    private static InventorySlotUI GetOrAddSlotUI(Transform slot)
+    {
+        InventorySlotUI slotUI = slot.GetComponent<InventorySlotUI>();
+        if (slotUI == null)
+            slotUI = slot.gameObject.AddComponent<InventorySlotUI>();
+
+        return slotUI;
+    }
+
+    private static EquipSlot ResolveEquipSlot(Transform slot, int index)
+    {
+        string name = slot.name.ToLowerInvariant();
+        if (name.Contains("head")) return EquipSlot.Head;
+        if (name.Contains("chest")) return EquipSlot.Chest;
+        if (name.Contains("hand")) return EquipSlot.Hand;
+
+        return index switch
+        {
+            0 => EquipSlot.Hand,
+            1 => EquipSlot.Chest,
+            2 => EquipSlot.Head,
+            _ => EquipSlot.None
+        };
     }
 }

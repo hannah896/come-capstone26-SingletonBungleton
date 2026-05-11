@@ -43,17 +43,19 @@ public class GatherableObject : MonoBehaviour
 
     private void Gather()
     {
+        PlayerInventory inventory = FindFirstObjectByType<PlayerInventory>();
+
         foreach (var entry in dropTable)
         {
             if (Random.value > entry.dropChance) continue;
             int amount = Random.Range(entry.minAmount, entry.maxAmount + 1);
+            int remainingAmount = amount;
 
-            // 인벤토리에 추가
-            InventoryManager.EnsureInstance();
-            bool added = InventoryManager.Instance.AddItem(entry.itemData, amount, out int remainingAmount);
+            bool added = inventory != null &&
+                inventory.AddItem(entry.itemData, amount, out remainingAmount);
 
-            // 인벤토리 가득 찼으면 바닥에 드랍
-            if (!added) SpawnDroppedItem(entry.itemData, remainingAmount);
+            if (!added)
+                SpawnDroppedItem(entry.itemData, remainingAmount);
         }
         Destroy(gameObject);
     }

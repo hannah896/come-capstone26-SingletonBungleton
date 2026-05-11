@@ -15,12 +15,6 @@ MonoBehaviour:
   m_GroupName: Prefabs_UI
   m_GUID: 2411e90366f22fd44a7a6ee35752873b
   m_SerializeEntries:
-  - m_GUID: 2e927002392dc4d62963b0db40ede1ef
-    m_Address: UI_Loading_Ads
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EveryScene
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 45dc1db2f43944772bc1917712a974bc
     m_Address: UI_LoadingCanvas
     m_ReadOnly: 0
@@ -29,18 +23,6 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 796bec8deb6444a02abffc7524862968
     m_Address: UI_Loader
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EveryScene
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: c4d8527fdeb95da49b6582a14ae1f397
-    m_Address: InventoryUI
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EveryScene
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 9e4e8c5dc6ff64928bbdd3b1169bbba0
-    m_Address: UI_Loading_Iap
     m_ReadOnly: 0
     m_SerializedLabels:
     - EveryScene

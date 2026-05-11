@@ -2,6 +2,55 @@
 
 ---
 
+## 2026-05-11
+
+### 1. 인벤토리 입력 구조 변경
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerInputData.cs`, `PlayerInputHandler.cs`, `PlayerInventory.cs`, `Assets/02_Scripts/04_Item/InventoryDisplayUI.cs`, `InventorySlotUI.cs`
+
+- 아이템 줍기 입력을 `G` 키로 분리
+- 선택 슬롯 장착 입력을 `E` 키 전용으로 변경
+  - 기존 `E = Interact/줍기` 흐름은 인벤토리 로직에서 제거
+  - `InputActions_PlayerInputHandler`에서 `Interact.performed` 연결 제거
+- 마우스 휠 입력으로 인벤토리 선택 슬롯 포커스 이동 구현
+- 숫자키 입력은 해당 슬롯 직접 선택으로 유지
+- 선택된 슬롯은 `InventorySlotUI`에서 `Outline`으로 표시
+- 장착 슬롯 UI 갱신을 위해 `Head/Chest/Hand` 장착 슬롯 표시 로직 보강
+
+### 2. 우클릭 도구 상호작용 추가
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerInputData.cs`, `PlayerInventory.cs`
+
+- 마우스 우클릭을 장착 도구 사용 입력으로 추가
+- 손 슬롯(`EquipSlot.Hand`)에 장착된 생존 도구 기준으로 화면 중앙 레이캐스트 수행
+- 레이캐스트 대상에 `GatherableObject`가 있으면 `OnHit(SurvivalToolType)` 호출
+- UI 위에서 우클릭한 경우 도구 사용이 발생하지 않도록 `Main.Input.IsPointerOverUI()` 검사 추가
+
+### 3. 1인칭 로컬 플레이어 뷰 처리
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/Player.cs`, `PlayerFirstPersonCameraController.cs`, `PlayerInventory.cs`
+
+- Photon Fusion `NetworkObject.HasInputAuthority` 기준으로 로컬 플레이어만 FP 카메라/입력/인벤토리 UI를 초기화하도록 변경
+- 로컬 플레이어는 자신의 몸 렌더러를 `ShadowCastingMode.ShadowsOnly`로 전환해 FP 카메라에 몸이 비치지 않도록 처리
+- 원격 플레이어는 렌더러를 숨기지 않아 멀티플레이에서 다른 플레이어가 정상적으로 보이도록 처리
+- 손 슬롯 장착 아이템 변경 이벤트(`OnEquippedItemChanged`)를 추가해 장착 도구 프리팹 표시 갱신을 연결
+
+**검증:** `uloop compile` 실행 결과 컴파일 에러 0개, 경고 0개.
+
+### 4. 1인칭 도구 피벗 프리셋 방식 변경
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerFirstPersonCameraController.cs`, `Assets/02_Scripts/03_Entity/Player/Player.cs`, `Assets/02_Scripts/04_Item/DroppedItem.cs`
+
+- 런타임에 `FirstPersonView` 루트나 임시 손 모델을 자동 생성하던 흐름 제거
+- 장착 아이템 변경 이벤트를 받아 손 슬롯 도구 프리팹을 `ToolPivot` 바로 아래 자식으로만 생성하도록 변경
+- 생성된 도구의 위치, 회전, 스케일, 이름, Collider, Rigidbody, MonoBehaviour, Renderer 설정은 건드리지 않도록 유지
+- 이전 장착 도구는 새 장착 도구를 붙이기 전에 제거하여 `ToolPivot` 아래에 현재 장착 도구만 남도록 처리
+- 장착 도구 프리팹의 Rigidbody는 장착 중 `isKinematic = true`로 고정하고, 월드에 버려져 `DroppedItem.Setup()`을 타면 `isKinematic = false`로 되돌리도록 처리
+
+**검증:** `uloop compile` 실행 결과 컴파일 에러 0개, 경고 0개.
+
+---
+
 ## 2026-05-06
 
 ### 1. Player 인벤토리 기능 연결

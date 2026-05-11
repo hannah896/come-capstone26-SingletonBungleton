@@ -8,64 +8,89 @@ public class CraftingManager : MonoBehaviour
     [Header("전체 레시피 목록")]
     public List<RecipeDataSO> allRecipes;
 
+    [SerializeField] private PlayerInventory playerInventory;
+
     public event System.Action OnCraftingChanged;
 
     private void Awake()
     {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         Instance = this;
     }
 
-    // 제작 가능 여부 확인 (재료만 체크)
+    public void Bind(PlayerInventory inventory)
+    {
+        playerInventory = inventory;
+    }
+
     public bool CanCraft(RecipeDataSO recipe)
     {
         if (recipe == null) return false;
 
+        PlayerInventory inventory = ResolveInventory();
+        if (inventory == null) return false;
+
         foreach (var ingredient in recipe.ingredients)
         {
-            if (!InventoryManager.Instance.HasItem(ingredient.itemData, ingredient.amount))
+            if (!inventory.HasItem(ingredient.itemData, ingredient.amount))
             {
-                Debug.Log($"[크래프팅] {ingredient.itemData.itemName} {ingredient.amount}개 부족!");
+                Debug.Log($"[크래프팅] {ingredient.itemData.itemName} {ingredient.amount}개 부족");
                 return false;
             }
         }
+
         return true;
     }
 
-    // 제작 실행
     public bool Craft(RecipeDataSO recipe)
     {
         if (!CanCraft(recipe)) return false;
 
-        foreach (var ingredient in recipe.ingredients)
-            InventoryManager.Instance.RemoveItem(ingredient.itemData, ingredient.amount);
+        PlayerInventory inventory = ResolveInventory();
+        if (inventory == null) return false;
 
-        bool success = InventoryManager.Instance.AddItem(recipe.resultItem, recipe.resultAmount);
+        foreach (var ingredient in recipe.ingredients)
+            inventory.RemoveItem(ingredient.itemData, ingredient.amount);
+
+        bool success = inventory.AddItem(recipe.resultItem, recipe.resultAmount);
 
         if (success)
             Debug.Log($"[크래프팅] {recipe.recipeName} 제작 완료!");
         else
-            Debug.Log($"[크래프팅] 인벤토리 가득 참!");
+            Debug.Log("[크래프팅] 인벤토리 가득 참");
 
         OnCraftingChanged?.Invoke();
         return success;
     }
 
-    // 카테고리별 필터
     public List<RecipeDataSO> GetRecipesByCategory(RecipeCategory category)
     {
         List<RecipeDataSO> result = new List<RecipeDataSO>();
         foreach (var recipe in allRecipes)
             if (recipe.category == category) result.Add(recipe);
+
         return result;
     }
 
-    // 제작 가능한 레시피만 필터
     public List<RecipeDataSO> GetCraftableRecipes()
     {
         List<RecipeDataSO> result = new List<RecipeDataSO>();
         foreach (var recipe in allRecipes)
             if (CanCraft(recipe)) result.Add(recipe);
+
         return result;
+    }
+
+    private PlayerInventory ResolveInventory()
+    {
+        if (playerInventory != null) return playerInventory;
+
+        playerInventory = FindFirstObjectByType<PlayerInventory>();
+        return playerInventory;
     }
 }

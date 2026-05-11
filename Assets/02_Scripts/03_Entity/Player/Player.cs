@@ -1,3 +1,4 @@
+using Fusion;
 using UnityEngine;
 
 public class Player : MonoBehaviour
@@ -44,6 +45,7 @@ public class Player : MonoBehaviour
     public string CurrentStateName => machine?.CurrentStateName ?? "None";
     public string CurrentSubStateName => machine?.CurrentSubStateName ?? "None";
     public bool IsGrounded => motor != null && motor.IsGrounded;
+    public bool IsLocalPlayer => IsLocalPlayerObject();
     #endregion
 
     private void OnValidate()
@@ -75,6 +77,16 @@ public class Player : MonoBehaviour
     }
     private async void Start()
     {
+        bool isLocalPlayer = IsLocalPlayerObject();
+        fpCameraController?.SetLocalView(isLocalPlayer);
+
+        if (!isLocalPlayer)
+        {
+            var remoteLocomotionState = new PlayerLocomotionState(machine);
+            machine.Init(remoteLocomotionState);
+            return;
+        }
+
         // InputManager 초기화 완료 대기
         while (!Main.Input.IsInitialized)
         {
@@ -88,6 +100,7 @@ public class Player : MonoBehaviour
 
         // 1인칭 카메라 컨트롤러 바인딩 및 카메라 동적 생성
         fpCameraController?.Bind(inputData, transform);
+        fpCameraController?.BindInventory(playerInventory);
         if (fpCameraController != null)
             await fpCameraController.InitCameraAsync();
 
@@ -116,7 +129,8 @@ public class Player : MonoBehaviour
     {
         Main.Loop.OnGameUpdate -= OnLoopGameUpdate;
         Main.Loop.OnUpdate -= OnLoopUpdate;
-        Main.Input.RemoveInput<InputActions_PlayerInputHandler>();
+        if (IsLocalPlayerObject() && Main.Input != null)
+            Main.Input.RemoveInput<InputActions_PlayerInputHandler>();
     }
 
     private void OnLoopUpdate(float deltaTime)
@@ -125,8 +139,11 @@ public class Player : MonoBehaviour
 
         machine.OnUpdate(deltaTime);
         motor.Tick(deltaTime);  // 중력 시뮬레이션, 착지 감지, 이동 수행
-        playerInventory?.Tick();
-        inputData?.ConsumeEventInputs();
+        if (IsLocalPlayerObject())
+        {
+            playerInventory?.Tick();
+            inputData?.ConsumeEventInputs();
+        }
     }
 
     private void OnLoopGameUpdate(float deltaTime)
@@ -174,4 +191,10 @@ public class Player : MonoBehaviour
         }
     }
 #endif
+
+    private bool IsLocalPlayerObject()
+    {
+        NetworkObject networkObject = GetComponent<NetworkObject>();
+        return networkObject == null || networkObject.HasInputAuthority;
+    }
 }

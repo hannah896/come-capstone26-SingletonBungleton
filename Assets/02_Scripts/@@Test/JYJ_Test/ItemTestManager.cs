@@ -13,10 +13,13 @@ public class ItemTestManager : MonoBehaviour
     [Header("크래프팅 테스트")]
     public RecipeDataSO testRecipe;
 
+    private PlayerInventory inventory;
 
     private void Update()
     {
-        // 숫자키로 테스트
+        if (inventory == null)
+            inventory = FindFirstObjectByType<PlayerInventory>();
+
         if (Input.GetKeyDown(KeyCode.Alpha1)) TestAddResource();
         if (Input.GetKeyDown(KeyCode.Alpha2)) TestAddFood();
         if (Input.GetKeyDown(KeyCode.Alpha3)) TestAddTool();
@@ -28,78 +31,103 @@ public class ItemTestManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha9)) TestCraftableFilter();
     }
 
-    // 1키 — 재료 아이템 추가 (스택 테스트)
-    void TestAddResource()
+    private void TestAddResource()
     {
-        InventoryManager.Instance.AddItem(testResource, 5);
-        Debug.Log($"[테스트] {testResource.itemName} 5개 추가 → 현재 {InventoryManager.Instance.GetItemCount(testResource)}개");
+        if (!TryResolveInventory()) return;
+
+        inventory.AddItem(testResource, 5);
+        Debug.Log($"[테스트] {testResource.itemName} 5개 추가, 현재 {inventory.GetItemCount(testResource)}개");
     }
 
-    // 2키 — 음식 추가
-    void TestAddFood()
+    private void TestAddFood()
     {
-        InventoryManager.Instance.AddItem(testFood, 1);
+        if (!TryResolveInventory()) return;
+
+        inventory.AddItem(testFood, 1);
         Debug.Log($"[테스트] {testFood.itemName} 추가");
     }
 
-    // 3키 — 도구 추가
-    void TestAddTool()
+    private void TestAddTool()
     {
-        InventoryManager.Instance.AddItem(testTool, 1);
+        if (!TryResolveInventory()) return;
+
+        inventory.AddItem(testTool, 1);
         Debug.Log($"[테스트] {testTool.itemName} 추가");
     }
 
-    // 4키 — 채집 오브젝트 타격 (GatherableObject 테스트)
-    void TestGather()
+    private void TestGather()
     {
-        if (testTree == null) { Debug.Log("[테스트] Tree_Object 연결 안 됨!"); return; }
+        if (testTree == null)
+        {
+            Debug.Log("[테스트] Tree_Object 연결 없음");
+            return;
+        }
+
         testTree.OnHit(SurvivalToolType.Axe);
-        Debug.Log("[테스트] Tree_Object 타격!");
+        Debug.Log("[테스트] Tree_Object 공격");
     }
 
-    // 5키 — 아이템 제거 테스트
-    void TestRemove()
+    private void TestRemove()
     {
-        bool result = InventoryManager.Instance.RemoveItem(testResource, 1);
+        if (!TryResolveInventory()) return;
+
+        bool result = inventory.RemoveItem(testResource, 1);
         Debug.Log($"[테스트] {testResource.itemName} 제거 {(result ? "성공" : "실패")}");
     }
 
-    // 6키 — 내구도 테스트
-    void TestDurability()
+    private void TestDurability()
     {
-        // 인벤토리에 도끼가 있는지 확인
-        bool has = InventoryManager.Instance.HasItem(testTool);
-        Debug.Log($"[테스트] 도끼 보유: {has}, 수량: {InventoryManager.Instance.GetItemCount(testTool)}");
+        if (!TryResolveInventory()) return;
+
+        bool has = inventory.HasItem(testTool);
+        Debug.Log($"[테스트] 도구 보유: {has}, 수량: {inventory.GetItemCount(testTool)}");
     }
 
-    // 7키 — 크래프팅 테스트
-    void TestCraft()
+    private void TestCraft()
     {
-        if (testRecipe == null) { Debug.Log("[테스트] 레시피 연결 안 됨!"); return; }
-        bool can = CraftingManager.Instance.CanCraft(testRecipe);
-        Debug.Log($"[테스트] 제작 가능: {can}");
-        if (can) CraftingManager.Instance.Craft(testRecipe);
+        if (testRecipe == null)
+        {
+            Debug.Log("[테스트] 레시피 연결 없음");
+            return;
+        }
+
+        bool canCraft = CraftingManager.Instance.CanCraft(testRecipe);
+        Debug.Log($"[테스트] 제작 가능: {canCraft}");
+
+        if (canCraft)
+            CraftingManager.Instance.Craft(testRecipe);
     }
 
-    // 8키 — 카테고리별 레시피 출력
-    void TestCategoryFilter()
+    private void TestCategoryFilter()
     {
         foreach (RecipeCategory category in System.Enum.GetValues(typeof(RecipeCategory)))
         {
             var recipes = CraftingManager.Instance.GetRecipesByCategory(category);
             if (recipes.Count == 0) continue;
+
             Debug.Log($"[카테고리: {category}]");
-            foreach (var r in recipes)
-                Debug.Log($"  - {r.recipeName}");
+            foreach (var recipe in recipes)
+                Debug.Log($"  - {recipe.recipeName}");
         }
     }
 
-    // 9키 — 현재 제작 가능한 레시피만 출력
-    void TestCraftableFilter()
+    private void TestCraftableFilter()
     {
         var craftable = CraftingManager.Instance.GetCraftableRecipes();
-        Debug.Log($"[제작 가능 레시피: {craftable.Count}개]");
-        foreach (var r in craftable)
-            Debug.Log($"  - {r.recipeName}");
+        Debug.Log($"[제작 가능 레시피] {craftable.Count}개");
+
+        foreach (var recipe in craftable)
+            Debug.Log($"  - {recipe.recipeName}");
+    }
+
+    private bool TryResolveInventory()
+    {
+        if (inventory != null) return true;
+
+        inventory = FindFirstObjectByType<PlayerInventory>();
+        if (inventory != null) return true;
+
+        Debug.LogWarning("[테스트] PlayerInventory를 찾지 못했습니다.");
+        return false;
     }
 }

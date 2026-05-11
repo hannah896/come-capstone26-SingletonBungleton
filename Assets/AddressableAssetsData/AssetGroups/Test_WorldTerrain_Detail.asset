@@ -25,16 +25,6 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 73676df1854699745a2c3ab02c6e2af8
-    m_Address: Detail_Grass_1
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 7744c8196ce52244d9b0c8fb0858aa49
-    m_Address: Detail_Grass_2
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 778fc0a01aa9b9f4d984c6b06902066a
     m_Address: Deco_Stones_1
     m_ReadOnly: 0

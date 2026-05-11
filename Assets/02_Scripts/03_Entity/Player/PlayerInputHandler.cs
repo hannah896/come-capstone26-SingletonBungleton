@@ -57,7 +57,6 @@ public sealed class InputActions_PlayerInputHandler : InputActions
         playerActions.Jump.performed += OnJumpPerformed;
         playerActions.Attack.performed += OnAttackPerformed;
         playerActions.Crouch.performed += OnCrouchPerformed;
-        playerActions.Interact.performed += OnInteractPerformed;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[InputActions_PlayerInputHandler] Connected");
@@ -84,7 +83,6 @@ public sealed class InputActions_PlayerInputHandler : InputActions
         playerActions.Jump.performed -= OnJumpPerformed;
         playerActions.Attack.performed -= OnAttackPerformed;
         playerActions.Crouch.performed -= OnCrouchPerformed;
-        playerActions.Interact.performed -= OnInteractPerformed;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[InputActions_PlayerInputHandler] Disconnected");
@@ -151,12 +149,6 @@ public sealed class InputActions_PlayerInputHandler : InputActions
     {
         if (inputData == null) return;
         inputData.CrouchPressed = true;
-    }
-
-    private void OnInteractPerformed(InputAction.CallbackContext ctx)
-    {
-        if (inputData == null) return;
-        inputData.InteractPressed = true;
     }
 
     #endregion

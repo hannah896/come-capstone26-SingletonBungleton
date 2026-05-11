@@ -13,6 +13,7 @@ public class UI_Popup_Inventory : UI_Popup
     [SerializeField] private Transform slotContainer;
 
     private readonly List<InventorySlotUI> slotUIs = new();
+    private PlayerInventory playerInventory;
     private bool isRuntimeFallback;
 
     public static UI_Popup_Inventory CreateRuntimeFallback(Transform parent)
@@ -35,10 +36,11 @@ public class UI_Popup_Inventory : UI_Popup
     {
         if (!base.Initialize()) return false;
 
-        InventoryManager.EnsureInstance();
+        playerInventory = FindFirstObjectByType<PlayerInventory>();
         EnsureRuntimeLayout();
         BuildUI();
-        InventoryManager.Instance.OnInventoryChanged += RefreshUI;
+        if (playerInventory != null)
+            playerInventory.OnInventoryChanged += RefreshUI;
         return true;
     }
 
@@ -58,8 +60,8 @@ public class UI_Popup_Inventory : UI_Popup
 
     private void OnDestroy()
     {
-        if (InventoryManager.Instance != null)
-            InventoryManager.Instance.OnInventoryChanged -= RefreshUI;
+        if (playerInventory != null)
+            playerInventory.OnInventoryChanged -= RefreshUI;
 
         OnDestroyEvent?.Invoke();
     }
@@ -77,10 +79,17 @@ public class UI_Popup_Inventory : UI_Popup
 
         slotUIs.Clear();
 
-        for (int i = 0; i < InventoryManager.Instance.slots.Count; i++)
+        if (playerInventory == null) return;
+
+        for (int i = 0; i < playerInventory.Slots.Count; i++)
         {
             GameObject go = Instantiate(slotPrefab, slotContainer);
-            slotUIs.Add(go.GetComponent<InventorySlotUI>());
+            InventorySlotUI slotUI = go.GetComponent<InventorySlotUI>();
+            if (slotUI == null)
+                slotUI = go.AddComponent<InventorySlotUI>();
+
+            slotUI.BindInventorySlot(playerInventory, i);
+            slotUIs.Add(slotUI);
         }
 
         RefreshUI();
@@ -88,15 +97,23 @@ public class UI_Popup_Inventory : UI_Popup
 
     private void RefreshUI()
     {
-        if (InventoryManager.Instance == null) return;
+        if (playerInventory == null)
+            playerInventory = FindFirstObjectByType<PlayerInventory>();
+        if (playerInventory == null) return;
 
-        List<ItemDataSO> slots = InventoryManager.Instance.slots;
-        List<int> stacks = InventoryManager.Instance.stackCounts;
+        IReadOnlyList<ItemDataSO> slots = playerInventory.Slots;
+        IReadOnlyList<int> stacks = playerInventory.StackCounts;
 
+        int count = Mathf.Min(slotUIs.Count, slots.Count, stacks.Count);
         for (int i = 0; i < slotUIs.Count; i++)
         {
             if (slotUIs[i] == null) continue;
-            slotUIs[i].Refresh(i, slots[i], stacks[i]);
+            slotUIs[i].BindInventorySlot(playerInventory, i);
+
+            if (i < count)
+                slotUIs[i].Refresh(i, slots[i], stacks[i]);
+            else
+                slotUIs[i].Refresh(i, null, 0);
         }
     }
 
