@@ -51,6 +51,198 @@
 
 ---
 
+### 5. 1인칭 도구 전용 카메라 및 장착 표시 보정
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerFirstPersonCameraController.cs`, `ProjectSettings/TagManager.asset`, `Assets/05_Datas/ItemData_JYJ/Item_SurvivalTools/Tool_Axe.asset`, `Tool_Pickaxe.asset`, `Tool_Torch.asset`, `Assets/03_Prefabs/Item_Prefabs/Item/non-assets/Tool_Torch.prefab`
+
+- Cinemachine으로 제어되는 메인 카메라는 그대로 유지하고, 도구 표시 전용 `ToolCamera`를 별도로 생성하도록 구성
+  - Cinemachine Brain의 출력 카메라를 찾아 그 자식으로 `ToolCamera` 생성
+  - URP `Overlay` 카메라로 설정하고 Base Camera의 camera stack에 추가
+  - 기본 카메라는 `ViewModel` 레이어를 제외하고, `ToolCamera`는 `ViewModel` 레이어만 렌더링
+- `ProjectSettings/TagManager.asset`에 `ViewModel` 레이어 추가
+- 멀티플레이 환경을 고려하여 로컬 플레이어(`NetworkObject.HasInputAuthority`)만 도구 카메라와 장착 도구 view clone을 생성하도록 처리
+- 장착 도구 prefab clone을 `ToolPivot` 아래에 생성하고, 모든 하위 오브젝트를 `ViewModel` 레이어로 변경
+- 도구 view clone에서 Rigidbody/Collider가 1인칭 시야나 raycast/물리에 간섭하지 않도록 Rigidbody 제거, Collider 비활성화/제거 처리
+- 장착/해제 시 `IEquipable.Equip()` / `IEquipable.Unequip()`을 호출하도록 수정
+  - torch 장착 시 Light가 켜지고, 해제 시 Light가 꺼지며 clone이 제거되도록 보정
+- 도끼/곡괭이/torch의 `ItemDataSO.prefab` 참조가 비어 있던 문제 수정
+  - `Tool_Axe.asset` -> `Tool_Axe.prefab`
+  - `Tool_Pickaxe.asset` -> `Tool_Pickaxe.prefab`
+  - `Tool_Torch.asset` -> `Tool_Torch.prefab`
+- `Tool_Torch.prefab`의 `Item_SurvivalTool.itemData` 참조가 비어 있던 문제 수정
+- torch prefab이 큐브 형태라 1인칭 view에서 너무 크게 보이는 문제를 줄이기 위해 torch 전용 위치/회전/스케일 보정값 추가
+  - 기본 도구 위치: `(-1, 0, 3.2)`
+  - torch 위치/회전/스케일: `(-1, 0.25, 3.2)`, `(0, 0, -8)`, `(0.18, 0.85, 0.18)`
+
+**검증**
+
+- `uloop compile` 실행 결과 컴파일 에러 0개
+- Play Mode에서 `W` 이동 및 마우스 회전을 주입하여 도끼/곡괭이/torch가 시야 하단 오른쪽에 유지되는지 확인
+- 도끼/곡괭이 view clone의 Rigidbody가 제거되고 Collider가 비활성화되어 이동 중 위치가 흔들리지 않는 것을 확인
+- torch 장착 시 Point Light가 켜지고, `UnequipItem(EquipSlot.Hand)` 호출 후 한 프레임 뒤 `Tool_Torch(Clone)`과 켜진 Point Light가 모두 사라지는 것을 확인
+- ToolCamera가 `MainCameraObject(Clone)` 아래에 생성되고 URP Overlay로 Base Camera stack에 포함되는 것을 확인
+- Unity Console Error 0개 확인
+
+**참고**
+
+- `Assets/03_Prefabs/Player/Player.prefab`에는 `ToolPivot` scale의 미세한 float diff(`0.10000001` -> `0.100000024`)가 남아 있음. 기능 변경 목적의 수정은 아니며 별도 되돌림은 수행하지 않음.
+
+---
+
+### 6. 1인칭 도끼/곡괭이 화면 구도 보정
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerFirstPersonCameraController.cs`
+
+- 사용자가 제공한 Unity Play Mode 스크린샷 기준으로 도끼 view transform 보정
+  - `Tool_Axe(Clone)` 루트는 기존 `ToolPivot` 기준 위치를 유지
+  - 실제 렌더러 child인 `axe` 오브젝트에 별도 위치/회전/스케일 적용
+  - 적용값: Position `(1.38, -1.5, 2.56)`, Rotation `(26.14, -168.4, -12.8)`, Scale `(7, 7, 1)`
+- 사용자가 제공한 Unity Play Mode 스크린샷 기준으로 곡괭이 view transform 보정
+  - `Tool_Pickaxe(Clone)` 루트 transform에 직접 위치/회전/스케일 적용
+  - 적용값: Position `(-0.07, -0.86, 2.33)`, Rotation `(6.952, -148.7, -5.915)`, Scale `(7, 7, 7)`
+- 도구 view clone의 Collider는 `Item_SurvivalTool`의 `RequireComponent(typeof(Collider))` 제약 때문에 삭제하지 않고 비활성화만 하도록 변경
+  - `Can't remove BoxCollider because Item_SurvivalTool depends on it` 경고 방지
+  - Collider는 남지만 `enabled = false`라 raycast/physics 간섭은 하지 않음
+
+**검증**
+
+- `uloop compile` 실행 결과 컴파일 에러 0개
+- Play Mode에서 도끼 장착 후 `axe` child transform 값이 요청 스크린샷 기준 값으로 적용되는지 확인
+- Play Mode에서 곡괭이 장착 후 `Tool_Pickaxe(Clone)` root transform 값이 요청 스크린샷 기준 값으로 적용되는지 확인
+- Game View 캡처로 도끼/곡괭이 머리가 오른쪽 하단에 크게 보이고 손잡이가 아래로 내려오는 구도 확인
+- Play Mode 종료 완료
+
+**참고**
+
+- 테스트 중 콘솔에 남은 `PlayerMotor.get_VerticalVelocity()` NullReference와 `InputSystem_Actions` finalize 경고는 이번 도구 view 보정 코드가 아니라 기존 디버그 GUI/Input System 정리 문제로 확인됨.
+- 작업 후 수정한 C# 스크립트는 UTF-8로 재저장함.
+
+---
+
+### 7. 마우스 휠 인벤토리 포커스 슬롯 순환 문제 수정
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerInventory.cs`, `Assets/02_Scripts/04_Item/InventoryDisplayUI.cs`
+
+- 마우스 휠로 퀵슬롯 선택을 이동할 때 일부 인덱스에서만 포커스 블럭이 켜지는 문제 수정
+- 원인
+  - `PlayerInventory`는 전체 인벤토리 슬롯 수(`slotCount = 16`) 기준으로 선택 인덱스를 순환
+  - HUD 인벤토리 UI는 실제 표시 슬롯이 10개라 `SelectedSlotIndex`가 10~15로 넘어가면 화면에 대응되는 슬롯이 없어 포커스가 사라짐
+  - UI 슬롯 수집 순서가 Hierarchy 순서에 의존해 `Slot0`, `Slot1` 순서와 어긋날 가능성이 있었음
+- `PlayerInventory`에 퀵슬롯 선택 범위(`quickSlotCount`) 추가
+  - `SetQuickSlotCount(int count)` 추가
+  - `SelectSlot`, `MoveSelectedSlot`이 전체 인벤토리 슬롯 수가 아니라 퀵슬롯 수 기준으로 clamp/wrap 되도록 변경
+- `InventoryDisplayUI`에서 실제 HUD 슬롯 개수를 `PlayerInventory.SetQuickSlotCount(slotUIs.Count)`로 전달
+- `InventoryDisplayUI.CollectSlots()`에서 슬롯 이름 끝 숫자를 기준으로 `Slot0`, `Slot1`, ..., `Slot9` 순서로 정렬
+  - 이름 숫자를 찾지 못하면 기존 sibling index를 fallback으로 사용
+
+**검증**
+
+- `uloop compile` 실행 결과 컴파일 에러 0개
+- Play Mode에서 `slotCount=16`, `quickSlotCount=10`으로 설정되는 것 확인
+- `MoveSelectedSlot(1)` 반복 호출 시 `Slot0`부터 `Slot9`까지 순서대로 포커스가 켜지고, `Slot9` 다음 `Slot0`으로 순환하는 것 확인
+- 실제 `simulate-mouse-input --action Scroll` 입력 후 `SelectedSlotIndex`와 포커스 Outline이 켜진 슬롯 인덱스가 일치하는 것 확인
+- Unity Console Error 0개 확인
+- Play Mode 종료 완료
+
+**참고**
+
+- 작업 후 수정한 C# 스크립트는 UTF-8로 재저장함.
+
+---
+
+### 8. 플레이어 인벤토리 크기 20칸 확장 및 UI 연동
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerInventory.cs`, `Assets/02_Scripts/04_Item/InventoryDisplayUI.cs`, `Assets/03_Prefabs/Player/Player.prefab`
+
+- 플레이어 인벤토리 기본 슬롯 수를 16칸에서 20칸으로 변경
+  - `PlayerInventory.slotCount` 기본값 `20`으로 변경
+  - `Player.prefab`에 직렬화된 `slotCount` 값도 `20`으로 변경
+- HUD 인벤토리 UI가 20개 슬롯을 올바르게 수집하도록 수정
+  - 기존 `ResolveReferences()`가 `InvenSlots`보다 다른 `Slots` 컨테이너를 먼저 잡을 수 있던 문제 보정
+  - `InvenSlots`를 우선 선택하고, 없을 때만 `Slots`를 fallback으로 사용
+- `InvenSlots` 바로 아래에 `top`, `bottom` 행이 있고 실제 슬롯은 그 하위에 있는 구조를 반영
+  - 직접 자식만 슬롯으로 수집하던 방식에서 하위 전체를 탐색해 `Slot0`~`Slot19` 이름의 오브젝트를 수집하도록 변경
+  - 수집한 슬롯은 숫자 suffix 기준으로 정렬해 `Slot0`, `Slot1`, ..., `Slot19` 순서 보장
+- 실제 표시 슬롯 개수 20개를 `PlayerInventory.SetQuickSlotCount(20)`으로 전달하여 마우스 휠 포커스 순환 범위도 20칸으로 확장
+
+**검증**
+
+- `uloop compile` 실행 결과 컴파일 에러 0개, 경고 0개
+- Play Mode에서 `slotCount=20`, `slots=20`, `stackCounts=20`, `quickSlotCount=20`, `uiSlotList=20` 확인
+- UI 슬롯 수집 순서가 `Slot0`, `Slot1`, `Slot2`, ..., `Slot17`, `Slot18`, `Slot19`로 정렬되는지 확인
+- `Slot18 -> Slot19 -> Slot0 -> Slot1` 순환 확인
+- 실제 마우스 휠 입력 주입 후 선택 인덱스와 포커스 Outline 슬롯이 일치하는 것 확인
+- Game View 스크린샷으로 20칸 HUD 인벤토리 표시 확인
+- Unity Console Error 0개 확인
+- Play Mode 종료 완료
+
+**참고**
+
+- 작업 후 수정한 C# 스크립트는 UTF-8로 재저장함.
+
+---
+
+### 9. 마우스 휠 퀵슬롯 선택 2칸 이동 문제 수정
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerInventory.cs`
+
+- 마우스 휠을 한 번 돌렸을 때 선택 인덱스가 `0 -> 1`이 아니라 `0 -> 2`처럼 두 칸 이동하는 문제 수정
+- 원인
+  - `PlayerInventory.ReadFallbackKeyboardInput()`에서 `Mouse.current.scroll.ReadValue().y`를 매 프레임 직접 읽음
+  - 한 번의 휠 입력 값이 2프레임 이상 유지되면 `QuickSlotScrollDelta`가 연속으로 설정되어 `MoveSelectedSlot()`이 두 번 호출됨
+- `wasReadingScrollInput` 플래그 추가
+  - 스크롤 입력이 새로 들어온 첫 프레임에만 `QuickSlotScrollDelta`를 설정
+  - 같은 스크롤 값이 다음 프레임까지 남아 있어도 중복 이동하지 않도록 처리
+
+**검증**
+
+- `uloop compile` 실행 결과 컴파일 에러 0개
+- Play Mode에서 선택 인덱스를 0으로 둔 뒤 마우스 휠 아래 입력 1회 주입 시 `selected=1`, `focused=1(Slot1)` 확인
+- Play Mode에서 선택 인덱스를 1로 둔 뒤 마우스 휠 위 입력 1회 주입 시 `selected=0`, `focused=0(Slot0)` 확인
+- Unity Console Error 0개 확인
+- Play Mode 종료 완료
+
+**참고**
+
+- 작업 후 수정한 C# 스크립트는 UTF-8로 재저장함.
+
+---
+
+### 10. 장착 도구 즉시 교체 시 인벤토리/뷰 상태 꼬임 수정
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerInventory.cs`, `Assets/02_Scripts/03_Entity/Player/PlayerMotor.cs`
+
+- 도구를 장착한 상태에서 바로 다른 도구를 장착할 때 호출 순서와 인벤토리 상태가 꼬일 수 있는 문제 확인 및 수정
+- 원인
+  - 인벤토리 슬롯에 아이템 참조는 남아 있지만 수량이 0인 `Tool_Axe x0`, `Tool_Pickaxe x0` 같은 유령 슬롯이 남을 수 있었음
+  - 유령 슬롯은 UI에 아이콘이 보이지만 실제 수량이 없어 장착/교체 호출이 비정상 흐름으로 이어질 수 있음
+  - 기존 `EquipFromSlot()`은 이전 장착 아이템을 되돌릴 때 public `AddItem()`을 호출하여 장착 교체 중간에 `OnInventoryChanged`가 먼저 발행될 수 있었음
+- `PlayerInventory` 보정
+  - `InitializeSlots()`, `RemoveItem()`, `FillExistingStacks()`에서 수량 0 이하 슬롯을 `ClearSlot()`으로 정리
+  - `GetItemCount()`는 수량이 0보다 큰 슬롯만 카운트하도록 변경
+  - `EquipFromSlot()`은 수량 0 이하 슬롯에서 장착을 시도하지 않고 슬롯을 정리하도록 변경
+  - 내부 전용 `TryAddItemToSlots()`를 추가하여 장착 교체 중 이전 장비 반환을 `OnInventoryChanged` 중간 발행 없이 처리
+  - 장착 교체 완료 후 `OnInventoryChanged`와 `OnEquippedItemChanged`가 안정적인 최종 상태 기준으로 호출되도록 정리
+- 테스트 중 콘솔을 흐리던 개발용 디버그 오류 수정
+  - `PlayerMotor.VerticalVelocity`가 `gravity` 초기화 전 호출되면 `0f`를 반환하도록 null guard 추가
+
+**검증**
+
+- `uloop compile` 실행 결과 컴파일 에러 0개
+- Play Mode에서 도끼 장착 직후 곡괭이 장착 재현
+  - 교체 후 `EquippedHand = Tool_Pickaxe`
+  - 도끼는 인벤토리 슬롯에 `Tool_Axe x1`로 정상 반환
+  - `Tool_Axe x0`, `Tool_Pickaxe x0` 유령 슬롯이 더 이상 생성되지 않음
+- 한 프레임 뒤 view clone이 `Tool_Pickaxe(Clone)` 하나만 남는 것 확인
+- Unity Console Error 0개 확인
+- Play Mode 종료 완료
+
+**참고**
+
+- 작업 후 수정한 C# 스크립트는 UTF-8로 재저장함.
+
+---
+
 ## 2026-05-06
 
 ### 1. Player 인벤토리 기능 연결
@@ -219,3 +411,20 @@
 - uloop으로 `PlayerTracer` 컴포넌트를 Player 프리팹 루트에 추가 및 저장
 - 최종 컴포넌트 구성: `Transform`, `CharacterController`, `Player`, `PlayerMotor`, `PlayerFirstPersonCameraController`, `PlayerTracer`
 - Inspector에서 `PlayerTracer.resourceLayer` 및 `stopDistance` 설정 필요
+
+---
+
+## 2026-05-11
+
+### 1. 장착 입력 중복 호출 및 인벤토리 교체 흐름 보정
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerInputHandler.cs`, `Assets/02_Scripts/03_Entity/Player/PlayerInventory.cs`, `Assets/02_Scripts/04_Item/InventoryDisplayUI.cs`
+
+- `InputActions_PlayerInputHandler`의 `Interact` 처리를 `performed`가 아닌 `started` 기준으로 변경해 `Hold` 인터랙션에서 E 입력이 즉시 처리된 뒤 지연 `performed`로 한 번 더 처리되는 문제를 차단
+- `InputActions_PlayerInputHandler.Connect()`가 재호출될 때 기존 이벤트 구독을 해제한 뒤 다시 연결하도록 보정하고, 같은 프레임 중복 장착 입력을 입력 핸들러 단계에서 무시하도록 처리
+- `PlayerInventory`에는 입력 디바운스 로직을 두지 않고, 인벤토리/장착 상태 처리만 담당하도록 정리
+- 이미 장착 중인 동일 아이템을 같은 슬롯에서 다시 장착하려는 경우 상태를 뒤집지 않고 무시하도록 보정
+- 장착 아이템 교체 시 선택 슬롯이 비면서 생기는 공간을 고려해, 인벤토리가 가득 찬 상태에서도 기존 장착 아이템을 되돌릴 수 있으면 정상 교체되도록 수정
+- `InventoryDisplayUI`가 임의의 `PlayerInventory`를 잡지 않도록 로컬 플레이어 인벤토리를 우선 탐색하고, 이미 인벤토리에 바인딩된 UI는 Tab 직접 토글을 하지 않도록 보정
+
+**검증:** uLoop PlayMode에서 로컬 플레이어 인벤토리를 20칸으로 세팅한 뒤 E 입력을 길게 주입해도 곡괭이 장착 로그가 1회만 발생함을 확인. 이어서 `곡괭이 -> 횃불 -> 곡괭이` 교체 시 로그가 `곡괭이 해제 / 횃불 장착 및 켜짐 / 횃불 해제 및 꺼짐 / 곡괭이 장착` 순서로만 발생하고 중복 장착/해제 로그가 재발하지 않음을 확인. 최종 Unity 컴파일 결과 Error 0, 기존 Warning 8건.

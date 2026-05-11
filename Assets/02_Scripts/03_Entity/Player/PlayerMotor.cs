@@ -38,7 +38,7 @@ public class PlayerMotor : MonoBehaviour
     public Vector3 Velocity => cc != null ? cc.velocity : Vector3.zero;
 
     // 현재 수직 속도
-    public float VerticalVelocity => gravity.CurrentVerticalVelocity;
+    public float VerticalVelocity => gravity != null ? gravity.CurrentVerticalVelocity : 0f;
 
     // 지면 접촉 여부
     public bool IsGrounded => groundDetector != null && groundDetector.IsGrounded;

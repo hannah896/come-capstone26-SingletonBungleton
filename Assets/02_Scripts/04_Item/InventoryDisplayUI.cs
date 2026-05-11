@@ -44,7 +44,7 @@ public class InventoryDisplayUI : MonoBehaviour
 
     private void OnEnable()
     {
-        Bind(playerInventory != null ? playerInventory : FindFirstObjectByType<PlayerInventory>());
+        Bind(playerInventory != null ? playerInventory : FindLocalPlayerInventory());
         RefreshUI();
     }
 
@@ -56,9 +56,9 @@ public class InventoryDisplayUI : MonoBehaviour
     private void Update()
     {
         if (playerInventory == null)
-            Bind(FindFirstObjectByType<PlayerInventory>());
+            Bind(FindLocalPlayerInventory());
 
-        if (playerInventory != null && toggleWithTab && Input.GetKeyDown(KeyCode.Tab))
+        if (playerInventory == null && toggleWithTab && Input.GetKeyDown(KeyCode.Tab))
             Toggle();
     }
 
@@ -82,7 +82,7 @@ public class InventoryDisplayUI : MonoBehaviour
     public void RefreshUI()
     {
         if (playerInventory == null)
-            Bind(FindFirstObjectByType<PlayerInventory>());
+            Bind(FindLocalPlayerInventory());
 
         if (playerInventory == null)
         {
@@ -115,7 +115,15 @@ public class InventoryDisplayUI : MonoBehaviour
 
     public void Bind(PlayerInventory inventory)
     {
-        if (playerInventory == inventory && isSubscribed) return;
+        ResolveReferences();
+        if (slotUIs.Count == 0)
+            CollectSlots();
+
+        if (playerInventory == inventory && isSubscribed)
+        {
+            ApplyQuickSlotLimit();
+            return;
+        }
 
         Unsubscribe();
         playerInventory = inventory;
@@ -127,6 +135,7 @@ public class InventoryDisplayUI : MonoBehaviour
         playerInventory.OnSelectedSlotChanged += RefreshFocus;
         isSubscribed = true;
 
+        ApplyQuickSlotLimit();
         SetVisible(playerInventory.IsOpen || !hideOnStart);
         RefreshUI();
     }
@@ -135,18 +144,21 @@ public class InventoryDisplayUI : MonoBehaviour
     {
         canvasGroup = gameObject.GetOrAddComponent<CanvasGroup>();
 
+        Transform inventorySlotContainer = null;
+        Transform fallbackSlotContainer = null;
         Transform[] children = GetComponentsInChildren<Transform>(true);
         for (int i = 0; i < children.Length; i++)
         {
-            if (slotContainer == null &&
-                (children[i].name == "Slots" || children[i].name == "InvenSlots"))
-            {
-                slotContainer = children[i];
-            }
+            if (children[i].name == "InvenSlots")
+                inventorySlotContainer = children[i];
+            else if (children[i].name == "Slots")
+                fallbackSlotContainer ??= children[i];
 
             if (equipSlotContainer == null && children[i].name == "EquipSlots")
                 equipSlotContainer = children[i];
         }
+
+        slotContainer = inventorySlotContainer != null ? inventorySlotContainer : fallbackSlotContainer;
     }
 
     private void CollectSlots()
@@ -158,11 +170,9 @@ public class InventoryDisplayUI : MonoBehaviour
 
         if (slotContainer != null)
         {
-            foreach (Transform child in slotContainer)
-            {
-                InventorySlotUI slotUI = GetOrAddSlotUI(child);
-                slotUIs.Add(slotUI);
-            }
+            CollectInventorySlotUIs();
+
+            slotUIs.Sort(CompareSlotOrder);
         }
 
         if (equipSlotContainer == null) return;
@@ -232,6 +242,72 @@ public class InventoryDisplayUI : MonoBehaviour
         }
     }
 
+    private void ApplyQuickSlotLimit()
+    {
+        if (playerInventory == null || slotUIs.Count <= 0) return;
+        playerInventory.SetQuickSlotCount(slotUIs.Count);
+    }
+
+    private void CollectInventorySlotUIs()
+    {
+        Transform[] children = slotContainer.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < children.Length; i++)
+        {
+            if (children[i] == slotContainer) continue;
+            if (!TryGetSlotOrder(children[i].name, out _)) continue;
+
+            InventorySlotUI slotUI = GetOrAddSlotUI(children[i]);
+            slotUIs.Add(slotUI);
+        }
+
+        if (slotUIs.Count > 0) return;
+
+        foreach (Transform child in slotContainer)
+        {
+            InventorySlotUI slotUI = GetOrAddSlotUI(child);
+            slotUIs.Add(slotUI);
+        }
+    }
+
+    private static int CompareSlotOrder(InventorySlotUI left, InventorySlotUI right)
+    {
+        int leftOrder = GetSlotOrder(left);
+        int rightOrder = GetSlotOrder(right);
+        int orderCompare = leftOrder.CompareTo(rightOrder);
+        if (orderCompare != 0) return orderCompare;
+
+        int leftSibling = left != null ? left.transform.GetSiblingIndex() : int.MaxValue;
+        int rightSibling = right != null ? right.transform.GetSiblingIndex() : int.MaxValue;
+        return leftSibling.CompareTo(rightSibling);
+    }
+
+    private static int GetSlotOrder(InventorySlotUI slotUI)
+    {
+        if (slotUI == null) return int.MaxValue;
+
+        if (TryGetSlotOrder(slotUI.name, out int order))
+            return order;
+
+        return slotUI.transform.GetSiblingIndex();
+    }
+
+    private static bool TryGetSlotOrder(string slotName, out int order)
+    {
+        order = 0;
+        if (string.IsNullOrEmpty(slotName)) return false;
+
+        for (int i = slotName.Length - 1; i >= 0; i--)
+        {
+            if (char.IsDigit(slotName[i])) continue;
+
+            if (i == slotName.Length - 1) return false;
+            string suffix = slotName.Substring(i + 1);
+            return int.TryParse(suffix, out order);
+        }
+
+        return int.TryParse(slotName, out order);
+    }
+
     private static InventorySlotUI GetOrAddSlotUI(Transform slot)
     {
         InventorySlotUI slotUI = slot.GetComponent<InventorySlotUI>();
@@ -239,6 +315,19 @@ public class InventoryDisplayUI : MonoBehaviour
             slotUI = slot.gameObject.AddComponent<InventorySlotUI>();
 
         return slotUI;
+    }
+
+    private static PlayerInventory FindLocalPlayerInventory()
+    {
+        Player[] players = FindObjectsByType<Player>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < players.Length; i++)
+        {
+            if (players[i] == null || !players[i].IsLocalPlayer) continue;
+            if (players[i].Inventory != null)
+                return players[i].Inventory;
+        }
+
+        return FindFirstObjectByType<PlayerInventory>(FindObjectsInactive.Include);
     }
 
     private static EquipSlot ResolveEquipSlot(Transform slot, int index)

@@ -9,6 +9,8 @@ public sealed class InputActions_PlayerInputHandler : InputActions
 {
     private PlayerInputData inputData;
     private Player player;
+    private bool isConnected;
+    private int lastEquipInputFrame = -1;
 
     public InputActions_PlayerInputHandler(InputManager manager) : base(manager) { }
 
@@ -41,22 +43,32 @@ public sealed class InputActions_PlayerInputHandler : InputActions
             return;
         }
 
-        var playerActions = Manager.Actions.Player;
+        var p = Manager.Actions.Player;
+        if (isConnected)
+            Disconnect();
+        else
+        {
+            p.Interact.started -= OnEquip;
+            p.Interact.performed -= OnEquip;
+        }
 
-        // 연속 입력
-        playerActions.Move.performed += OnMovePerformed;
-        playerActions.Move.canceled += OnMoveCanceled;
-        
-        playerActions.Look.performed += OnLookPerformed;
-        playerActions.Look.canceled += OnLookCanceled;
-        
-        playerActions.Sprint.performed += OnSprintPerformed;
-        playerActions.Sprint.canceled += OnSprintCanceled;
-
-        // 이벤트 입력 (한 프레임만 유효)
-        playerActions.Jump.performed += OnJumpPerformed;
-        playerActions.Attack.performed += OnAttackPerformed;
-        playerActions.Crouch.performed += OnCrouchPerformed;
+        p.Move.performed += OnMovePerformed;
+        p.Move.canceled += OnMoveCanceled;
+        p.Look.performed += OnLookPerformed;
+        p.Look.canceled += OnLookCanceled;
+        p.Sprint.performed += OnSprintPerformed;
+        p.Sprint.canceled += OnSprintCanceled;
+        p.Jump.performed += OnJumpPerformed;
+        p.Attack.performed += OnAttackPerformed;
+        p.Crouch.performed += OnCrouchPerformed;
+        p.Interact.started += OnEquip;
+        p.PickUp.performed += OnPickup;
+        p.ScrollWheel.performed += OnScrollWheel;
+        p.ScrollWheel.canceled += OnScrollCanceled;
+        p.Previous.performed += OnPrevious;
+        p.Next.performed += OnNext;
+        p.InventorySlot.performed += OnInventorySlot;
+        isConnected = true;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[InputActions_PlayerInputHandler] Connected");
@@ -65,24 +77,33 @@ public sealed class InputActions_PlayerInputHandler : InputActions
 
     public override void Disconnect()
     {
-        if (inputData == null) return;
-
         if (Manager?.Actions?.Player == null) return;
 
-        var playerActions = Manager.Actions.Player;
+        var p = Manager.Actions.Player;
+        if (!isConnected)
+        {
+            p.Interact.performed -= OnEquip;
+            return;
+        }
 
-        playerActions.Move.performed -= OnMovePerformed;
-        playerActions.Move.canceled -= OnMoveCanceled;
-        
-        playerActions.Look.performed -= OnLookPerformed;
-        playerActions.Look.canceled -= OnLookCanceled;
-        
-        playerActions.Sprint.performed -= OnSprintPerformed;
-        playerActions.Sprint.canceled -= OnSprintCanceled;
-
-        playerActions.Jump.performed -= OnJumpPerformed;
-        playerActions.Attack.performed -= OnAttackPerformed;
-        playerActions.Crouch.performed -= OnCrouchPerformed;
+        p.Move.performed -= OnMovePerformed;
+        p.Move.canceled -= OnMoveCanceled;
+        p.Look.performed -= OnLookPerformed;
+        p.Look.canceled -= OnLookCanceled;
+        p.Sprint.performed -= OnSprintPerformed;
+        p.Sprint.canceled -= OnSprintCanceled;
+        p.Jump.performed -= OnJumpPerformed;
+        p.Attack.performed -= OnAttackPerformed;
+        p.Crouch.performed -= OnCrouchPerformed;
+        p.Interact.started -= OnEquip;
+        p.Interact.performed -= OnEquip;
+        p.PickUp.performed -= OnPickup;
+        p.ScrollWheel.performed -= OnScrollWheel;
+        p.ScrollWheel.canceled -= OnScrollCanceled;
+        p.Previous.performed -= OnPrevious;
+        p.Next.performed -= OnNext;
+        p.InventorySlot.performed -= OnInventorySlot;
+        isConnected = false;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[InputActions_PlayerInputHandler] Disconnected");
@@ -152,4 +173,57 @@ public sealed class InputActions_PlayerInputHandler : InputActions
     }
 
     #endregion
+
+    // 스크롤
+    private void OnScrollWheel(InputAction.CallbackContext ctx)
+    {
+        float y = ctx.ReadValue<Vector2>().y;
+        if (Mathf.Abs(y) > 0.01f)
+            inputData.QuickSlotScrollDelta = y > 0f ? -1 : 1;
+    }
+
+    // 슬롯 직접 선택
+    private void OnInventorySlot(InputAction.CallbackContext ctx)
+    {
+        string controlName = ctx.control.name;
+        if (int.TryParse(controlName, out int num))
+            inputData.QuickSlotIndex = num == 0 ? 9 : num - 1;
+    }
+
+    private void OnEquip(InputAction.CallbackContext ctx)
+    {
+        if (inputData == null) return;
+        if (!ctx.started) return;
+
+        int frame = Time.frameCount;
+        if (lastEquipInputFrame == frame) return;
+
+        lastEquipInputFrame = frame;
+        inputData.EquipSelectedPressed = true;
+    }
+
+    private void OnPickup(InputAction.CallbackContext ctx)
+    {
+        if (inputData == null) return;
+        inputData.PickupPressed = true;
+    }
+
+    private void OnScrollCanceled(InputAction.CallbackContext ctx)
+    {
+        if (inputData == null) return;
+        inputData.QuickSlotScrollDelta = 0;
+    }
+
+    private void OnPrevious(InputAction.CallbackContext ctx)
+    {
+        if (inputData == null) return;
+        inputData.QuickSlotScrollDelta = 1;
+    }
+
+    private void OnNext(InputAction.CallbackContext ctx)
+    {
+        if (inputData == null) return;
+        inputData.QuickSlotScrollDelta = -1;
+    }
+
 }
