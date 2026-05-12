@@ -20,6 +20,12 @@ public class PlayerInputData
     public bool AttackPressed { get; set; }
     public bool CrouchPressed { get; set; }
     public bool InteractPressed { get; set; }
+    public bool PickupPressed { get; set; }
+    public bool EquipSelectedPressed { get; set; }
+    public bool ToolUsePressed { get; set; }
+    public bool InventoryTogglePressed { get; set; }
+    public int QuickSlotIndex { get; set; } = -1;
+    public int QuickSlotScrollDelta { get; set; }
 
     // 자원 오브젝트 클릭 → 자동 이동 요청
     public bool TracePressed { get; set; }
@@ -47,6 +53,12 @@ public class PlayerInputData
         AttackPressed = false;
         CrouchPressed = false;
         InteractPressed = false;
+        PickupPressed = false;
+        EquipSelectedPressed = false;
+        ToolUsePressed = false;
+        InventoryTogglePressed = false;
+        QuickSlotIndex = -1;
+        QuickSlotScrollDelta = 0;
         TracePressed = false;
     }
 

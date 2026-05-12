@@ -1,9 +1,5 @@
-using UnityEngine;
+﻿using UnityEngine;
 
-/// <summary>
-/// 채집 상태 (Sub, Action 하위)
-/// Kevin Iglesias: HumanM@Gathering01 (Gathering)
-/// </summary>
 public class PlayerPickState : PlayerSubStateBase
 {
     public PlayerPickState(PlayerRootStateMachine machine) : base(machine) { }
@@ -12,20 +8,20 @@ public class PlayerPickState : PlayerSubStateBase
     {
         base.OnEnter();
         Machine.AnimData.PlayActionAnimation(Machine.AnimData.AnimHashKey.Pick);
-        Debug.Log("[State] Pick 진입");
+        Debug.Log("[State] Pick Enter");
     }
 
     public override void OnExit()
     {
         base.OnExit();
         Machine.AnimData.ResetActionTrigger(Machine.AnimData.AnimHashKey.Pick);
-        Debug.Log("[State] Pick 퇴장");
+        Debug.Log("[State] Pick Exit");
     }
 
     public override void Update(float time = 1)
     {
         base.Update(time);
         if (Machine.AnimData.IsActionAnimationCompleted())
-            Machine.ChangeState(new PlayerLocomotionState(Machine));
+            GetRootState<PlayerActionState>()?.ChangeToLocomotion();
     }
 }
