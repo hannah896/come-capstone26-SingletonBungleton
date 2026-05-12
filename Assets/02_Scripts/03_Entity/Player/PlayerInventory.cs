@@ -10,7 +10,8 @@ using UnityEngine.InputSystem;
 public class PlayerInventory : MonoBehaviour
 {
     [Header("인벤토리 설정")]
-    [SerializeField] private int slotCount = 16;
+    [SerializeField] private int slotCount = 20;
+    [SerializeField] private int quickSlotCount = 0;
 
     [Header("줍기 설정")]
     [SerializeField] private float pickupRadius = 2f;
@@ -42,6 +43,7 @@ public class PlayerInventory : MonoBehaviour
     public IReadOnlyList<ItemDataSO> Slots => slots;
     public IReadOnlyList<int> StackCounts => stackCounts;
     public int SlotCount => slotCount;
+    public int QuickSlotCount => GetQuickSlotCount();
     public int SelectedSlotIndex => selectedSlotIndex;
     public bool IsOpen { get; private set; }
     public ItemDataSO EquippedHead { get; private set; }
@@ -62,8 +64,6 @@ public class PlayerInventory : MonoBehaviour
     public void Tick()
     {
         if (inputData == null) return;
-
-        ReadFallbackKeyboardInput();
 
         if (inputData.InventoryTogglePressed)
             Toggle();
@@ -92,6 +92,12 @@ public class PlayerInventory : MonoBehaviour
         OnInventoryChanged?.Invoke();
     }
 
+    public void SetQuickSlotCount(int count)
+    {
+        quickSlotCount = Mathf.Clamp(count, 0, slotCount);
+        SelectSlot(Mathf.Clamp(selectedSlotIndex, 0, GetQuickSlotCount() - 1));
+    }
+
     public void Toggle()
     {
         IsOpen = !IsOpen;
@@ -105,32 +111,9 @@ public class PlayerInventory : MonoBehaviour
 
     public bool AddItem(ItemDataSO itemData, int amount, out int remainingAmount)
     {
-        remainingAmount = amount;
-        if (itemData == null || amount <= 0) return false;
-
-        if (itemData.isStackable)
-            FillExistingStacks(itemData, ref remainingAmount);
-
-        while (remainingAmount > 0)
-        {
-            int emptyIndex = GetEmptySlotIndex();
-            if (emptyIndex < 0)
-            {
-                OnInventoryChanged?.Invoke();
-                return false;
-            }
-
-            int stackSize = itemData.isStackable
-                ? Mathf.Min(remainingAmount, Mathf.Max(1, itemData.maxStack))
-                : 1;
-
-            slots[emptyIndex] = itemData;
-            stackCounts[emptyIndex] = stackSize;
-            remainingAmount -= stackSize;
-        }
-
+        bool added = TryAddItemToSlots(itemData, amount, out remainingAmount);
         OnInventoryChanged?.Invoke();
-        return true;
+        return added;
     }
 
     public bool RemoveItem(ItemDataSO itemData, int amount = 1)
@@ -140,6 +123,12 @@ public class PlayerInventory : MonoBehaviour
 
         for (int i = slots.Count - 1; i >= 0; i--)
         {
+            if (slots[i] == itemData && stackCounts[i] <= 0)
+            {
+                ClearSlot(i);
+                continue;
+            }
+
             if (slots[i] != itemData) continue;
 
             int removeAmount = Mathf.Min(stackCounts[i], amount);
@@ -170,7 +159,7 @@ public class PlayerInventory : MonoBehaviour
 
         int count = 0;
         for (int i = 0; i < slots.Count; i++)
-            if (slots[i] == itemData)
+            if (slots[i] == itemData && stackCounts[i] > 0)
                 count += stackCounts[i];
 
         return count;
@@ -181,16 +170,50 @@ public class PlayerInventory : MonoBehaviour
         if (!IsValidSlot(slotIndex)) return false;
 
         ItemDataSO itemData = slots[slotIndex];
-        if (itemData == null || itemData.equipSlot == EquipSlot.None) return false;
-
-        ItemDataSO currentEquipped = GetEquippedItem(itemData.equipSlot);
-        RemoveOneFromSlot(slotIndex);
-
-        if (currentEquipped != null && !AddItem(currentEquipped, 1))
+        if (itemData == null || itemData.equipSlot == EquipSlot.None || stackCounts[slotIndex] <= 0)
         {
-            AddItem(itemData, 1);
+            if (IsValidSlot(slotIndex) && stackCounts[slotIndex] <= 0)
+            {
+                ClearSlot(slotIndex);
+                OnInventoryChanged?.Invoke();
+            }
             return false;
         }
+
+        ItemDataSO currentEquipped = GetEquippedItem(itemData.equipSlot);
+        if (currentEquipped == itemData)
+        {
+            OnInventoryChanged?.Invoke();
+            return false;
+        }
+
+        // 인벤토리 공간 확인 (실제 제거 전에 먼저 체크)
+        if (currentEquipped != null)
+        {
+            int emptyCount = 0;
+            for (int i = 0; i < slots.Count; i++)
+                if (slots[i] == null) emptyCount++;
+
+            bool selectedSlotWillBeEmpty = stackCounts[slotIndex] <= 1;
+            bool canReturnCurrent = emptyCount > 0 || selectedSlotWillBeEmpty || CanStackItem(currentEquipped);
+
+            if (!canReturnCurrent)
+            {
+                // 빈 슬롯 없음 + 다른 아이템 → 교체 불가
+                OnInventoryChanged?.Invoke();
+                return false;
+            }
+        }
+
+        RemoveOneFromSlot(slotIndex);
+
+        // 기존 장착 아이템을 인벤토리로 돌려보내기
+        if (currentEquipped != null)
+            TryAddItemToSlots(currentEquipped, 1, out _);
+
+        // 교체 시 기존 아이템 해제 이벤트 명시적으로 발생
+        if (currentEquipped != null && currentEquipped != itemData)
+            OnEquippedItemChanged?.Invoke(itemData.equipSlot, null); // 해제 알림
 
         SetEquippedItem(itemData.equipSlot, itemData);
         OnInventoryChanged?.Invoke();
@@ -206,7 +229,7 @@ public class PlayerInventory : MonoBehaviour
     {
         if (slots.Count == 0) return;
 
-        int clampedIndex = Mathf.Clamp(index, 0, slots.Count - 1);
+        int clampedIndex = Mathf.Clamp(index, 0, GetQuickSlotCount() - 1);
         if (selectedSlotIndex == clampedIndex) return;
 
         selectedSlotIndex = clampedIndex;
@@ -218,7 +241,7 @@ public class PlayerInventory : MonoBehaviour
     {
         if (slots.Count == 0 || delta == 0) return;
 
-        int count = slots.Count;
+        int count = GetQuickSlotCount();
         int nextIndex = (selectedSlotIndex + delta) % count;
         if (nextIndex < 0)
             nextIndex += count;
@@ -246,18 +269,31 @@ public class PlayerInventory : MonoBehaviour
         ItemDataSO itemData = GetEquippedItem(equipSlot);
         if (itemData == null) return false;
 
-        SetEquippedItem(equipSlot, null);
-
-        if (!AddItem(itemData, 1))
+        // 인벤토리 공간 먼저 확인 (상태 변경 전)
+        if (GetEmptySlotIndex() < 0 && !CanStackItem(itemData))
         {
-            SetEquippedItem(equipSlot, itemData);
             OnInventoryChanged?.Invoke();
             return false;
         }
 
+        // 공간 확인 후 한 번에 처리
+        SetEquippedItem(equipSlot, null);
+        TryAddItemToSlots(itemData, 1, out _);
         OnInventoryChanged?.Invoke();
         return true;
     }
+
+    // 헬퍼 추가
+    private bool CanStackItem(ItemDataSO itemData)
+    {
+        if (!itemData.isStackable) return false;
+        int maxStack = Mathf.Max(1, itemData.maxStack);
+        for (int i = 0; i < slots.Count; i++)
+            if (slots[i] == itemData && stackCounts[i] < maxStack)
+                return true;
+        return false;
+    }
+
 
     public bool ClearEquippedItem(EquipSlot equipSlot, ItemDataSO expectedItem = null)
     {
@@ -284,23 +320,41 @@ public class PlayerInventory : MonoBehaviour
     {
         if (slotCount < 1) slotCount = 1;
 
+        // 부족한 슬롯만 뒤에 추가
         while (slots.Count < slotCount)
             slots.Add(null);
 
         while (stackCounts.Count < slotCount)
             stackCounts.Add(0);
 
+        // 초과 슬롯은 뒤에서 제거
         while (slots.Count > slotCount)
             slots.RemoveAt(slots.Count - 1);
 
         while (stackCounts.Count > slotCount)
             stackCounts.RemoveAt(stackCounts.Count - 1);
 
+        // 기존 데이터 보존: stackCount가 0이면 maxStack 기준으로 복원
         for (int i = 0; i < slotCount; i++)
+        {
             if (slots[i] == null)
+            {
                 stackCounts[i] = 0;
+                continue;
+            }
+
+            // stackCount가 0이면 날리지 말고, 프리펩 설정값으로 보정
+            if (stackCounts[i] <= 0)
+                stackCounts[i] = 1;  // 최소 1개로 복원
+        }
 
         selectedSlotIndex = Mathf.Clamp(selectedSlotIndex, 0, slotCount - 1);
+    }
+    private int GetQuickSlotCount()
+    {
+        if (slots.Count == 0) return 0;
+        if (quickSlotCount <= 0) return slots.Count;
+        return Mathf.Clamp(quickSlotCount, 1, slots.Count);
     }
 
     private void FillExistingStacks(ItemDataSO itemData, ref int remainingAmount)
@@ -310,6 +364,11 @@ public class PlayerInventory : MonoBehaviour
         for (int i = 0; i < slots.Count && remainingAmount > 0; i++)
         {
             if (slots[i] != itemData) continue;
+            if (stackCounts[i] <= 0)
+            {
+                ClearSlot(i);
+                continue;
+            }
 
             int space = maxStack - stackCounts[i];
             if (space <= 0) continue;
@@ -318,6 +377,32 @@ public class PlayerInventory : MonoBehaviour
             stackCounts[i] += addAmount;
             remainingAmount -= addAmount;
         }
+    }
+
+    private bool TryAddItemToSlots(ItemDataSO itemData, int amount, out int remainingAmount)
+    {
+        remainingAmount = amount;
+        if (itemData == null || amount <= 0) return false;
+
+        if (itemData.isStackable)
+            FillExistingStacks(itemData, ref remainingAmount);
+
+        while (remainingAmount > 0)
+        {
+            int emptyIndex = GetEmptySlotIndex();
+            if (emptyIndex < 0)
+                return false;
+
+            int stackSize = itemData.isStackable
+                ? Mathf.Min(remainingAmount, Mathf.Max(1, itemData.maxStack))
+                : 1;
+
+            slots[emptyIndex] = itemData;
+            stackCounts[emptyIndex] = stackSize;
+            remainingAmount -= stackSize;
+        }
+
+        return true;
     }
 
     private int GetEmptySlotIndex()
@@ -367,42 +452,6 @@ public class PlayerInventory : MonoBehaviour
         OnEquippedItemChanged?.Invoke(equipSlot, itemData);
     }
 
-    private void ReadFallbackKeyboardInput()
-    {
-        var keyboard = Keyboard.current;
-        if (keyboard == null) return;
-
-        if (keyboard.tabKey.wasPressedThisFrame)
-            inputData.InventoryTogglePressed = true;
-
-        if (keyboard.gKey.wasPressedThisFrame)
-            inputData.PickupPressed = true;
-
-        if (keyboard.eKey.wasPressedThisFrame)
-            inputData.EquipSelectedPressed = true;
-
-        var mouse = Mouse.current;
-        if (mouse != null)
-        {
-            if (mouse.rightButton.wasPressedThisFrame && !IsPointerOverUI())
-                inputData.ToolUsePressed = true;
-
-            float scrollY = mouse.scroll.ReadValue().y;
-            if (scrollY > 0f)
-                inputData.QuickSlotScrollDelta = -1;
-            else if (scrollY < 0f)
-                inputData.QuickSlotScrollDelta = 1;
-        }
-
-        for (int i = 0; i < 9; i++)
-        {
-            Key key = (Key)((int)Key.Digit1 + i);
-            if (!keyboard[key].wasPressedThisFrame) continue;
-
-            inputData.QuickSlotIndex = i;
-            break;
-        }
-    }
 
     private void TryPickupNearest()
     {

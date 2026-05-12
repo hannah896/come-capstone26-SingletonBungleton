@@ -118,6 +118,22 @@ MonoBehaviour:
   maxPitch: 80
   hidePlayerBodyInFirstPerson: 1
   toolPivot: {fileID: 4663932312310553460}
+  viewModelLayerName: ViewModel
+  toolCameraFov: 55
+  toolCameraNearClip: 0.01
+  toolCameraFarClip: 10
+  equippedToolLocalPosition: {x: -1, y: 0, z: 3.2}
+  equippedToolLocalEuler: {x: 0, y: 0, z: 0}
+  equippedToolLocalScale: {x: 1, y: 1, z: 1}
+  axeMeshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
+  axeMeshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
+  axeMeshLocalScale: {x: 7, y: 7, z: 1}
+  pickaxeLocalPosition: {x: -0.07, y: -0.86, z: 2.33}
+  pickaxeLocalEuler: {x: 6.952, y: -148.7, z: -5.915}
+  pickaxeLocalScale: {x: 7, y: 7, z: 7}
+  torchLocalPosition: {x: -1, y: 0.25, z: 3.2}
+  torchLocalEuler: {x: 0, y: 0, z: -8}
+  torchLocalScale: {x: 0.18, y: 0.85, z: 0.18}
 --- !u!114 &3197738375812151440
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -146,7 +162,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0df6e501db374b8ca12232f2d482aa5e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  slotCount: 16
+  slotCount: 20
+  quickSlotCount: 0
   pickupRadius: 2
   pickupLayer:
     serializedVersion: 2
@@ -156,9 +173,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   slots:
+  - {fileID: 11400000, guid: 41909ce6e3bb1334898e2b02f5f26412, type: 2}
   - {fileID: 11400000, guid: ddbbce5581b91654598a8c87aa7a4a0f, type: 2}
   - {fileID: 11400000, guid: 2214542d16abe6d4f833fe41caa772c0, type: 2}
-  - {fileID: 11400000, guid: 41909ce6e3bb1334898e2b02f5f26412, type: 2}
   stackCounts: 
 --- !u!1 &783732110047109408
 GameObject:
@@ -185,8 +202,8 @@ Transform:
   m_GameObject: {fileID: 783732110047109408}
   serializedVersion: 2
   m_LocalRotation: {x: 0.13705878, y: 0.17195827, z: -0.024167161, w: 0.9752237}
-  m_LocalPosition: {x: 0.17935131, y: -0.0361681, z: 0.21276364}
-  m_LocalScale: {x: 0.10000001, y: 0.10000001, z: 0.1}
+  m_LocalPosition: {x: 0.2, y: -0.0361681, z: 0.21276364}
+  m_LocalScale: {x: 0.100000024, y: 0.100000024, z: 0.1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2213850005944750725}

@@ -2,6 +2,44 @@
 
 This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
+
+## Mandatory workflow rules
+
+After completing ANY coding task, you MUST update:
+
+docs/worksummary.md
+
+The summary must include:
+- What changed
+- Files modified
+- Why the change was made
+- Remaining TODOs or issues
+
+This rule is mandatory for every completed task.
+Never skip updating worksummary.md.
+
+## File Encoding Rules
+
+ALL text files must be saved using UTF-8 encoding.
+
+This includes:
+- .cs
+- .md
+- .json
+- .yaml
+- .yml
+- .txt
+- .shader
+
+Never save files using:
+- UTF-16
+- ANSI
+- EUC-KR
+- CP949
+
+Always preserve existing UTF-8 encoding when modifying files.
+
+
 ## 프로젝트 개요
 
 Unity 6 기반 캡스톤 프로젝트 (팀명: SingletonBungleton). 3D 액션/서바이벌 장르 게임으로, Photon Fusion 멀티플레이어, Addressables 에셋 관리, UniTask 비동기 처리를 사용합니다.
