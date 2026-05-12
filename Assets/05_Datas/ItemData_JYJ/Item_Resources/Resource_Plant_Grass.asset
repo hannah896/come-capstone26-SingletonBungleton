@@ -16,7 +16,7 @@ MonoBehaviour:
   itemName: "\uD480"
   description: "\uC790\uC6D0_\uD480\uC785\uB2C8\uB2E4."
   icon: {fileID: 0}
-  prefab: {fileID: 0}
+  prefab: {fileID: 1875203593042857739, guid: 6403a498658558b40a51f0a3aa9dd6f5, type: 3}
   itemType: 2
   survivalToolType: 0
   combatGearType: 0

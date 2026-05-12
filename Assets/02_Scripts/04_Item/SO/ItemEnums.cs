@@ -61,7 +61,8 @@ public enum BootyType
 public enum FoodType
 {
     None,
-    CookedMeat  //구운고기
+    CookedMeat,  //구운고기
+    RoastedBerry //구운베리
 }
 
 //  장비 장착 위치

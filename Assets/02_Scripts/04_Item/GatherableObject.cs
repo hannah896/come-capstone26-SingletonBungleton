@@ -18,8 +18,9 @@ public class GatherableObject : MonoBehaviour
     public int maxHits = 3; //몇번 쳐야되는지
     public SurvivalToolType requiredTool = SurvivalToolType.None; //None이면 맨손
 
-    [Header("드랍 프리팹")]
-    public GameObject droppedItemPrefab;  //인벤 다 차면 바닥에 스폰
+    [Header("드랍 프리팹 (fallback)")]
+    [Tooltip("ItemDataSO.prefab이 없는 아이템의 fallback용")]
+    public GameObject fallbackDropPrefab;
 
     private int _hits = 0;
     private ResourceNode _resourceNode;
@@ -63,11 +64,21 @@ public class GatherableObject : MonoBehaviour
 
     private void SpawnDroppedItem(ItemDataSO itemData, int amount)
     {
-        if (droppedItemPrefab == null) return;
+        // 아이템별 고유 프리팹 우선 사용, 없으면 fallback
+        GameObject prefab = (itemData.prefab != null) ? itemData.prefab : fallbackDropPrefab;
+        if (prefab == null)
+        {
+            Debug.LogWarning($"[채집] {itemData.itemName}: 드롭 프리팹이 없습니다. ItemDataSO.prefab을 연결해주세요.");
+            return;
+        }
+
         Vector3 pos = transform.position + Random.insideUnitSphere * 0.5f;
         pos.y = transform.position.y + 0.2f;
-        var go = Instantiate(droppedItemPrefab, pos, Quaternion.identity);
-        go.GetComponent<DroppedItem>().Setup(itemData, amount);
+        var go = Instantiate(prefab, pos, Quaternion.identity);
+
+        var dropped = go.GetComponent<DroppedItem>();
+        if (dropped == null) dropped = go.AddComponent<DroppedItem>();
+        dropped.Setup(new ItemInstance(itemData, amount));
     }
 
     public void ResetHits()

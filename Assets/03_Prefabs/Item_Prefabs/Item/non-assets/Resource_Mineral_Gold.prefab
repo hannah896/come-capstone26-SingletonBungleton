@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 7816452097322350698}
   - component: {fileID: 3653142814302143381}
   - component: {fileID: 8140031906161231800}
-  - component: {fileID: -4339054224421983820}
   m_Layer: 17
   m_Name: Resource_Mineral_Gold
   m_TagString: Untagged
@@ -96,23 +95,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2395881dd06b1542ab8131527c9ecc8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemData: {fileID: 0}
+  itemData: {fileID: 11400000, guid: 1a846fdde396fc945acf993a20dd51e4, type: 2}
   stackCount: 1
   resourceType: 5
---- !u!114 &-4339054224421983820
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1799256547270814821}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f73c7ce96a0308c4faf61315b357c4a6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  itemData: {fileID: 11400000, guid: 1a846fdde396fc945acf993a20dd51e4, type: 2}
-  amount: 1
 --- !u!1 &3860417212655211660
 GameObject:
   m_ObjectHideFlags: 0

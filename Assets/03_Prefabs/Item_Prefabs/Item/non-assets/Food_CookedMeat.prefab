@@ -95,11 +95,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: debb68fefb9e5c74099a67aa5384048b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemData: {fileID: 0}
+  itemData: {fileID: 11400000, guid: 1fecbb54b066d744a880f37039875517, type: 2}
   stackCount: 1
   foodType: 1
-  freshness: 1
-  freshnessDecayRate: 0.001
 --- !u!1 &6420220830071931609
 GameObject:
   m_ObjectHideFlags: 0

@@ -57,8 +57,8 @@ public class Item_CombatGear : Item, IEquipable
     {
         Debug.Log($"[장비] {itemData.itemName} 장착!");
 
-        // TODO: PlayerStats.Instance.AddDefense(itemData.defense) 등
-        if (IsArmor()) Debug.Log($"방어력 +{itemData.defense}");
+        // TODO: PlayerStats.Instance.AddDefense/AddAttack 연동
+        if (IsArmor() || IsShield()) Debug.Log($"방어력 +{itemData.defense}");
         if (IsWeapon()) Debug.Log($"공격력 +{itemData.attackDamage}");
     }
 
@@ -156,12 +156,13 @@ public class Item_CombatGear : Item, IEquipable
                combatGearType == CombatGearType.Chestplate;
     }
 
+    public bool IsShield() => combatGearType == CombatGearType.Shield;
+
     public bool IsWeapon()
     {
         return combatGearType == CombatGearType.Sword ||
-               combatGearType == CombatGearType.Bow ||
-               combatGearType == CombatGearType.Spear ||
-               combatGearType == CombatGearType.Shield;
+               combatGearType == CombatGearType.Bow   ||
+               combatGearType == CombatGearType.Spear;
     }
 
     public bool CanAttack()
@@ -178,7 +179,16 @@ public class Item_CombatGear : Item, IEquipable
     {
         Debug.Log($"[장비] {itemData.itemName}이(가) 부서졌습니다!");
         Unequip();
-        // TODO: 인벤토리에서 제거 후 Destroy
+
+        var inv = InventoryManager.Instance;
+        if (inv != null)
+        {
+            if (inv.equippedHand?.data == itemData)     inv.UnequipAndDiscard(EquipSlot.Hand);
+            else if (inv.equippedHead?.data == itemData) inv.UnequipAndDiscard(EquipSlot.Head);
+            else if (inv.equippedChest?.data == itemData) inv.UnequipAndDiscard(EquipSlot.Chest);
+            else inv.RemoveItem(itemData, 1);
+        }
+
         Destroy(gameObject);
     }
     #endregion

@@ -10,27 +10,27 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
-  m_Name: Armor_Chestplate
+  m_Name: Food_RoastedBerry
   m_EditorClassIdentifier: 
-  itemID: Chestplate
-  itemName: "\uAC11\uC637"
-  description: "\uBC29\uC5B4\uAD6C \uAC11\uC637\uC785\uB2C8\uB2E4."
+  itemID: RoastedBerry
+  itemName: "\uAD6C\uC6B4\uBCA0\uB9AC"
+  description: "\uBD88\uC5D0 \uAD6C\uC6B4 \uBCA0\uB9AC"
   icon: {fileID: 0}
-  prefab: {fileID: 5671968366998541486, guid: 4c63637817e991e4a8415243d3baca22, type: 3}
-  itemType: 1
+  prefab: {fileID: 560207506994663984, guid: 01a79c57f000320498dbbc57105c37d9, type: 3}
+  itemType: 4
   survivalToolType: 0
-  combatGearType: 2
+  combatGearType: 0
   resourceType: 0
   bootyType: 0
-  foodType: 0
-  isStackable: 0
-  maxStack: 1
-  equipSlot: 2
-  hasDurability: 1
-  maxDurability: 100
+  foodType: 2
+  isStackable: 1
+  maxStack: 64
+  equipSlot: 0
+  hasDurability: 0
+  maxDurability: 0
   attackDamage: 0
   attackRange: 0
-  defense: 30
-  hungerRestore: 0
-  healthRestore: 0
-  sanityRestore: 0
+  defense: 0
+  hungerRestore: 20
+  healthRestore: 5
+  sanityRestore: 10

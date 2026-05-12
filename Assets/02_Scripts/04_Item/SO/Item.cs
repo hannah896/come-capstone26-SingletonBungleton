@@ -75,18 +75,18 @@ public abstract class Item : MonoBehaviour
     #endregion
 
 
-
-    #region 생존 효과 (음식)
-
-    /// 먹었을 때 배고픔/체력/정신력 회복
-    protected virtual void ApplySurvivalEffects()
+    #region 아이템 줍기
+    public void Pickup()
     {
-        // TODO: SurvivalManager.Instance.AddHunger(itemData.hungerRestore) 등으로 교체
-        if (itemData.hungerRestore > 0) Debug.Log($"[음식] 배고픔 +{itemData.hungerRestore}");
-        if (itemData.healthRestore > 0) Debug.Log($"[음식] 체력 +{itemData.healthRestore}");
-        if (itemData.sanityRestore > 0) Debug.Log($"[음식] 정신력 +{itemData.sanityRestore}");
+        bool success = InventoryManager.Instance.AddItem(
+            new ItemInstance(itemData, stackCount));
+        if (success)
+            Destroy(gameObject);
+        else
+            Debug.Log("[줍기] 인벤토리 가득 참!");
     }
     #endregion
+
 
     public override string ToString()
     {

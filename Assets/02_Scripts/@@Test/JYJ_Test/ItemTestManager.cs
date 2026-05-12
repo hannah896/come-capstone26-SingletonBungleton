@@ -19,6 +19,13 @@ public class ItemTestManager : MonoBehaviour
     [Header("음식 섭취 테스트")]
     public ItemDataSO testFoodSO;
 
+    private void Start()
+    {
+        if (InventoryManager.Instance == null)
+            Debug.LogError("[테스트] InventoryManager.Instance null");
+        else
+            Debug.Log("[테스트] InventoryManager 연결");
+    }
     private void Update()
     {
         // 숫자키로 테스트

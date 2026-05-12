@@ -96,7 +96,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bcff6d65e41492b4cafbdef308e1e89e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemData: {fileID: 0}
+  itemData: {fileID: 11400000, guid: 41909ce6e3bb1334898e2b02f5f26412, type: 2}
   stackCount: 1
   survivalToolType: 3
   torchLight: {fileID: 4433298543429400968}

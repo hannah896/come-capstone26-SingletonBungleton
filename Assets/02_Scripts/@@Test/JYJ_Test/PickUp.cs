@@ -22,7 +22,14 @@ public class PlayerPickup : MonoBehaviour
 
         foreach (var col in hits)
         {
-            if (col.TryGetComponent<DroppedItem>(out var item))
+            // DroppedItem 먼저 체크
+            if (col.TryGetComponent<DroppedItem>(out var dropped))
+            {
+                dropped.Pickup();
+                break;
+            }
+            // 아이템 프리팹 체크
+            if (col.TryGetComponent<Item>(out var item))
             {
                 item.Pickup();
                 break;

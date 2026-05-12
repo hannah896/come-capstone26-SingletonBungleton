@@ -129,7 +129,7 @@ MonoBehaviour:
     maxAmount: 2
   maxHits: 1
   requiredTool: 0
-  droppedItemPrefab: {fileID: 7141987332255213446, guid: 550896e55cf888149bf733be49197743, type: 3}
+  fallbackDropPrefab: {fileID: 7141987332255213446, guid: 550896e55cf888149bf733be49197743, type: 3}
 --- !u!114 &7282879556573775989
 MonoBehaviour:
   m_ObjectHideFlags: 0

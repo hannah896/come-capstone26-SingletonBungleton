@@ -203,7 +203,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb4a5b7c1cf62284d96b46374615bf85, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemData: {fileID: 0}
+  itemData: {fileID: 11400000, guid: c06e0dbf626bfce47b0abe9f177cea1b, type: 2}
   stackCount: 1
   combatGearType: 1
   arrowPrefab: {fileID: 0}
