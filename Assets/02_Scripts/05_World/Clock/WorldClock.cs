@@ -10,6 +10,18 @@ public enum TimePhase
     Dusk        // 황혼 (18:00 ~ 24:00)
 }
 
+// [달 주기 시스템 추가] 8단계 달 위상 (8일 주기)
+public enum MoonPhase
+{
+    New,            // 삭 (0)
+    WaxingCrescent, // 초승 (1)
+    FirstQuarter,   // 상현 (2)
+    WaxingGibbous,  // 상현망간 (3)
+    Full,           // 보름 (4)
+    WaningGibbous,  // 하현망간 (5)
+    LastQuarter,    // 하현 (6)
+    WaningCrescent  // 그믐 (7)
+}
 public class WorldClock : MonoBehaviour
 {
     public static WorldClock Instance { get; private set; }
@@ -17,13 +29,15 @@ public class WorldClock : MonoBehaviour
     [Header("Time Settings")]
     [Tooltip("현실 24분 = 인게임 1일 (초 단위)")]
     private const float SECONDS_PER_DAY = 1440f;
+    private const int MOON_CYCLE_DAYS = 8;
 
     private NyoTimer _dayTimer;
     private int _daysPassed = 0;
     private int _lastHour = -1;
 
-    public TimePhase CurrentPhase { get; private set; }
-    public int DaysPassed { get; private set; }
+    public TimePhase CurrentTimePhase { get; private set; }
+    public int CurrentDay => _daysPassed + 1; // 0부터 시작하므로 +1
+    public MoonPhase CurrentMoonPhase { get; private set; } // [달 주기 시스템 추가] 현재 달 위상
 
     // 자원 재생, 특정 시간 조건 등에 사용할 '절대 시간(Timestamp)'
     public float TotalInGameSeconds
@@ -41,6 +55,9 @@ public class WorldClock : MonoBehaviour
     public event Action<TimePhase> OnPhaseChanged;
     public event Action<int> OnDayPassed;
     public event Action<int> OnHourPassed; // 인게임 1시간(현실 1분) 경과 알림
+
+    // [달 주기 시스템 추가] 달 위상 변경 알림
+    public event Action<MoonPhase> OnMoonPhaseChanged; 
 
     private void Awake()
     {
@@ -62,12 +79,14 @@ public class WorldClock : MonoBehaviour
 
         // 시작 직후 현재 상태 초기화
         CheckTimeFlow(_dayTimer);
+        UpdateMoonPhase(true);
     }
 
     private void HandleDayEnded(NyoTimer timer)
     {
         _daysPassed++;
         OnDayPassed?.Invoke(_daysPassed);
+        UpdateMoonPhase(false);
     }
 
     private void CheckTimeFlow(NyoTimer timer)
@@ -84,18 +103,30 @@ public class WorldClock : MonoBehaviour
         }
 
         // --- 2. 시간대(Phase) 갱신 ---
-        TimePhase newPhase = CurrentPhase;
+        TimePhase newPhase = CurrentTimePhase;
 
         if (timeOfDay >= SECONDS_PER_DAY * 0.75f) newPhase = TimePhase.Dusk;
         else if (timeOfDay >= SECONDS_PER_DAY * 0.50f) newPhase = TimePhase.Afternoon;
         else if (timeOfDay >= SECONDS_PER_DAY * 0.25f) newPhase = TimePhase.Morning;
         else newPhase = TimePhase.Dawn;
 
-        if (newPhase != CurrentPhase)
+        if (newPhase != CurrentTimePhase)
         {
-            CurrentPhase = newPhase;
-            OnPhaseChanged?.Invoke(CurrentPhase);
-            // Debug.Log($"🌞 시간대 변경: {CurrentPhase}");
+            CurrentTimePhase = newPhase;
+            OnPhaseChanged?.Invoke(CurrentTimePhase);
+            // Debug.Log($"🌞 시간대 변경: {CurrentTimePhase}");
+        }
+    }
+
+    private void UpdateMoonPhase(bool forceInvoke)
+    {
+        int phaseIndex = _daysPassed % MOON_CYCLE_DAYS;
+        MoonPhase newPhase = (MoonPhase)phaseIndex;
+
+        if (forceInvoke || newPhase != CurrentMoonPhase)
+        {
+            CurrentMoonPhase = newPhase;
+            OnMoonPhaseChanged?.Invoke(CurrentMoonPhase);
         }
     }
 
@@ -120,6 +151,7 @@ public class WorldClock : MonoBehaviour
 
         _dayTimer.Current = SECONDS_PER_DAY - newElapsedToday;
         CheckTimeFlow(_dayTimer);
+        UpdateMoonPhase(false);
     }
 
 
@@ -154,8 +186,9 @@ public class WorldClock : MonoBehaviour
         // 4. 로드 직후 UI 및 이벤트 즉시 동기화
         OnDayPassed?.Invoke(_daysPassed);
         CheckTimeFlow(_dayTimer);
+        UpdateMoonPhase(true);
 
-        Debug.Log($"💾 시간 로드 완료: {_daysPassed + 1}일차 {CurrentPhase}에 접속하셨습니다.");
+        Debug.Log($"💾 시간 로드 완료: {_daysPassed + 1}일차 {CurrentTimePhase}에 접속하셨습니다.");
     }
 
     private void OnDestroy()
