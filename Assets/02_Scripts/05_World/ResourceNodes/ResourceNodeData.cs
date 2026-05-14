@@ -4,6 +4,9 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "NewResourceNodeData", menuName = "Scriptable Objects/ResourceNodeData")] 
 public class ResourceNodeData : ScriptableObject
 {
+    [Header("Meta")]
+    public string Name;
+
     [Header("Stats")]
     public int MaxHealth = 3;               // 자원 노드의 최대 체력
     public int GatherAmount = 1;            // 채집 용 횟수
@@ -12,6 +15,10 @@ public class ResourceNodeData : ScriptableObject
 
     [Header("Drops")]
     public DropItemData[] Drops;
+    private void OnValidate()
+    {
+        Name = name;
+    }
 }
 
 

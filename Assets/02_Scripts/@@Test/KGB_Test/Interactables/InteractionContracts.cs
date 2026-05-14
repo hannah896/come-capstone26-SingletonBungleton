@@ -6,7 +6,7 @@ using UnityEngine;
 // 상호작용 컨텍스트
 public readonly struct InteractionContext
 {
-    public GameObject Instigator { get; }
+    public GameObject Instigator { get; }   //  상호작용을 시도하는 주체 (예: 플레이어)
     public Vector3 Point { get; }
     public Vector3 Normal { get; }
 

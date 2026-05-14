@@ -1,7 +1,9 @@
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-
-public class FirNode : ResourceNode
+/// <summary>
+/// 나무, 돌 등의 자원 노드로, 플레이어가 도구로 공격하여 부술 수 있는 오브젝트
+/// </summary>
+public class BreakableResourceNode : ResourceNode
 {
     [Header("Drop")]
     [SerializeField] private string _dropPrefabKey;
@@ -12,7 +14,7 @@ public class FirNode : ResourceNode
 
     protected override void OnDamaged(DamageContext context)
     {
-        Debug.Log($"[FirNode] 데미지 입음! 사용 도구: {context.ToolId}, 피해량: {context.Amount}, 남은 체력: {CurrentHealth}");
+        Debug.Log($"{ResourceNodeData.Name} 데미지 입음! 사용 도구: {context.ToolId}, 피해량: {context.Amount}, 남은 체력: {CurrentHealth}");
     }
 
     protected override void OnDestroyed()
@@ -35,10 +37,10 @@ public class FirNode : ResourceNode
     private async UniTask SpawnDropsAsync()
     {
         // 배열이 비어있으면 종료
-        if (NodeData.Drops == null || NodeData.Drops.Length == 0) return;
+        if (ResourceNodeData.Drops == null || ResourceNodeData.Drops.Length == 0) return;
 
         // 배열에 등록된 모든 드롭 아이템(통나무, 나뭇가지, 사과 등)을 순회
-        foreach (DropItemData dropData in NodeData.Drops)
+        foreach (DropItemData dropData in ResourceNodeData.Drops)
         {
             if (string.IsNullOrEmpty(dropData.DropPrefabKey)) continue;
             // 1. 드롭 확률 체크 (예: 사과가 0.1(10%) 확률이라면)

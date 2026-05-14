@@ -5,8 +5,8 @@ using UnityEngine;
 /// </summary>
 public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, IGatherable, IPlacementInitializable
 {
-    [SerializeField] private ResourceNodeData _nodeData;
-    protected ResourceNodeData NodeData => _nodeData;
+    [SerializeField] private ResourceNodeData _resourceNodeData;
+    protected ResourceNodeData ResourceNodeData => _resourceNodeData;
 
     [SerializeField] private bool _despawnOnDestroyed = true;
 
@@ -24,8 +24,8 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
 
     protected virtual void Awake()
     {
-        _currentHealth = Mathf.Max(1, _nodeData.MaxHealth);
-        _remainingGather = Mathf.Max(0, _nodeData.GatherAmount);
+        _currentHealth = Mathf.Max(1, _resourceNodeData.MaxHealth);
+        _remainingGather = Mathf.Max(0, _resourceNodeData.GatherAmount);
     }
 
     // 배치 초기화 메서드. PlacementData와 ChunkData를 받아 초기화 작업을 수행
@@ -91,12 +91,12 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
     // 노드 데이터에 허용된 도구 ID 목록이 있는 경우, 해당 목록에 도구 ID가 포함되어 있는지 확인
     protected virtual bool IsToolAllowed(string toolId)
     {
-        if (_nodeData.AllowedToolIds == null || _nodeData.AllowedToolIds.Length == 0) return true;
+        if (_resourceNodeData.AllowedToolIds == null || _resourceNodeData.AllowedToolIds.Length == 0) return true;
         if (string.IsNullOrEmpty(toolId)) return false;
 
-        for (int i = 0; i < _nodeData.AllowedToolIds.Length; i++)
+        for (int i = 0; i < _resourceNodeData.AllowedToolIds.Length; i++)
         {
-            if (_nodeData.AllowedToolIds[i] == toolId) return true;
+            if (_resourceNodeData.AllowedToolIds[i] == toolId) return true;
         }
 
         return false;
@@ -109,6 +109,7 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
     protected virtual void OnDestroyed() 
     {
         _deathPosition = transform.position;
+        Debug.Log($"{ResourceNodeData.Name} 파괴됨! 위치: {_deathPosition}");
     }
 
     private void HandleDestroyed()
@@ -121,7 +122,7 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
         {
             // 파괴된 시간을 기록
             float currentTime = WorldClock.Instance.TotalInGameSeconds;
-            float targetRespawnTime = currentTime + NodeData.RespawnTime;
+            float targetRespawnTime = currentTime + _resourceNodeData.RespawnTime;
             _chunk.MarkObjectDestroyed(_placement.instanceId, targetRespawnTime);
         }
 
