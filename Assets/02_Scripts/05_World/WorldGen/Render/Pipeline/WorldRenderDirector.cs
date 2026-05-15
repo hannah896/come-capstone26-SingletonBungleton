@@ -12,6 +12,8 @@ public interface IChunkRenderer
 
 public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
 {
+    private const float WATER_PLANE_UNIT_SIZE = 10f;
+
     private TerrainBuilder _terrainBuilder;
 
     private TerrainLayerLoader _layerLoader;
@@ -25,11 +27,14 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
     private WorldGraphData _graphData;
 
     private TerrainLayerPalette _layerPalette;
-    private TerrainDetailPalette _detailPalette; 
-        
+    private TerrainDetailPalette _detailPalette;
 
     private CancellationToken _ct;
 
+    [Header("Water")]
+    [SerializeField] private bool _enableWaterPlane = true;
+    [SerializeField] private string _waterPrefabKey = "Water";
+    private GameObject _waterInstance;
 
     // 관리 중인 청크 딕셔너리 (파괴할 때 필요함)
     private Dictionary<Vector2Int, GameObject> _activeTerrains = new();
@@ -73,6 +78,8 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
         {
             Debug.Log($"등록된 레이어 이름: {key} (인덱스: {_layerPalette.IndexMap[key]})");
         }
+
+        await SetupWaterPlaneAsync(ct);
     }
 
     /// <summary>
@@ -92,7 +99,7 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
         GameObject pooledTerrain = GetPooledTerrain();
 
         // 1. 지형 융기 (Terrain 생성/재사용)
-        var (terrainData, terrainGO) = await _terrainBuilder.BuildChunkTerrainAsync(chunk, _settings, pooledTerrain,  _ct);        
+        var (terrainData, terrainGO) = await _terrainBuilder.BuildChunkTerrainAsync(chunk, _settings, pooledTerrain, _ct);        
         terrainBuildMs = chunkStopwatch.ElapsedMilliseconds;
 
         // 2. 텍스처 페인팅 (로컬 데이터 기반)
@@ -229,8 +236,45 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
         _terrainPoolRoot = root.transform;
     }
 
+    private async UniTask SetupWaterPlaneAsync(CancellationToken ct)
+    {
+        if (!_enableWaterPlane || string.IsNullOrEmpty(_waterPrefabKey))
+        {
+            DespawnWaterPlane();
+            return;
+        }
+
+        DespawnWaterPlane();
+
+        GameObject water = await Extensions.SpawnAsync(_waterPrefabKey, transform, ct);
+        if (water == null || _settings == null) return;
+
+        _waterInstance = water;
+
+        Vector2Int worldSize = _settings.GetWorldSize();
+        float seaLevel = _settings.GetHeight(HeightLevel.Ocean);
+
+        Vector3 position = new Vector3(worldSize.x * 0.5f, seaLevel, worldSize.y * 0.5f);
+        float scaleX = worldSize.x / WATER_PLANE_UNIT_SIZE;
+        float scaleZ = worldSize.y / WATER_PLANE_UNIT_SIZE;
+
+        _waterInstance.transform.SetPositionAndRotation(position, Quaternion.identity);
+        _waterInstance.transform.localScale = new Vector3(scaleX, 1f, scaleZ);
+        _waterInstance.SetActive(true);
+    }
+
+    private void DespawnWaterPlane()
+    {
+        if (_waterInstance == null) return;
+
+        Extensions.Despawn(_waterInstance);
+        _waterInstance = null;
+    }
+
     private void OnDestroy()
     {
+        DespawnWaterPlane();
+
         if (_layerPalette != null && _layerPalette.LoadedKeys != null)
         {
             foreach (var key in _layerPalette.LoadedKeys)
@@ -286,6 +330,8 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
         _activeTerrains.Clear();
         _activeTerrainDatas.Clear();
         _requestedChunks.Clear();
+
+        DespawnWaterPlane();
 
         if (_terrainPoolRoot != null)
         {

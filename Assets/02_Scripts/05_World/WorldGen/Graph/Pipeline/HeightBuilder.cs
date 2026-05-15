@@ -24,7 +24,8 @@ public class HeightBuilder : IGraphPipelineStage
     private const float SEA_DEEP_HEIGHT = -50f;
     private const int SMOOTHING_ITERATIONS = 5;
     private const int COASTLINE_SMOOTH_DISTANCE = 40;
-    private const float COASTLINE_TARGET_HEIGHT = 0.5f;
+    private const float MIN_HEIGHT_FACTOR = 0.5f;
+    private const float COASTLINE_TARGET_FACTOR = 0.7f;
 
     // 융기 관련 상수
     private const float UPLIFT_EDGE_FADE_DISTANCE = 5f;
@@ -83,7 +84,7 @@ public class HeightBuilder : IGraphPipelineStage
         float offsetX = (float)_prng.NextDouble() * 200000f - 100000f;
         float offsetY = (float)_prng.NextDouble() * 200000f - 100000f;
         float plainsHeight = _worldSettings.GetHeight(HeightLevel.Plains);
-        float minHeight = plainsHeight / 2;
+        float minHeight = plainsHeight * MIN_HEIGHT_FACTOR;
 
         int maxOctaves = 0;
         foreach (var node in _graphResult.Nodes)
@@ -208,7 +209,8 @@ public class HeightBuilder : IGraphPipelineStage
                     float t = (float)distToOcean / currentSmoothDistance;
                     t = t * t * (3f - 2f * t);
                     float currentHeight = _worldLogicData.HeightWorld[x, y];
-                    _worldLogicData.HeightWorld[x, y] = Mathf.Lerp(COASTLINE_TARGET_HEIGHT, currentHeight, t);
+                    float target = _worldSettings.GetHeight(HeightLevel.Plains) * COASTLINE_TARGET_FACTOR;
+                    _worldLogicData.HeightWorld[x, y] = Mathf.Lerp(target, currentHeight, t);
                 }
 
                 processedCount++;

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: TestWorldSettings
   m_EditorClassIdentifier: 
   CurrentStory: {fileID: 11400000, guid: 1286a88dc4584c44497a3905a9366d92, type: 2}
-  WorldSeed: -1496397797
+  WorldSeed: -2100506294
   worldSmall: 512
   worldMedium: 1024
   worldLarge: 1024
@@ -25,7 +25,7 @@ MonoBehaviour:
   loopNever: 0
   loopDefault: 0.5
   loopAlways: 1
-  Height_Ocean: 0
+  Height_Ocean: 1
   Height_Plains: 5
   Height_Mesa: 90
   Height_Highlands: 120

@@ -4,7 +4,7 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "New World Settings", menuName = "Scriptable Objects/TestWorld/World Settings")]
 public class WorldSettings : ScriptableObject
 {
-    [Header("--- Game Context ---")]
+    [Header("--- World Gen Context ---")]
     [Tooltip("이번 월드 생성에 사용할 스토리 데이터")]
     [SerializeField] public StoryData CurrentStory;
     [SerializeField] public int WorldSeed = 0; // 월드 시드 (랜덤 시드로 덮어쓰기됨)
@@ -109,6 +109,7 @@ public class WorldSettings : ScriptableObject
         {
             case HeightLevel.Ocean: return Height_Ocean; // 바다 깊이 고정
             case HeightLevel.Plains: return Height_Plains;
+            case HeightLevel.Mesa: return Height_Mesa;
             case HeightLevel.Highlands: return Height_Highlands;
             case HeightLevel.Max: return Hegiht_Max;
             default: return 0.0f;
@@ -227,9 +228,9 @@ public enum WorldLoopSetting
 public enum HeightLevel
 { 
     Ocean,      
-    Plains,               
-    Highlands,
+    Plains,
     Mesa,
+    Highlands,
     Max
 }
 

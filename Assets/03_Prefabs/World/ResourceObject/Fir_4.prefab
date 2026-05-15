@@ -360,7 +360,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5c8248aefc786f42867b9bcb7ede0f2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _nodeData: {fileID: 11400000, guid: f8f5a93f4ae313840bf0c4b98d4956df, type: 2}
+  _resourceNodeData: {fileID: 11400000, guid: f8f5a93f4ae313840bf0c4b98d4956df, type: 2}
   _despawnOnDestroyed: 1
   _dropPrefabKey: 
   _dropRadius: 0.5
