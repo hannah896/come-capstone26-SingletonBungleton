@@ -428,3 +428,22 @@
 - `InventoryDisplayUI`가 임의의 `PlayerInventory`를 잡지 않도록 로컬 플레이어 인벤토리를 우선 탐색하고, 이미 인벤토리에 바인딩된 UI는 Tab 직접 토글을 하지 않도록 보정
 
 **검증:** uLoop PlayMode에서 로컬 플레이어 인벤토리를 20칸으로 세팅한 뒤 E 입력을 길게 주입해도 곡괭이 장착 로그가 1회만 발생함을 확인. 이어서 `곡괭이 -> 횃불 -> 곡괭이` 교체 시 로그가 `곡괭이 해제 / 횃불 장착 및 켜짐 / 횃불 해제 및 꺼짐 / 곡괭이 장착` 순서로만 발생하고 중복 장착/해제 로그가 재발하지 않음을 확인. 최종 Unity 컴파일 결과 Error 0, 기존 Warning 8건.
+
+---
+
+## 2026-05-18
+
+### 1. WorldGenManager 플레이 모드 생성/실행 에디터 툴 추가
+
+**파일:** `Assets/02_Scripts/05_World/WorldGen/Editor/WorldGenEditorTool.cs`, `docs/WorkSummary.md`
+
+- `Tools/World Gen/Test World Generator` 에디터 윈도우 추가
+- `Tools/World Gen/Generate Test World` 메뉴 실행 추가
+- Play Mode에서 `WorldGenManager`가 없으면 새 GameObject에 `WorldGenManager` 컴포넌트를 생성
+- 씬에 있는 `WorldGenManager`가 비활성 상태이면 활성화 후 실행 대기
+- `WorldGenManager`가 있거나 생성된 뒤 `_worldSettings` 로딩 완료 상태를 기다렸다가 기존 `GenerateWorldFromUI` 호출
+- 기본 호출값은 기존 월드 생성 UI와 같은 `WorldBranchSetting.Default`, `WorldLoopSetting.Default`
+
+**왜 변경했는지:** `UI_KGB_TestScene`을 대신해 플레이 모드에서 빠르게 월드 생성을 테스트할 수 있도록 하기 위함. 기존 `WorldGenManager`와 경보씨 월드 생성 파이프라인 코드는 수정하지 않음.
+
+**남은 TODO/이슈:** Unity Editor에서 메뉴 실행 후 실제 Play Mode 월드 생성 동작 확인 필요. 생성 직후 `Main` 초기화 또는 `TestWorldSettings` 로딩이 늦어지면 10초 타임아웃 경고가 표시될 수 있음.
