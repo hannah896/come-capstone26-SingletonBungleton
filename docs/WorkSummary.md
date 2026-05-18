@@ -447,3 +447,14 @@
 **왜 변경했는지:** `UI_KGB_TestScene`을 대신해 플레이 모드에서 빠르게 월드 생성을 테스트할 수 있도록 하기 위함. 기존 `WorldGenManager`와 경보씨 월드 생성 파이프라인 코드는 수정하지 않음.
 
 **남은 TODO/이슈:** Unity Editor에서 메뉴 실행 후 실제 Play Mode 월드 생성 동작 확인 필요. 생성 직후 `Main` 초기화 또는 `TestWorldSettings` 로딩이 늦어지면 10초 타임아웃 경고가 표시될 수 있음.
+ 
+### 2. PHN_TestScene 플레이어 상태 UI 크기 조정
+
+**파일:** `Assets/01_Scenes/Test/PHN_TestScene.unity`, `docs/WorkSummary.md`
+
+- 현재 배치 상태에서 UI 묶음 전체 크기만 줄이기 위해 `StatusBars` RectTransform scale을 0.45로 조정
+- 비율 잠금을 위해 `m_ConstrainProportionsScale`을 켜서 X/Y/Z scale이 함께 유지되도록 설정
+
+**왜 변경했는가:** 요청한 Hunger/HP/Ego 배치 상태는 유지하면서 화면에서 차지하는 UI 크기만 줄이기 위함.
+
+**남은 TODO/이슈:** Unity Editor Game View에서 16:9, 16:10, 4:3 등 여러 해상도로 실제 위치와 크기 확인 필요. 현재 Codex 셸 PATH에서 `uloop` 실행 파일을 찾지 못해 uloop 검증은 수행하지 못함.

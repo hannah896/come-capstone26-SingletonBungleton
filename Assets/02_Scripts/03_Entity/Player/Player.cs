@@ -65,8 +65,8 @@ public class Player : MonoBehaviour
         // machine과 inputData는 동기적으로 먼저 생성 (Start()가 await 복귀 전에 실행될 수 있으므로)
         inputData = new PlayerInputData();
         machine = new PlayerRootStateMachine(this, animator);
-        playerInventory ??= GetComponent<PlayerInventory>();
-        playerInventory ??= gameObject.AddComponent<PlayerInventory>();
+        if (playerInventory == null)
+            playerInventory = Extensions.GetOrAddComponent<PlayerInventory>(gameObject);
 
         var _statData = await Extensions.LoadAssetAsync<PlayerStatData>("PlayerStatData");
         stat = new(_statData);
@@ -110,6 +110,12 @@ public class Player : MonoBehaviour
 
         // 초기 상태: Locomotion
         await InventoryDisplayUI.ShowFor(playerInventory);
+        UI_PlayerStatus statusUI = await Extensions.ShowHud<UI_PlayerStatus>("UI_Hud_Status");
+        if (statusUI != null)
+        {
+            statusUI.gameObject.SetActive(true);
+            statusUI.Set(this);
+        }
 
         var locomotionState = new PlayerLocomotionState(machine);
         machine.Init(locomotionState);
