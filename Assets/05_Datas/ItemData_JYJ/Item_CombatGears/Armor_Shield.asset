@@ -33,4 +33,4 @@ MonoBehaviour:
   defense: 20
   hungerRestore: 0
   healthRestore: 0
-  sanityRestore: 0
+  egoRestore: 0

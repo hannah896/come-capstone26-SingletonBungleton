@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [CreateAssetMenu(fileName = "PlayerStatData", menuName = "Scriptable Objects/PlayerStatData")]
 public class PlayerStatData : EntityStatData
@@ -18,10 +19,13 @@ public class PlayerStatData : EntityStatData
     public float MaxHunger => HungerDrain * DayDurationMinutes * 2f;
 
 
-    [Header("정신력")]
-    public float MaxMental;
-    public float CurMental;
-    public float MentalDecreaseRate; // 정신력이 감소하는 비율
+    [Header("Ego")]
+    [FormerlySerializedAs("MaxMental")]
+    public float MaxEgo;
+    [FormerlySerializedAs("CurMental")]
+    public float CurEgo;
+    [FormerlySerializedAs("MentalDecreaseRate")]
+    public float EgoDecreaseRate;
 
     [Header("체온")]
     public float Temperature;

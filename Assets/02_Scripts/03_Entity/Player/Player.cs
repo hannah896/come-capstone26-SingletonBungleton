@@ -152,7 +152,7 @@ public class Player : MonoBehaviour
 
         if (stat == null) return;
         stat.UpdateHunger(deltaTime);
-        stat.UpdateMental(deltaTime);
+        stat.UpdateEgo(deltaTime);
     }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

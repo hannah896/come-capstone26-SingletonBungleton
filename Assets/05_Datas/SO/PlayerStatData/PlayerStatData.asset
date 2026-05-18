@@ -24,9 +24,9 @@ MonoBehaviour:
   CurHunger: 150
   HungerDrain: 0
   HungerHPDecreaseRate: 0
-  MaxMental: 200
-  CurMental: 200
-  MentalDecreaseRate: 0
+  MaxEgo: 200
+  CurEgo: 200
+  EgoDecreaseRate: 0
   Temperature: 0
   ColdHPDecreaseRate: 0
   HotHPDecreaseRate: 0
