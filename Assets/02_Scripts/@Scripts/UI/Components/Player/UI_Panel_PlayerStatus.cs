@@ -3,7 +3,7 @@ using System.Threading;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class UI_PlayerStatus : UI_Hud
+public class UI_Panel_PlayerStatus : UI_Panel
 {
     private enum StatusKind
     {
@@ -24,22 +24,6 @@ public class UI_PlayerStatus : UI_Hud
     private StatusKind? hoveredKind;
     private LoopManager subscribedLoop;
     private bool isLoopSubscribed;
-
-    public static async UniTask<UI_PlayerStatus> ShowFor(
-        Player owner,
-        string key = null,
-        CancellationToken ct = default)
-    {
-        UI_PlayerStatus display = await Extensions.ShowHud<UI_PlayerStatus>(key, ct);
-
-        if (display != null)
-        {
-            display.gameObject.SetActive(true);
-            display.Set(owner);
-        }
-
-        return display;
-    }
 
     public override bool Initialize()
     {

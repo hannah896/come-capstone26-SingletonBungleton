@@ -458,3 +458,51 @@
 **왜 변경했는가:** 요청한 Hunger/HP/Ego 배치 상태는 유지하면서 화면에서 차지하는 UI 크기만 줄이기 위함.
 
 **남은 TODO/이슈:** Unity Editor Game View에서 16:9, 16:10, 4:3 등 여러 해상도로 실제 위치와 크기 확인 필요. 현재 Codex 셸 PATH에서 `uloop` 실행 파일을 찾지 못해 uloop 검증은 수행하지 못함.
+
+---
+
+## 2026-05-19
+
+### 1. 인벤토리 UI 프레임워크 패턴 정리
+
+**파일:** `Assets/02_Scripts/04_Item/InventoryDisplayUI.cs`, `docs/WorkSummary.md`
+
+- `InventoryDisplayUI`가 `MonoBehaviour` 대신 `UI_Hud`를 상속하도록 변경
+- `UI_PlayerStatus`와 같은 방식으로 `Initialize()`에서 UI 참조 수집 및 초기 표시 상태 설정, `Set(PlayerInventory)`에서 인벤토리 바인딩 처리
+- `ShowFor()`가 `Main.UI.ShowHudOverlay`를 직접 호출하지 않고 `Extensions.ShowHud<InventoryDisplayUI>()`를 통해 UI 프레임워크 진입점을 사용하도록 변경
+- UI 스크립트의 직접 Tab 입력 감지를 제거하고, 인벤토리 열림/닫힘 상태는 기존처럼 `PlayerInventory` 이벤트를 통해 반영
+
+**변경 이유:** 인벤토리 UI가 프로젝트 UI 베이스(`UI_Hud`/`UI_Panel`)와 `Extensions` 기반 생성 흐름을 따르지 않아 다른 HUD 스크립트와 구조가 달랐기 때문.
+
+**검증:** `dotnet build .\Assembly-CSharp.csproj --no-restore`를 실행했으나 기존 Firebase Analytics 참조 오류 2건(`Firebase.Analytics` 네임스페이스 누락)으로 전체 빌드는 실패. 이번 인벤토리 UI 변경에서 발생한 신규 컴파일 오류는 확인되지 않음.
+
+**남은 TODO/이슈:** Unity Editor에서 `InventoryUI` Addressable 프리팹을 열어 `UI_Hud` 상속 필드 직렬화 상태를 저장하고, 실제 Game View에서 인벤토리 HUD와 다른 HUD 표시 흐름이 의도대로 동작하는지 확인 필요.
+
+### 2. 줄바꿈 정책을 Git 정규화와 일치하도록 조정
+
+**파일:** `.editorconfig`, `docs/WorkSummary.md`
+
+- `.editorconfig`의 `end_of_line` 값을 `crlf`에서 `lf`로 변경
+- 저장소의 `.gitattributes` (`* text=auto`) 및 Git LF 정규화 정책과 EditorConfig 줄바꿈 규칙이 서로 충돌하지 않도록 정리
+
+**변경 이유:** Visual Studio에서 LF 정규화 경고가 반복된 원인이 UTF-8 인코딩이 아니라 줄바꿈 정책 불일치였기 때문. Git은 LF를 기준으로 정규화하는데 EditorConfig가 CRLF를 요구하고 있어 워킹트리에서 계속 충돌이 발생하고 있었음.
+
+**검증:** 설정 확인 결과 `.editorconfig`는 `charset = utf-8`, `.gitattributes`는 `* text=auto`, 로컬 Git 설정은 `core.autocrlf=true`였음. 이번 변경으로 저장소 기준 줄바꿈 정책과 EditorConfig 규칙은 일치하게 됨.
+
+**남은 TODO/이슈:** 이미 워킹트리에 `mixed` 또는 `crlf`로 남아 있는 파일은 필요 시 별도 renormalize가 필요할 수 있음. 이번 변경에서는 설정만 맞추고 대규모 파일 churn은 만들지 않음.
+
+### 3. UI_Hud_Player 루트 HUD 구성 완성
+
+**파일:** `Assets/02_Scripts/01_UI/Player/UI_Hud_Player.cs`, `Assets/02_Scripts/@Scripts/UI/Components/Player/UI_Panel_PlayerStatus.cs`, `Assets/03_Prefabs/UI/Player/UI_Hud_Player.prefab`, `docs/WorkSummary.md`
+
+- `UI_Hud_Player`를 플레이어 HUD의 단일 루트 `UI_Hud`로 동작하도록 완성
+- `UI_Hud_Player.Set(Player)`에서 `UI_Panel_PlayerStatus`와 `UI_Panel_PlayerInventory`를 함께 활성화하고 각각 플레이어/인벤토리에 바인딩하도록 구성
+- `UI_Hud_Player.Set(PlayerInventory)` 오버로드를 추가해 인벤토리만 바인딩하는 호출도 지원
+- `UI_Hud_Player.prefab` 루트에 누락되어 있던 `UI_Hud_Player` 컴포넌트를 추가해 `Extensions.ShowHud<UI_Hud_Player>()` 로드가 가능하도록 수정
+- `UI_Panel_PlayerStatus`의 불필요한 `UnityEngine.Rendering.DebugUI` using을 제거
+
+**변경 이유:** 현재 UI 프레임워크에서 `UI_Hud`는 한 번에 하나만 유지되는 루트 HUD 역할이므로, 플레이어 상태/인벤토리는 각각 독립 HUD가 아니라 `UI_Hud_Player` 아래의 `UI_Panel`로 묶여야 하기 때문.
+
+**검증:** `dotnet build .\Assembly-CSharp.csproj --no-restore`를 실행했으며, HUD 변경으로 인한 신규 컴파일 오류는 확인되지 않음. 전체 빌드는 기존 `Firebase.Analytics` 네임스페이스 누락 오류 2건으로 실패.
+
+**남은 TODO/이슈:** `Player.cs` 호출부는 현재 별도 작업 중이므로 이번 변경에서 수정하지 않음. 최종적으로는 `Extensions.ShowHud<UI_Hud_Player>("UI_Hud_Player")` 후 `Set(player)` 형태로 호출하는 것이 프레임워크에 맞음.

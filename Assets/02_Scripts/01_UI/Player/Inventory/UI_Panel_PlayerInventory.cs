@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 
-public class InventoryDisplayUI : MonoBehaviour
+public class UI_Panel_PlayerInventory : UI_Panel
 {
     [Header("UI 연결")]
     [SerializeField] private Transform slotContainer;
     [SerializeField] private Transform equipSlotContainer;
     [SerializeField] private PlayerInventory playerInventory;
-    [SerializeField] private bool toggleWithTab = true;
     [SerializeField] private bool hideOnStart = false;
 
     private readonly List<InventorySlotUI> slotUIs = new();
@@ -19,31 +18,28 @@ public class InventoryDisplayUI : MonoBehaviour
     private CanvasGroup canvasGroup;
     private bool isSubscribed;
     private bool isVisible = true;
+        
 
-    public static async UniTask<InventoryDisplayUI> ShowFor(
-        PlayerInventory inventory,
-        string key = "InventoryUI",
-        CancellationToken ct = default)
+    public override bool Initialize()
     {
-        InventoryDisplayUI display = FindFirstObjectByType<InventoryDisplayUI>(FindObjectsInactive.Include);
-        if (display == null && Main.Instance != null && Main.UI != null)
-            display = await Main.UI.ShowHudOverlay<InventoryDisplayUI>(key, ct);
+        if (!base.Initialize()) return false;
 
-        if (display != null)
-            display.Bind(inventory);
-
-        return display;
-    }
-
-    private void Awake()
-    {
         ResolveReferences();
         CollectSlots();
         SetVisible(!hideOnStart);
+
+        return true;
+    }
+
+    public void Set(PlayerInventory inventory)
+    {
+        Initialize();
+        Bind(inventory);
     }
 
     private void OnEnable()
     {
+        Initialize();
         Bind(playerInventory != null ? playerInventory : FindLocalPlayerInventory());
         RefreshUI();
     }
@@ -53,13 +49,9 @@ public class InventoryDisplayUI : MonoBehaviour
         Unsubscribe();
     }
 
-    private void Update()
+    private void OnDestroy()
     {
-        if (playerInventory == null)
-            Bind(FindLocalPlayerInventory());
-
-        if (playerInventory == null && toggleWithTab && Input.GetKeyDown(KeyCode.Tab))
-            Toggle();
+        Unsubscribe();
     }
 
     public void Toggle()

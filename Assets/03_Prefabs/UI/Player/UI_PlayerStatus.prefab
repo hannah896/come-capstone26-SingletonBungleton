@@ -169,7 +169,7 @@ GameObject:
   - component: {fileID: 7323083668512917011}
   - component: {fileID: 6612430809691546301}
   m_Layer: 5
-  m_Name: UI_Hud_Status
+  m_Name: UI_PlayerStatus
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -184,8 +184,8 @@ RectTransform:
   m_GameObject: {fileID: 7580635908579406090}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.33, y: 0.33, z: 0.33}
-  m_ConstrainProportionsScale: 1
+  m_LocalScale: {x: 0.25, y: 0.25, z: 0.25}
+  m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 9186858844953480016}
   - {fileID: 8976430487256321286}

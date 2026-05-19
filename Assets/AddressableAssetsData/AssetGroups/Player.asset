@@ -20,18 +20,13 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 1f59c7298045f3e41911f300418eaa3a
-    m_Address: InventoryUI
+  - m_GUID: 6fc96e8cee6bfdd49a47c31fcde580db
+    m_Address: UI_Hud_Player
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: d4041a8e28d31644d9d86ed0f5037fd6
     m_Address: PlayerStatData
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: e39146833b2bc1647b750258f9b390cb
-    m_Address: UI_Hud_Status
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
