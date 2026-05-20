@@ -17,7 +17,7 @@ using UnityEngine.InputSystem;
 //[Tooltip("배치 시 피벗 오프셋")]
 //public Vector3 placementPivotOffset;
 
-//[Tooltip("그리드 스냅 여부")]
+//[Tooltip("그리드 스냅 여부")] -> 연속적 움직임 or 그리드 스냅 방식
 //public bool placementSnapToGrid = true;
 
 //[Tooltip("배치 가능 체크 높이")]
@@ -92,6 +92,7 @@ public class PlacementController : MonoBehaviour
             playerInventory.OnSelectedSlotChanged += HandleSelectedSlotChanged;
         if (craftingManager != null)
             craftingManager.OnCrafted += HandleCrafted; //TODO: CraftingManager에 OnCrafted 이벤트 추가 필요
+                                                        //      OnClickedPlaceButton 이벤트로 변경하여 UI에서 배치 모드 진입하도록 변경하는 것도 
     }
 
     private void UnbindEvents()
@@ -101,18 +102,7 @@ public class PlacementController : MonoBehaviour
         if (craftingManager != null)
             craftingManager.OnCrafted -= HandleCrafted;
     }
-
-    private void HandleCrafted(RecipeDataSO recipe, ItemDataSO itemData, int amount)
-    {
-        if (itemData == null || amount <= 0)
-            return;
-
-        if (!IsPlaceableItem(itemData))
-            return;
-
-        BeginPlacement(itemData);
-    }
-
+    // 슬롯 변경 시 해당 슬롯의 아이템이 배치 가능한지 체크하여 배치 모드로 진입
     private void HandleSelectedSlotChanged(int slotIndex)
     {
         if (IsActive || playerInventory == null)
@@ -130,6 +120,19 @@ public class PlacementController : MonoBehaviour
 
         BeginPlacement(itemData);
     }
+    // 제작 완료 시 결과 아이템이 배치 가능한지 체크하여 배치 모드로 진입
+
+    private void HandleCrafted(RecipeDataSO recipe, ItemDataSO itemData, int amount)
+    {
+        if (itemData == null || amount <= 0)
+            return;
+
+        if (!IsPlaceableItem(itemData))
+            return;
+
+        BeginPlacement(itemData);
+    }
+
 
     private void BeginPlacement(ItemDataSO itemData)
     {

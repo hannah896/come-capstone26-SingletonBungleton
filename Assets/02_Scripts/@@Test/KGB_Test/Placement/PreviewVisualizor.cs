@@ -92,6 +92,7 @@ public class PreviewVisualizer : MonoBehaviour, IPreviewVisualizer
             return;
 
         UpdateGhostVisual(ghostPosition, ghostRotation, ghostYOffset, isValid);
+        //if()
         UpdateGridVisual(gridCenter, gridSize, gridRadius, ghostYOffset, validator);
     }
 
