@@ -19,11 +19,23 @@ public class UI_Panel_PlayerStatus : UI_Panel
     [SerializeField] private UI_Text UI_HPText;
     [SerializeField] private UI_Text UI_EgoText;
 
-    private Player player;
     private PlayerStatus status;
     private StatusKind? hoveredKind;
     private LoopManager subscribedLoop;
+    private Player player;
     private bool isLoopSubscribed;
+
+    public Player Player
+    {
+        get => player;
+        set
+        {
+            player = value;
+            status = player != null ? player.Stat : null;
+            RefreshAllValues();
+            HideAllValues();
+        }
+    }
 
     public override bool Initialize()
     {
@@ -34,20 +46,12 @@ public class UI_Panel_PlayerStatus : UI_Panel
         SetIconEvent(UI_HPIcon, StatusKind.Hp);
         SetIconEvent(UI_EgoIcon, StatusKind.Ego);
         HideAllValues();
-
-        return true;
-    }
-
-    public void Set(Player owner)
-    {
-        Initialize();
         TrySubscribeLoop();
 
-        player = owner;
-        status = owner != null ? owner.Stat : null;
         hoveredKind = null;
         RefreshAllValues();
         HideAllValues();
+        return true;
     }
 
     private void OnEnable()

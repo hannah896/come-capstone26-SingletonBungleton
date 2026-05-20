@@ -45,6 +45,7 @@ public class PlayerMotor : MonoBehaviour
 
     // 코요테 타임 적용 지면 판정
     public bool WasGroundedRecently => groundDetector != null && groundDetector.WasGroundedRecently;
+    public bool CanJump => cc != null && cc.isGrounded;
 
     // 경사면 위에 있는지
     public bool IsOnSlope => groundDetector != null && groundDetector.IsOnSlope;
@@ -124,6 +125,8 @@ public class PlayerMotor : MonoBehaviour
             // 지면: 상태가 설정한 속도만 사용
             finalVelocity = moveVelocity;
             airVelocity = Vector3.zero;  // 공중 속도 리셋
+            if (gravity.CurrentVerticalVelocity > 0f)
+                airVelocity = moveVelocity;
         }
         else
         {

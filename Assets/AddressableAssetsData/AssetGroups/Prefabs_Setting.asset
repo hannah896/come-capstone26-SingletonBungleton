@@ -26,6 +26,13 @@ MonoBehaviour:
     m_SerializedLabels:
     - EveryScene
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d8407f296607e4dd381d7ad4aaf672a8
+    m_Address: AudioManager
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - EveryScene
+    - default
+    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: d49714acbe7dc4846b65422625851c9a, type: 2}
   m_SchemaSet:

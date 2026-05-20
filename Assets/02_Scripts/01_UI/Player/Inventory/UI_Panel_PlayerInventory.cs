@@ -1,81 +1,56 @@
-using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
-using System.Threading;
 using UnityEngine;
+using UnityEngine.UI;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class UI_Panel_PlayerInventory : UI_Panel
 {
+    #region Field
     [Header("UI 연결")]
     [SerializeField] private Transform slotContainer;
     [SerializeField] private Transform equipSlotContainer;
     [SerializeField] private PlayerInventory playerInventory;
-    [SerializeField] private bool hideOnStart = false;
-
-    private readonly List<InventorySlotUI> slotUIs = new();
-    private InventorySlotUI headSlotUI;
-    private InventorySlotUI chestSlotUI;
-    private InventorySlotUI handSlotUI;
-    private CanvasGroup canvasGroup;
+    [SerializeField] private List<InventorySlotUI> slotUIs = new();
+    [SerializeField] private InventorySlotUI headSlotUI;
+    [SerializeField] private InventorySlotUI chestSlotUI;
+    [SerializeField] private InventorySlotUI handSlotUI;
+    private Player player;
     private bool isSubscribed;
-    private bool isVisible = true;
-        
+    #endregion
+
+    #region Property
+    public PlayerInventory PlayerInventory => playerInventory;
+    public Player Player
+    {
+        get => player;
+        set
+        {
+            player = value;
+            Bind(player != null ? player.Inventory : null);
+        }
+    }
+    #endregion
+
+
 
     public override bool Initialize()
     {
         if (!base.Initialize()) return false;
 
         ResolveReferences();
-        CollectSlots();
-        SetVisible(!hideOnStart);
-
+        CollectSlots(false);
         return true;
-    }
-
-    public void Set(PlayerInventory inventory)
-    {
-        Initialize();
-        Bind(inventory);
     }
 
     private void OnEnable()
     {
-        Initialize();
-        Bind(playerInventory != null ? playerInventory : FindLocalPlayerInventory());
         RefreshUI();
-    }
-
-    private void OnDisable()
-    {
-        Unsubscribe();
-    }
-
-    private void OnDestroy()
-    {
-        Unsubscribe();
-    }
-
-    public void Toggle()
-    {
-        SetVisible(!isVisible);
-    }
-
-    public void SetVisible(bool visible)
-    {
-        isVisible = visible;
-
-        if (canvasGroup == null)
-            canvasGroup = gameObject.GetOrAddComponent<CanvasGroup>();
-
-        canvasGroup.alpha = visible ? 1f : 0f;
-        canvasGroup.interactable = visible;
-        canvasGroup.blocksRaycasts = visible;
     }
 
     public void RefreshUI()
     {
-        if (playerInventory == null)
-            Bind(FindLocalPlayerInventory());
-
         if (playerInventory == null)
         {
             ClearSlots();
@@ -103,17 +78,18 @@ public class UI_Panel_PlayerInventory : UI_Panel
         RefreshEquipSlot(chestSlotUI, EquipSlot.Chest);
         RefreshEquipSlot(handSlotUI, EquipSlot.Hand);
         RefreshFocus(playerInventory.SelectedSlotIndex);
+        RebuildLayout();
     }
 
     public void Bind(PlayerInventory inventory)
     {
         ResolveReferences();
-        if (slotUIs.Count == 0)
-            CollectSlots();
+        CollectSlots(false);
 
         if (playerInventory == inventory && isSubscribed)
         {
             ApplyQuickSlotLimit();
+            RefreshUI();
             return;
         }
 
@@ -123,18 +99,16 @@ public class UI_Panel_PlayerInventory : UI_Panel
         if (playerInventory == null) return;
 
         playerInventory.OnInventoryChanged += RefreshUI;
-        playerInventory.OnInventoryOpenChanged += SetVisible;
         playerInventory.OnSelectedSlotChanged += RefreshFocus;
         isSubscribed = true;
 
         ApplyQuickSlotLimit();
-        SetVisible(playerInventory.IsOpen || !hideOnStart);
         RefreshUI();
     }
 
     private void ResolveReferences()
     {
-        canvasGroup = gameObject.GetOrAddComponent<CanvasGroup>();
+        if (slotContainer != null && equipSlotContainer != null) return;
 
         Transform inventorySlotContainer = null;
         Transform fallbackSlotContainer = null;
@@ -150,44 +124,20 @@ public class UI_Panel_PlayerInventory : UI_Panel
                 equipSlotContainer = children[i];
         }
 
-        slotContainer = inventorySlotContainer != null ? inventorySlotContainer : fallbackSlotContainer;
+        slotContainer ??= inventorySlotContainer != null ? inventorySlotContainer : fallbackSlotContainer;
     }
 
-    private void CollectSlots()
+    private void CollectSlots(bool forceRecollect)
     {
-        slotUIs.Clear();
-        headSlotUI = null;
-        chestSlotUI = null;
-        handSlotUI = null;
+        slotUIs ??= new List<InventorySlotUI>();
 
-        if (slotContainer != null)
-        {
+        if (forceRecollect || !HasValidInventorySlots())
             CollectInventorySlotUIs();
 
-            slotUIs.Sort(CompareSlotOrder);
-        }
+        slotUIs.Sort(CompareSlotOrder);
 
-        if (equipSlotContainer == null) return;
-
-        for (int i = 0; i < equipSlotContainer.childCount; i++)
-        {
-            Transform child = equipSlotContainer.GetChild(i);
-            InventorySlotUI slotUI = GetOrAddSlotUI(child);
-            EquipSlot slot = ResolveEquipSlot(child, i);
-
-            switch (slot)
-            {
-                case EquipSlot.Head:
-                    headSlotUI = slotUI;
-                    break;
-                case EquipSlot.Chest:
-                    chestSlotUI = slotUI;
-                    break;
-                case EquipSlot.Hand:
-                    handSlotUI = slotUI;
-                    break;
-            }
-        }
+        if (forceRecollect || !HasValidEquipSlots())
+            CollectEquipSlotUIs();
     }
 
     private void Unsubscribe()
@@ -197,7 +147,6 @@ public class UI_Panel_PlayerInventory : UI_Panel
         if (playerInventory != null)
         {
             playerInventory.OnInventoryChanged -= RefreshUI;
-            playerInventory.OnInventoryOpenChanged -= SetVisible;
             playerInventory.OnSelectedSlotChanged -= RefreshFocus;
         }
 
@@ -215,6 +164,12 @@ public class UI_Panel_PlayerInventory : UI_Panel
         if (headSlotUI != null) headSlotUI.RefreshEquipment(EquipSlot.Head, null);
         if (chestSlotUI != null) chestSlotUI.RefreshEquipment(EquipSlot.Chest, null);
         if (handSlotUI != null) handSlotUI.RefreshEquipment(EquipSlot.Hand, null);
+        RebuildLayout();
+    }
+
+    private void OnDestroy()
+    {
+        Unsubscribe();
     }
 
     private void RefreshEquipSlot(InventorySlotUI slotUI, EquipSlot equipSlot)
@@ -240,25 +195,91 @@ public class UI_Panel_PlayerInventory : UI_Panel
         playerInventory.SetQuickSlotCount(slotUIs.Count);
     }
 
+    private void RebuildLayout()
+    {
+        if (!isActiveAndEnabled) return;
+
+        Canvas.ForceUpdateCanvases();
+        ForceRebuild(slotContainer);
+        ForceRebuild(equipSlotContainer);
+        ForceRebuild(transform);
+        Canvas.ForceUpdateCanvases();
+    }
+
+    private static void ForceRebuild(Transform target)
+    {
+        if (target is RectTransform rectTransform)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(rectTransform);
+    }
+
     private void CollectInventorySlotUIs()
     {
-        Transform[] children = slotContainer.GetComponentsInChildren<Transform>(true);
-        for (int i = 0; i < children.Length; i++)
-        {
-            if (children[i] == slotContainer) continue;
-            if (!TryGetSlotOrder(children[i].name, out _)) continue;
+        slotUIs ??= new List<InventorySlotUI>();
+        slotUIs.Clear();
 
-            InventorySlotUI slotUI = GetOrAddSlotUI(children[i]);
-            slotUIs.Add(slotUI);
-        }
-
-        if (slotUIs.Count > 0) return;
+        if (slotContainer == null) return;
 
         foreach (Transform child in slotContainer)
         {
-            InventorySlotUI slotUI = GetOrAddSlotUI(child);
-            slotUIs.Add(slotUI);
+            if (TryCollectInventorySlot(child))
+                continue;
+
+            foreach (Transform grandChild in child)
+                TryCollectInventorySlot(grandChild);
         }
+    }
+
+    private void CollectEquipSlotUIs()
+    {
+        headSlotUI = null;
+        chestSlotUI = null;
+        handSlotUI = null;
+
+        if (equipSlotContainer == null) return;
+
+        for (int i = 0; i < equipSlotContainer.childCount; i++)
+        {
+            Transform child = equipSlotContainer.GetChild(i);
+            InventorySlotUI slotUI = GetOrAddSlotUI(child);
+            EquipSlot slot = ResolveEquipSlot(child, i);
+
+            switch (slot)
+            {
+                case EquipSlot.Head:
+                    headSlotUI = slotUI;
+                    break;
+                case EquipSlot.Chest:
+                    chestSlotUI = slotUI;
+                    break;
+                case EquipSlot.Hand:
+                    handSlotUI = slotUI;
+                    break;
+            }
+        }
+    }
+
+    private bool HasValidInventorySlots()
+    {
+        if (slotUIs == null) return false;
+        if (slotUIs.Count == 0) return false;
+
+        for (int i = 0; i < slotUIs.Count; i++)
+        {
+            if (slotUIs[i] == null)
+                return false;
+
+            if (!IsInventorySlotRoot(slotUIs[i]))
+                return false;
+        }
+
+        return true;
+    }
+
+    private bool HasValidEquipSlots()
+    {
+        return headSlotUI != null
+            && chestSlotUI != null
+            && handSlotUI != null;
     }
 
     private static int CompareSlotOrder(InventorySlotUI left, InventorySlotUI right)
@@ -271,6 +292,44 @@ public class UI_Panel_PlayerInventory : UI_Panel
         int leftSibling = left != null ? left.transform.GetSiblingIndex() : int.MaxValue;
         int rightSibling = right != null ? right.transform.GetSiblingIndex() : int.MaxValue;
         return leftSibling.CompareTo(rightSibling);
+    }
+
+    private bool TryCollectInventorySlot(Transform slot)
+    {
+        if (!IsInventorySlotRoot(slot)) return false;
+
+        InventorySlotUI slotUI = GetOrAddSlotUI(slot);
+        if (!slotUIs.Contains(slotUI))
+            slotUIs.Add(slotUI);
+
+        return true;
+    }
+
+    private bool IsInventorySlotRoot(InventorySlotUI slotUI)
+    {
+        return slotUI != null && IsInventorySlotRoot(slotUI.transform);
+    }
+
+    private bool IsInventorySlotRoot(Transform slot)
+    {
+        if (slot == null || slotContainer == null) return false;
+        if (slot == slotContainer || !slot.IsChildOf(slotContainer)) return false;
+
+        if (TryGetSlotOrder(slot.name, out _))
+            return true;
+
+        return slot.parent == slotContainer && !HasOrderedChildren(slot);
+    }
+
+    private static bool HasOrderedChildren(Transform parent)
+    {
+        foreach (Transform child in parent)
+        {
+            if (TryGetSlotOrder(child.name, out _))
+                return true;
+        }
+
+        return false;
     }
 
     private static int GetSlotOrder(InventorySlotUI slotUI)
@@ -309,19 +368,6 @@ public class UI_Panel_PlayerInventory : UI_Panel
         return slotUI;
     }
 
-    private static PlayerInventory FindLocalPlayerInventory()
-    {
-        Player[] players = FindObjectsByType<Player>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        for (int i = 0; i < players.Length; i++)
-        {
-            if (players[i] == null || !players[i].IsLocalPlayer) continue;
-            if (players[i].Inventory != null)
-                return players[i].Inventory;
-        }
-
-        return FindFirstObjectByType<PlayerInventory>(FindObjectsInactive.Include);
-    }
-
     private static EquipSlot ResolveEquipSlot(Transform slot, int index)
     {
         string name = slot.name.ToLowerInvariant();
@@ -337,4 +383,36 @@ public class UI_Panel_PlayerInventory : UI_Panel
             _ => EquipSlot.None
         };
     }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode)
+            return;
+
+        ResolveReferencesForEditor();
+        CollectSlots(true);
+    }
+
+    private void ResolveReferencesForEditor()
+    {
+        if (slotContainer != null && equipSlotContainer != null) return;
+
+        Transform inventorySlotContainer = null;
+        Transform fallbackSlotContainer = null;
+        Transform[] children = GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < children.Length; i++)
+        {
+            if (children[i].name == "InvenSlots")
+                inventorySlotContainer = children[i];
+            else if (children[i].name == "Slots")
+                fallbackSlotContainer ??= children[i];
+
+            if (equipSlotContainer == null && children[i].name == "EquipSlots")
+                equipSlotContainer = children[i];
+        }
+
+        slotContainer ??= inventorySlotContainer != null ? inventorySlotContainer : fallbackSlotContainer;
+    }
+#endif
 }

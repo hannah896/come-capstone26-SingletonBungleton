@@ -109,12 +109,8 @@ public class Player : MonoBehaviour
         playerTracer?.Bind(inputData);
         playerInventory?.Bind(this, inputData);
 
-
         var hud = await Extensions.ShowHud<UI_Hud_Player>();
-        if (hud != null)
-        {
-            hud.Set(this);
-        }
+        hud.Player = this;
 
         // 초기 상태: Locomotion
         var locomotionState = new PlayerLocomotionState(machine);

@@ -2,41 +2,40 @@ using UnityEngine;
 
 public class UI_Hud_Player : UI_Hud
 {
+    #region Fields
     [SerializeField] private UI_Panel_PlayerStatus UI_PlayerStatus;
     [SerializeField] private UI_Panel_PlayerInventory UI_PlayerInventory;
 
+    private Player player;
+    #endregion
+
+    #region Properties
     public UI_Panel_PlayerStatus PlayerStatus => UI_PlayerStatus;
     public UI_Panel_PlayerInventory PlayerInventory => UI_PlayerInventory;
+    public Player Player
+    {
+        get => player;
+        set
+        {
+            player = value;
+            ApplyPlayer();
+        }
+    }
+    #endregion
 
     public override bool Initialize()
     {
         if (!base.Initialize()) return false;
 
         ResolveReferences();
+        SetInitialPanelState();
         return true;
     }
 
-    public void Set(Player player)
+    protected override void Start()
     {
-        Initialize();
-
-        if (UI_PlayerStatus != null)
-        {
-            UI_PlayerStatus.gameObject.SetActive(true);
-            UI_PlayerStatus.Set(player);
-        }
-
-        Set(player != null ? player.Inventory : null);
-    }
-
-    private void Set(PlayerInventory inventory)
-    {
-        Initialize();
-
-        if (UI_PlayerInventory == null) return;
-
-        UI_PlayerInventory.gameObject.SetActive(true);
-        UI_PlayerInventory.Set(inventory);
+        base.Start();
+        ApplyPlayer();
     }
 
     private void OnValidate()
@@ -48,5 +47,31 @@ public class UI_Hud_Player : UI_Hud
     {
         UI_PlayerStatus ??= GetComponentInChildren<UI_Panel_PlayerStatus>(true);
         UI_PlayerInventory ??= GetComponentInChildren<UI_Panel_PlayerInventory>(true);
+    }
+
+    private void SetInitialPanelState()
+    {
+        if (UI_PlayerStatus != null)
+            UI_PlayerStatus.gameObject.SetActive(false);
+
+        if (UI_PlayerInventory != null)
+            UI_PlayerInventory.gameObject.SetActive(false);
+    }
+
+    private void ApplyPlayer()
+    {
+        ResolveReferences();
+
+        if (UI_PlayerStatus != null)
+        {
+            UI_PlayerStatus.gameObject.SetActive(player != null);
+            UI_PlayerStatus.Player = player;
+        }
+
+        if (UI_PlayerInventory != null)
+        {
+            UI_PlayerInventory.gameObject.SetActive(player != null);
+            UI_PlayerInventory.Player = player;
+        }
     }
 }

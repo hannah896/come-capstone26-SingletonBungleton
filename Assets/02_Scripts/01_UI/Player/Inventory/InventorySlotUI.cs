@@ -2,6 +2,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class InventorySlotUI : MonoBehaviour, IPointerClickHandler
 {
@@ -16,6 +19,12 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler
     private PlayerInventory playerInventory;
     private EquipSlot equipSlot = EquipSlot.None;
     private bool isEquipmentSlot;
+    private bool referencesResolved;
+
+    private void Awake()
+    {
+        ResolveReferences();
+    }
 
     public void BindInventorySlot(PlayerInventory inventory, int index)
     {
@@ -128,35 +137,74 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler
 
     private void ResolveReferences()
     {
+        if (referencesResolved)
+        {
+            if (focusOutline == null)
+                focusOutline = GetComponent<Outline>();
+
+            return;
+        }
+
+        if (HasRequiredReferences())
+        {
+            if (focusOutline == null)
+                focusOutline = GetComponent<Outline>();
+
+            referencesResolved = true;
+            return;
+        }
+
+        Transform[] children = GetComponentsInChildren<Transform>(true);
+
         if (iconImage == null)
-            iconImage = FindChildComponent<Image>("iconImage");
+            iconImage = FindChildComponent<Image>(children, "iconImage");
         if (iconImage == null)
-            iconImage = FindChildComponent<Image>("UI_Slot_Icon");
+            iconImage = FindChildComponent<Image>(children, "UI_Slot_Icon");
         if (stackText == null)
-            stackText = FindChildComponent<TextMeshProUGUI>("stackText");
+            stackText = FindChildComponent<TextMeshProUGUI>(children, "stackText");
         if (stackText == null)
-            stackText = FindChildComponent<TextMeshProUGUI>("txtButton");
+            stackText = FindChildComponent<TextMeshProUGUI>(children, "txtButton");
         if (stackBG == null)
-            stackBG = FindChild("stackBG")?.gameObject;
+            stackBG = FindChild(children, "stackBG")?.gameObject;
         if (durabilityBar == null)
-            durabilityBar = FindChildComponent<Image>("durabilityBar");
+            durabilityBar = FindChildComponent<Image>(children, "durabilityBar");
         if (focusOutline == null)
             focusOutline = GetComponent<Outline>();
+
+        referencesResolved = true;
     }
 
-    private T FindChildComponent<T>(string childName) where T : Component
+    private bool HasRequiredReferences()
     {
-        Transform child = FindChild(childName);
+        return iconImage != null
+            && stackText != null
+            && stackBG != null
+            && durabilityBar != null;
+    }
+
+    private T FindChildComponent<T>(Transform[] children, string childName) where T : Component
+    {
+        Transform child = FindChild(children, childName);
         return child != null ? child.GetComponent<T>() : null;
     }
 
-    private Transform FindChild(string childName)
+    private static Transform FindChild(Transform[] children, string childName)
     {
-        Transform[] children = GetComponentsInChildren<Transform>(true);
         for (int i = 0; i < children.Length; i++)
             if (children[i].name == childName)
                 return children[i];
 
         return null;
     }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode)
+            return;
+
+        referencesResolved = false;
+        ResolveReferences();
+    }
+#endif
 }

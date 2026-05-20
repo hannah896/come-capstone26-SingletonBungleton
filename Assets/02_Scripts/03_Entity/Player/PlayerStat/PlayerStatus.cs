@@ -61,9 +61,9 @@ public class PlayerStatus
         SprintMultiplier = data.SprintMultiplier;
         JumpForce = data.JumpForce;
 
-        // 허기 (MaxHunger = HungerDrain * DayDurationMinutes * 2)
+        // 허기
         MaxHunger = data.MaxHunger;
-        CurrentHunger = data.MaxHunger;
+        CurrentHunger = data.CurHunger;
         HungerDrain = data.HungerDrain;
         HungerHPDecreaseRate = data.HungerHPDecreaseRate;
 

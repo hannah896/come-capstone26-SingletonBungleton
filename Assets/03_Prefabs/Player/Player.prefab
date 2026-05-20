@@ -163,7 +163,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   slotCount: 20
-  quickSlotCount: 0
+  quickSlotCount: 20
   pickupRadius: 2
   pickupLayer:
     serializedVersion: 2

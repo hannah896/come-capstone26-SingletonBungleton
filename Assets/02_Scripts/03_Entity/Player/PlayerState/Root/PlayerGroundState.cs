@@ -49,11 +49,10 @@ public class PlayerLocomotionState : PlayerRootStateBase
         }
 
         // 점프 입력 (지면 또는 코요테 타임)
-        if (Input.JumpPressed && Motor.WasGroundedRecently
+        if (Input.JumpPressed && Motor.CanJump
             && !(SubStateMachine.CurrentState is PlayerAirState))
         {
-            Motor.SetVerticalVelocity(Entity.Stat.JumpForce);
-            ChangeToAir();
+            StartJump(time);
             return;
         }
 
@@ -88,6 +87,24 @@ public class PlayerLocomotionState : PlayerRootStateBase
     public void ChangeToRun() => SubStateMachine.ChangeState(runState);
     public void ChangeToTrace() => SubStateMachine.ChangeState(traceState);
     public void ChangeToAir() => SubStateMachine.ChangeState(airState);
+
+    private void StartJump(float time)
+    {
+        if (Input.HasMoveInput)
+        {
+            Vector3 dir = CalcCameraRelativeDir(Input.MoveInput);
+            float speed = Entity.Stat.MoveSpeed;
+
+            if (Input.SprintHeld)
+                speed *= Entity.Stat.SprintMultiplier;
+
+            Motor.SetHorizontalVelocity(dir, speed);
+            Motor.RotateToward(dir, 12f, time);
+        }
+
+        Motor.SetVerticalVelocity(Entity.Stat.JumpForce);
+        ChangeToAir();
+    }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     /// <summary>

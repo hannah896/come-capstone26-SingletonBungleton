@@ -506,3 +506,141 @@
 **검증:** `dotnet build .\Assembly-CSharp.csproj --no-restore`를 실행했으며, HUD 변경으로 인한 신규 컴파일 오류는 확인되지 않음. 전체 빌드는 기존 `Firebase.Analytics` 네임스페이스 누락 오류 2건으로 실패.
 
 **남은 TODO/이슈:** `Player.cs` 호출부는 현재 별도 작업 중이므로 이번 변경에서 수정하지 않음. 최종적으로는 `Extensions.ShowHud<UI_Hud_Player>("UI_Hud_Player")` 후 `Set(player)` 형태로 호출하는 것이 프레임워크에 맞음.
+
+### 4. Player HUD 패널 초기 비활성화 보강
+
+**파일:** `Assets/02_Scripts/01_UI/Player/UI_Hud_Player.cs`, `Assets/03_Prefabs/UI/Player/UI_PlayerInventory.prefab`, `docs/WorkSummary.md`
+
+- `UI_Hud_Player.Initialize()`에서 상태 패널과 인벤토리 패널을 처음에는 모두 비활성화하도록 `SetInitialPanelState()`를 추가
+- `Set(Player)` 호출 시 `UI_Panel_PlayerStatus`를 활성화한 뒤 플레이어를 바인딩하도록 정리
+- 인벤토리 패널은 바인딩 뒤 `PlayerInventory.IsOpen` 상태에 따라 켜지거나 꺼지도록 정리
+- `UI_PlayerInventory.prefab` 루트 오브젝트가 초기 비활성화 상태로 저장되어 있는지 확인
+
+**변경 이유:** `UI_PlayerStatus`처럼 인벤토리 UI도 HUD 로드 직후에는 꺼져 있다가, 실제 플레이어/인벤토리 데이터가 연결되는 시점에 켜지는 흐름이 프레임워크와 프리팹 구성에 더 잘 맞기 때문.
+
+**검증:** `UI_Hud_Player.cs`에서 `SetInitialPanelState()`가 `UI_PlayerStatus`와 `UI_PlayerInventory`를 모두 `SetActive(false)` 처리하고, 각 `Set(...)` 메서드에서 필요한 패널만 다시 `SetActive(true)` 처리하는 것을 확인. `UI_PlayerInventory.prefab` 루트 `GameObject`의 `m_IsActive` 값이 `0`인 것도 확인.
+
+**남은 TODO/이슈:** Unity Editor Play Mode에서 `UI_Hud_Player`가 Addressables로 로드될 때 두 패널이 초기에 보이지 않고, `Set(player)` 이후 상태/인벤토리 패널이 정상 표시되는지 최종 확인 필요.
+
+### 5. Inventory UI 참조 선바인딩 구조 적용
+
+**파일:** `Assets/02_Scripts/01_UI/Player/Inventory/UI_Panel_PlayerInventory.cs`, `Assets/02_Scripts/01_UI/Player/Inventory/InventorySlotUI.cs`, `Assets/03_Prefabs/UI/Player/UI_PlayerInventory.prefab`, `docs/WorkSummary.md`
+
+- `UI_Panel_PlayerInventory`의 슬롯 리스트와 장비 슬롯 UI 참조를 직렬화 필드로 변경해 에디터에서 유지할 수 있도록 수정
+- `OnValidate()`에서 컨테이너/슬롯 참조가 비어 있으면 미리 수집하도록 추가
+- `OnEnable()`에서 `FindObjectsByType`/`FindFirstObjectByType`로 로컬 플레이어 인벤토리를 찾던 경로를 제거하고, `UI_Hud_Player.Set(player)` 흐름에서 전달받은 인벤토리만 바인딩하도록 변경
+- `InventorySlotUI`가 `Refresh()`마다 자식 Transform을 반복 탐색하지 않도록 `Awake()`/`OnValidate()`에서 참조를 한 번 해석하고 `referencesResolved`로 캐시하도록 수정
+- `UI_PlayerInventory.prefab`의 `slotContainer`와 `equipSlotContainer`를 실제 RectTransform 참조로 연결
+
+**변경 이유:** 인벤토리 UI가 활성화될 때마다 자식 오브젝트나 씬 전체를 탐색하면 비용과 동작 예측성이 나빠지므로, 프리팹/에디터 단계에서 가능한 참조를 미리 들고 있도록 하기 위함.
+
+**검증:** `dotnet build .\Assembly-CSharp.csproj --no-restore`를 실행했으며, 이번 인벤토리 UI 변경으로 인한 신규 컴파일 오류는 확인되지 않음. 전체 빌드는 기존 `Firebase.Analytics` 네임스페이스 누락 오류 2건으로 실패.
+
+**남은 TODO/이슈:** Unity Editor에서 프리팹을 한번 열거나 스크립트 리로드 후 `OnValidate()`가 실행되면 `slotUIs`, `headSlotUI`, `chestSlotUI`, `handSlotUI`가 에디터 직렬화 값으로 채워지는지 확인 필요. 현재 런타임 fallback은 참조 누락 방어용으로만 남겨둠.
+
+### 6. Inventory UI 활성화 방식 및 슬롯 겹침 수정
+
+**파일:** `Assets/02_Scripts/01_UI/Player/Inventory/UI_Panel_PlayerInventory.cs`, `Assets/03_Prefabs/UI/Player/UI_PlayerInventory.prefab`, `docs/WorkSummary.md`
+
+- 인벤토리 표시/숨김을 `CanvasGroup` 알파 제어 대신 `gameObject.SetActive()` 기반으로 변경해 Status UI와 같은 활성화 방식으로 정리
+- 비활성 상태에서도 살아있는 `UI_Hud_Player`가 `PlayerInventory.OnInventoryOpenChanged` 이벤트를 받아 다시 켤 수 있도록 패널 내부의 열림/닫힘 책임을 제거
+- 슬롯 수집 로직이 하위 아이콘/텍스트까지 슬롯 후보로 잡지 않도록 직접 자식/한 단계 하위 슬롯 루트만 수집하게 제한
+- 직렬화된 `slotUIs`가 잘못된 슬롯 루트를 들고 있으면 런타임에서 다시 수집하도록 검증 로직 추가
+- `UI_PlayerInventory.prefab`의 루트 `CanvasGroup`을 제거하고, 닫힌 상태에서는 실제 오브젝트가 꺼지도록 프리팹/루트 HUD 초기 상태를 정리
+- 슬롯 행 `HorizontalLayoutGroup`의 `Child Control Width`/`Child Force Expand Width`를 다시 켜 슬롯들이 한 지점에 겹치지 않고 행 안에 배치되도록 수정
+
+**변경 이유:** 인벤토리 UI가 Status UI와 다르게 CanvasGroup으로만 숨겨지고, 슬롯 직렬화/수집 과정에서 잘못된 슬롯 후보나 레이아웃 설정이 섞이면 슬롯들이 서로 겹쳐 보일 수 있었기 때문.
+
+**검증:** `dotnet build .\Assembly-CSharp.csproj --no-restore`를 실행했으며, 이번 인벤토리 UI 수정으로 인한 신규 컴파일 오류는 확인되지 않음. 전체 빌드는 기존 `Firebase.Analytics` 네임스페이스 누락 오류 2건으로 실패.
+
+**남은 TODO/이슈:** Unity Editor Play Mode에서 인벤토리 토글 시 `UI_PlayerInventory` GameObject가 실제로 꺼졌다 켜지는지와, 두 줄 슬롯이 겹치지 않고 LayoutGroup 기준으로 정렬되는지 Game View 확인 필요.
+
+### 7. Inventory UI 활성화 직후 레이아웃 강제 갱신 추가
+
+**파일:** `Assets/02_Scripts/01_UI/Player/Inventory/UI_Panel_PlayerInventory.cs`, `docs/WorkSummary.md`
+
+- `UI_Hud_Player`가 `SetActive(true)`로 인벤토리 패널을 다시 켠 뒤 `Canvas.ForceUpdateCanvases()`와 `LayoutRebuilder.ForceRebuildLayoutImmediate()`를 호출해 레이아웃을 즉시 갱신
+- `RefreshUI()`와 `ClearSlots()` 이후에도 슬롯/장비 슬롯/루트 RectTransform의 레이아웃을 다시 계산하도록 보강
+- Unity UI 레이아웃 API 사용을 위해 `UnityEngine.UI` 네임스페이스를 추가
+
+**변경 이유:** 인벤토리 GameObject를 수동으로 껐다 켜면 슬롯 위치가 정상으로 돌아가는 현상은 데이터 문제가 아니라 Unity `LayoutGroup`의 레이아웃 갱신 타이밍 문제이기 때문. 코드 경로에서도 수동 토글과 같은 Canvas/Layout 갱신을 실행하도록 처리.
+
+**검증:** `dotnet build .\Assembly-CSharp.csproj --no-restore`를 실행했으며, 이번 레이아웃 리빌드 코드로 인한 신규 컴파일 오류는 확인되지 않음. 전체 빌드는 기존 `Firebase.Analytics` 네임스페이스 누락 오류 2건으로 실패.
+
+**남은 TODO/이슈:** Unity Editor Play Mode에서 최초 인벤토리 표시 시 수동 GameObject 토글 없이도 슬롯 위치가 정상화되는지 Game View 확인 필요.
+
+### 8. Inventory UI 토글 입력 및 HUD 표시 책임 보정
+
+**파일:** `Assets/02_Scripts/01_UI/Player/UI_Hud_Player.cs`, `Assets/02_Scripts/01_UI/Player/Inventory/UI_Panel_PlayerInventory.cs`, `Assets/02_Scripts/01_UI/Player/Inventory/InventorySlotUI.cs`, `Assets/02_Scripts/03_Entity/Player/PlayerInputHandler.cs`, `Assets/InputSystem_Actions.inputactions`, `Assets/InputSystem_Actions.cs`, `Assets/03_Prefabs/UI/Player/UI_PlayerInventory.prefab`, `docs/WorkSummary.md`
+
+- `UI_Hud_Player`가 살아있는 루트 HUD로 `PlayerInventory.OnInventoryOpenChanged`를 구독하고, 자식 `UI_Panel_PlayerInventory` GameObject를 켜고 끄도록 표시 책임을 이동
+- `UI_Panel_PlayerInventory`는 자기 자신을 열고 닫는 이벤트 구독을 하지 않고, 전달받은 `PlayerInventory` 데이터 바인딩/새로고침/레이아웃 리빌드만 담당하도록 정리
+- 인벤토리 패널이 꺼진 상태에서도 HUD 루트는 계속 살아 있으므로, 토글 이벤트를 놓치지 않고 다시 켤 수 있게 구성
+- `InputSystem_Actions`에 `InventoryToggle` 액션을 추가하고 `Tab`, `I`, Gamepad `Start`를 바인딩
+- `InputActions_PlayerInputHandler`가 `InventoryToggle` 액션을 찾아 `PlayerInputData.InventoryTogglePressed`를 세팅하도록 연결
+- `InventorySlotUI`는 런타임 반복 탐색 대신 `Awake()`/`OnValidate()`에서 자식 참조를 캐시하도록 유지
+
+**변경 이유:** 인벤토리 UI를 `SetActive(false)`로 끄면 비활성화된 패널 자신은 다시 켜지는 책임을 안정적으로 수행할 수 없고, 별도로 `InventoryTogglePressed`를 세팅하는 입력 연결도 빠져 있어 `PlayerInventory.Toggle()` 이벤트가 발생하지 않았기 때문.
+
+**검증:** `Assets/InputSystem_Actions.inputactions`를 PowerShell `ConvertFrom-Json`으로 파싱해 JSON 형식이 유효한 것을 확인. `uloop compile` 실행 결과 `Success: true`, `ErrorCount: 0`, `WarningCount: 0` 확인. 추가로 `dotnet build .\Assembly-CSharp.csproj --no-restore`를 실행했을 때도 이번 입력/HUD 변경으로 인한 신규 컴파일 오류는 확인되지 않았고, 전체 빌드는 기존 `Firebase.Analytics` 네임스페이스 누락 오류 2건으로 실패.
+
+**남은 TODO/이슈:** Unity Editor Play Mode에서 `Tab` 또는 `I` 입력 시 `UI_PlayerInventory`가 켜지고, 다시 누르면 꺼지는지 직접 확인 필요. 현재 Codex 세션에서는 `uloop compile`까지만 성공했고, Play Mode 조작/스크린샷 검증용 추가 uloop 명령은 권한 승인 사용량 제한으로 실행하지 못함. Firebase Analytics 참조 문제는 이번 작업 범위 밖의 기존 빌드 실패 원인으로 남아 있음.
+
+### 9. Player Jump Ground Check and Running Jump 보정
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerMotor.cs`, `Assets/02_Scripts/03_Entity/Player/PlayerState/Root/PlayerGroundState.cs`, `Assets/02_Scripts/03_Entity/Player/PlayerState/Root/PlayerActionState.cs`, `docs/WorkSummary.md`
+
+- `PlayerMotor`에 `CanJump` 프로퍼티를 추가해 점프 시작 가능 여부를 `CharacterController.isGrounded` 기준으로 분리
+- `PlayerLocomotionState`의 점프 조건을 `WasGroundedRecently` 대신 `CanJump`로 변경해 공중에서 연속 점프가 다시 허용되지 않도록 수정
+- Run/Walk 상태 업데이트가 스킵되는 점프 프레임에도 현재 이동 입력과 Sprint 여부를 기준으로 수평 속도를 먼저 넣고 Air 상태로 전환하도록 `StartJump()` 추가
+- 점프 직후 아직 지면 감지 상태로 남아 있는 프레임에는 `airVelocity`에 현재 수평 속도를 저장해 달리기 점프의 초기 관성을 잃지 않도록 보정
+- Action 상태의 점프 인터럽트와 개발용 키보드 fallback 점프도 `CanJump` 기준으로 맞춤
+
+**변경 이유:** 기존 점프 조건이 `WasGroundedRecently`와 느슨한 SphereCast 기반 지면 감지에 묶여 있어, 점프 연타 시 실제로는 공중인데도 점프가 다시 허용될 여지가 있었다. 또한 Locomotion Root에서 점프를 먼저 처리하며 Run 하위 상태의 수평 속도 설정이 그 프레임에 실행되지 않아 달리기 점프의 추진력이 사라질 수 있었다.
+
+**검증:** `uloop compile --wait-for-domain-reload true`를 시도했으나 현재 uloop가 `Another execution is already in progress` 상태라 컴파일/PlayMode 검증을 완료하지 못함.
+
+**남은 TODO/이슈:** uloop 실행 락이 풀린 뒤 Unity 컴파일과 PlayMode에서 Space 연타 시 공중 재점프가 막히는지, Shift+W 상태에서 Space 입력 시 달리기 속도를 유지하며 점프하는지 확인 필요.
+
+### 10. Player Hunger Max Value 직렬화 복구
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerStat/PlayerStatData.cs`, `Assets/02_Scripts/03_Entity/Player/PlayerStat/PlayerStatus.cs`, `docs/WorkSummary.md`
+
+- `PlayerStatData.MaxHunger`를 `HungerDrain * DayDurationMinutes * 2` 계산 프로퍼티에서 직렬화 필드로 변경
+- `PlayerStatData.CurHunger` 필드를 복구해 `PlayerStatData.asset`에 저장된 `CurHunger: 150` 값을 런타임에서 읽을 수 있도록 수정
+- `PlayerStatus` 초기화 시 현재 허기를 `data.MaxHunger`가 아니라 `data.CurHunger`에서 가져오도록 변경
+
+**변경 이유:** `PlayerStatData.asset`에는 `MaxHunger: 150`, `CurHunger: 150`이 저장돼 있었지만, 코드에서 `MaxHunger`가 계산 프로퍼티로 선언되어 직렬화 값을 무시하고 있었다. 이 때문에 UI가 의도한 `150/150` 대신 계산식 결과인 큰 값을 표시할 수 있었다.
+
+**검증:** `PlayerStatData.asset`이 Addressables `PlayerStatData` 주소로 연결되어 있고, 해당 asset에 `MaxHunger: 150`, `CurHunger: 150`이 저장돼 있음을 확인. `uloop compile --wait-for-domain-reload true`는 현재 uloop가 `Another execution is already in progress` 상태라 완료하지 못함.
+
+**남은 TODO/이슈:** uloop 실행 락이 풀린 뒤 Unity 컴파일과 PlayMode에서 Status UI 허기 표시가 `150/150`으로 나오는지 확인 필요.
+
+### 11. Inventory Toggle Input 제거
+
+**파일:** `Assets/InputSystem_Actions.inputactions`, `Assets/InputSystem_Actions.cs`, `Assets/02_Scripts/03_Entity/Player/PlayerInputData.cs`, `Assets/02_Scripts/03_Entity/Player/PlayerInputHandler.cs`, `Assets/02_Scripts/03_Entity/Player/PlayerInventory.cs`, `docs/WorkSummary.md`
+
+- 인게임 하단바 인벤토리는 항상 표시되는 HUD이므로 별도 `InventoryToggle` 입력 액션을 제거
+- `Tab`, `I`, Gamepad `Start`에 묶었던 `InventoryToggle` 바인딩 제거
+- `PlayerInputData.InventoryTogglePressed`와 `PlayerInputHandler`의 수동 액션 검색/구독 로직 제거
+- `PlayerInventory`의 `IsOpen`, `OnInventoryOpenChanged`, `Toggle()` 경로 제거
+
+**변경 이유:** 현재 인벤토리는 열고 닫는 패널이 아니라 항상 하단바에 떠 있는 인게임 UI이므로, 별도 토글 입력과 open/close 상태를 갖는 것이 실제 UX와 맞지 않았다.
+
+**검증:** `rg`로 `InventoryToggle`, `InventoryTogglePressed`, `OnInventoryOpenChanged`, `IsOpen`, `Toggle()` 참조가 남지 않았음을 확인. `Assets/InputSystem_Actions.inputactions`는 PowerShell `ConvertFrom-Json` 파싱을 통과했고, `git diff --check`도 통과.
+
+**남은 TODO/이슈:** Unity 컴파일 및 PlayMode에서 하단 인벤토리가 항상 표시되는지 최종 확인 필요.
+### 12. Player HUD Inventory Binding 복구
+
+**파일:** `Assets/02_Scripts/01_UI/Player/UI_Hud_Player.cs`, `Assets/02_Scripts/01_UI/Player/Inventory/UI_Panel_PlayerInventory.cs`, `Assets/02_Scripts/@Scripts/UI/Components/Player/UI_Panel_PlayerStatus.cs`, `docs/WorkSummary.md`
+
+- `UI_Hud_Player.Player`를 setter가 있는 프로퍼티로 변경해 `Player.cs`에서 `hud.Player = this`가 들어온 즉시 Status/Inventory 자식 패널에 Player를 전달하도록 수정
+- `UI_Hud_Player.Start()`가 부모 `UI_Panel.Start()`를 가리지 않도록 `protected override void Start()`로 변경하고 `base.Start()` 호출 추가
+- `UI_Panel_PlayerInventory.Player` setter에서 `player.Inventory`를 `Bind()`하도록 수정해 슬롯 UI가 실제 `PlayerInventory` 데이터를 받도록 복구
+- `UI_Panel_PlayerStatus.Player` setter에서 PlayerStatus를 즉시 갱신하도록 보정
+
+**변경 이유:** 인벤토리 슬롯 UI는 떠 있어도 `UI_Panel_PlayerInventory`에 `PlayerInventory`가 바인딩되지 않으면 `RefreshUI()`가 `ClearSlots()`만 실행하므로 아이템 아이콘이 표시될 수 없었다. 하단바 인벤토리는 항상 보이는 HUD이므로 Player 바인딩 시점에 인벤토리 데이터도 항상 연결되어야 한다.
+
+**검증:** `git diff --check` 통과. 아이템 데이터 확인 결과 `Tool_Axe`, `Tool_Pickaxe`, `Tool_Torch`만 icon이 할당되어 있고, 다수의 ItemData asset은 `icon: {fileID: 0}`으로 비어 있음을 확인.
+
+**남은 TODO/이슈:** Unity 컴파일 및 PlayMode에서 실제 아이템 획득 후 아이콘이 표시되는지 확인 필요. icon 필드가 비어 있는 아이템들은 코드가 정상이어도 아이콘이 표시되지 않으므로 데이터 할당 필요.
