@@ -220,7 +220,10 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
             return;
         }
 
-        if (itemData != null && itemData.survivalToolType == SurvivalToolType.Pickaxe)
+        if (itemData != null && 
+            (itemData.survivalToolType == SurvivalToolType.Pickaxe_Gold 
+            || itemData.survivalToolType == SurvivalToolType.Pickaxe_Stone 
+            || itemData.survivalToolType == SurvivalToolType.Pickaxe_Iron) )
         {
             toolTransform.localPosition = pickaxeLocalPosition;
             toolTransform.localRotation = Quaternion.Euler(pickaxeLocalEuler);
@@ -231,8 +234,10 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         toolTransform.localPosition = equippedToolLocalPosition;
         toolTransform.localRotation = Quaternion.Euler(equippedToolLocalEuler);
         toolTransform.localScale = equippedToolLocalScale;
-
-        if (itemData != null && itemData.survivalToolType == SurvivalToolType.Axe)
+        if (itemData != null &&
+            (itemData.survivalToolType == SurvivalToolType.Axe_Gold
+            || itemData.survivalToolType == SurvivalToolType.Axe_Stone
+            || itemData.survivalToolType == SurvivalToolType.Axe_Iron))
             ApplyAxeMeshViewTransform();
     }
 

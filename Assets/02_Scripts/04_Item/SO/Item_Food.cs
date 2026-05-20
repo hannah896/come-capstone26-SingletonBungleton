@@ -22,18 +22,18 @@ public class Item_Food : Item
     // 이 메서드는 월드 오브젝트(손에 든 음식 등)에서 직접 먹을 때 사용합니다.
     public void Eat()
     {
-        if (InventoryManager.Instance != null)
-        {
-            InventoryManager.Instance.EatItem(itemData);
-        }
-        else
-        {
-            // 인벤토리 없이 직접 먹는 경우 (테스트 등)
-            Debug.Log($"[음식] {itemData.itemName} 섭취");
-            if (itemData.hungerRestore > 0) Debug.Log($"배고픔 +{itemData.hungerRestore}");
-            if (itemData.healthRestore > 0) Debug.Log($"체력 +{itemData.healthRestore}");
-            if (itemData.sanityRestore > 0) Debug.Log($"정신력 +{itemData.sanityRestore}");
-        }
+        //if (InventoryManager.Instance != null)
+        //{
+        //    InventoryManager.Instance.EatItem(itemData);
+        //}
+        //else
+        //{
+        //    // 인벤토리 없이 직접 먹는 경우 (테스트 등)
+        //    Debug.Log($"[음식] {itemData.itemName} 섭취");
+        //    if (itemData.hungerRestore > 0) Debug.Log($"배고픔 +{itemData.hungerRestore}");
+        //    if (itemData.healthRestore > 0) Debug.Log($"체력 +{itemData.healthRestore}");
+        //    if (itemData.sanityRestore > 0) Debug.Log($"정신력 +{itemData.sanityRestore}");
+        //}
     }
 
     public override string ToString()

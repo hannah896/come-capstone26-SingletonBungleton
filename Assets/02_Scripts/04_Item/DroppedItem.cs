@@ -19,10 +19,10 @@ public class DroppedItem : MonoBehaviour
     // PlayerPickup에서 호출 — 내구도/신선도 보존
     public void Pickup()
     {
-        bool success = InventoryManager.Instance.AddItem(itemInstance);
-        if (success)
-            Destroy(gameObject);
-        else
-            Debug.Log("[줍기] 인벤토리 가득 참!");
+        //bool success = InventoryManager.Instance.AddItem(itemInstance);
+        //if (success)
+        //    Destroy(gameObject);
+        //else
+        //    Debug.Log("[줍기] 인벤토리 가득 참!");
     }
 }

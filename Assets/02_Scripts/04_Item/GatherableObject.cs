@@ -80,17 +80,17 @@ public class GatherableObject : MonoBehaviour
 
     private void Gather() 
     {
-        foreach (var entry in dropTable)
-        {
-            if (Random.value > entry.dropChance) continue;
-            int amount = Random.Range(entry.minAmount, entry.maxAmount + 1);
-            bool added = InventoryManager.Instance.AddItem(entry.itemData, amount);
-            if (!added) SpawnDroppedItem(entry.itemData, amount);
-        }
-        if (_resourceNode != null)
-            _resourceNode.OnDepleted();
-        else
-            Destroy(gameObject);
+        //foreach (var entry in dropTable)
+        //{
+        //    if (Random.value > entry.dropChance) continue;
+        //    int amount = Random.Range(entry.minAmount, entry.maxAmount + 1);
+        //    bool added = InventoryManager.Instance.AddItem(entry.itemData, amount);
+        //    if (!added) SpawnDroppedItem(entry.itemData, amount);
+        //}
+        //if (_resourceNode != null)
+        //    _resourceNode.OnDepleted();
+        //else
+        //    Destroy(gameObject);
     }
 
     private void SpawnDroppedItem(ItemDataSO itemData, int amount)

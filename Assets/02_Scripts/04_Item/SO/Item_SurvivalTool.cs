@@ -203,14 +203,14 @@ public class Item_SurvivalTool : Item, IEquipable
         Debug.Log($"[도구] {itemData.itemName}이(가) 부서졌습니다!");
         Unequip();
 
-        var inv = InventoryManager.Instance;
-        if (inv != null)
-        {
-            if (inv.equippedHand?.data == itemData)
-                inv.UnequipAndDiscard(EquipSlot.Hand);
-            else
-                inv.RemoveItem(itemData, 1);
-        }
+        //var inv = InventoryManager.Instance;
+        //if (inv != null)
+        //{
+        //    if (inv.equippedHand?.data == itemData)
+        //        inv.UnequipAndDiscard(EquipSlot.Hand);
+        //    else
+        //        inv.RemoveItem(itemData, 1);
+        //}
 
         Destroy(gameObject);
     }

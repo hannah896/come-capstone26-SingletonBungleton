@@ -31,7 +31,7 @@ public class PlayerPickup : MonoBehaviour
             // 아이템 프리팹 체크
             if (col.TryGetComponent<Item>(out var item))
             {
-                item.Pickup();
+                //item.Pickup();
                 break;
             }
         }

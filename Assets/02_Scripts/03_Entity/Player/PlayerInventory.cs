@@ -483,16 +483,16 @@ public class PlayerInventory : MonoBehaviour
     private static bool TryGetPickupCandidate(Collider col, out PickupCandidate candidate)
     {
         DroppedItem droppedItem = col.GetComponentInParent<DroppedItem>();
-        if (droppedItem != null && droppedItem.itemData != null)
-        {
-            candidate = new PickupCandidate
-            {
-                GameObject = droppedItem.gameObject,
-                ItemData = droppedItem.itemData,
-                Amount = Mathf.Max(1, droppedItem.amount)
-            };
-            return true;
-        }
+        //if (droppedItem != null && droppedItem.itemData != null)
+        //{
+        //    candidate = new PickupCandidate
+        //    {
+        //        GameObject = droppedItem.gameObject,
+        //        ItemData = droppedItem.itemData,
+        //        Amount = Mathf.Max(1, droppedItem.amount)
+        //    };
+        //    return true;
+        //}
 
         Item item = col.GetComponentInParent<Item>();
         if (item != null && item.itemData != null)
@@ -515,7 +515,7 @@ public class PlayerInventory : MonoBehaviour
         DroppedItem droppedItem = candidate.GameObject.GetComponent<DroppedItem>();
         if (droppedItem != null)
         {
-            droppedItem.amount = remainingAmount;
+            //droppedItem.amount = remainingAmount;
             return;
         }
 

@@ -100,11 +100,11 @@ public class PreviewVisualizer : MonoBehaviour, IPreviewVisualizer
     {
         DestroyGhost();
 
-        if (activeItemData == null || activeItemData.placementPrefab == null)
-            return;
+        //if (activeItemData == null || activeItemData.placementPrefab == null)
+        //    return;
 
-        ghostInstance = Instantiate(activeItemData.placementPrefab);
-        ghostInstance.name = $"{activeItemData.placementPrefab.name}_Ghost";
+        //ghostInstance = Instantiate(activeItemData.placementPrefab);
+        //ghostInstance.name = $"{activeItemData.placementPrefab.name}_Ghost";
 
         foreach (Collider collider in ghostInstance.GetComponentsInChildren<Collider>())
             collider.enabled = false;

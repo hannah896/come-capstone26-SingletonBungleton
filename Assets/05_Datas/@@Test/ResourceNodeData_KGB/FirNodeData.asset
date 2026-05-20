@@ -12,7 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: be22fbb138063ce4fa3cda1619d8354b, type: 3}
   m_Name: FirNodeData
   m_EditorClassIdentifier: 
+  Name: FirNodeData
   MaxHealth: 3
   GatherAmount: 1
+  RespawnTime: 300
   AllowedToolIds: []
   Drops: []
