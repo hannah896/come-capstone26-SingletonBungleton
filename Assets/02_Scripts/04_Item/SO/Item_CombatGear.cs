@@ -10,7 +10,7 @@ using UnityEngine;
 /// - 방패
 /// </summary>
 
-public class Item_CombatGear : Item, IEquipable
+public class Item_CombatGear : ItemData, IEquipable
 {
     [Header("=== 전투장비 전용 ===")]
     [Tooltip("전투도구 세부 타입")]

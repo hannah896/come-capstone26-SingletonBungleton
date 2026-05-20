@@ -21,7 +21,7 @@ public class PlayerInventory : MonoBehaviour
     [SerializeField] private float defaultToolUseRange = 2.5f;
     [SerializeField] private LayerMask toolUseLayer = ~0;
 
-    [SerializeField] private List<ItemDataSO> slots = new();
+    [SerializeField] private List<ItemData> slots = new();
     [SerializeField] private List<int> stackCounts = new();
 
     private readonly Collider[] pickupBuffer = new Collider[16];
@@ -37,16 +37,16 @@ public class PlayerInventory : MonoBehaviour
 
     public event Action OnInventoryChanged;
     public event Action<int> OnSelectedSlotChanged;
-    public event Action<EquipSlot, ItemDataSO> OnEquippedItemChanged;
+    public event Action<EquipSlot, ItemData> OnEquippedItemChanged;
 
-    public IReadOnlyList<ItemDataSO> Slots => slots;
+    public IReadOnlyList<ItemData> Slots => slots;
     public IReadOnlyList<int> StackCounts => stackCounts;
     public int SlotCount => slotCount;
     public int QuickSlotCount => GetQuickSlotCount();
     public int SelectedSlotIndex => selectedSlotIndex;
-    public ItemDataSO EquippedHead { get; private set; }
-    public ItemDataSO EquippedChest { get; private set; }
-    public ItemDataSO EquippedHand { get; private set; }
+    public ItemData EquippedHead { get; private set; }
+    public ItemData EquippedChest { get; private set; }
+    public ItemData EquippedHand { get; private set; }
 
     private void Awake()
     {
@@ -482,7 +482,7 @@ public class PlayerInventory : MonoBehaviour
 
     private static bool TryGetPickupCandidate(Collider col, out PickupCandidate candidate)
     {
-        DroppedItem droppedItem = col.GetComponentInParent<DroppedItem>();
+        ItemData_ResourceItem droppedItem = col.GetComponentInParent<ItemData_ResourceItem>();
         //if (droppedItem != null && droppedItem.itemData != null)
         //{
         //    candidate = new PickupCandidate
@@ -494,7 +494,7 @@ public class PlayerInventory : MonoBehaviour
         //    return true;
         //}
 
-        Item item = col.GetComponentInParent<Item>();
+        ItemData item = col.GetComponentInParent<ItemData>();
         if (item != null && item.itemData != null)
         {
             candidate = new PickupCandidate
@@ -512,14 +512,14 @@ public class PlayerInventory : MonoBehaviour
 
     private static void ApplyPickupResult(PickupCandidate candidate, int remainingAmount)
     {
-        DroppedItem droppedItem = candidate.GameObject.GetComponent<DroppedItem>();
+        ItemData_ResourceItem droppedItem = candidate.GameObject.GetComponent<ItemData_ResourceItem>();
         if (droppedItem != null)
         {
             //droppedItem.amount = remainingAmount;
             return;
         }
 
-        Item item = candidate.GameObject.GetComponent<Item>();
+        ItemData item = candidate.GameObject.GetComponent<ItemData>();
         if (item != null)
             item.stackCount = remainingAmount;
     }
@@ -536,11 +536,11 @@ public class PlayerInventory : MonoBehaviour
         if (!TryRaycastToolTarget(range, out RaycastHit hit))
             return;
 
-        GatherableObject gatherable = hit.collider.GetComponentInParent<GatherableObject>();
-        if (gatherable == null)
+        ResourceNode node = hit.collider.GetComponentInParent<ResourceNode>();
+        if (node == null)
             return;
 
-        gatherable.OnHit(toolType);
+        //TODO: 도구 타입에 따른 상호작용 분기 (예: 나무에는 도끼, 돌에는 곡괭이 등)
     }
 
     private bool TryRaycastToolTarget(float range, out RaycastHit hit)

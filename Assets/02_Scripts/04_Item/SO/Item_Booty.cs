@@ -8,7 +8,7 @@ using UnityEngine;
 /// - 뿔
 /// </summary>
 
-public class Item_Booty : Item
+public class Item_Booty : ItemData
 {
     [Header("=== 전리품 전용 속성 ===")]
     [Tooltip("전리품 세부 타입")]
