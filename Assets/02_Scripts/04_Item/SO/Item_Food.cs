@@ -1,24 +1,9 @@
 using UnityEngine;
 
-/// <summary>
-/// 음식 아이템
-/// - 구운고기
-/// </summary>
-
-
 public class Item_Food : Item
 {
     [Header("=== 음식 전용 ===")]
     public FoodType foodType = FoodType.None;
-
-    [Tooltip("음식 신선도 (0~1)")]
-    [Range(0f, 1f)]
-    public float freshness = 1f;
-
-    [Tooltip("초당 신선도 감소량")]
-    public float freshnessDecayRate = 0.001f;
-
-    private bool _isExpired = false;
 
     protected override void Init()
     {
@@ -33,46 +18,26 @@ public class Item_Food : Item
         foodType = itemData.foodType;
     }
 
-    private void Update()
+    // 인벤토리 UI에서 음식 사용 시 InventoryManager.EatItem()을 직접 호출하세요.
+    // 이 메서드는 월드 오브젝트(손에 든 음식 등)에서 직접 먹을 때 사용합니다.
+    public void Eat()
     {
-        // 신선도 감소
-        if (!_isExpired)
+        if (InventoryManager.Instance != null)
         {
-            freshness = Mathf.Max(0f, freshness - freshnessDecayRate * Time.deltaTime);
-            if (freshness <= 0f)
-            {
-                _isExpired = true;
-                Debug.Log($"[음식] {itemData.itemName}이(가) 상했습니다!");
-                // TODO: 아이콘 변경, 먹으면 페널티 적용
-            }
+            InventoryManager.Instance.EatItem(itemData);
+        }
+        else
+        {
+            // 인벤토리 없이 직접 먹는 경우 (테스트 등)
+            Debug.Log($"[음식] {itemData.itemName} 섭취");
+            if (itemData.hungerRestore > 0) Debug.Log($"배고픔 +{itemData.hungerRestore}");
+            if (itemData.healthRestore > 0) Debug.Log($"체력 +{itemData.healthRestore}");
+            if (itemData.sanityRestore > 0) Debug.Log($"정신력 +{itemData.sanityRestore}");
         }
     }
-
-    /// 음식 먹기 (인벤토리 슬롯에서 사용 시 호출)
-    public void Eat(PlayerStatus stat)
-    {
-        if (_isExpired)
-        {
-            Debug.Log($"[음식] {itemData.itemName}이(가) 상해서 먹을 수 없습니다!");
-            // TODO: 상한 음식 먹으면 디버프 적용
-            return;
-        }
-
-        Debug.Log($"[음식] {itemData.itemName} 섭취!");
-        ApplySurvivalEffects(stat);
-
-        RemoveStack(1);
-        if (stackCount <= 0)
-            Destroy(gameObject);
-    }
-
-    public bool IsExpired() => _isExpired;
 
     public override string ToString()
     {
-        string info = base.ToString();
-        info += $" [신선도: {freshness * 100f:F0}%]";
-        if (_isExpired) info += "상함";
-        return info;
+        return base.ToString() + $" [FoodType:{foodType}]";
     }
 }

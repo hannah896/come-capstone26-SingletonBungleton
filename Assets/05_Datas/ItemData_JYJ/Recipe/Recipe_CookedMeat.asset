@@ -18,5 +18,7 @@ MonoBehaviour:
   ingredients:
   - itemData: {fileID: 11400000, guid: 2dfc70791e0c5204388942da7d3fe05f, type: 2}
     amount: 1
+  - itemData: {fileID: 11400000, guid: 41909ce6e3bb1334898e2b02f5f26412, type: 2}
+    amount: 1
   resultItem: {fileID: 11400000, guid: 1fecbb54b066d744a880f37039875517, type: 2}
   resultAmount: 1

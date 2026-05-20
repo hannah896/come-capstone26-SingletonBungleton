@@ -16,12 +16,12 @@ MonoBehaviour:
   itemName: "\uAC00\uC8FD"
   description: "\uB3D9\uBB3C\uC774 \uB4DC\uB78D\uD55C \uAC00\uC8FD\uC785\uB2C8\uB2E4."
   icon: {fileID: 0}
-  prefab: {fileID: 0}
+  prefab: {fileID: 8564278268024788522, guid: 3b5ae01959c9d254dac78ae425cf85e4, type: 3}
   itemType: 3
   survivalToolType: 0
   combatGearType: 0
   resourceType: 0
-  bootyType: 2
+  bootyType: 5
   foodType: 0
   isStackable: 1
   maxStack: 99

@@ -16,7 +16,7 @@ MonoBehaviour:
   itemName: "\uD5EC\uBA67"
   description: "\uBC29\uC5B4\uAD6C \uD5EC\uBA67\uC785\uB2C8\uB2E4."
   icon: {fileID: 0}
-  prefab: {fileID: 0}
+  prefab: {fileID: 7810457714980307102, guid: 9e8825677fc895d419af53a07717203c, type: 3}
   itemType: 1
   survivalToolType: 0
   combatGearType: 1
@@ -30,7 +30,7 @@ MonoBehaviour:
   maxDurability: 100
   attackDamage: 0
   attackRange: 0
-  defense: 10
+  defense: 15
   hungerRestore: 0
   healthRestore: 0
   egoRestore: 0

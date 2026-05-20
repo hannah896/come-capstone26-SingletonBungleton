@@ -13,8 +13,25 @@ public enum ItemType
 public enum SurvivalToolType
 {
     None,       
-    Axe,        // 도끼
-    Pickaxe,    // 곡괭이
+
+    Axe_Stone,      // 돌도끼
+    Axe_Iron,       // 철도끼
+    Axe_Gold,       // 금도끼
+
+    Pickaxe_Stone,  // 돌곡괭이
+    Pickaxe_Iron,   // 철곡괭이
+    Pickaxe_Gold,   // 금곡괭이
+
+    Hammer_Stone,   // 돌망치
+    Hammer_Iron,    // 철망치
+    Hammer_Gold,    // 금망치
+
+    Shovel_Stone,   // 돌삽
+    Shovel_Iron,    // 철삽
+    Shovel_Gold,    // 금삽
+
+    FishingRod,     // 낚싯대
+
     Torch       // 횃불
 }
 
@@ -23,7 +40,7 @@ public enum CombatGearType
 {
     None,       
     Helmet,     // 헬멧
-    Chestplate,      // 갑옷
+    Chestplate, // 갑옷
     Sword,      // 칼
     Bow,        // 활
     Spear,      // 창
@@ -37,11 +54,12 @@ public enum ResourceType
     Wood_Charcoal,  // 숯
     Wood_Plank,     // 장작
     Wood_Branch,    // 나뭇가지
-    Wood_Berry,     // 열매
-
+    Berry,     // 열매
     Mineral_Gold,   // 금
     Mineral_Stone,  // 돌
     Mineral_Flint,  // 부싯돌
+    Mineral_Iron,   // 철
+    Mineral_Coal,   // 석탄
 
     Plant_Grass     // 풀
 }
@@ -50,7 +68,10 @@ public enum ResourceType
 public enum BootyType
 {
     None,       
-    RawMeat,    // 생고기
+    Meat1,      // 생고기
+    Meat2,
+    Meat3,
+    Egg,        //알
     Leather,    // 가죽
     Feather,    // 깃털
     Horn        // 뿔
@@ -61,7 +82,12 @@ public enum BootyType
 public enum FoodType
 {
     None,
-    CookedMeat  //구운고기
+    CookedMeat1,  //구운고기
+    CookedMeat2,
+    CookedMeat3,
+    CookedEgg,  //구운 알
+    RoastedBerry //구운베리
+
 }
 
 //  장비 장착 위치

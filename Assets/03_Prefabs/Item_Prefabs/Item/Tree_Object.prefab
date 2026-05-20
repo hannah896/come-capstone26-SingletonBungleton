@@ -13,7 +13,8 @@ GameObject:
   - component: {fileID: 6295137756553801205}
   - component: {fileID: 1817331238167169615}
   - component: {fileID: 6580518610543057429}
-  m_Layer: 0
+  - component: {fileID: -437420564172865303}
+  m_Layer: 16
   m_Name: Tree_Object
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -128,4 +129,19 @@ MonoBehaviour:
     maxAmount: 3
   maxHits: 3
   requiredTool: 1
-  droppedItemPrefab: {fileID: 7141987332255213446, guid: 550896e55cf888149bf733be49197743, type: 3}
+  fallbackDropPrefab: {fileID: 7141987332255213446, guid: 550896e55cf888149bf733be49197743, type: 3}
+--- !u!114 &-437420564172865303
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3947172078872952885}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fec30a63d8c2d064aa6f80aa7a97fcdc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  respawnTime: 4320
+  visualObject: {fileID: 0}
+  respawningEffect: {fileID: 0}

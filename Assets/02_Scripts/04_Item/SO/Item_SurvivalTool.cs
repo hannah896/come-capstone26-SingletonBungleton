@@ -112,23 +112,69 @@ public class Item_SurvivalTool : Item, IEquipable
 
         switch (survivalToolType)
         {
-            case SurvivalToolType.Axe: ChopTree(); break;
-            case SurvivalToolType.Pickaxe: MineOre(); break;
-            default: Debug.Log($"[도구] {itemData.itemName} 사용!"); break;
+            case SurvivalToolType.Axe_Stone:
+            case SurvivalToolType.Axe_Iron:
+            case SurvivalToolType.Axe_Gold:
+                ChopTree(); break;
+
+            case SurvivalToolType.Pickaxe_Stone:
+            case SurvivalToolType.Pickaxe_Iron:
+            case SurvivalToolType.Pickaxe_Gold:
+                MineOre(); break;
+
+            case SurvivalToolType.Shovel_Stone:
+            case SurvivalToolType.Shovel_Iron:
+            case SurvivalToolType.Shovel_Gold:
+                Dig(); break;
+
+            case SurvivalToolType.Hammer_Stone:
+            case SurvivalToolType.Hammer_Iron:
+            case SurvivalToolType.Hammer_Gold:
+                HammerUse(); break;
+
+            case SurvivalToolType.FishingRod:
+                Fish(); break;
+
+            case SurvivalToolType.Torch:
+                SetTorchLight(!_isLit); break;
+
+            default:
+                Debug.Log($"[도구] {itemData.itemName} 사용!"); break;
         }
     }
 
     private void ChopTree()
     {
         Debug.Log($"[도끼] 나무 벌목!");
-        // TODO: 나무 오브젝트에 Raycast → IHarvestable.Harvest(this) 호출
+        // TODO: Raycast → IHarvestable.Harvest(this)
         UseDurability(1);
     }
 
     private void MineOre()
     {
         Debug.Log($"[곡괭이] 광물 채굴!");
-        // TODO: 광물 오브젝트에 Raycast → IHarvestable.Harvest(this) 호출
+        // TODO: Raycast → IHarvestable.Harvest(this)
+        UseDurability(1);
+    }
+
+    private void Dig()
+    {
+        Debug.Log($"[삽] 땅 파기!");
+        // TODO: Raycast → Dig 처리
+        UseDurability(1);
+    }
+
+    private void HammerUse()
+    {
+        Debug.Log($"[망치] 사용!");
+        // TODO: 건축물 설치/수리 연동
+        UseDurability(1);
+    }
+
+    private void Fish()
+    {
+        Debug.Log($"[낚싯대] 낚시!");
+        // TODO: 낚시 미니게임 연동
         UseDurability(1);
     }
     #endregion
@@ -157,9 +203,14 @@ public class Item_SurvivalTool : Item, IEquipable
         Debug.Log($"[도구] {itemData.itemName}이(가) 부서졌습니다!");
         Unequip();
 
-        PlayerInventory inventory = FindFirstObjectByType<PlayerInventory>();
-        if (inventory != null)
-            inventory.ClearEquippedItem(EquipSlot.Hand, itemData);
+        var inv = InventoryManager.Instance;
+        if (inv != null)
+        {
+            if (inv.equippedHand?.data == itemData)
+                inv.UnequipAndDiscard(EquipSlot.Hand);
+            else
+                inv.RemoveItem(itemData, 1);
+        }
 
         Destroy(gameObject);
     }

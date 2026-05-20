@@ -1,4 +1,3 @@
-using NUnit.Framework.Interfaces;
 using UnityEngine;
 
 /// <summary>
@@ -33,7 +32,7 @@ public class Item_Booty : Item
         bootyType = itemData.bootyType;
     }
 
-    // 몬스터가 드롭할 때 호출 (Monster 스크립트에서 사용)
+    // 몬스터가 드롭할 때 호출
     public void SetLootInfo(string monsterName)
     {
         sourceMonsterName = monsterName;
@@ -44,7 +43,7 @@ public class Item_Booty : Item
     public void UseAsIngredient(int amount)
     {
         int removed = RemoveStack(amount);
-        Debug.Log($"[전리품] {itemData.itemName} {removed}개 소모됨 (남은 수량: {stackCount})");
+        Debug.Log($"[전리품] {itemData.itemName} {removed}개 소모(남은 수량: {stackCount})");
 
         if (stackCount <= 0)
             Destroy(gameObject);

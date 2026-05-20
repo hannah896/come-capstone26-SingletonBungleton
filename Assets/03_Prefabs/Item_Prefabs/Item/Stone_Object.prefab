@@ -13,7 +13,8 @@ GameObject:
   - component: {fileID: 7307861951685706104}
   - component: {fileID: 1200219961504700341}
   - component: {fileID: 1830115403687278614}
-  m_Layer: 0
+  - component: {fileID: 8098704632599835367}
+  m_Layer: 16
   m_Name: Stone_Object
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -128,4 +129,19 @@ MonoBehaviour:
     maxAmount: 2
   maxHits: 4
   requiredTool: 2
-  droppedItemPrefab: {fileID: 7141987332255213446, guid: 550896e55cf888149bf733be49197743, type: 3}
+  fallbackDropPrefab: {fileID: 7141987332255213446, guid: 550896e55cf888149bf733be49197743, type: 3}
+--- !u!114 &8098704632599835367
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3708485900610044046}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fec30a63d8c2d064aa6f80aa7a97fcdc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  respawnTime: 7200
+  visualObject: {fileID: 0}
+  respawningEffect: {fileID: 0}
