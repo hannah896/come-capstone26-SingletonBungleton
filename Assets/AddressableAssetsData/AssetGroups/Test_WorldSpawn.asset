@@ -14,12 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_GroupName: Test_WorldSpawn
   m_GUID: b0dc5580bd3e65945b189b562a76a9bf
-  m_SerializeEntries:
-  - m_GUID: 47525b05d0712b4448dba24350cc3dd3
-    m_Address: Fir_4
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
+  m_SerializeEntries: []
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: d49714acbe7dc4846b65422625851c9a, type: 2}
   m_SchemaSet:

@@ -16,7 +16,7 @@
   [완료]  플레이어 이동 (Locomotion HFSM)
   [완료]  1인칭 카메라 (PlayerFirstPersonCameraController)
   [완료]  자원 Trace 자동이동 (PlayerTracer → PlayerTraceState)
-  [완료]  허기·정신력 런타임 감소 (PlayerStatus.UpdateHunger / UpdateMental)
+  [완료]  허기·Ego 런타임 감소 (PlayerStatus.UpdateHunger / UpdateEgo)
   [완료]  크래프팅 데이터 구조 (ItemDataSO, RecipeDataSO)
   [진행중] 아이템 인벤토리 (InventoryManager)
   [진행중] 월드 맵 생성 (WorldGraph - KKB 브랜치)
@@ -48,9 +48,9 @@
     디버프    : 배고픔 = 0 → 체력 HungerHPDecreaseRate × deltaTime 감소
     루프 의도  : 탐험 → 식량 수급 → 생존
 
-  2.1.2 정신력 (Mental)
+  2.1.2 Ego (Ego)
     수치
-      감소량   : MentalDecreaseRate × deltaTime  (초당 감소)
+      감소량   : EgoDecreaseRate × deltaTime  (초당 감소)
     회복      : 수면 / 안전지대 / 음식 / NPC 상호작용
     디버프
       - 방어력 감소
@@ -77,7 +77,7 @@
     최대값    : MaxWetness
     효과
       - 체온 감소 가속 (WetnessTemperatureDecreaseRate)
-      - 정신력 감소
+      - Ego 감소
       - 음식 부패 증가
 
   ┌──────────────────────────────────────────────┐
@@ -186,7 +186,7 @@
   │   └─ Build             ← PlayerBuildState
   ├─ Attack                ← PlayerAttackState (F키/마우스)
   ├─ Combat                ← PlayerCombatState
-  ├─ Sleep                 ← PlayerSleepState  (체력·정신력 회복)
+  ├─ Sleep                 ← PlayerSleepState  (체력·Ego 회복)
   ├─ Hurt                  ← PlayerHurtState   (넉백)
   └─ Dead                  ← PlayerDeadState   (HP=0)
 
@@ -204,7 +204,7 @@
   └──────────────────────────────────────────────────────┘
 
   기본      : 밸런스형
-  생존 특화  : 허기 감소 느림 / 정신력 감소 느림
+  생존 특화  : 허기 감소 느림 / Ego 감소 느림
   전투 특화  : 공격력·체력 증가 / 흡혈
   하드코어   : 모든 스탯 감소 (엔딩 후 해금)
 

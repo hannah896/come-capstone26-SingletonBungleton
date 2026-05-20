@@ -20,8 +20,8 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 1f59c7298045f3e41911f300418eaa3a
-    m_Address: InventoryUI
+  - m_GUID: 6fc96e8cee6bfdd49a47c31fcde580db
+    m_Address: UI_Hud_Player
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

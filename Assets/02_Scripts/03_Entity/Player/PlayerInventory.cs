@@ -36,7 +36,6 @@ public class PlayerInventory : MonoBehaviour
     }
 
     public event Action OnInventoryChanged;
-    public event Action<bool> OnInventoryOpenChanged;
     public event Action<int> OnSelectedSlotChanged;
     public event Action<EquipSlot, ItemDataSO> OnEquippedItemChanged;
 
@@ -45,7 +44,6 @@ public class PlayerInventory : MonoBehaviour
     public int SlotCount => slotCount;
     public int QuickSlotCount => GetQuickSlotCount();
     public int SelectedSlotIndex => selectedSlotIndex;
-    public bool IsOpen { get; private set; }
     public ItemDataSO EquippedHead { get; private set; }
     public ItemDataSO EquippedChest { get; private set; }
     public ItemDataSO EquippedHand { get; private set; }
@@ -64,9 +62,6 @@ public class PlayerInventory : MonoBehaviour
     public void Tick()
     {
         if (inputData == null) return;
-
-        if (inputData.InventoryTogglePressed)
-            Toggle();
 
         if (inputData.QuickSlotIndex >= 0)
             SelectSlot(inputData.QuickSlotIndex);
@@ -96,12 +91,6 @@ public class PlayerInventory : MonoBehaviour
     {
         quickSlotCount = Mathf.Clamp(count, 0, slotCount);
         SelectSlot(Mathf.Clamp(selectedSlotIndex, 0, GetQuickSlotCount() - 1));
-    }
-
-    public void Toggle()
-    {
-        IsOpen = !IsOpen;
-        OnInventoryOpenChanged?.Invoke(IsOpen);
     }
 
     public bool AddItem(ItemDataSO itemData, int amount = 1)

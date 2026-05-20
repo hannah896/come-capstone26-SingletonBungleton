@@ -20,6 +20,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1f59c7298045f3e41911f300418eaa3a
+    m_Address: UI_Hud_PlayerInventory
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 2c50d873c029ef243a017465c51035ba
     m_Address: Canvas_View
     m_ReadOnly: 0
@@ -50,13 +55,6 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 9970d44de5554e341ae2127826775a49
-    m_Address: AudioManager
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EveryScene
-    - default
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 9d20080a9d1637c43a9619f8fbc3666f
     m_Address: Player
     m_ReadOnly: 0
@@ -79,6 +77,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e24ef0f7a1a9c21498e652acf7681e1c
     m_Address: Canvas_Popup
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e39146833b2bc1647b750258f9b390cb
+    m_Address: UI_Hud_PlayerStatus
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

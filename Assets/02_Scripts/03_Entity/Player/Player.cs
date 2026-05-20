@@ -1,5 +1,6 @@
 using Fusion;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class Player : MonoBehaviour
 {
@@ -65,8 +66,8 @@ public class Player : MonoBehaviour
         // machine과 inputData는 동기적으로 먼저 생성 (Start()가 await 복귀 전에 실행될 수 있으므로)
         inputData = new PlayerInputData();
         machine = new PlayerRootStateMachine(this, animator);
-        playerInventory ??= GetComponent<PlayerInventory>();
-        playerInventory ??= gameObject.AddComponent<PlayerInventory>();
+        if (playerInventory == null)
+            playerInventory = Extensions.GetOrAddComponent<PlayerInventory>(gameObject);
 
         var _statData = await Extensions.LoadAssetAsync<PlayerStatData>("PlayerStatData");
         stat = new(_statData);
@@ -108,9 +109,10 @@ public class Player : MonoBehaviour
         playerTracer?.Bind(inputData);
         playerInventory?.Bind(this, inputData);
 
-        // 초기 상태: Locomotion
-        await InventoryDisplayUI.ShowFor(playerInventory);
+        var hud = await Extensions.ShowHud<UI_Hud_Player>();
+        hud.Player = this;
 
+        // 초기 상태: Locomotion
         var locomotionState = new PlayerLocomotionState(machine);
         machine.Init(locomotionState);
         
@@ -152,45 +154,8 @@ public class Player : MonoBehaviour
 
         if (stat == null) return;
         stat.UpdateHunger(deltaTime);
-        stat.UpdateMental(deltaTime);
+        stat.UpdateEgo(deltaTime);
     }
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-    private void OnGUI()
-    {
-        if (motor == null) return;
-        
-        string debugInfo = 
-            $"=== Player Debug ===\n" +
-            $"RootState: {CurrentStateName}\n" +
-            $"SubState: {CurrentSubStateName}\n" +
-            $"IsGrounded: {motor.IsGrounded}\n" +
-            $"WasGroundedRecently: {motor.WasGroundedRecently}\n" +
-            $"VerticalVelocity: {motor.VerticalVelocity:F2}\n" +
-            $"HorizontalVelocity: {motor.Velocity.magnitude - Mathf.Abs(motor.VerticalVelocity):F2}\n" +
-            $"Position: {transform.position:F2}\n" +
-            $"IsOnSlope: {motor.IsOnSlope}\n" +
-            $"SlopeAngle: {motor.SlopeAngle:F1}°";
-        
-        GUI.Label(new Rect(10, 10, 300, 220), debugInfo);
-        
-        // CharacterController 정보
-        var cc = GetComponent<CharacterController>();
-        if (cc != null)
-        {
-            GUI.Label(new Rect(10, 230, 300, 160),
-                $"=== CharacterController ===\n" +
-                $"Radius: {cc.radius:F2}\n" +
-                $"Height: {cc.height:F2}\n" +
-                $"Center: {cc.center:F2}\n" +
-                $"SkinWidth: {cc.skinWidth:F2}\n" +
-                $"Velocity: {cc.velocity.magnitude:F2}\n" +
-                $"MoveInput: {inputData?.MoveInput ?? Vector2.zero}\n" +
-                $"JumpPressed: {inputData?.JumpPressed ?? false}\n" +
-                $"AttackPressed: {inputData?.AttackPressed ?? false}");
-        }
-    }
-#endif
 
     private bool IsLocalPlayerObject()
     {

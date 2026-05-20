@@ -15,24 +15,25 @@ MonoBehaviour:
   MaxHP: 150
   CurHP: 150
   MoveSpeed: 1
-  AttackDamage: 0
-  Defense: 0
-  MinAttackPeriod: 0
+  AttackDamage: 5
+  Defense: 5
+  MinAttackPeriod: 1
   SprintMultiplier: 1.5
   JumpForce: 8
+  DayDurationMinutes: 12
   MaxHunger: 150
   CurHunger: 150
-  HungerDrain: 0
-  HungerHPDecreaseRate: 0
-  MaxMental: 200
-  CurMental: 200
-  MentalDecreaseRate: 0
-  Temperature: 0
-  ColdHPDecreaseRate: 0
-  HotHPDecreaseRate: 0
+  HungerDrain: 5
+  HungerHPDecreaseRate: 1
+  MaxEgo: 200
+  CurEgo: 200
+  EgoDecreaseRate: 0
+  Temperature: 40
+  ColdHPDecreaseRate: 2
+  HotHPDecreaseRate: 2
   MaxColdTemperature: 0
-  MaxHotTemperature: 0
+  MaxHotTemperature: 60
   Wetness: 0
-  MaxWetness: 0
-  WetnessTemperatureDecreaseRate: 0
+  MaxWetness: 100
+  WetnessTemperatureDecreaseRate: -5
   WaterProofWetness: 0

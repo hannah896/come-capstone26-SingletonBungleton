@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [CreateAssetMenu(fileName = "Item_", menuName = "Game/Item Data")]
 public class ItemDataSO : ScriptableObject
@@ -77,8 +78,9 @@ public class ItemDataSO : ScriptableObject
     [Tooltip("체력 회복량")]
     public float healthRestore = 0f;
 
-    [Tooltip("정신력 회복량")]
-    public float sanityRestore = 0f;
+    [Tooltip("Ego 회복량")]
+    [FormerlySerializedAs("sanityRestore")]
+    public float egoRestore = 0f;
 
 
 

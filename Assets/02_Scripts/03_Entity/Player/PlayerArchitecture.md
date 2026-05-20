@@ -257,7 +257,7 @@ CinemachineCamera는 이 피벗의 Follow/LookAt을 따름
 | **전투** | Attack, Defense, MinAttackPeriod | 공격/방어 |
 | **이동** | MoveSpeed, SprintMultiplier, JumpForce | 이동 관련 |
 | **허기** | MaxHunger, CurrentHunger, HungerDrain, HungerHPDecreaseRate | 배고픔 |
-| **정신력** | MaxMental, CurrentMental, MentalDecreaseRate | 정신 |
+| **Ego** | MaxEgo, CurrentEgo, EgoDecreaseRate | Ego |
 | **체온** | Temperature, ColdHPDecreaseRate, HotHPDecreaseRate, MaxCold/HotTemperature | 체온 |
 | **습도** | Wetness, MaxWetness, WetnessTemperatureDecreaseRate, WaterproofRate | 젖음 |
 
@@ -266,7 +266,7 @@ CinemachineCamera는 이 피벗의 Follow/LookAt을 따름
 - [ ] 스탯 변경 이벤트 시스템 (`OnHpChanged`, `OnHungerChanged` 등) — UI 바인딩용
 - [ ] 허기 자동 감소 로직 (시간 경과 시 HungerDrain)
 - [ ] 허기 0일 때 HP 자동 감소
-- [ ] 정신력 감소 로직 (밤, 몬스터 근처 등)
+- [ ] Ego 감소 로직 (밤, 몬스터 근처 등)
 - [ ] 체온 시스템 — 환경 온도에 따른 변화, 극한 온도 시 HP 감소
 - [ ] 습도 시스템 — 비/물 접촉 시 습도 증가, 습도에 따른 체온 하락
 - [ ] 회복 메서드 (`Heal`, `Eat`, `Rest` 등)
@@ -428,10 +428,10 @@ Assets/02_Scripts/03_Entity/Player/
 | 기능 | 담당 컴포넌트 | 설명 |
 |------|--------------|------|
 | 넉백 처리 | Motor | 외부 힘 적용 (피격, 폭발) |
-| 스탯 이벤트 시스템 | Status | HP/허기/정신력 변화 이벤트 → UI 바인딩 |
+| 스탯 이벤트 시스템 | Status | HP/허기/Ego 변화 이벤트 → UI 바인딩 |
 | 카메라 충돌 | CameraController | 벽 뒤 카메라 방지 |
 | 체온/습도 시스템 | Status | 환경 요소와 스탯 연동 |
-| 정신력 시스템 | Status | 밤/몬스터 근처 감소 |
+| Ego 시스템 | Status | 밤/몬스터 근처 감소 |
 
 ### P2 — 게임 느낌 개선
 

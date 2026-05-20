@@ -27,10 +27,10 @@ public class PlayerStatus
     public float HungerHPDecreaseRate { get; private set; }
     #endregion
 
-    #region 정신력
-    public float MaxMental { get; private set; }
-    public float CurrentMental { get; private set; }
-    public float MentalDecreaseRate { get; private set; }
+    #region Ego
+    public float MaxEgo { get; private set; }
+    public float CurrentEgo { get; private set; }
+    public float EgoDecreaseRate { get; private set; }
     #endregion
 
     #region 체온
@@ -61,16 +61,16 @@ public class PlayerStatus
         SprintMultiplier = data.SprintMultiplier;
         JumpForce = data.JumpForce;
 
-        // 허기 (MaxHunger = HungerDrain * DayDurationMinutes * 2)
+        // 허기
         MaxHunger = data.MaxHunger;
-        CurrentHunger = data.MaxHunger;
+        CurrentHunger = data.CurHunger;
         HungerDrain = data.HungerDrain;
         HungerHPDecreaseRate = data.HungerHPDecreaseRate;
 
-        // 정신력
-        MaxMental = data.MaxMental;
-        CurrentMental = data.CurMental;
-        MentalDecreaseRate = data.MentalDecreaseRate;
+        // Ego
+        MaxEgo = data.MaxEgo;
+        CurrentEgo = data.CurEgo;
+        EgoDecreaseRate = data.EgoDecreaseRate;
 
         // 체온
         Temperature = data.Temperature;
@@ -105,12 +105,12 @@ public class PlayerStatus
     }
 
     /// <summary>
-    /// 정신력을 시간 경과에 따라 감소시킵니다.
-    /// MentalDecreaseRate는 초당 감소량입니다.
+    /// Ego을 시간 경과에 따라 감소시킵니다.
+    /// EgoDecreaseRate는 초당 감소량입니다.
     /// </summary>
-    public void UpdateMental(float deltaTime)
+    public void UpdateEgo(float deltaTime)
     {
-        CurrentMental = Mathf.Max(CurrentMental - MentalDecreaseRate * deltaTime, 0f);
+        CurrentEgo = Mathf.Max(CurrentEgo - EgoDecreaseRate * deltaTime, 0f);
     }
 
     public void RestoreHunger(float amount)
@@ -119,8 +119,8 @@ public class PlayerStatus
     public void RestoreHp(float amount)
         => CurrentHp = Mathf.Min(CurrentHp + amount, MaxHp);
 
-    public void RestoreMental(float amount)
-        => CurrentMental = Mathf.Min(CurrentMental + amount, MaxMental);
+    public void RestoreEgo(float amount)
+        => CurrentEgo = Mathf.Min(CurrentEgo + amount, MaxEgo);
 
     public bool IsDead => CurrentHp <= 0f;
 }

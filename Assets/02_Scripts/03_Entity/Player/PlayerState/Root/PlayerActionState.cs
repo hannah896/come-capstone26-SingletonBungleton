@@ -80,7 +80,7 @@ public class PlayerActionState : PlayerRootStateBase
             return true;
         }
 
-        if (Input.JumpPressed && Motor.WasGroundedRecently)
+        if (Input.JumpPressed && Motor.CanJump)
         {
             Debug.Log($"[State] Action interrupt by Jump - {actionType}");
             Motor.SetVerticalVelocity(Entity.Stat.JumpForce);
@@ -106,7 +106,7 @@ public class PlayerActionState : PlayerRootStateBase
         Keyboard keyboard = Keyboard.current;
         if (keyboard == null) return false;
 
-        if (keyboard.spaceKey.wasPressedThisFrame && Motor.WasGroundedRecently)
+        if (keyboard.spaceKey.wasPressedThisFrame && Motor.CanJump)
         {
             Debug.Log($"[State] Action keyboard fallback Jump - {actionType}");
             Motor.SetVerticalVelocity(Entity.Stat.JumpForce);
