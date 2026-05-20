@@ -17,18 +17,17 @@ public class PoolPreloader : IGraphPipelineStage
         _disposeData = ctx.DisposeData;
         _ct = ct;
 
-        if (_disposeData == null || _disposeData.PlacementDatas == null || _disposeData.PlacementDatas.Count == 0) return;
+        if (_disposeData == null || _disposeData.DisposeDatas == null || _disposeData.DisposeDatas.Count == 0) return;
         if (Main.Pool == null) return;
 
         HashSet<string> uniqueKeys = new HashSet<string>();
 
-        List<PlacementData> placements = _disposeData.PlacementDatas;
-        for (int i = 0; i < placements.Count; i++)
+        List<DisposeData> disposes = _disposeData.DisposeDatas;
+        for (int i = 0; i < disposes.Count; i++)
         {
-            PlacementData placement = placements[i];
-            if (placement == null) continue;
-
-            string key = placement.prefabName;
+            DisposeData dispose = disposes[i];
+            if (dispose == null) continue;
+            string key = dispose.prefabName;
             if (string.IsNullOrEmpty(key)) continue;
 
             uniqueKeys.Add(key);

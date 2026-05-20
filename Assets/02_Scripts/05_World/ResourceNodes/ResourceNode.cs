@@ -3,7 +3,7 @@ using UnityEngine;
 /// <summary>
 /// 배치되는 자원 오브젝트 노드의 기본이 되는 추상 클래스.
 /// </summary>
-public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, IGatherable, IPlacementInitializable
+public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, IGatherable, IDisposeInitializable
 {
     [SerializeField] private ResourceNodeData _resourceNodeData;
     protected ResourceNodeData ResourceNodeData => _resourceNodeData;
@@ -13,7 +13,7 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
     private int _currentHealth;
     private int _remainingGather;
     private bool _isDestroyed;
-    private PlacementData _placement;
+    private DisposeData _placement;
     private ChunkData _chunk;
 
     private Vector3 _deathPosition;
@@ -28,8 +28,8 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
         _remainingGather = Mathf.Max(0, _resourceNodeData.GatherAmount);
     }
 
-    // 배치 초기화 메서드. PlacementData와 ChunkData를 받아 초기화 작업을 수행
-    public void InitializePlacement(PlacementData placement, ChunkData chunk)
+    // 배치 초기화 메서드. DisposeData와 ChunkData를 받아 초기화 작업을 수행
+    public void InitializeDispose(DisposeData placement, ChunkData chunk)
     {
         _placement = placement;
         _chunk = chunk;
@@ -102,7 +102,7 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
         return false;
     }
 
-    protected virtual void OnPlacementInitialized(PlacementData placement, ChunkData chunk) { }
+    protected virtual void OnPlacementInitialized(DisposeData placement, ChunkData chunk) { }
     protected virtual void OnInteracted(InteractionContext context) { }
     protected virtual void OnDamaged(DamageContext context) { }
     protected virtual void OnGathered(GatherContext context) { }

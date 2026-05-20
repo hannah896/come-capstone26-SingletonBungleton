@@ -1,0 +1,203 @@
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Rendering;
+
+public interface IPreviewVisualizer
+{
+    void Show(ItemDataSO item);
+    void Hide();
+    void SetVisible(bool visible);
+    void UpdateView(
+        Vector3 ghostPosition,
+        Quaternion ghostRotation,
+        Vector3 gridCenter,
+        float gridSize,
+        int gridRadius,
+        float ghostYOffset,
+        bool isValid,
+        IPlacementValidator validator);
+}
+
+public class PreviewVisualizer : MonoBehaviour, IPreviewVisualizer
+{
+    [Header("Grid")]
+    [SerializeField] private float gridSize = 1f;
+    [SerializeField] private int gridRadius = 4;
+    [SerializeField] private float ghostYOffset = 0.01f;
+
+    [Header("Ghost Colors")]
+    [SerializeField] private Color ghostValidColor = new Color(0f, 1f, 0f, 0.35f);
+    [SerializeField] private Color ghostInvalidColor = new Color(1f, 0f, 0f, 0.35f);
+
+    [Header("Grid Colors")]
+    [SerializeField] private Color gridValidColor = new Color(0f, 1f, 0f, 0.15f);
+    [SerializeField] private Color gridInvalidColor = new Color(1f, 0f, 0f, 0.15f);
+
+    [Header("Optional Materials")]
+    [SerializeField] private Material ghostMaterialTemplate;
+    [SerializeField] private Material gridMaterialTemplate;
+
+    private readonly List<Renderer> ghostRenderers = new List<Renderer>();
+    private readonly List<GameObject> gridCells = new List<GameObject>();
+
+    private Material ghostValidMaterial;
+    private Material ghostInvalidMaterial;
+    private Material gridValidMaterial;
+    private Material gridInvalidMaterial;
+
+    private GameObject ghostInstance;
+    private ItemDataSO activeItemData;
+
+    private void Awake()
+    {
+        ghostValidMaterial = PlacementMaterialFactory.CreateMaterial(ghostMaterialTemplate, ghostValidColor);
+        ghostInvalidMaterial = PlacementMaterialFactory.CreateMaterial(ghostMaterialTemplate, ghostInvalidColor);
+        gridValidMaterial = PlacementMaterialFactory.CreateMaterial(gridMaterialTemplate, gridValidColor);
+        gridInvalidMaterial = PlacementMaterialFactory.CreateMaterial(gridMaterialTemplate, gridInvalidColor);
+    }
+
+    public void Show(ItemDataSO item)
+    {
+        activeItemData = item;
+        CreateGhostInstance();
+        SetVisible(true);
+    }
+
+    public void Hide()
+    {
+        DestroyGhost();
+        SetGridActive(false);
+        activeItemData = null;
+    }
+
+    public void SetVisible(bool visible)
+    {
+        if (ghostInstance != null)
+            ghostInstance.SetActive(visible);
+
+        SetGridActive(visible);
+    }
+
+    public void UpdateView(
+        Vector3 ghostPosition,
+        Quaternion ghostRotation,
+        Vector3 gridCenter,
+        float gridSize,
+        int gridRadius,
+        float ghostYOffset,
+        bool isValid,
+        IPlacementValidator validator)
+    {
+        if (activeItemData == null)
+            return;
+
+        UpdateGhostVisual(ghostPosition, ghostRotation, ghostYOffset, isValid);
+        UpdateGridVisual(gridCenter, gridSize, gridRadius, ghostYOffset, validator);
+    }
+
+    private void CreateGhostInstance()
+    {
+        DestroyGhost();
+
+        if (activeItemData == null || activeItemData.placementPrefab == null)
+            return;
+
+        ghostInstance = Instantiate(activeItemData.placementPrefab);
+        ghostInstance.name = $"{activeItemData.placementPrefab.name}_Ghost";
+
+        foreach (Collider collider in ghostInstance.GetComponentsInChildren<Collider>())
+            collider.enabled = false;
+
+        ghostRenderers.Clear();
+        ghostRenderers.AddRange(ghostInstance.GetComponentsInChildren<Renderer>());
+
+        ApplyGhostMaterial(ghostValidMaterial);
+    }
+
+    private void DestroyGhost()
+    {
+        if (ghostInstance != null)
+            Destroy(ghostInstance);
+
+        ghostRenderers.Clear();
+    }
+
+    private void UpdateGhostVisual(Vector3 position, Quaternion rotation, float yOffset, bool isValid)
+    {
+        if (ghostInstance == null)
+            return;
+
+        ghostInstance.transform.SetPositionAndRotation(position + Vector3.up * yOffset, rotation);
+        ApplyGhostMaterial(isValid ? ghostValidMaterial : ghostInvalidMaterial);
+    }
+
+    private void ApplyGhostMaterial(Material material)
+    {
+        for (int i = 0; i < ghostRenderers.Count; i++)
+            ghostRenderers[i].sharedMaterial = material;
+    }
+
+    private void UpdateGridVisual(Vector3 centerPosition, float gridSize, int gridRadius, float yOffset, IPlacementValidator validator)
+    {
+        int diameter = (gridRadius * 2) + 1;
+        int totalCells = diameter * diameter;
+
+        EnsureGridCellCount(totalCells, gridSize);
+
+        int index = 0;
+        for (int x = -gridRadius; x <= gridRadius; x++)
+        {
+            for (int z = -gridRadius; z <= gridRadius; z++)
+            {
+                Vector3 cellPosition = new Vector3(
+                    centerPosition.x + (x * gridSize),
+                    centerPosition.y + yOffset,
+                    centerPosition.z + (z * gridSize));
+
+                bool cellValid = validator == null || validator.IsCellValid(cellPosition, gridSize);
+                GameObject cell = gridCells[index];
+                Renderer renderer = cell.GetComponent<Renderer>();
+
+                cell.transform.position = cellPosition;
+                renderer.sharedMaterial = cellValid ? gridValidMaterial : gridInvalidMaterial;
+
+                index++;
+            }
+        }
+    }
+
+    private void EnsureGridCellCount(int targetCount, float gridSize)
+    {
+        while (gridCells.Count < targetCount)
+            gridCells.Add(CreateGridCell(gridSize));
+
+        for (int i = 0; i < gridCells.Count; i++)
+            gridCells[i].SetActive(i < targetCount);
+    }
+
+    private GameObject CreateGridCell(float cellSize)
+    {
+        GameObject cell = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        cell.name = "PlacementGridCell";
+
+        Collider collider = cell.GetComponent<Collider>();
+        if (collider != null)
+            Destroy(collider);
+
+        cell.transform.SetParent(transform, false);
+        cell.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        cell.transform.localScale = new Vector3(cellSize, cellSize, 1f);
+
+        Renderer renderer = cell.GetComponent<Renderer>();
+        renderer.shadowCastingMode = ShadowCastingMode.Off;
+        renderer.receiveShadows = false;
+
+        return cell;
+    }
+
+    private void SetGridActive(bool active)
+    {
+        for (int i = 0; i < gridCells.Count; i++)
+            gridCells[i].SetActive(active);
+    }
+}

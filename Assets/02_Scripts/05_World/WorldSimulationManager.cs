@@ -53,7 +53,7 @@ public class WorldSimulationManager : MonoBehaviour
         {
             chunk.DestroyedObjects.Remove(instanceId);
 
-            PlacementData targetData = chunk.PlacementDatas.Find(p => p.instanceId == instanceId);
+            DisposeData targetData = chunk.DisposeDatas.Find(p => p.instanceId == instanceId);
 
             _chunkDirector.ObjectSpawner.SpawnSingleObjectAsync(chunk, targetData).Forget();
         }

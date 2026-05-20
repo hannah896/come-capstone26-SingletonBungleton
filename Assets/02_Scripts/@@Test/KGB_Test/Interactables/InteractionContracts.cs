@@ -76,7 +76,7 @@ public interface IGatherable
 
 
 //  배치 초기화 인터페이스
-public interface IPlacementInitializable
+public interface IDisposeInitializable
 {
-    void InitializePlacement(PlacementData placement, ChunkData chunk);
+    void InitializeDispose(DisposeData dispose, ChunkData chunk);
 }

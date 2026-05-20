@@ -65,12 +65,12 @@ public class ChunkSlicer : IGraphPipelineStage
         int objectCount = 0;
         if (ctx.DisposeData != null)
         {
-            foreach (var disposeData in ctx.DisposeData.PlacementDatas)
+            foreach (var disposeData in ctx.DisposeData.DisposeDatas)
             {
                 Vector2Int chunkCoord = logicData.GetChunkCoord(disposeData.tilePosition.x, disposeData.tilePosition.y);
                 ChunkData chunk = logicData.GetOrCreateChunk(chunkCoord);
 
-                chunk.PlacementDatas.Add(disposeData);
+                chunk.DisposeDatas.Add(disposeData);
                 objectCount++;
             }
         }

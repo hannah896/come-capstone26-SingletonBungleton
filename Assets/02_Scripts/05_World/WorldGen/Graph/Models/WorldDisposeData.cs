@@ -8,17 +8,17 @@ using UnityEngine;
 public class WorldDisposeData
 {
     // 총 배치된 오브젝트/아이템 에 대한 리스트
-    public List<PlacementData> PlacementDatas = new();
+    public List<DisposeData> DisposeDatas = new();
     // 배치된 오브젝트에 대한 리스트
-    public List<PlacementData> ObjectPlacements = new();
+    public List<DisposeData> ObjectDisposes = new();
     // 배치된 아이템에 대한 리스트
-    public List<PlacementData> ItemPlacements = new();
+    public List<DisposeData> ItemDisposes = new();
 
     public void Clear()
     {
-        PlacementDatas.Clear();
-        ObjectPlacements.Clear();
-        ItemPlacements.Clear();
+        DisposeDatas.Clear();
+        ObjectDisposes.Clear();
+        ItemDisposes.Clear();
     }
 
 }

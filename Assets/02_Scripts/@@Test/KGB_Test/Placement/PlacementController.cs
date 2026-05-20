@@ -1,0 +1,254 @@
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+/// <summary>
+/// 입력과 시각화를 관리하여 플레이어가 아이템을 배치할 수 있도록 하는 컨트롤러입니다.
+/// TODO: ItemDataSO에 배치 관련 속성 추가 필요, CraftingManager에 OnCrafted 이벤트 추가 필요
+/// [Header("=== 배치 정보 ===")]
+//[Tooltip("배치 가능 아이템 여부")]
+//public bool isPlaceable = false;
+
+//[Tooltip("배치 시 사용할 프리팹")]
+//public GameObject placementPrefab;
+
+//[Tooltip("배치 크기 (그리드 기준)")]
+//public Vector2Int placementFootprint = Vector2Int.one;
+
+//[Tooltip("배치 시 피벗 오프셋")]
+//public Vector3 placementPivotOffset;
+
+//[Tooltip("그리드 스냅 여부")]
+//public bool placementSnapToGrid = true;
+
+//[Tooltip("배치 가능 체크 높이")]
+//public float placementCheckHeight = 2f;
+
+//[Tooltip("체크 박스 중심 오프셋")]
+//public Vector3 placementCheckCenterOffset;
+///// </summary>
+public class PlacementController : MonoBehaviour
+{
+    [Header("References")]
+    [SerializeField] private Camera placementCamera;
+    [SerializeField] private PlayerInventory playerInventory;
+    [SerializeField] private CraftingManager craftingManager;
+    [SerializeField] private MonoBehaviour placementValidatorBehaviour;
+    [SerializeField] private MonoBehaviour previewVisualizerBehaviour;
+
+    [Header("Grid")]
+    [SerializeField] private float gridSize = 1f;
+    [SerializeField] private int gridRadius = 4;
+    [SerializeField] private float ghostYOffset = 0.01f;
+
+    [Header("Layers")]
+    [SerializeField] private LayerMask groundLayerMask = ~0;
+
+    public bool IsActive { get; private set; }
+
+    private IPlacementValidator placementValidator;
+    private IPreviewVisualizer previewVisualizer;
+
+    private ItemDataSO activeItemData;
+
+    private Vector3 currentPosition;
+    private Quaternion currentRotation = Quaternion.identity;
+    private bool currentPlacementValid;
+
+    private void Awake()
+    {
+        if (placementCamera == null)
+            placementCamera = Camera.main;
+
+        placementValidator = placementValidatorBehaviour as IPlacementValidator;
+        previewVisualizer = previewVisualizerBehaviour as IPreviewVisualizer;
+    }
+
+    private void OnEnable()
+    {
+        BindEvents();
+    }
+
+    private void OnDisable()
+    {
+        UnbindEvents();
+    }
+
+    private void Update()
+    {
+        if (!IsActive)
+            return;
+
+        UpdatePlacement();
+    }
+
+    private void BindEvents()
+    {
+        if (playerInventory == null)
+            playerInventory = FindFirstObjectByType<PlayerInventory>();
+        if (craftingManager == null)
+            craftingManager = CraftingManager.Instance ?? FindFirstObjectByType<CraftingManager>();
+
+        if (playerInventory != null)
+            playerInventory.OnSelectedSlotChanged += HandleSelectedSlotChanged;
+        if (craftingManager != null)
+            craftingManager.OnCrafted += HandleCrafted; //TODO: CraftingManager에 OnCrafted 이벤트 추가 필요
+    }
+
+    private void UnbindEvents()
+    {
+        if (playerInventory != null)
+            playerInventory.OnSelectedSlotChanged -= HandleSelectedSlotChanged;
+        if (craftingManager != null)
+            craftingManager.OnCrafted -= HandleCrafted;
+    }
+
+    private void HandleCrafted(RecipeDataSO recipe, ItemDataSO itemData, int amount)
+    {
+        if (itemData == null || amount <= 0)
+            return;
+
+        if (!IsPlaceableItem(itemData))
+            return;
+
+        BeginPlacement(itemData);
+    }
+
+    private void HandleSelectedSlotChanged(int slotIndex)
+    {
+        if (IsActive || playerInventory == null)
+            return;
+
+        if (slotIndex < 0 || slotIndex >= playerInventory.Slots.Count)
+            return;
+
+        ItemDataSO itemData = playerInventory.Slots[slotIndex];
+        if (itemData == null || playerInventory.StackCounts[slotIndex] <= 0)
+            return;
+
+        if (!IsPlaceableItem(itemData))
+            return;
+
+        BeginPlacement(itemData);
+    }
+
+    private void BeginPlacement(ItemDataSO itemData)
+    {
+        if (itemData == null)
+            return;
+
+        activeItemData = itemData;
+        IsActive = true;
+
+        previewVisualizer?.Show(itemData);
+    }
+
+    public void CancelPlacement()
+    {
+        if (!IsActive)
+            return;
+
+        IsActive = false;
+        previewVisualizer?.Hide();
+
+        ClearActiveData();
+    }
+
+    private void UpdatePlacement()
+    {
+        if (!TryGetMouseWorldPosition(out Vector3 worldPosition))
+        {
+            previewVisualizer?.SetVisible(false);
+            return;
+        }
+
+        previewVisualizer?.SetVisible(true);
+
+        Vector3 snappedPosition = GetSnappedPosition(worldPosition);
+        currentPosition = snappedPosition + activeItemData.placementPivotOffset;    //TODO: ItemDataSO에 placementPivotOffset 추가 필요
+
+        HandleRotationInput();
+
+        currentPlacementValid = placementValidator == null ||
+            placementValidator.IsPlacementValid(activeItemData, currentPosition, currentRotation, gridSize);
+
+        previewVisualizer?.UpdateView(
+            currentPosition,
+            currentRotation,
+            snappedPosition,
+            gridSize,
+            gridRadius,
+            ghostYOffset,
+            currentPlacementValid,
+            placementValidator);
+
+        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && currentPlacementValid)
+            ConfirmPlacement();
+
+        if (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)
+            CancelPlacement();
+    }
+
+    private void ConfirmPlacement()
+    {
+        if (activeItemData == null || activeItemData.placementPrefab == null)           //TODO: ItemDataSO에 placementPrefab 추가 필요
+            return;
+
+        Instantiate(activeItemData.placementPrefab, currentPosition, currentRotation);
+
+        if (playerInventory != null && activeItemData != null)
+            playerInventory.RemoveItem(activeItemData, 1);
+    }
+
+    private void HandleRotationInput()
+    {
+        if (Keyboard.current == null)
+            return;
+
+        if (Keyboard.current.qKey.wasPressedThisFrame)
+            currentRotation *= Quaternion.Euler(0f, -90f, 0f);
+
+        if (Keyboard.current.eKey.wasPressedThisFrame)
+            currentRotation *= Quaternion.Euler(0f, 90f, 0f);
+    }
+
+    private bool TryGetMouseWorldPosition(out Vector3 worldPosition)
+    {
+        worldPosition = Vector3.zero;
+
+        if (placementCamera == null || Mouse.current == null)
+            return false;
+
+        Vector2 screenPosition = Mouse.current.position.ReadValue();
+        Ray ray = placementCamera.ScreenPointToRay(screenPosition);
+
+        if (Physics.Raycast(ray, out RaycastHit hit, 1000f, groundLayerMask))
+        {
+            worldPosition = hit.point;
+            return true;
+        }
+
+        return false;
+    }
+
+    private Vector3 GetSnappedPosition(Vector3 worldPosition)
+    {
+        if (activeItemData == null || !activeItemData.placementSnapToGrid)                  //TODO: ItemDataSO에 placementSnapToGrid 추가 필요
+            return worldPosition;
+
+        float x = Mathf.Round(worldPosition.x / gridSize) * gridSize;
+        float z = Mathf.Round(worldPosition.z / gridSize) * gridSize;
+
+        return new Vector3(x, worldPosition.y, z);
+    }
+
+    private bool IsPlaceableItem(ItemDataSO itemData)
+    {
+        return itemData != null && itemData.isPlaceable && itemData.placementPrefab != null;
+    }
+
+    private void ClearActiveData()
+    {
+        activeItemData = null;
+        currentRotation = Quaternion.identity;
+    }
+}

@@ -45,7 +45,7 @@ public class ObjectDisposer : IGraphPipelineStage
         _ct = ct;
         _nodes = ctx.GraphData?.Nodes;
 
-        _placementSequence = ctx.DisposeData.PlacementDatas.Count;
+        _placementSequence = ctx.DisposeData.DisposeDatas.Count;
 
         if (_nodes == null) return;
 
@@ -385,7 +385,7 @@ public class ObjectDisposer : IGraphPipelineStage
         // 배치 아이디 생성
         int instanceId = CreatePlacementId(prefabKey, tile);
 
-        PlacementData placement = new PlacementData
+        DisposeData placement = new DisposeData
         {
             instanceId = instanceId,
             prefabName = prefabKey,
@@ -394,8 +394,8 @@ public class ObjectDisposer : IGraphPipelineStage
             scale = Vector3.one * (0.8f + (float)_prng.NextDouble() * 0.4f),
         };
 
-        _disposeData.PlacementDatas.Add(placement);
-        _disposeData.ObjectPlacements.Add(placement);
+        _disposeData.DisposeDatas.Add(placement);
+        _disposeData.ObjectDisposes.Add(placement);
     }
 
     private int CreatePlacementId(string prefabKey, Vector2Int tile)
