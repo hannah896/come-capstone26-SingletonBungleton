@@ -87,7 +87,6 @@ public enum FoodType
     CookedMeat3,
     CookedEgg,  //구운 알
     RoastedBerry //구운베리
-
 }
 
 //  장비 장착 위치

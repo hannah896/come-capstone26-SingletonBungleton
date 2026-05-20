@@ -60,6 +60,9 @@ public class ItemDataSO : ScriptableObject
     [Tooltip("최대 내구도")]
     public float maxDurability = 100f;
 
+    [Tooltip("한번 사용 시 감소하는 내구도")]
+    public float costPerDurability = 1f;
+
     [Tooltip("공격력")]
     public float attackDamage = 0f;
 

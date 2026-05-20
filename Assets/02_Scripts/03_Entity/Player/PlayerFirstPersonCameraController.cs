@@ -270,7 +270,7 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
 
     private void InitializeEquippedTool(ItemDataSO itemData)
     {
-        Item item = equippedToolObject.GetComponentInChildren<Item>(true);
+        ItemData item = equippedToolObject.GetComponentInChildren<ItemData>(true);
         if (item != null)
             item.Init(itemData);
 
