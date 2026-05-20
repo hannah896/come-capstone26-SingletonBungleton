@@ -30,7 +30,7 @@ MonoBehaviour:
   maxDurability: 100
   attackDamage: 0
   attackRange: 0
-  defense: 10
+  defense: 15
   hungerRestore: 0
   healthRestore: 0
   sanityRestore: 0

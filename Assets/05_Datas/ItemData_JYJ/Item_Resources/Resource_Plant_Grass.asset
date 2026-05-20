@@ -20,7 +20,7 @@ MonoBehaviour:
   itemType: 2
   survivalToolType: 0
   combatGearType: 0
-  resourceType: 8
+  resourceType: 10
   bootyType: 0
   foodType: 0
   isStackable: 1

@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
+  m_Name: Resource_Mineral_Coal
+  m_EditorClassIdentifier: 
+  itemID: Mineral_Coal
+  itemName: "\uC11D\uD0C4"
+  description: "\uAD11\uC11D\uC790\uC6D0_\uC11D\uD0C4\uC785\uB2C8\uB2E4."
+  icon: {fileID: 0}
+  prefab: {fileID: 196400808065324781, guid: 6bcac75bfeaaafc42a1e39a298060882, type: 3}
+  itemType: 2
+  survivalToolType: 0
+  combatGearType: 0
+  resourceType: 9
+  bootyType: 0
+  foodType: 0
+  isStackable: 1
+  maxStack: 99
+  equipSlot: 0
+  hasDurability: 0
+  maxDurability: 0
+  attackDamage: 0
+  attackRange: 0
+  defense: 0
+  hungerRestore: 0
+  healthRestore: 0
+  sanityRestore: 0

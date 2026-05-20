@@ -67,7 +67,7 @@ public class ItemTestManager : MonoBehaviour
     void TestGather()
     {
         if (testTree == null) { Debug.Log("[테스트] Tree_Object 연결 안 됨!"); return; }
-        testTree.OnHit(SurvivalToolType.Axe);
+        testTree.OnHit(SurvivalToolType.Axe_Stone); // Axe → Axe_Stone으로 변경
         Debug.Log("[테스트] Tree_Object 타격!");
     }
 

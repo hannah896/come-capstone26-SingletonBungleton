@@ -30,15 +30,46 @@ public class GatherableObject : MonoBehaviour
         _resourceNode = GetComponent<ResourceNode>();
     }
 
-    public bool OnHit(SurvivalToolType usedTool)  //PlayerToolUsage에서 호출
+    public bool OnHit(SurvivalToolType usedTool)
     {
-        if (requiredTool != SurvivalToolType.None && usedTool != requiredTool)
+        if (requiredTool != SurvivalToolType.None)
         {
-            Debug.Log($"[채집] {requiredTool} 도구가 필요합니다.");
-            return false;
+            // 도끼 계열 체크
+            bool isAxe = usedTool == SurvivalToolType.Axe_Stone ||
+                         usedTool == SurvivalToolType.Axe_Iron ||
+                         usedTool == SurvivalToolType.Axe_Gold;
+
+            // 곡괭이 계열 체크
+            bool isPickaxe = usedTool == SurvivalToolType.Pickaxe_Stone ||
+                             usedTool == SurvivalToolType.Pickaxe_Iron ||
+                             usedTool == SurvivalToolType.Pickaxe_Gold;
+
+            // 삽 계열 체크
+            bool isShovel = usedTool == SurvivalToolType.Shovel_Stone ||
+                            usedTool == SurvivalToolType.Shovel_Iron ||
+                            usedTool == SurvivalToolType.Shovel_Gold;
+
+            bool toolMatch =
+                (requiredTool == SurvivalToolType.Axe_Stone && isAxe) ||
+                (requiredTool == SurvivalToolType.Axe_Iron && isAxe) ||
+                (requiredTool == SurvivalToolType.Axe_Gold && isAxe) ||
+                (requiredTool == SurvivalToolType.Pickaxe_Stone && isPickaxe) ||
+                (requiredTool == SurvivalToolType.Pickaxe_Iron && isPickaxe) ||
+                (requiredTool == SurvivalToolType.Pickaxe_Gold && isPickaxe) ||
+                (requiredTool == SurvivalToolType.Shovel_Stone && isShovel) ||
+                (requiredTool == SurvivalToolType.Shovel_Iron && isShovel) ||
+                (requiredTool == SurvivalToolType.Shovel_Gold && isShovel);
+
+            if (!toolMatch)
+            {
+                Debug.Log($"[채집] 적절한 도구가 필요합니다!");
+                return false;
+            }
         }
+
         _hits++;
         Debug.Log($"[채집] {gameObject.name} {_hits}/{maxHits}");
+
         if (_hits >= maxHits)
         {
             Gather();

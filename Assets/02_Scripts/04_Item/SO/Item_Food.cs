@@ -29,8 +29,10 @@ public class Item_Food : Item
         else
         {
             // 인벤토리 없이 직접 먹는 경우 (테스트 등)
-            Debug.Log($"[음식] {itemData.itemName} 섭취!");
-            ApplySurvivalEffects();
+            Debug.Log($"[음식] {itemData.itemName} 섭취");
+            if (itemData.hungerRestore > 0) Debug.Log($"배고픔 +{itemData.hungerRestore}");
+            if (itemData.healthRestore > 0) Debug.Log($"체력 +{itemData.healthRestore}");
+            if (itemData.sanityRestore > 0) Debug.Log($"정신력 +{itemData.sanityRestore}");
         }
     }
 

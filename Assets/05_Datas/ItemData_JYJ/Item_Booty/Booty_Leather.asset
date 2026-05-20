@@ -21,7 +21,7 @@ MonoBehaviour:
   survivalToolType: 0
   combatGearType: 0
   resourceType: 0
-  bootyType: 2
+  bootyType: 5
   foodType: 0
   isStackable: 1
   maxStack: 99
