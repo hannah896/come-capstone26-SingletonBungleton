@@ -44,14 +44,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1908796587553689737}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bb4a5b7c1cf62284d96b46374615bf85, type: 3}
+  m_Script: {fileID: 11500000, guid: 9a48bdb136130994aaafe81874680ac8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemData: {fileID: 11400000, guid: 7e761d3834f7336428fb3e220a2e08b9, type: 2}
-  stackCount: 1
-  combatGearType: 3
-  arrowPrefab: {fileID: 0}
-  firePoint: {fileID: 0}
+  _itemSO: {fileID: 11400000, guid: 7e761d3834f7336428fb3e220a2e08b9, type: 2}
 --- !u!54 &6214074232569020760
 Rigidbody:
   m_ObjectHideFlags: 0

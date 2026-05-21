@@ -92,12 +92,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 196400808065324781}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e2395881dd06b1542ab8131527c9ecc8, type: 3}
+  m_Script: {fileID: 11500000, guid: 9a48bdb136130994aaafe81874680ac8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemData: {fileID: 11400000, guid: d8e11409ce1e71342a2bfc44b7a88dbc, type: 2}
+  _itemSO: {fileID: 11400000, guid: d8e11409ce1e71342a2bfc44b7a88dbc, type: 2}
   stackCount: 99
-  resourceType: 7
 --- !u!1 &947731511383944509
 GameObject:
   m_ObjectHideFlags: 0

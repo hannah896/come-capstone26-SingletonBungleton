@@ -555,13 +555,13 @@ public class PlayerInventory : MonoBehaviour
     private static bool TryGetPickupCandidate(Collider col, out PickupCandidate candidate)
     {
         Item worldItem = col.GetComponentInParent<Item>();
-        if (worldItem != null && worldItem.itemData != null)
+        if (worldItem != null && worldItem.ItemDataSO != null)
         {
             candidate = new PickupCandidate
             {
                 GameObject = worldItem.gameObject,
-                ItemData = worldItem.itemData,
-                Amount = Mathf.Max(1, worldItem.stackCount)
+                ItemData = worldItem.ItemDataSO,
+                Amount = GetWorldItemStackCount(worldItem)
             };
             return true;
         }
@@ -573,8 +573,16 @@ public class PlayerInventory : MonoBehaviour
     private static void ApplyPickupResult(PickupCandidate candidate, int remainingAmount)
     {
         Item worldItem = candidate.GameObject.GetComponent<Item>();
-        if (worldItem != null)
-            worldItem.stackCount = remainingAmount;
+        if (worldItem != null && worldItem.itemData is IStackable stackable)
+            stackable.stackCount = remainingAmount;
+    }
+
+    private static int GetWorldItemStackCount(Item worldItem)
+    {
+        if (worldItem != null && worldItem.itemData is IStackable stackable)
+            return Mathf.Max(1, stackable.stackCount);
+
+        return 1;
     }
 
     private void TryUseEquippedHandTool()

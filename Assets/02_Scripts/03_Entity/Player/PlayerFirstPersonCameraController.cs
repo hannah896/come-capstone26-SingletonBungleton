@@ -43,6 +43,12 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     [SerializeField] private Vector3 torchLocalEuler = new(0f, 0f, -8f);
     [SerializeField] private Vector3 torchLocalScale = new(0.18f, 0.85f, 0.18f);
 
+    [Header("토치 조명")]
+    [SerializeField] private string equippedLightLayerName = "Default";
+    [SerializeField] private float equippedTorchLightIntensity = 3.5f;
+    [SerializeField] private float equippedTorchLightRange = 7f;
+    [SerializeField] private Color equippedTorchLightColor = new(1f, 0.45f, 0.18f, 1f);
+
     private float yaw;
     private float pitch;
     private PlayerInputData inputData;
@@ -55,6 +61,7 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     private Camera toolCamera;
     private Camera stackedBaseCamera;
     private int viewModelLayer = -1;
+    private int equippedLightLayer;
 
 
     private void OnValidate()
@@ -203,6 +210,7 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         ApplyEquippedToolViewTransform(itemData);
         InitializeEquippedTool(itemData);
         ApplyViewModelLayer(equippedToolObject);
+        ConfigureEquippedTorchLight(itemData);
         RemoveToolViewPhysics(equippedToolObject);
         playerInventory?.RegisterEquippedItemInstance(EquipSlot.Hand, equippedToolEquipable);
         equippedToolEquipable?.Equip();
@@ -277,10 +285,11 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     {
         Item item = equippedToolObject.GetComponentInChildren<Item>(true);
         if (item != null)
+        {
             item.Init(itemData);
-
-        equippedToolEquipable = item as IEquipable;
-        if (equippedToolEquipable != null) return;
+            equippedToolEquipable = item.itemData as IEquipable;
+            if (equippedToolEquipable != null) return;
+        }
 
         MonoBehaviour[] behaviours = equippedToolObject.GetComponentsInChildren<MonoBehaviour>(true);
         for (int i = 0; i < behaviours.Length; i++)
@@ -301,6 +310,14 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
             Debug.LogWarning($"[PlayerFirstPersonCameraController] '{viewModelLayerName}' 레이어가 없습니다. ProjectSettings/Tags and Layers에 레이어를 추가해야 도구 전용 렌더링이 동작합니다.");
             return;
         }
+
+        equippedLightLayer = LayerMask.NameToLayer(equippedLightLayerName);
+        if (equippedLightLayer < 0)
+        {
+            Debug.LogWarning($"[PlayerFirstPersonCameraController] '{equippedLightLayerName}' 레이어가 없습니다. 장착 도구 조명은 Default 레이어를 사용합니다.");
+            equippedLightLayer = 0;
+        }
+
         ApplyViewModelLayer(equippedToolObject);
 
         Camera baseCamera = FindCinemachineOutputCamera();
@@ -408,7 +425,32 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
 
         Transform[] children = root.GetComponentsInChildren<Transform>(true);
         for (int i = 0; i < children.Length; i++)
-            children[i].gameObject.layer = viewModelLayer;
+        {
+            GameObject childObject = children[i].gameObject;
+            childObject.layer = childObject.GetComponent<Light>() != null
+                ? equippedLightLayer
+                : viewModelLayer;
+        }
+    }
+
+    private void ConfigureEquippedTorchLight(ItemDataSO itemData)
+    {
+        if (equippedToolObject == null || itemData == null) return;
+        if (itemData.survivalToolType != SurvivalToolType.Torch) return;
+
+        Light[] lights = equippedToolObject.GetComponentsInChildren<Light>(true);
+        for (int i = 0; i < lights.Length; i++)
+        {
+            Light torchLight = lights[i];
+            if (torchLight == null) continue;
+
+            torchLight.enabled = true;
+            torchLight.color = equippedTorchLightColor;
+            torchLight.intensity = Mathf.Max(torchLight.intensity, equippedTorchLightIntensity);
+            torchLight.range = Mathf.Max(torchLight.range, equippedTorchLightRange);
+            torchLight.cullingMask = Physics.AllLayers;
+            torchLight.gameObject.layer = equippedLightLayer;
+        }
     }
 
     private static void RemoveToolViewPhysics(GameObject toolObject)

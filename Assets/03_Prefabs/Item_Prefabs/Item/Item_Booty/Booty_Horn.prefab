@@ -43,13 +43,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 8857888291293560015}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 93de06f7efccc9e428c0c0126284414d, type: 3}
+  m_Script: {fileID: 11500000, guid: 9a48bdb136130994aaafe81874680ac8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemData: {fileID: 11400000, guid: 3dac3d9944fb33b45a908a2340b97911, type: 2}
+  _itemSO: {fileID: 11400000, guid: 3dac3d9944fb33b45a908a2340b97911, type: 2}
   stackCount: 99
-  bootyType: 7
-  sourceMonsterName: 
 --- !u!54 &6540704304214945957
 Rigidbody:
   m_ObjectHideFlags: 0

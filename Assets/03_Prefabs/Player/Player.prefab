@@ -131,9 +131,9 @@ MonoBehaviour:
   pickaxeLocalPosition: {x: -0.07, y: -0.86, z: 2.33}
   pickaxeLocalEuler: {x: 6.952, y: -148.7, z: -5.915}
   pickaxeLocalScale: {x: 7, y: 7, z: 7}
-  torchLocalPosition: {x: -1, y: 0.25, z: 3.2}
-  torchLocalEuler: {x: 0, y: 0, z: -8}
-  torchLocalScale: {x: 0.18, y: 0.85, z: 0.18}
+  torchLocalPosition: {x: -0.8, y: -0.11, z: -1.09}
+  torchLocalEuler: {x: -3.579, y: -30.16, z: 18.332}
+  torchLocalScale: {x: 1, y: 1, z: 1}
 --- !u!114 &3197738375812151440
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -175,7 +175,7 @@ MonoBehaviour:
   slots:
   - {fileID: 11400000, guid: 41909ce6e3bb1334898e2b02f5f26412, type: 2}
   - {fileID: 11400000, guid: ddbbce5581b91654598a8c87aa7a4a0f, type: 2}
-  - {fileID: 11400000, guid: 2214542d16abe6d4f833fe41caa772c0, type: 2}
+  - {fileID: 11400000, guid: 9e6704d5c5132834594962d2ac92fc07, type: 2}
   stackCounts: 
 --- !u!1 &783732110047109408
 GameObject:

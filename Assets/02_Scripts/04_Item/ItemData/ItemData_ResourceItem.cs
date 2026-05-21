@@ -7,7 +7,7 @@ public class ItemData_ResourceItem : ItemData, IStackable
 {
     public int stackMax => data.maxStack;
 
-    public new int stackCount { get; set; } = 1;
+    public int stackCount { get; set; } = 1;
 
     public bool CanStackWith(ItemDataSO otherSO) => stackCount < stackMax && otherSO == data;
 

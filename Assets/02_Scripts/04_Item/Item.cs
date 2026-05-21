@@ -11,6 +11,10 @@ public class Item : MonoBehaviour
     [Tooltip("아이템 원본 데이터 (Inspector에서 SO 연결)")]
     [SerializeField] private ItemDataSO _itemSO;
 
+    [Header("=== 런타임 초기값 ===")]
+    [Tooltip("월드에 놓인 스택형 아이템의 초기 수량")]
+    [SerializeField, Min(1)] private int stackCount = 1;
+
     [System.NonSerialized]
     public ItemData itemData;  // 런타임 전용 — Awake에서 _itemSO 기반으로 생성
 
@@ -32,7 +36,8 @@ public class Item : MonoBehaviour
             return;
         }
 
-        itemData = ItemData.CreateFromSO(_itemSO);
+        stackCount = Mathf.Max(1, stackCount);
+        itemData = ItemData.CreateFromSO(_itemSO, stackCount);
         _createdTime = Time.time;
 
         // 줍기용 콜라이더를 트리거로 설정
@@ -44,7 +49,8 @@ public class Item : MonoBehaviour
     public virtual void Init(ItemDataSO so)
     {
         _itemSO = so;
-        itemData = ItemData.CreateFromSO(so);
+        stackCount = 1;
+        itemData = ItemData.CreateFromSO(so, stackCount);
         _createdTime = Time.time;
     }
 }

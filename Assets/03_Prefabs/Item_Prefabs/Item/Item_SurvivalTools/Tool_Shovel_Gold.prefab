@@ -92,13 +92,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 3590119427674651755}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bcff6d65e41492b4cafbdef308e1e89e, type: 3}
+  m_Script: {fileID: 11500000, guid: 9a48bdb136130994aaafe81874680ac8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemData: {fileID: 11400000, guid: 26d56376cdb92b74f8f3ca5a48b34715, type: 2}
-  stackCount: 1
-  survivalToolType: 12
-  torchLight: {fileID: 0}
+  _itemSO: {fileID: 11400000, guid: 26d56376cdb92b74f8f3ca5a48b34715, type: 2}
 --- !u!1001 &457177236634545151
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -662,3 +662,50 @@
 **검증:** `dotnet build .\Assembly-CSharp.csproj --no-restore` 실행 결과 이번 아이템/인벤토리 변경으로 인한 컴파일 오류는 해소됨. 최종 빌드는 기존 `Firebase.Analytics` 네임스페이스 참조 오류 2건(`LockResolver.cs`, `AnalyticsSDK_Firebase.cs`)으로 실패. `uloop compile`은 현재 PowerShell 세션에서 `uloop` 명령을 찾을 수 없어 실행하지 못함.
 
 **남은 TODO/이슈:** Unity Editor에서 장착 도구 사용 후 내구도가 0이 되는 순간 손 슬롯이 비워지고 장착 프리팹이 제거되는지 PlayMode 확인 필요. 기존 Firebase Analytics 참조 문제 해결 후 전체 빌드 재확인 필요.
+
+### 14. 변경된 런타임 아이템 구조 기준 파손 처리 재연결
+
+**파일:** `Assets/02_Scripts/04_Item/SO/Item_SurvivalTool.cs`, `Assets/02_Scripts/04_Item/SO/Item_CombatGear.cs`, `Assets/02_Scripts/03_Entity/Player/PlayerFirstPersonCameraController.cs`, `Assets/02_Scripts/03_Entity/Player/PlayerInventory.cs`, `Assets/02_Scripts/04_Item/ItemData/ItemData_ResourceItem.cs`, `docs/WorkSummary.md`
+
+- `Item_SurvivalTool`과 `Item_CombatGear`가 변경된 런타임 `ItemData` 구조에서 `IEquipable`의 `OnBroken`, `IsUsable`, `ItemData`를 직접 구현하도록 보정
+- 내구도 사용 로직이 내구도 0 도달 시 `IsUsable = false`를 통해 파손 이벤트를 발행하고, 중복 파손 알림은 방지하도록 정리
+- 1인칭 장착 프리팹 초기화 후 `Item` 컴포넌트가 아니라 `item.itemData as IEquipable` 런타임 인스턴스를 `PlayerInventory`에 등록하도록 변경
+- 월드 아이템 줍기 흐름이 변경된 `Item` 구조에 맞게 `ItemDataSO`와 런타임 `IStackable` 수량을 사용하도록 수정
+- `ItemData_ResourceItem.stackCount`의 불필요한 `new` 키워드를 제거해 현재 `ItemData` 베이스 클래스와 맞춤
+
+**변경 이유:** 유진 작업 이후 장착 가능 동작이 `Item` MonoBehaviour가 아니라 런타임 `ItemData` 인스턴스 쪽에 위치하게 되어, 파손 구독 대상과 내구도 상태 변경 흐름도 실제 장착 인스턴스 기준으로 다시 연결해야 했다.
+
+**검증:** `dotnet build .\Assembly-CSharp.csproj --no-restore` 실행 결과 아이템 파손 처리와 변경된 아이템 구조 관련 컴파일 오류는 해소됨. 전체 빌드는 기존 `Firebase.Analytics` 네임스페이스 참조 오류 2건(`LockResolver.cs`, `AnalyticsSDK_Firebase.cs`)으로 실패. `git diff --check`는 통과했으며 줄바꿈 변환 경고만 확인됨.
+
+**남은 TODO/이슈:** Unity PlayMode에서 장착 도구 내구도가 0이 되는 순간 손 슬롯이 비워지고 장착 프리팹이 제거되는지 확인 필요. 전체 빌드 통과를 위해서는 기존 Firebase Analytics 참조 문제 해결이 별도로 필요.
+
+### 15. 아이템 prefab의 런타임 데이터 컴포넌트 참조 제거
+
+**파일:** `Assets/02_Scripts/04_Item/Item.cs`, `Assets/03_Prefabs/Item_Prefabs/DroppedItem_Base.prefab`, `Assets/03_Prefabs/Item_Prefabs/Item/Item_SurvivalTools/*.prefab`, `Assets/03_Prefabs/Item_Prefabs/Item/Item_CombatGears/*.prefab`, `Assets/03_Prefabs/Item_Prefabs/Item/Item_Resources/*.prefab`, `Assets/03_Prefabs/Item_Prefabs/Item/Item_Booty/*.prefab`, `Assets/03_Prefabs/Item_Prefabs/Item/Item_Food/*.prefab`, `docs/WorkSummary.md`
+
+- `Item_SurvivalTool`, `Item_CombatGear`, `Item_Resource`, `Item_Booty`, `ItemData_Food`, `ItemData_ResourceItem`가 더 이상 `MonoBehaviour`가 아닌 런타임 데이터 클래스이므로, 해당 스크립트 GUID를 물고 있던 아이템 prefab 컴포넌트를 공통 `Item` 컴포넌트로 교체
+- 기존 prefab의 `itemData` 참조는 `Item._itemSO`로 옮겨 `ItemDataSO` 연결을 보존
+- 자원/전리품/음식 prefab의 기존 `stackCount` 값은 공통 `Item`의 직렬화 필드로 보존
+- `Item`이 초기화 시 직렬화된 `stackCount`를 사용해 `ItemData.CreateFromSO(_itemSO, stackCount)`를 호출하도록 수정
+- `DroppedItem_Base.prefab`도 더 이상 런타임 데이터 스크립트를 컴포넌트로 참조하지 않도록 공통 `Item` 컴포넌트로 변경
+
+**변경 이유:** Unity는 prefab의 `MonoBehaviour` 컴포넌트를 복원할 때 참조된 클래스가 `MonoBehaviour`/네이티브 확장 타입이 아니면 `'... is missing the class attribute 'ExtensionOfNativeClass'!'` 오류를 발생시킨다. 유진 작업 이후 아이템 타입별 클래스들이 런타임 데이터 클래스로 바뀌었는데 prefab에는 예전 컴포넌트 참조가 남아 있어 장착 prefab `Instantiate` 시점에 오류가 났다.
+
+**검증:** `rg`로 prefab/scene/asset 안에 예전 런타임 데이터 클래스 GUID가 남아 있지 않음을 확인. `dotnet build .\Assembly-CSharp.csproj --no-restore`는 이번 prefab/Item 변경 관련 오류 없이 진행되었고, 기존 `Firebase.Analytics` 네임스페이스 참조 오류 2건(`LockResolver.cs`, `AnalyticsSDK_Firebase.cs`)으로 최종 실패.
+
+**남은 TODO/이슈:** Unity Editor PlayMode에서 장착 도구 prefab을 다시 생성해 `ExtensionOfNativeClass` 오류가 사라졌는지 확인 필요. 기존 Firebase Analytics 참조 문제는 별도 해결 필요.
+
+### 16. 장착 토치 조명 카메라 표시 보정
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerFirstPersonCameraController.cs`, `docs/WorkSummary.md`
+
+- 장착 도구를 `ViewModel` 레이어로 옮길 때 `Light` 컴포넌트가 붙은 오브젝트는 `Default` 레이어에 남기도록 분리
+- 장착 토치일 때 자식 `Light`를 활성화하고, 색상/강도/range를 플레이어 시야용 최소값으로 보강
+- 토치 조명의 `cullingMask`를 전체 레이어로 열어 월드 오브젝트와 ViewModel 양쪽에 영향을 줄 수 있도록 설정
+- `equippedLightLayerName`, `equippedTorchLightIntensity`, `equippedTorchLightRange`, `equippedTorchLightColor` 직렬화 필드를 추가해 Inspector에서 손전등 느낌을 조절할 수 있게 함
+
+**변경 이유:** 기존 장착 흐름은 토치 prefab 전체를 `ViewModel` 레이어로 바꾸고 기본 카메라에서는 `ViewModel`을 제외했기 때문에, 토치의 실제 `Light`도 월드 카메라 쪽 조명 후보에서 빠질 수 있었다. 또한 prefab 원본 조명 range가 매우 작아 손에 들었을 때 플레이어 시야에서 주변을 밝히는 느낌이 약했다.
+
+**검증:** `dotnet build .\Assembly-CSharp.csproj --no-restore` 실행 결과 이번 토치 조명 변경 관련 컴파일 오류는 없었고, 기존 `Firebase.Analytics` 네임스페이스 참조 오류 2건(`LockResolver.cs`, `AnalyticsSDK_Firebase.cs`)으로 최종 실패.
+
+**남은 TODO/이슈:** Unity PlayMode에서 토치를 장착한 뒤 Game View 기준으로 토치 메시와 주변 월드 조명이 보이는지 직접 확인 필요. 밝기가 과하면 `PlayerFirstPersonCameraController`의 토치 조명 직렬화 값을 조정하면 됨.
