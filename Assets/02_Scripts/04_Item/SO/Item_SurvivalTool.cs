@@ -1,6 +1,12 @@
+using UnityEngine;
+
+/// <summary>
+/// 생존도구 런타임 데이터 클래스
+/// - 도끼, 곡괭이, 망치, 삽, 낚싯대, 횃불
+/// </summary>
 public class Item_SurvivalTool : ItemData, IEquipable
 {
-    public SurvivalToolType survivalToolType = SurvivalToolType.None;
+    public SurvivalToolType survivalToolType;
     private float currentDurability;
 
     private float maxDurability => data.maxDurability;
@@ -9,39 +15,33 @@ public class Item_SurvivalTool : ItemData, IEquipable
 
     private bool _isLit = false;
 
-
-
-    #region 초기화
     public Item_SurvivalTool(ItemDataSO data, int count = 1) : base(data, count)
     {
+        survivalToolType = data.survivalToolType;
         currentDurability = data.maxDurability;
     }
-    #endregion
-
-
 
     #region IEquipable 구현
-    /// <summary>
-    /// 효과음 재생, 불빛 세팅등의 기능 구현
-    /// 스텟적인 적용은 Player에서 해줄것.
-    /// </summary>
     public void Equip()
     {
         if (survivalToolType == SurvivalToolType.Torch)
-            SetTorchLight(true);
+            SetTorchActive(true);
     }
 
     public void Unequip()
     {
         if (survivalToolType == SurvivalToolType.Torch)
-            SetTorchLight(false);
+            SetTorchActive(false);
     }
 
     public void UseDurability()
     {
-        currentDurability -= CostPerDurability;
+        currentDurability -= data.costPerDurability;
         if (currentDurability <= 0)
-            OnToolBroken();
+        {
+            currentDurability = 0;
+            Debug.Log($"[도구] {data.itemName}이(가) 부서졌습니다!");
+        }
     }
 
     public float GetDurabilityPercent()
@@ -51,17 +51,10 @@ public class Item_SurvivalTool : ItemData, IEquipable
     }
     #endregion
 
-    #region 횃불
-    private void SetTorchLight(bool on)
+    private void SetTorchActive(bool on)
     {
         _isLit = on;
-
-        if (torchLight != null)
-            torchLight.enabled = on;
-        else
-            Debug.LogWarning("[횃불] torchLight가 연결되지 않았습니다");
-
+        // 실제 Light 컴포넌트 활성화는 Item MonoBehaviour에서 처리
         Debug.Log($"[횃불] {(on ? "켜짐" : "꺼짐")}");
     }
-    #endregion
 }
