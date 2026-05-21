@@ -1,98 +1,60 @@
-using System;
 using UnityEngine;
 
-public class Item_SurvivalTool : Item, IEquipable
+/// <summary>
+/// 생존도구 런타임 데이터 클래스
+/// - 도끼, 곡괭이, 망치, 삽, 낚싯대, 횃불
+/// </summary>
+public class Item_SurvivalTool : ItemData, IEquipable
 {
-    [Header("=== 생존 도구 전용 ===")]
-    public SurvivalToolType survivalToolType = SurvivalToolType.None;
-
-    [Header("=== 횃불 ===")]
-    [SerializeField] private Light torchLight;
-
+    public SurvivalToolType survivalToolType;
     private float currentDurability;
-    private bool isUsable = true;
 
-    public event Action<IEquipable> OnBroken;
-
-    public ItemDataSO ItemData => itemData;
+    private float maxDurability => data.maxDurability;
     public float CurrentDurability => currentDurability;
-    public float CostPerDurability => itemData != null ? itemData.costPerDurability : 0f;
+    public float CostPerDurability => data.costPerDurability;
 
-    public bool IsUsable
+    private bool _isLit = false;
+
+    public Item_SurvivalTool(ItemDataSO data, int count = 1) : base(data, count)
     {
-        get => isUsable;
-        set
-        {
-            if (isUsable == value) return;
-
-            isUsable = value;
-            if (isUsable) return;
-
-            Unequip();
-            OnBroken?.Invoke(this);
-        }
+        survivalToolType = data.survivalToolType;
+        currentDurability = data.maxDurability;
     }
 
-    protected override void Init()
-    {
-        base.Init();
-        InitializeToolData();
-    }
-
-    public override void Init(ItemDataSO data)
-    {
-        base.Init(data);
-        InitializeToolData();
-    }
-
+    #region IEquipable 구현
     public void Equip()
     {
-        if (!IsUsable) return;
-
         if (survivalToolType == SurvivalToolType.Torch)
-            SetTorchLight(true);
+            SetTorchActive(true);
     }
 
     public void Unequip()
     {
         if (survivalToolType == SurvivalToolType.Torch)
-            SetTorchLight(false);
+            SetTorchActive(false);
     }
 
     public void UseDurability()
     {
-        if (itemData == null || !itemData.hasDurability || !IsUsable) return;
-
-        currentDurability = Mathf.Max(0f, currentDurability - CostPerDurability);
-        if (currentDurability <= 0f)
-            IsUsable = false;
+        currentDurability -= data.costPerDurability;
+        if (currentDurability <= 0)
+        {
+            currentDurability = 0;
+            Debug.Log($"[도구] {data.itemName}이(가) 부서졌습니다!");
+        }
     }
 
     public float GetDurabilityPercent()
     {
-        if (itemData == null || !itemData.hasDurability) return 1f;
-
-        float maxDurability = Mathf.Max(0.001f, itemData.maxDurability);
-        return Mathf.Clamp01(currentDurability / maxDurability);
+        if (!data.hasDurability) return 1f;
+        return currentDurability / maxDurability;
     }
+    #endregion
 
-    private void InitializeToolData()
+    private void SetTorchActive(bool on)
     {
-        if (itemData == null) return;
-
-        survivalToolType = itemData.survivalToolType;
-        currentDurability = itemData.hasDurability ? Mathf.Max(0f, itemData.maxDurability) : 0f;
-        isUsable = !itemData.hasDurability || currentDurability > 0f;
-    }
-
-    private void SetTorchLight(bool on)
-    {
-        if (torchLight != null)
-        {
-            torchLight.enabled = on;
-            return;
-        }
-
-        Debug.LogWarning("[횃불] torchLight가 연결되지 않았습니다");
+        _isLit = on;
+        // 실제 Light 컴포넌트 활성화는 Item MonoBehaviour에서 처리
+        Debug.Log($"[횃불] {(on ? "켜짐" : "꺼짐")}");
     }
 }

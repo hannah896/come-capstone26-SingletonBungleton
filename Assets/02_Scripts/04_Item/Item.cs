@@ -1,47 +1,50 @@
 using UnityEngine;
 
-/// 게임 내 실제 존재하는 아이템 오브젝트의 베이스 클래스
-/// 월드에 존재하는 아이템 프리팹에 붙는 컴포넌트임
-
-[RequireComponent(typeof(Collider))]  // 줍기용 콜라이더 필수
+/// <summary>
+/// 월드에 존재하는 아이템 오브젝트의 베이스 컴포넌트.
+/// Inspector에서 ItemDataSO를 연결하면 Awake 시점에 런타임 데이터(ItemData)를 자동 생성한다.
+/// </summary>
+[RequireComponent(typeof(Collider))]
 public class Item : MonoBehaviour
 {
     [Header("=== 아이템 데이터 ===")]
-    [Tooltip("아이템 원본 데이터 (SO 연결)")]
-    public ItemDataSO itemData;
+    [Tooltip("아이템 원본 데이터 (Inspector에서 SO 연결)")]
+    [SerializeField] private ItemDataSO _itemSO;
 
-    [Min(0)]
-    public int stackCount = 1;
+    [System.NonSerialized]
+    public ItemData itemData;  // 런타임 전용 — Awake에서 _itemSO 기반으로 생성
 
-    public int StackCount { get => stackCount; protected set => stackCount = Mathf.Max(0, value); }
-    public ItemDataSO ItemDataSO { get => itemData; protected set => itemData = value; }
+    /// <summary>SO 참조. itemData가 있으면 거기서, 없으면 _itemSO 직접 반환.</summary>
+    public ItemDataSO ItemDataSO => itemData?.data ?? _itemSO;
 
-    private float _createdTime;  // 생성 시점 (신선도 계산용 - 추후 사용)
+    private float _createdTime;
 
-    #region 초기화
     private void Awake()
     {
         Init();
     }
 
-    /// 프리팹에 SO 연결 (Inspector에서 설정)
     protected virtual void Init()
     {
-        if (itemData == null)
+        if (_itemSO == null)
         {
             Debug.LogWarning($"[Item] {gameObject.name}: ItemDataSO가 연결되지 않았습니다!");
             return;
         }
-        StackCount = 1;
+
+        itemData = ItemData.CreateFromSO(_itemSO);
         _createdTime = Time.time;
+
+        // 줍기용 콜라이더를 트리거로 설정
+        Collider col = GetComponent<Collider>();
+        if (col != null) col.isTrigger = true;
     }
 
-    /// 코드로 동적 생성할 때 데이터를 주입하는 경우에
-    public virtual void Init(ItemDataSO data)
+    /// <summary>코드로 동적 생성할 때 SO를 주입한다.</summary>
+    public virtual void Init(ItemDataSO so)
     {
-        itemData = data;
-        StackCount = 1;
+        _itemSO = so;
+        itemData = ItemData.CreateFromSO(so);
         _createdTime = Time.time;
     }
-    #endregion
 }

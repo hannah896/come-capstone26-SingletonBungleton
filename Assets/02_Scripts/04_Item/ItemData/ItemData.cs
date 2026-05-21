@@ -1,15 +1,33 @@
 /// <summary>
-/// 실제 게임 내에서 런타임의 아이템의 데이터 클래스 
+/// 런타임 아이템 데이터의 추상 베이스 클래스.
+/// ItemDataSO(정적 설정) + 런타임 상태(내구도, 스택 등)를 함께 관리.
 /// </summary>
 [System.Serializable]
 public abstract class ItemData
 {
     public ItemDataSO data;
-    public int stackCount { get; set; }
 
     public ItemData(ItemDataSO data, int count = 1)
     {
         this.data = data;
-        stackCount = count > 0 ? count : 1;
+    }
+
+    /// <summary>
+    /// SO의 ItemType에 맞는 런타임 데이터 객체를 생성한다.
+    /// Item.Awake()와 드롭 시스템에서 사용.
+    /// </summary>
+    public static ItemData CreateFromSO(ItemDataSO so, int count = 1)
+    {
+        if (so == null) return null;
+
+        return so.itemType switch
+        {
+            ItemType.Resource     => new Item_Resource(so, count),
+            ItemType.CombatGear   => new Item_CombatGear(so, count),
+            ItemType.SurvivalTool => new Item_SurvivalTool(so, count),
+            ItemType.Booty        => new Item_Booty(so, count),
+            ItemType.Food         => new ItemData_Food(so, count),
+            _                     => null
+        };
     }
 }

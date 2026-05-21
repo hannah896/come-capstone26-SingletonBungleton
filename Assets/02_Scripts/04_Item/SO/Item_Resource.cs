@@ -1,44 +1,31 @@
 using UnityEngine;
 
 /// <summary>
-/// 자원 아이템 클래스
-/// 나무: 숯, 장작, 나뭇가지, 열매
-/// 광물: 금, 돌, 부싯돌
-/// 풀
+/// 자원 런타임 데이터 클래스
+/// - 나무(숯, 장작, 나뭇가지, 열매), 광물(금, 돌, 부싯돌, 철, 석탄), 풀
 /// </summary>
-
-
-public class Item_Resource : Item
+public class Item_Resource : ItemData, IStackable
 {
-    [Header("=== 자원 전용 속성 ===")]
-    [Tooltip("자원 세부 타입")]
-    public ResourceType resourceType = ResourceType.None;
+    public ResourceType resourceType;
 
-    protected override void Init()
+    public int stackCount { get; set; } = 1;
+    public int stackMax => data.maxStack;
+
+    public bool CanStackWith(ItemDataSO otherSO) => stackCount < stackMax && otherSO == data;
+
+    public Item_Resource(ItemDataSO data, int count = 1) : base(data, count)
     {
-        base.Init();
-        if (itemData == null) return;
+        resourceType = data.resourceType;
+        stackCount = count;
 
-        resourceType = itemData.resourceType;
-
-        if (!itemData.isStackable)
-            Debug.LogWarning($"[자원] {itemData.itemName}: 스택 불가 설정 확인 필요!");
+        if (!data.isStackable)
+            Debug.LogWarning($"[자원] {data.itemName}: 스택 불가 설정 확인 필요!");
     }
 
-    public override void Init(ItemDataSO data)
-    {
-        base.Init(data);
-        resourceType = itemData.resourceType;
-    }
-
-
-    //자원 사용(크래프팅 재료)
     public void UseAsIngredient(int amount)
     {
-        int removed = RemoveStack(amount);
-        Debug.Log($"[자원] {itemData.itemName} {removed}개 소모됨 (남은 수량: {stackCount})");
-
-        if (stackCount <= 0)
-            Destroy(gameObject);
+        IStackable stack = this;
+        int removed = stack.RemoveStack(amount);
+        Debug.Log($"[자원] {data.itemName} {removed}개 소모됨 (남은 수량: {stackCount})");
     }
 }

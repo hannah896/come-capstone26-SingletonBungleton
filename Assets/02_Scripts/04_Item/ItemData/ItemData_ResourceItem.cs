@@ -9,6 +9,8 @@ public class ItemData_ResourceItem : ItemData, IStackable
 
     public new int stackCount { get; set; } = 1;
 
+    public bool CanStackWith(ItemDataSO otherSO) => stackCount < stackMax && otherSO == data;
+
     public ItemData_ResourceItem(ItemDataSO data, int count = 1) : base(data, count)
     {
         stackCount = count > 0 ? count : 1;
