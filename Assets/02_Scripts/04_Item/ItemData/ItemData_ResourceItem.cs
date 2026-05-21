@@ -7,9 +7,10 @@ public class ItemData_ResourceItem : ItemData, IStackable
 {
     public int stackMax => data.maxStack;
 
-    public int stackCount { get; set; } = 1;
+    public new int stackCount { get; set; } = 1;
 
     public ItemData_ResourceItem(ItemDataSO data, int count = 1) : base(data, count)
     {
+        stackCount = count > 0 ? count : 1;
     }
 }

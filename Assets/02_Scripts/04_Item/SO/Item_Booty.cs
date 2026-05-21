@@ -1,14 +1,6 @@
 using UnityEngine;
 
-/// <summary>
-/// 전리품 아이템 클래스
-/// - 생고기
-/// - 가죽
-/// - 깃털
-/// - 뿔
-/// </summary>
-
-public class Item_Booty : ItemData
+public class Item_Booty : Item
 {
     [Header("=== 전리품 전용 속성 ===")]
     [Tooltip("전리품 세부 타입")]

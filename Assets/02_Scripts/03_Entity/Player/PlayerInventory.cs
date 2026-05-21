@@ -21,9 +21,10 @@ public class PlayerInventory : MonoBehaviour
     [SerializeField] private float defaultToolUseRange = 2.5f;
     [SerializeField] private LayerMask toolUseLayer = ~0;
 
-    [SerializeField] private List<ItemData> slots = new();
+    [SerializeField] private List<ItemDataSO> slots = new();
     [SerializeField] private List<int> stackCounts = new();
 
+    private readonly Dictionary<EquipSlot, IEquipable> equippedItemInstances = new();
     private readonly Collider[] pickupBuffer = new Collider[16];
     private PlayerInputData inputData;
     private int selectedSlotIndex;
@@ -37,16 +38,16 @@ public class PlayerInventory : MonoBehaviour
 
     public event Action OnInventoryChanged;
     public event Action<int> OnSelectedSlotChanged;
-    public event Action<EquipSlot, ItemData> OnEquippedItemChanged;
+    public event Action<EquipSlot, ItemDataSO> OnEquippedItemChanged;
 
-    public IReadOnlyList<ItemData> Slots => slots;
+    public IReadOnlyList<ItemDataSO> Slots => slots;
     public IReadOnlyList<int> StackCounts => stackCounts;
     public int SlotCount => slotCount;
     public int QuickSlotCount => GetQuickSlotCount();
     public int SelectedSlotIndex => selectedSlotIndex;
-    public ItemData EquippedHead { get; private set; }
-    public ItemData EquippedChest { get; private set; }
-    public ItemData EquippedHand { get; private set; }
+    public ItemDataSO EquippedHead { get; private set; }
+    public ItemDataSO EquippedChest { get; private set; }
+    public ItemDataSO EquippedHand { get; private set; }
 
     private void Awake()
     {
@@ -57,6 +58,11 @@ public class PlayerInventory : MonoBehaviour
     {
         inputData = data;
         InitializeSlots();
+    }
+
+    private void OnDestroy()
+    {
+        ClearEquippedItemInstances();
     }
 
     public void Tick()
@@ -272,6 +278,32 @@ public class PlayerInventory : MonoBehaviour
         return true;
     }
 
+    public void RegisterEquippedItemInstance(EquipSlot equipSlot, IEquipable equipable)
+    {
+        if (equipSlot == EquipSlot.None) return;
+
+        UnsubscribeEquippedItemInstance(equipSlot);
+
+        if (equipable == null) return;
+
+        equippedItemInstances[equipSlot] = equipable;
+        equipable.OnBroken += OnEquippedItemBroken;
+    }
+
+    public void UnregisterEquippedItemInstance(EquipSlot equipSlot, IEquipable equipable)
+    {
+        if (equipSlot == EquipSlot.None) return;
+        if (!equippedItemInstances.TryGetValue(equipSlot, out IEquipable current)) return;
+        if (current != equipable) return;
+
+        UnsubscribeEquippedItemInstance(equipSlot);
+    }
+
+    public IEquipable GetEquippedItemInstance(EquipSlot equipSlot)
+    {
+        return equippedItemInstances.TryGetValue(equipSlot, out IEquipable equipable) ? equipable : null;
+    }
+
     // 헬퍼 추가
     private bool CanStackItem(ItemDataSO itemData)
     {
@@ -425,6 +457,9 @@ public class PlayerInventory : MonoBehaviour
 
     private void SetEquippedItem(EquipSlot equipSlot, ItemDataSO itemData)
     {
+        if (itemData == null)
+            UnsubscribeEquippedItemInstance(equipSlot);
+
         switch (equipSlot)
         {
             case EquipSlot.Head:
@@ -439,6 +474,43 @@ public class PlayerInventory : MonoBehaviour
         }
 
         OnEquippedItemChanged?.Invoke(equipSlot, itemData);
+    }
+
+    private void OnEquippedItemBroken(IEquipable brokenItem)
+    {
+        if (brokenItem == null) return;
+
+        EquipSlot brokenSlot = EquipSlot.None;
+        foreach (KeyValuePair<EquipSlot, IEquipable> pair in equippedItemInstances)
+        {
+            if (pair.Value != brokenItem) continue;
+
+            brokenSlot = pair.Key;
+            break;
+        }
+
+        if (brokenSlot == EquipSlot.None) return;
+
+        UnsubscribeEquippedItemInstance(brokenSlot);
+        ClearEquippedItem(brokenSlot, brokenItem.ItemData);
+    }
+
+    private void UnsubscribeEquippedItemInstance(EquipSlot equipSlot)
+    {
+        if (!equippedItemInstances.TryGetValue(equipSlot, out IEquipable equipable))
+            return;
+
+        equipable.OnBroken -= OnEquippedItemBroken;
+        equippedItemInstances.Remove(equipSlot);
+    }
+
+    private void ClearEquippedItemInstances()
+    {
+        if (equippedItemInstances.Count <= 0) return;
+
+        List<EquipSlot> slotsToClear = new(equippedItemInstances.Keys);
+        for (int i = 0; i < slotsToClear.Count; i++)
+            UnsubscribeEquippedItemInstance(slotsToClear[i]);
     }
 
 
@@ -482,26 +554,14 @@ public class PlayerInventory : MonoBehaviour
 
     private static bool TryGetPickupCandidate(Collider col, out PickupCandidate candidate)
     {
-        ItemData_ResourceItem droppedItem = col.GetComponentInParent<ItemData_ResourceItem>();
-        //if (droppedItem != null && droppedItem.itemData != null)
-        //{
-        //    candidate = new PickupCandidate
-        //    {
-        //        GameObject = droppedItem.gameObject,
-        //        ItemData = droppedItem.itemData,
-        //        Amount = Mathf.Max(1, droppedItem.amount)
-        //    };
-        //    return true;
-        //}
-
-        ItemData item = col.GetComponentInParent<ItemData>();
-        if (item != null && item.itemData != null)
+        Item worldItem = col.GetComponentInParent<Item>();
+        if (worldItem != null && worldItem.itemData != null)
         {
             candidate = new PickupCandidate
             {
-                GameObject = item.gameObject,
-                ItemData = item.itemData,
-                Amount = Mathf.Max(1, item.stackCount)
+                GameObject = worldItem.gameObject,
+                ItemData = worldItem.itemData,
+                Amount = Mathf.Max(1, worldItem.stackCount)
             };
             return true;
         }
@@ -512,16 +572,9 @@ public class PlayerInventory : MonoBehaviour
 
     private static void ApplyPickupResult(PickupCandidate candidate, int remainingAmount)
     {
-        ItemData_ResourceItem droppedItem = candidate.GameObject.GetComponent<ItemData_ResourceItem>();
-        if (droppedItem != null)
-        {
-            //droppedItem.amount = remainingAmount;
-            return;
-        }
-
-        ItemData item = candidate.GameObject.GetComponent<ItemData>();
-        if (item != null)
-            item.stackCount = remainingAmount;
+        Item worldItem = candidate.GameObject.GetComponent<Item>();
+        if (worldItem != null)
+            worldItem.stackCount = remainingAmount;
     }
 
     private void TryUseEquippedHandTool()
@@ -530,7 +583,10 @@ public class PlayerInventory : MonoBehaviour
         if (handItem == null || handItem.itemType != ItemType.SurvivalTool)
             return;
 
-        SurvivalToolType toolType = handItem.survivalToolType;
+        IEquipable handTool = GetEquippedItemInstance(EquipSlot.Hand);
+        if (handTool != null && !handTool.IsUsable)
+            return;
+
         float range = Mathf.Max(defaultToolUseRange, handItem.attackRange);
 
         if (!TryRaycastToolTarget(range, out RaycastHit hit))
@@ -539,6 +595,14 @@ public class PlayerInventory : MonoBehaviour
         ResourceNode node = hit.collider.GetComponentInParent<ResourceNode>();
         if (node == null)
             return;
+
+        int damage = Mathf.Max(1, Mathf.RoundToInt(handItem.attackDamage));
+        var damageContext = new DamageContext(gameObject, hit.point, damage, handItem.itemID);
+        if (!node.CanDamage(damageContext))
+            return;
+
+        node.ApplyDamage(damageContext);
+        handTool?.UseDurability();
 
         //TODO: 도구 타입에 따른 상호작용 분기 (예: 나무에는 도끼, 돌에는 곡괭이 등)
     }

@@ -15,9 +15,6 @@ public interface IEatable
     public ItemDataSO Status { get; set; }
 }
 
-/// <summary>
-/// 요리 전용 아이템 클래스
-/// </summary>
 public class ItemData_Food : ItemData, IEatable
 {
     public FoodType id;

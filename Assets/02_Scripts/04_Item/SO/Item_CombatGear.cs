@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 /// <summary>
@@ -10,7 +11,7 @@ using UnityEngine;
 /// - 방패
 /// </summary>
 
-public class Item_CombatGear : ItemData, IEquipable
+public class Item_CombatGear : Item, IEquipable
 {
     [Header("=== 전투장비 전용 ===")]
     [Tooltip("전투도구 세부 타입")]
@@ -18,10 +19,31 @@ public class Item_CombatGear : ItemData, IEquipable
 
     // 내구도
     private int _currentDurability;
-    public int CurrentDurability
+    private bool isUsable = true;
+
+    public event Action<IEquipable> OnBroken;
+
+    public ItemDataSO ItemData => itemData;
+
+    public float CurrentDurability
     {
         get => _currentDurability;
-        set => _currentDurability = Mathf.Clamp(value, 0, (int)itemData.maxDurability);
+        private set => _currentDurability = Mathf.Clamp(Mathf.RoundToInt(value), 0, GetMaxDurability());
+    }
+
+    public bool IsUsable
+    {
+        get => isUsable;
+        set
+        {
+            if (isUsable == value) return;
+
+            isUsable = value;
+            if (isUsable) return;
+
+            Unequip();
+            OnBroken?.Invoke(this);
+        }
     }
 
     [Header("=== 활 전용 ===")]
@@ -38,6 +60,7 @@ public class Item_CombatGear : ItemData, IEquipable
         if (itemData == null) return;
         if (itemData.hasDurability)
             _currentDurability = (int)itemData.maxDurability;
+        isUsable = !itemData.hasDurability || _currentDurability > 0;
         combatGearType = itemData.combatGearType;
     }
 
@@ -46,6 +69,7 @@ public class Item_CombatGear : ItemData, IEquipable
         base.Init(data);
         if (itemData.hasDurability)
             _currentDurability = (int)itemData.maxDurability;
+        isUsable = !itemData.hasDurability || _currentDurability > 0;
 
         combatGearType = itemData.combatGearType;
     }
@@ -68,28 +92,34 @@ public class Item_CombatGear : ItemData, IEquipable
         // TODO: PlayerStats에서 스탯 제거
     }
 
-    public void UseDurability(int amount = 1)
+    public void UseDurability()
     {
-        if (!itemData.hasDurability) return;
+        UseDurability(1);
+    }
+
+    public void UseDurability(int amount)
+    {
+        if (itemData == null || !itemData.hasDurability || !IsUsable) return;
 
         _currentDurability = Mathf.Max(0, _currentDurability - amount);
         Debug.Log($"[장비] 내구도 {_currentDurability}/{itemData.maxDurability}");
 
         if (_currentDurability <= 0)
-            OnGearBroken();
+            IsUsable = false;
     }
 
     public void Repair(int amount)
     {
-        if (!itemData.hasDurability) return;
+        if (itemData == null || !itemData.hasDurability) return;
 
-        _currentDurability = Mathf.Min(_currentDurability + amount, (int)itemData.maxDurability);
+        _currentDurability = Mathf.Min(_currentDurability + amount, GetMaxDurability());
+        isUsable = _currentDurability > 0;
         Debug.Log($"[장비] {itemData.itemName} 수리! ({_currentDurability}/{itemData.maxDurability})");
     }
 
     public float GetDurabilityPercent()
     {
-        if (!itemData.hasDurability) return 1f;
+        if (itemData == null || !itemData.hasDurability) return 1f;
         return (float)_currentDurability / itemData.maxDurability;
     }
     #endregion
@@ -167,29 +197,8 @@ public class Item_CombatGear : ItemData, IEquipable
 
     public bool CanAttack()
     {
-        if (itemData.hasDurability && _currentDurability <= 0) return false;
-        return true;
-    }
-    #endregion
-
-
-
-    #region 내부 이벤트
-    private void OnGearBroken()
-    {
-        Debug.Log($"[장비] {itemData.itemName}이(가) 부서졌습니다!");
-        Unequip();
-
-        //var inv = InventoryManager.Instance;
-        //if (inv != null)
-        //{
-        //    if (inv.equippedHand?.data == itemData)     inv.UnequipAndDiscard(EquipSlot.Hand);
-        //    else if (inv.equippedHead?.data == itemData) inv.UnequipAndDiscard(EquipSlot.Head);
-        //    else if (inv.equippedChest?.data == itemData) inv.UnequipAndDiscard(EquipSlot.Chest);
-        //    else inv.RemoveItem(itemData, 1);
-        //}
-
-        Destroy(gameObject);
+        if (itemData != null && itemData.hasDurability && _currentDurability <= 0) return false;
+        return IsUsable;
     }
     #endregion
 
@@ -203,5 +212,10 @@ public class Item_CombatGear : ItemData, IEquipable
         if (itemData.hasDurability)
             info += $" [내구도: {_currentDurability}/{itemData.maxDurability}]";
         return info;
+    }
+
+    private int GetMaxDurability()
+    {
+        return itemData != null ? Mathf.Max(0, Mathf.RoundToInt(itemData.maxDurability)) : 0;
     }
 }

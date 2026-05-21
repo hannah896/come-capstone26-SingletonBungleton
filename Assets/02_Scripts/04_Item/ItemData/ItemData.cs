@@ -5,9 +5,11 @@
 public abstract class ItemData
 {
     public ItemDataSO data;
+    public int stackCount { get; set; }
 
     public ItemData(ItemDataSO data, int count = 1)
     {
         this.data = data;
+        stackCount = count > 0 ? count : 1;
     }
 }

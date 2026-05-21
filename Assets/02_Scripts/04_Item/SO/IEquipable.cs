@@ -1,10 +1,16 @@
-// 내구도를 가지는 아이템에 사용(무기, 도구)
+using System;
+
+// 무기와 도구처럼 장착 가능한 아이템에 사용합니다.
 public interface IEquipable
 {
-    public float CurrentDurability { get; }  // 현재 내구도
-    public float GetDurabilityPercent();    // 내구도 퍼센트
+    event Action<IEquipable> OnBroken;
 
-    public void Equip();                      // 장착
-    public void Unequip();                   // 해제
-    public void UseDurability();            // 내구도 감소
+    ItemDataSO ItemData { get; }
+    float CurrentDurability { get; }
+    bool IsUsable { get; set; }
+
+    float GetDurabilityPercent();
+    void Equip();
+    void Unequip();
+    void UseDurability();
 }

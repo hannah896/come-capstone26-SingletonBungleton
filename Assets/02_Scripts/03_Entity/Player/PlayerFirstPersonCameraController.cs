@@ -204,6 +204,7 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         InitializeEquippedTool(itemData);
         ApplyViewModelLayer(equippedToolObject);
         RemoveToolViewPhysics(equippedToolObject);
+        playerInventory?.RegisterEquippedItemInstance(EquipSlot.Hand, equippedToolEquipable);
         equippedToolEquipable?.Equip();
     }
 
@@ -259,8 +260,12 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
 
     private void ClearEquippedToolView()
     {
-        equippedToolEquipable?.Unequip();
-        equippedToolEquipable = null;
+        if (equippedToolEquipable != null)
+        {
+            equippedToolEquipable.Unequip();
+            playerInventory?.UnregisterEquippedItemInstance(EquipSlot.Hand, equippedToolEquipable);
+            equippedToolEquipable = null;
+        }
 
         if (equippedToolObject == null) return;
 
@@ -270,7 +275,7 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
 
     private void InitializeEquippedTool(ItemDataSO itemData)
     {
-        ItemData item = equippedToolObject.GetComponentInChildren<ItemData>(true);
+        Item item = equippedToolObject.GetComponentInChildren<Item>(true);
         if (item != null)
             item.Init(itemData);
 

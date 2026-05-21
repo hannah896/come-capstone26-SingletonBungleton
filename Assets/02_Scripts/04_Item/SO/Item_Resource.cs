@@ -8,7 +8,7 @@ using UnityEngine;
 /// </summary>
 
 
-public class Item_Resource : ItemData
+public class Item_Resource : Item
 {
     [Header("=== 자원 전용 속성 ===")]
     [Tooltip("자원 세부 타입")]

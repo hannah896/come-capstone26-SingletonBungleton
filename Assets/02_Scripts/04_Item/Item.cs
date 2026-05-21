@@ -8,10 +8,13 @@ public class Item : MonoBehaviour
 {
     [Header("=== 아이템 데이터 ===")]
     [Tooltip("아이템 원본 데이터 (SO 연결)")]
-    public ItemData itemData;
+    public ItemDataSO itemData;
 
-    public int StackCount { get => itemData.stackCount; protected set => itemData.stackCount = value; }
-    public ItemDataSO ItemDataSO { get => itemData.data; protected set => itemData.data = value; }
+    [Min(0)]
+    public int stackCount = 1;
+
+    public int StackCount { get => stackCount; protected set => stackCount = Mathf.Max(0, value); }
+    public ItemDataSO ItemDataSO { get => itemData; protected set => itemData = value; }
 
     private float _createdTime;  // 생성 시점 (신선도 계산용 - 추후 사용)
 
@@ -36,7 +39,7 @@ public class Item : MonoBehaviour
     /// 코드로 동적 생성할 때 데이터를 주입하는 경우에
     public virtual void Init(ItemDataSO data)
     {
-        ItemDataSO = data;
+        itemData = data;
         StackCount = 1;
         _createdTime = Time.time;
     }

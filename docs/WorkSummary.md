@@ -630,6 +630,7 @@
 **검증:** `rg`로 `InventoryToggle`, `InventoryTogglePressed`, `OnInventoryOpenChanged`, `IsOpen`, `Toggle()` 참조가 남지 않았음을 확인. `Assets/InputSystem_Actions.inputactions`는 PowerShell `ConvertFrom-Json` 파싱을 통과했고, `git diff --check`도 통과.
 
 **남은 TODO/이슈:** Unity 컴파일 및 PlayMode에서 하단 인벤토리가 항상 표시되는지 최종 확인 필요.
+
 ### 12. Player HUD Inventory Binding 복구
 
 **파일:** `Assets/02_Scripts/01_UI/Player/UI_Hud_Player.cs`, `Assets/02_Scripts/01_UI/Player/Inventory/UI_Panel_PlayerInventory.cs`, `Assets/02_Scripts/@Scripts/UI/Components/Player/UI_Panel_PlayerStatus.cs`, `docs/WorkSummary.md`
@@ -644,3 +645,20 @@
 **검증:** `git diff --check` 통과. 아이템 데이터 확인 결과 `Tool_Axe`, `Tool_Pickaxe`, `Tool_Torch`만 icon이 할당되어 있고, 다수의 ItemData asset은 `icon: {fileID: 0}`으로 비어 있음을 확인.
 
 **남은 TODO/이슈:** Unity 컴파일 및 PlayMode에서 실제 아이템 획득 후 아이콘이 표시되는지 확인 필요. icon 필드가 비어 있는 아이템들은 코드가 정상이어도 아이콘이 표시되지 않으므로 데이터 할당 필요.
+
+### 13. 장착 도구 내구도 파손 및 구독 관리 연결
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerInventory.cs`, `Assets/02_Scripts/03_Entity/Player/PlayerFirstPersonCameraController.cs`, `Assets/02_Scripts/04_Item/Item.cs`, `Assets/02_Scripts/04_Item/ItemData/ItemData.cs`, `Assets/02_Scripts/04_Item/ItemData/ItemData_ResourceItem.cs`, `Assets/02_Scripts/04_Item/SO/IEquipable.cs`, `Assets/02_Scripts/04_Item/SO/Item_SurvivalTool.cs`, `Assets/02_Scripts/04_Item/SO/Item_CombatGear.cs`, `Assets/02_Scripts/04_Item/SO/Item_Resource.cs`, `Assets/02_Scripts/04_Item/SO/Item_Booty.cs`, `docs/WorkSummary.md`
+
+- `IEquipable`에 `IsUsable` bool 프로퍼티와 `OnBroken` 이벤트를 추가해, 내구도 0 도달 시 아이템이 직접 `IsUsable = false`로 파손 상태를 발행하도록 변경
+- `Item_SurvivalTool`과 `Item_CombatGear`가 내구도 감소 후 파손 상태만 알리고, 실제 장착 슬롯 제거와 장착 프리팹 정리는 플레이어 쪽 흐름에서 처리되도록 변경
+- `PlayerFirstPersonCameraController`가 기존 `PlayerInventory.OnEquippedItemChanged` 이벤트 체인에서 장착 프리팹을 생성한 뒤 실제 `IEquipable` 인스턴스를 `PlayerInventory`에 등록하고, 해제 시 등록을 풀도록 연결
+- `PlayerInventory`가 장착 인스턴스의 `OnBroken`을 구독/해제하고, 파손 이벤트를 받으면 해당 장착 슬롯을 반환 없이 비워 인벤토리/UI/장착 뷰가 함께 갱신되도록 구현
+- 도구 사용 레이캐스트가 자원 노드에 데미지를 적용한 뒤 장착 도구의 내구도를 감소시키도록 연결
+- 인벤토리 슬롯과 월드 아이템 흐름이 `ItemDataSO` 기준으로 맞도록 `Item` 및 아이템 파생 컴포넌트의 상속 관계를 정리
+
+**변경 이유:** 장착 프리팹의 내구도 파손을 아이템 내부 `Destroy()`로 처리하면 플레이어 인벤토리의 장착 상태, UI, 1인칭 장착 뷰가 서로 어긋날 수 있어, 아이템은 파손 상태만 알리고 플레이어 인벤토리가 장착 해제/파괴 흐름을 책임지게 하기 위함.
+
+**검증:** `dotnet build .\Assembly-CSharp.csproj --no-restore` 실행 결과 이번 아이템/인벤토리 변경으로 인한 컴파일 오류는 해소됨. 최종 빌드는 기존 `Firebase.Analytics` 네임스페이스 참조 오류 2건(`LockResolver.cs`, `AnalyticsSDK_Firebase.cs`)으로 실패. `uloop compile`은 현재 PowerShell 세션에서 `uloop` 명령을 찾을 수 없어 실행하지 못함.
+
+**남은 TODO/이슈:** Unity Editor에서 장착 도구 사용 후 내구도가 0이 되는 순간 손 슬롯이 비워지고 장착 프리팹이 제거되는지 PlayMode 확인 필요. 기존 Firebase Analytics 참조 문제 해결 후 전체 빌드 재확인 필요.
