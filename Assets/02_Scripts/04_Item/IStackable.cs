@@ -1,29 +1,26 @@
 using UnityEngine;
 
 /// <summary>
-/// 스텍을 쌓을 수 있는 아이템 타입이 상속받는 인터페이스
+/// 스택(겹치기)이 가능한 아이템에 구현하는 인터페이스.
+/// AddStack / RemoveStack 은 기본 구현 제공.
+/// CanStackWith 는 각 구현 클래스에서 SO 동일 여부까지 추가 체크해야 한다.
 /// </summary>
 public interface IStackable
 {
-    public int stackCount { get; set; }
-    public int stackMax { get; }
+    int stackCount { get; set; }
+    int stackMax { get; }
 
     /// <summary>
-    /// 스텍합칠수 있는지 여부
+    /// 이 슬롯에 otherSO 아이템을 합칠 수 있는지 확인.
+    /// 기본 구현은 공간만 확인 — 서브클래스에서 SO 동일 여부도 함께 체크할 것.
     /// </summary>
-    /// <param name="other"></param>
-    /// <returns></returns>
-    public bool CanStackWith(ItemData other)
+    bool CanStackWith(ItemDataSO otherSO)
     {
         return stackCount < stackMax;
     }
 
-    /// <summary>
-    /// 스텍 합치기  - 반환값: 실제로 추가하지 못한 수량 (초과분)
-    /// </summary>
-    /// <param name="amount"></param>
-    /// <returns></returns>
-    public int AddStack(int amount)
+    /// <summary>스택 추가. 반환값: 추가하지 못한 초과 수량.</summary>
+    int AddStack(int amount)
     {
         int space = stackMax - stackCount;
         int toAdd = Mathf.Min(amount, space);
@@ -31,12 +28,8 @@ public interface IStackable
         return amount - toAdd;
     }
 
-    /// <summary>
-    /// 스텍 없애기 - 반환값: 실제로 제거된 수량
-    /// </summary>
-    /// <param name="amount"></param>
-    /// <returns></returns>
-    public int RemoveStack(int amount)
+    /// <summary>스택 제거. 반환값: 실제로 제거된 수량.</summary>
+    int RemoveStack(int amount)
     {
         int toRemove = Mathf.Min(amount, stackCount);
         stackCount -= toRemove;

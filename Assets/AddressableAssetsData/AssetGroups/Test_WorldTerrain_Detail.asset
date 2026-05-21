@@ -15,16 +15,6 @@ MonoBehaviour:
   m_GroupName: Test_WorldTerrain_Detail
   m_GUID: bc675eaa7d79f694cb92f0a9db314359
   m_SerializeEntries:
-  - m_GUID: 0763e557dfa7dc54798bfd19e2fcb0e4
-    m_Address: Deco_Bush_2
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 49006efed6d227140b66b66c7882ffae
-    m_Address: Deco_Stones_2
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 73676df1854699745a2c3ab02c6e2af8
     m_Address: Detail_Grass_1
     m_ReadOnly: 0
@@ -35,33 +25,8 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 778fc0a01aa9b9f4d984c6b06902066a
-    m_Address: Deco_Stones_1
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: a950df02de1de014f861c91fe1ec0a2a
-    m_Address: Deco_Flowers_2
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: ba76f0562dc2eac41970e644533beab9
-    m_Address: Deco_Bush_3
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: bce76d7ea0197324ab70fe099b50a5cd
     m_Address: Water
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: d350eb392248fd048a2c03fb449f79c5
-    m_Address: Deco_Flowers_1
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: e3d69b0fca7ac7342a49b39bb048c811
-    m_Address: Deco_Bush_1
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
