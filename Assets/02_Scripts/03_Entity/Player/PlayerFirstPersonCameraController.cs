@@ -70,6 +70,17 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     }
 
     /// <summary>
+    /// 원격 플레이어용 — 몸체 렌더러만 초기화한다 (입력/카메라 바인딩 없음)
+    /// </summary>
+    public void InitBodyRenderers(Transform body)
+    {
+        if (body == null) return;
+        playerBody = body;
+        CacheBodyRenderers();
+        ApplyBodyVisibility();
+    }
+
+    /// <summary>
     /// Player.Start()에서 호출 — 입력 데이터와 몸체 Transform 바인딩
     /// </summary>
     public void Bind(PlayerInputData data, Transform body)
@@ -102,7 +113,7 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         if (playerInventory == null) return;
 
         playerInventory.OnEquippedItemChanged += OnEquippedItemChanged;
-        PlaceEquippedToolUnderPivot(playerInventory.EquippedHand);
+        PlaceEquippedToolUnderPivot(playerInventory.EquippedHand).Forget();
     }
 
     /// <summary>
@@ -196,17 +207,24 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     private void OnEquippedItemChanged(EquipSlot slot, ItemDataSO itemData)
     {
         if (slot != EquipSlot.Hand) return;
-        PlaceEquippedToolUnderPivot(itemData);
+        PlaceEquippedToolUnderPivot(itemData).Forget();
     }
 
-    private void PlaceEquippedToolUnderPivot(ItemDataSO itemData)
+    // 아이템 프리팹은 Addressables에 ItemDataSO 파일명(itemData.name)을 키로 등록해야 합니다.
+    private async UniTaskVoid PlaceEquippedToolUnderPivot(ItemDataSO itemData)
     {
         ClearEquippedToolView();
 
-        if (toolPivot == null || itemData == null || itemData.prefab == null)
+        if (toolPivot == null || itemData == null)
             return;
 
-        equippedToolObject = Instantiate(itemData.prefab, toolPivot, false);
+        var token = this.GetCancellationTokenOnDestroy();
+        var spawned = await Extensions.SpawnAsync(itemData.name, toolPivot)
+            .AttachExternalCancellation(token);
+
+        if (spawned == null) return;
+
+        equippedToolObject = spawned;
         ApplyEquippedToolViewTransform(itemData);
         InitializeEquippedTool(itemData);
         ApplyViewModelLayer(equippedToolObject);
@@ -277,7 +295,7 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
 
         if (equippedToolObject == null) return;
 
-        Destroy(equippedToolObject);
+        Extensions.Despawn(equippedToolObject);
         equippedToolObject = null;
     }
 

@@ -98,7 +98,7 @@ public class PlayerMotor : MonoBehaviour
     /// <summary>
     /// 이동 방향으로 부드럽게 회전
     /// </summary>
-    public void RotateToward(Vector3 dir, float rotSpeed, float dt)
+    public void RotateToward(Vector3 dir, float rotSpeed)
     {
         pendingRotationDir = dir;
         pendingRotationSpeed = rotSpeed;

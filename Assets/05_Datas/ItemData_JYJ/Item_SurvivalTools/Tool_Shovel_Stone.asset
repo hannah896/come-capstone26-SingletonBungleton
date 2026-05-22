@@ -15,7 +15,7 @@ MonoBehaviour:
   itemID: Shovel_Stone
   itemName: "\uB3CC\uC0BD"
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: ae2cda20af6bece4db18399c04d94f20, type: 3}
   prefab: {fileID: 3590119427674651755, guid: ce0c6b70ac067d646a1d98d9286854ef, type: 3}
   itemType: 0
   survivalToolType: 10
@@ -28,9 +28,10 @@ MonoBehaviour:
   equipSlot: 3
   hasDurability: 1
   maxDurability: 50
+  costPerDurability: 1
   attackDamage: 0
   attackRange: 0
   defense: 0
   hungerRestore: 0
   healthRestore: 0
-  sanityRestore: 0
+  egoRestore: 0

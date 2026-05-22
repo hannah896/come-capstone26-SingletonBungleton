@@ -15,7 +15,7 @@ MonoBehaviour:
   itemID: Pickaxe_Gold
   itemName: "\uAE08\uB3C4\uB07C"
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d1647b5f156131a419b1ccf269bf7358, type: 3}
   prefab: {fileID: 3590119427674651755, guid: c4d5c9e3be52a0e4296a1f2a9d7661a4, type: 3}
   itemType: 0
   survivalToolType: 6
@@ -28,9 +28,10 @@ MonoBehaviour:
   equipSlot: 3
   hasDurability: 1
   maxDurability: 150
+  costPerDurability: 1
   attackDamage: 0
   attackRange: 0
   defense: 0
   hungerRestore: 0
   healthRestore: 0
-  sanityRestore: 0
+  egoRestore: 0

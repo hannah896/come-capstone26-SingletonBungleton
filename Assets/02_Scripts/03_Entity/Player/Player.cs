@@ -1,6 +1,6 @@
+using Cysharp.Threading.Tasks;
 using Fusion;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class Player : MonoBehaviour
 {
@@ -51,11 +51,11 @@ public class Player : MonoBehaviour
 
     private void OnValidate()
     {
-        if (animator == null) 
+        if (animator == null)
             animator = GetComponentInChildren<Animator>();
         if (motor == null)
             motor = GetComponent<PlayerMotor>();
-        if (playerTracer == null)  
+        if (playerTracer == null)
             playerTracer = GetComponent<PlayerTracer>();
         if (playerInventory == null)
             playerInventory = GetComponent<PlayerInventory>();
@@ -63,26 +63,34 @@ public class Player : MonoBehaviour
 
     private async void Awake()
     {
+        var token = this.GetCancellationTokenOnDestroy();
+
         // machine과 inputData는 동기적으로 먼저 생성 (Start()가 await 복귀 전에 실행될 수 있으므로)
         inputData = new PlayerInputData();
         machine = new PlayerRootStateMachine(this, animator);
         if (playerInventory == null)
             playerInventory = Extensions.GetOrAddComponent<PlayerInventory>(gameObject);
 
-        var _statData = await Extensions.LoadAssetAsync<PlayerStatData>("PlayerStatData");
-        stat = new(_statData);
-        
+        var statData = await Extensions.LoadAssetAsync<PlayerStatData>("PlayerStatData")
+            .AttachExternalCancellation(token);
+        stat = new(statData);
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[Player] Initialized - Motor: " + (motor != null) + ", Animator: " + (animator != null));
 #endif
     }
+
     private async void Start()
     {
+        var token = this.GetCancellationTokenOnDestroy();
+
         bool isLocalPlayer = IsLocalPlayerObject();
         fpCameraController?.SetLocalView(isLocalPlayer);
 
         if (!isLocalPlayer)
         {
+            // 원격 플레이어도 몸체 렌더러 초기화 필요 (그림자/가시성 설정 적용을 위해)
+            fpCameraController?.InitBodyRenderers(transform);
             var remoteLocomotionState = new PlayerLocomotionState(machine);
             machine.Init(remoteLocomotionState);
             return;
@@ -90,9 +98,7 @@ public class Player : MonoBehaviour
 
         // InputManager 초기화 완료 대기
         while (!Main.Input.IsInitialized)
-        {
-            await Cysharp.Threading.Tasks.UniTask.Delay(10);
-        }
+            await UniTask.Delay(10, cancellationToken: token);
 
         // InputHandler 바인딩 및 활성화
         var handler = Main.Input.GetOrCreateAction<InputActions_PlayerInputHandler>();
@@ -115,7 +121,7 @@ public class Player : MonoBehaviour
         // 초기 상태: Locomotion
         var locomotionState = new PlayerLocomotionState(machine);
         machine.Init(locomotionState);
-        
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[Player] Started - Locomotion State initialized");
 #endif

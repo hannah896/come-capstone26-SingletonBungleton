@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 /// <summary>
 /// 플레이어 도구/상호작용 액션 상태입니다.
@@ -51,9 +50,7 @@ public class PlayerActionState : PlayerRootStateBase
         elapsedTime += time;
 
         if (TryInterruptAction())
-        {
             return;
-        }
 
         base.Update(time);
 
@@ -69,6 +66,7 @@ public class PlayerActionState : PlayerRootStateBase
         Machine.ChangeState(new PlayerLocomotionState(Machine));
     }
 
+    // 모든 인터럽트 입력은 PlayerInputData(New Input System 경유)에서만 읽는다.
     private bool TryInterruptAction()
     {
         if (elapsedTime < minActionDuration) return false;
@@ -92,47 +90,6 @@ public class PlayerActionState : PlayerRootStateBase
         {
             Debug.Log($"[State] Action interrupt by Move/Trace - {actionType}");
             ChangeToLocomotion();
-            return true;
-        }
-
-        if (TryKeyboardFallbackInterrupt())
-            return true;
-
-        return false;
-    }
-
-    private bool TryKeyboardFallbackInterrupt()
-    {
-        Keyboard keyboard = Keyboard.current;
-        if (keyboard == null) return false;
-
-        if (keyboard.spaceKey.wasPressedThisFrame && Motor.CanJump)
-        {
-            Debug.Log($"[State] Action keyboard fallback Jump - {actionType}");
-            Motor.SetVerticalVelocity(Entity.Stat.JumpForce);
-            ChangeToLocomotion();
-            return true;
-        }
-
-        if (keyboard.wKey.isPressed
-            || keyboard.aKey.isPressed
-            || keyboard.sKey.isPressed
-            || keyboard.dKey.isPressed
-            || keyboard.upArrowKey.isPressed
-            || keyboard.downArrowKey.isPressed
-            || keyboard.leftArrowKey.isPressed
-            || keyboard.rightArrowKey.isPressed)
-        {
-            Debug.Log($"[State] Action keyboard fallback Move - {actionType}");
-            ChangeToLocomotion();
-            return true;
-        }
-
-        Mouse mouse = Mouse.current;
-        if (mouse != null && mouse.leftButton.wasPressedThisFrame)
-        {
-            Debug.Log($"[State] Action keyboard fallback Attack - {actionType}");
-            Machine.ChangeState(new PlayerAttackState(Machine));
             return true;
         }
 

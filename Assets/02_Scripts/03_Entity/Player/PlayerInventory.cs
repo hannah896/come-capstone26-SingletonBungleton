@@ -97,6 +97,7 @@ public class PlayerInventory : MonoBehaviour
     {
         quickSlotCount = Mathf.Clamp(count, 0, slotCount);
         SelectSlot(Mathf.Clamp(selectedSlotIndex, 0, GetQuickSlotCount() - 1));
+        OnInventoryChanged?.Invoke();
     }
 
     public bool AddItem(ItemDataSO itemData, int amount = 1)

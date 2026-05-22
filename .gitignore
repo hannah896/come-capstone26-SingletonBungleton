@@ -78,3 +78,4 @@ crashlytics-build.properties
 /.agents
 /.codex
 /.gemini
+/.claude

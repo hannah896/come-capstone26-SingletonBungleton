@@ -39,7 +39,7 @@ public class PlayerRunState : PlayerSubStateBase
         // 카메라 기준 이동 (SprintMultiplier 적용)
         Vector3 dir = CalcCameraRelativeDir(Input.MoveInput);
         Entity.Motor.SetHorizontalVelocity(dir, Entity.Stat.MoveSpeed * Entity.Stat.SprintMultiplier);
-        Entity.Motor.RotateToward(dir, rotationSpeed, time);
+        Entity.Motor.RotateToward(dir, rotationSpeed);
 
         if (!Input.SprintHeld)
         {

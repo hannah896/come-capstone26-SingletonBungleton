@@ -34,7 +34,7 @@ public class PlayerAirState : PlayerSubStateBase
         Entity.Motor.SetHorizontalVelocity(dir, Entity.Stat.MoveSpeed * airControlFactor);
 
         if (dir.sqrMagnitude > 0.01f)
-            Entity.Motor.RotateToward(dir, airRotationSpeed, time);
+            Entity.Motor.RotateToward(dir, airRotationSpeed);
 
         // 착지 감지
         if (Entity.Motor.IsGrounded && Entity.Motor.VerticalVelocity <= 0f)

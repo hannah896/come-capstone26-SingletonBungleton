@@ -15,7 +15,7 @@ MonoBehaviour:
   itemID: Pickaxe_Iron
   itemName: "\uCCA0\uACE1\uAD2D\uC774"
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d1647b5f156131a419b1ccf269bf7358, type: 3}
   prefab: {fileID: 3590119427674651755, guid: 85adbff4ee96e0e4da684c7a27a49dbc, type: 3}
   itemType: 0
   survivalToolType: 5
@@ -28,9 +28,10 @@ MonoBehaviour:
   equipSlot: 3
   hasDurability: 1
   maxDurability: 100
+  costPerDurability: 1
   attackDamage: 0
   attackRange: 0
   defense: 0
   hungerRestore: 0
   healthRestore: 0
-  sanityRestore: 0
+  egoRestore: 0

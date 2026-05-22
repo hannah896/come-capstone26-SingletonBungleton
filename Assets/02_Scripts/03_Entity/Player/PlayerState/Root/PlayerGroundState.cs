@@ -99,7 +99,7 @@ public class PlayerLocomotionState : PlayerRootStateBase
                 speed *= Entity.Stat.SprintMultiplier;
 
             Motor.SetHorizontalVelocity(dir, speed);
-            Motor.RotateToward(dir, 12f, time);
+            Motor.RotateToward(dir, 12f);
         }
 
         Motor.SetVerticalVelocity(Entity.Stat.JumpForce);
