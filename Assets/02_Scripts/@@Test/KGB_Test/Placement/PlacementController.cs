@@ -31,7 +31,7 @@ public class PlacementController : MonoBehaviour
     [Header("References")]
     [SerializeField] private Camera placementCamera;
     [SerializeField] private PlayerInventory playerInventory;
-    //[SerializeField] private CraftingManager craftingManager;
+    [SerializeField] private CraftingManager craftingManager;
     [SerializeField] private MonoBehaviour placementValidatorBehaviour;
     [SerializeField] private MonoBehaviour previewVisualizerBehaviour;
 
@@ -85,8 +85,8 @@ public class PlacementController : MonoBehaviour
     {
         if (playerInventory == null)
             playerInventory = FindFirstObjectByType<PlayerInventory>();
-        //if (craftingManager == null)
-        //    craftingManager = CraftingManager.Instance ?? FindFirstObjectByType<CraftingManager>();
+        if (craftingManager == null)
+            craftingManager = CraftingManager.Instance ?? FindFirstObjectByType<CraftingManager>();
 
         if (playerInventory != null)
             playerInventory.OnSelectedSlotChanged += HandleSelectedSlotChanged;

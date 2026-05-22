@@ -13,6 +13,7 @@ public interface IChunkRenderer
 public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
 {
     private const float WATER_PLANE_UNIT_SIZE = 10f;
+    private const string TERRAIN_LAYER_NAME = "Ground";
 
     private TerrainBuilder _terrainBuilder;
 
@@ -99,7 +100,8 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
         GameObject pooledTerrain = GetPooledTerrain();
 
         // 1. 지형 융기 (Terrain 생성/재사용)
-        var (terrainData, terrainGO) = await _terrainBuilder.BuildChunkTerrainAsync(chunk, _settings, pooledTerrain, _ct);        
+        var (terrainData, terrainGO) = await _terrainBuilder.BuildChunkTerrainAsync(chunk, _settings, pooledTerrain, _ct);
+        ApplyTerrainLayer(terrainGO);
         terrainBuildMs = chunkStopwatch.ElapsedMilliseconds;
 
         // 2. 텍스처 페인팅 (로컬 데이터 기반)
@@ -115,10 +117,6 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
         flushMs = chunkStopwatch.ElapsedMilliseconds - terrainBuildMs - texturePaintMs - detailPaintMs;
 
         Debug.Log($"[WorldRenderDirector] chunk:{chunk.ChunkCoord} buildMs:{terrainBuildMs} textureMs:{texturePaintMs} detailMs:{detailPaintMs} flushMs:{flushMs} totalMs:{chunkStopwatch.ElapsedMilliseconds}");
-
-
-        // 3. 오브젝트 스폰 (TODO: ObjectSpawner에게 chunk.DisposedObjects 전달하여 Instantiate)
-
 
         if (!_requestedChunks.Contains(chunk.ChunkCoord))
         {
@@ -136,7 +134,29 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
 
         UpdateNeighbors(chunk.ChunkCoord);
     }
+    private void ApplyTerrainLayer(GameObject terrainGO)
+    {
+        if (terrainGO == null) return;
 
+        int layer = LayerMask.NameToLayer(TERRAIN_LAYER_NAME);
+        if (layer < 0)
+        {
+            Debug.LogWarning($"[WorldRenderDirector] 레이어 '{TERRAIN_LAYER_NAME}'가 존재하지 않습니다.");
+            return;
+        }
+        SetLayerRecursively(terrainGO, layer);
+    }
+
+    private static void SetLayerRecursively(GameObject root, int layer)
+    {
+        if (root == null) return;
+
+        root.layer = layer;
+        foreach (Transform child in root.transform)
+        {
+            SetLayerRecursively(child.gameObject, layer);
+        }
+    }
     private void UpdateNeighbors(Vector2Int coord)
     {
         if (!_activeTerrains.TryGetValue(coord, out GameObject currentGO)) return;
