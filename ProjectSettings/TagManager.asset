@@ -16,7 +16,7 @@ TagManager:
   - ViewModel
   - 
   - 
-  - 
+  - ResourceNode
   - 
   - 
   - 
@@ -24,7 +24,6 @@ TagManager:
   - 
   - Gatherable
   - Item
-  - 
   - 
   - 
   - 
