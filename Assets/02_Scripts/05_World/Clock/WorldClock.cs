@@ -37,6 +37,7 @@ public class WorldClock : MonoBehaviour
 
     public TimePhase CurrentTimePhase { get; private set; }
     public int CurrentDay => _daysPassed + 1; // 0부터 시작하므로 +1
+    public int CurrentHour { get; private set; }
     public MoonPhase CurrentMoonPhase { get; private set; } // [달 주기 시스템 추가] 현재 달 위상
 
     // 자원 재생, 특정 시간 조건 등에 사용할 '절대 시간(Timestamp)'
@@ -96,6 +97,7 @@ public class WorldClock : MonoBehaviour
         // --- 1. 인게임 시간(Hour) 체크 ---
         // (0 ~ 1439초를 24시간으로 변환)
         int currentHour = Mathf.FloorToInt((timeOfDay / SECONDS_PER_DAY) * 24f);
+        CurrentHour = currentHour;
         if (currentHour != _lastHour)
         {
             _lastHour = currentHour;

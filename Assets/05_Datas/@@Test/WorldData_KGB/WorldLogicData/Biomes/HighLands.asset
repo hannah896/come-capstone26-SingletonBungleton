@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   BiomeType: 7
   DebugColor: {r: 1, g: 0.472049, b: 0, a: 1}
-  TopKey: Highlnads_Top
+  TopKey: Highlands_Top
   AltKey: Highlands_Alt
   CliffKey: Highlands_Cliff
   DetailKeys: []

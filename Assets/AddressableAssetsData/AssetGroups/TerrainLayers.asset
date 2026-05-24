@@ -15,6 +15,16 @@ MonoBehaviour:
   m_GroupName: TerrainLayers
   m_GUID: 6987663f12ee81f48b5473d3d8b55db4
   m_SerializeEntries:
+  - m_GUID: 07006984562b6df4d854e75308fd6ae6
+    m_Address: RockyDesert_Alt
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2298382dd33b20d4a987990d85f5bf27
+    m_Address: Desert_Alt
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 41a9aadaa8751404eacfe5300c130ad3
     m_Address: Forest_Cliff
     m_ReadOnly: 0
@@ -25,13 +35,23 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6bdc1bb87a12480478dcecefd4e38b79
+    m_Address: Snow_Alt
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 6cb94fe356b18b245851120f4beac95e
-    m_Address: Start_Top
+    m_Address: Plains_Alt
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 6fbbf195f78fc5343a9086b9d10cb731
     m_Address: Savanna_Top
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7e25a4dac75c2444492b1c3e71d9ce1c
+    m_Address: Forest_Alt
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -46,12 +66,32 @@ MonoBehaviour:
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 97bf90360c36d46469984cc59f7c5344
-    m_Address: Higlands_Top
+    m_Address: Highlands_Top
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 999aa0b02215f784cbb71995d9eca913
+    m_Address: Swamp_Alt
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: aa5ebd5f624ae4b4095b6cdccd95b67e
+    m_Address: Highlands_Alt
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: c233b4616eb0b244bafcd627580eb2dd
     m_Address: Desert_Top
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c3471120b6e3798459f005cd3d665c50
+    m_Address: Savanna_Alt
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d100a289a278d6b45b9d22d3e95144c0
+    m_Address: Rocky_Alt
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
