@@ -27,7 +27,7 @@ public class ItemData_Food : ItemData, IEatable
     public float freshnessDecayRate = 0.005f;  // 기본값: 초당 0.5% 감소
     public ItemDataSO status;
 
-    public ItemData_Food(ItemDataSO data, int count = 1) : base(data, count)
+    public ItemData_Food(ItemDataSO data) : base(data)
     {
         id = data.foodType;
         freshness = 1f;

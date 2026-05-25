@@ -16,7 +16,7 @@ MonoBehaviour:
   itemName: "\uCCA0"
   description: "\uAD11\uC11D\uC790\uC6D0_\uCCA0\uC785\uB2C8\uB2E4."
   icon: {fileID: 0}
-  prefab: {fileID: 0}
+  prefab: {fileID: 1799256547270814821, guid: a2c6d75b65c27024c9f5833ed11e82a5, type: 3}
   itemType: 2
   survivalToolType: 0
   combatGearType: 0
@@ -28,9 +28,10 @@ MonoBehaviour:
   equipSlot: 0
   hasDurability: 0
   maxDurability: 0
+  costPerDurability: 1
   attackDamage: 0
   attackRange: 0
   defense: 0
   hungerRestore: 0
   healthRestore: 0
-  sanityRestore: 0
+  egoRestore: 0

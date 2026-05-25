@@ -31,9 +31,11 @@ public class Item_SurvivalTool : ItemData, IEquipable
         }
     }
 
+    public event Action<bool> OnTorchToggled;
+    public bool IsLit => _isLit;
     private bool _isLit = false;
 
-    public Item_SurvivalTool(ItemDataSO data, int count = 1) : base(data, count)
+    public Item_SurvivalTool(ItemDataSO data) : base(data)
     {
         survivalToolType = data.survivalToolType;
         currentDurability = data.hasDurability ? data.maxDurability : 0f;
@@ -77,7 +79,6 @@ public class Item_SurvivalTool : ItemData, IEquipable
     private void SetTorchActive(bool on)
     {
         _isLit = on;
-        // 실제 Light 컴포넌트 활성화는 Item MonoBehaviour에서 처리
-        Debug.Log($"[횃불] {(on ? "켜짐" : "꺼짐")}");
+        OnTorchToggled?.Invoke(on);
     }
 }

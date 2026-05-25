@@ -30,7 +30,7 @@ public class Item_CombatGear : ItemData, IEquipable
         }
     }
 
-    public Item_CombatGear(ItemDataSO data, int count = 1) : base(data, count)
+    public Item_CombatGear(ItemDataSO data) : base(data)
     {
         combatGearType = data.combatGearType;
         _currentDurability = data.hasDurability ? data.maxDurability : 0f;
@@ -70,14 +70,6 @@ public class Item_CombatGear : ItemData, IEquipable
         return Mathf.Clamp01(_currentDurability / Mathf.Max(0.001f, data.maxDurability));
     }
     #endregion
-
-    public void Repair(float amount)
-    {
-        if (!data.hasDurability) return;
-        _currentDurability = Mathf.Min(_currentDurability + amount, data.maxDurability);
-        isUsable = _currentDurability > 0f;
-        Debug.Log($"[장비] {data.itemName} 수리! ({_currentDurability}/{data.maxDurability})");
-    }
 
     public bool IsArmor() => combatGearType == CombatGearType.Helmet || combatGearType == CombatGearType.Chestplate;
     public bool IsShield() => combatGearType == CombatGearType.Shield;

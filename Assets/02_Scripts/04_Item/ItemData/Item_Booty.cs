@@ -14,7 +14,7 @@ public class Item_Booty : ItemData, IStackable
 
     public bool CanStackWith(ItemDataSO otherSO) => stackCount < stackMax && otherSO == data;
 
-    public Item_Booty(ItemDataSO data, int count = 1) : base(data, count)
+    public Item_Booty(ItemDataSO data, int count = 1) : base(data)
     {
         bootyType = data.bootyType;
         stackCount = count;
