@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 104339338816609614}
   - component: {fileID: 1035933662113956002}
-  - component: {fileID: 4740830514700835942}
+  - component: {fileID: 7240811787767683384}
   - component: {fileID: 4395288255355100492}
   m_Layer: 17
   m_Name: Booty_Egg
@@ -62,7 +62,7 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!65 &4740830514700835942
+--- !u!65 &7240811787767683384
 BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -81,8 +81,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.1, y: 0.1, z: 0.1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 0.07022463, y: 0.07789717, z: 0.07212028}
+  m_Center: {x: -0.0024796426, y: -0.0009790175, z: -0.0022905618}
 --- !u!114 &4395288255355100492
 MonoBehaviour:
   m_ObjectHideFlags: 0

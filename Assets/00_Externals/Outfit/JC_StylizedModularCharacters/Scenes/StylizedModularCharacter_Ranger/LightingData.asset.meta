@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 5e354f4133e0aa84fa8ea2191254fd99
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 112000000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 338016
+  packageName: Stylized Medieval Ranger Outfit
+  packageVersion: 1.0
+  assetPath: Assets/JC_StylizedModularCharacters/Scenes/StylizedModularCharacter_Ranger/LightingData.asset
+  uploadId: 800184
