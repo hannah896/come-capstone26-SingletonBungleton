@@ -5,13 +5,6 @@ using UnityEngine;
 /// </summary>
 public class BreakableResourceNode : ResourceNode
 {
-    [Header("Drop")]
-    [SerializeField] private string _dropPrefabKey;
-    [SerializeField] private float _dropRadius = 0.5f;
-
-    [Header("FX")]
-    [SerializeField] private string _destroyFxKey;
-
     protected override void OnDamaged(DamageContext context)
     {
         Debug.Log($"{ResourceNodeData.Name} 데미지 입음! 사용 도구: {context.ToolId}, 피해량: {context.Amount}, 남은 체력: {CurrentHealth}");
@@ -26,9 +19,9 @@ public class BreakableResourceNode : ResourceNode
 
     private async UniTask SpawnDestroyFxAsync()
     {
-        if (string.IsNullOrEmpty(_destroyFxKey)) return;
+        if (string.IsNullOrEmpty(ResourceNodeData.DropFxPrefabKey)) return;
 
-        GameObject fx = await Extensions.SpawnAsync(_destroyFxKey, null);
+        GameObject fx = await Extensions.SpawnAsync(ResourceNodeData.DropFxPrefabKey, null);
         if (fx == null) return;
 
         fx.transform.position = DeathPosition;
@@ -40,7 +33,7 @@ public class BreakableResourceNode : ResourceNode
         if (ResourceNodeData.Drops == null || ResourceNodeData.Drops.Length == 0) return;
 
         // 배열에 등록된 모든 드롭 아이템(통나무, 나뭇가지, 사과 등)을 순회
-        foreach (DropItemData dropData in ResourceNodeData.Drops)
+        foreach (DropData dropData in ResourceNodeData.Drops)
         {
             if (string.IsNullOrEmpty(dropData.DropPrefabKey)) continue;
             // 1. 드롭 확률 체크 (예: 사과가 0.1(10%) 확률이라면)
@@ -59,7 +52,7 @@ public class BreakableResourceNode : ResourceNode
                 if (dropObj == null) continue;
 
                 // 바닥에 흩뿌리기
-                Vector2 offset2D = Random.insideUnitCircle * _dropRadius;
+                Vector2 offset2D = Random.insideUnitCircle * ResourceNodeData.DropRadius;
                 Vector3 offset = new Vector3(offset2D.x, 0f, offset2D.y);
                 dropObj.transform.position = DeathPosition + offset;
             }

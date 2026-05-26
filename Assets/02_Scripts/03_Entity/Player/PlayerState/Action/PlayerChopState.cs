@@ -8,6 +8,7 @@ public class PlayerChopState : PlayerSubStateBase
     {
         base.OnEnter();
         Machine.AnimData.PlayActionAnimation(Machine.AnimData.AnimHashKey.Chop);
+        Entity.FPCameraController?.PlayChopSwing();
         Debug.Log("[State] Chop Enter");
     }
 
@@ -22,6 +23,9 @@ public class PlayerChopState : PlayerSubStateBase
     {
         base.Update(time);
         if (Machine.AnimData.IsActionAnimationCompleted())
+        {
+            Entity.Inventory?.UseEquippedHandTool();
             GetRootState<PlayerActionState>()?.ChangeToLocomotion();
+        }
     }
 }

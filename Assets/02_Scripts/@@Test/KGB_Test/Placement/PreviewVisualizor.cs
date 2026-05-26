@@ -37,11 +37,11 @@ public class PreviewVisualizer : MonoBehaviour, IPreviewVisualizer
     [SerializeField] private Material ghostMaterialTemplate;
     [SerializeField] private Material gridMaterialTemplate;
 
-    private readonly List<Renderer> ghostRenderers = new List<Renderer>();
     private readonly List<GameObject> gridCells = new List<GameObject>();
 
-    private Material ghostValidMaterial;
-    private Material ghostInvalidMaterial;
+    private readonly GhostMaterialApplier ghostApplier = new();
+
+
     private Material gridValidMaterial;
     private Material gridInvalidMaterial;
 
@@ -50,8 +50,6 @@ public class PreviewVisualizer : MonoBehaviour, IPreviewVisualizer
 
     private void Awake()
     {
-        ghostValidMaterial = PlacementMaterialFactory.CreateMaterial(ghostMaterialTemplate, ghostValidColor);
-        ghostInvalidMaterial = PlacementMaterialFactory.CreateMaterial(ghostMaterialTemplate, ghostInvalidColor);
         gridValidMaterial = PlacementMaterialFactory.CreateMaterial(gridMaterialTemplate, gridValidColor);
         gridInvalidMaterial = PlacementMaterialFactory.CreateMaterial(gridMaterialTemplate, gridInvalidColor);
     }
@@ -63,6 +61,7 @@ public class PreviewVisualizer : MonoBehaviour, IPreviewVisualizer
         SetVisible(true);
     }
 
+    // 고스트와 그리드 모두 숨기고 고스트 인스턴스는 파괴, 활성 아이템 데이터 초기화
     public void Hide()
     {
         DestroyGhost();
@@ -98,10 +97,8 @@ public class PreviewVisualizer : MonoBehaviour, IPreviewVisualizer
 
     private void CreateGhostInstance()
     {
-        DestroyGhost();
-
-        //if (activeItemData == null || activeItemData.placementPrefab == null)
-        //    return;
+        Hide();
+        //if (activeItemData == null || activeItemData.placementPrefab == null)  return;
 
         //ghostInstance = Instantiate(activeItemData.placementPrefab);
         //ghostInstance.name = $"{activeItemData.placementPrefab.name}_Ghost";
@@ -109,10 +106,8 @@ public class PreviewVisualizer : MonoBehaviour, IPreviewVisualizer
         foreach (Collider collider in ghostInstance.GetComponentsInChildren<Collider>())
             collider.enabled = false;
 
-        ghostRenderers.Clear();
-        ghostRenderers.AddRange(ghostInstance.GetComponentsInChildren<Renderer>());
+        ghostApplier.ApplyGhostMaterial(ghostInstance, ghostValidColor);
 
-        ApplyGhostMaterial(ghostValidMaterial);
     }
 
     private void DestroyGhost()
@@ -120,7 +115,7 @@ public class PreviewVisualizer : MonoBehaviour, IPreviewVisualizer
         if (ghostInstance != null)
             Destroy(ghostInstance);
 
-        ghostRenderers.Clear();
+        ghostApplier.Cleanup();  // 복제 머티리얼 정리 (누수 방지)
     }
 
     private void UpdateGhostVisual(Vector3 position, Quaternion rotation, float yOffset, bool isValid)
@@ -129,13 +124,7 @@ public class PreviewVisualizer : MonoBehaviour, IPreviewVisualizer
             return;
 
         ghostInstance.transform.SetPositionAndRotation(position + Vector3.up * yOffset, rotation);
-        ApplyGhostMaterial(isValid ? ghostValidMaterial : ghostInvalidMaterial);
-    }
-
-    private void ApplyGhostMaterial(Material material)
-    {
-        for (int i = 0; i < ghostRenderers.Count; i++)
-            ghostRenderers[i].sharedMaterial = material;
+        ghostApplier.SetTint(isValid ? ghostValidColor : ghostInvalidColor);  
     }
 
     private void UpdateGridVisual(Vector3 centerPosition, float gridSize, int gridRadius, float yOffset, IPlacementValidator validator)

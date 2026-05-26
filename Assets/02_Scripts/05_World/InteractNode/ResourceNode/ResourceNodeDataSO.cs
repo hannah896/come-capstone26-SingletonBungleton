@@ -1,6 +1,9 @@
 using System;
 using UnityEngine;
 
+/// <summary>
+/// 실제 게임에서 배치된 자원 노드가 가지는 데이터를 정의하는 ScriptableObject입니다.
+/// </summary>
 [CreateAssetMenu(fileName = "NewResourceNodeData", menuName = "Scriptable Objects/ResourceNodeData")] 
 public class ResourceNodeData : ScriptableObject
 {
@@ -14,7 +17,10 @@ public class ResourceNodeData : ScriptableObject
     public string[] AllowedToolIds;
 
     [Header("Drops")]
-    public DropItemData[] Drops;
+    public DropData[] Drops;
+
+    public float DropRadius = 0.5f;
+    public string DropFxPrefabKey;
     private void OnValidate()
     {
         Name = name;
@@ -23,11 +29,13 @@ public class ResourceNodeData : ScriptableObject
 
 
 [Serializable]
-public class DropItemData
+public class DropData
 {
     public string DropPrefabKey;
     public int MinDropCount = 1;
     public int MaxDropCount = 1;
+
+
 
     // 확률 시스템 추가: 0.0 ~ 1.0 (1.0이면 100% 드롭)
     [Range(0f, 1f)]

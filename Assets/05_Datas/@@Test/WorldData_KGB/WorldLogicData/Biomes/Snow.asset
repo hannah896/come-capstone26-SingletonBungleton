@@ -16,6 +16,6 @@ MonoBehaviour:
   DebugColor: {r: 1, g: 1, b: 1, a: 1}
   TopKey: Snow_Top
   AltKey: Snow_Alt
-  CliffKey: 
-  SedimentKey: 
+  CliffKey: Snow_Cliff
   DetailKeys: []
+  DecoKeys: []

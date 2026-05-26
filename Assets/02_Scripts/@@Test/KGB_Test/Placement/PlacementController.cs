@@ -202,6 +202,8 @@ public class PlacementController : MonoBehaviour
             playerInventory.RemoveItem(activeItemData, 1);
     }
 
+
+    // TODO: InputAction으로 변경하여 키 바인딩 시스템과 연동하는 방식으로 변경 필요
     private void HandleRotationInput()
     {
         if (Keyboard.current == null)

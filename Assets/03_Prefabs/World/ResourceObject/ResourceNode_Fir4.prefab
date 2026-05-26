@@ -1,0 +1,97 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &1278228632783384254
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3283988516332825001, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+      propertyPath: m_Layer
+      value: 11
+      objectReference: {fileID: 0}
+    - target: {fileID: 3685781054794927235, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+      propertyPath: m_Layer
+      value: 11
+      objectReference: {fileID: 0}
+    - target: {fileID: 4067566586819885771, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+      propertyPath: m_Layer
+      value: 11
+      objectReference: {fileID: 0}
+    - target: {fileID: 6032649240743255710, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6032649240743255710, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6032649240743255710, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6032649240743255710, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6032649240743255710, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6032649240743255710, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6032649240743255710, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6032649240743255710, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6032649240743255710, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6032649240743255710, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7341746303021280397, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+      propertyPath: m_Name
+      value: ResourceNode_Fir4
+      objectReference: {fileID: 0}
+    - target: {fileID: 7341746303021280397, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+      propertyPath: m_Layer
+      value: 11
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7341746303021280397, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4428819370037814122}
+  m_SourcePrefab: {fileID: 100100000, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+--- !u!1 &8385193939226296883 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7341746303021280397, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+  m_PrefabInstance: {fileID: 1278228632783384254}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &4428819370037814122
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8385193939226296883}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5c8248aefc786f42867b9bcb7ede0f2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _resourceNodeData: {fileID: 11400000, guid: f8f5a93f4ae313840bf0c4b98d4956df, type: 2}
+  _despawnOnDestroyed: 1

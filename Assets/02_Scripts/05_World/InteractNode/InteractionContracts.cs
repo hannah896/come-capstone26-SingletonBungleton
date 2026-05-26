@@ -2,7 +2,7 @@ using UnityEngine;
 /// <summary>
 /// TODO: 나중에 필요한 경우 실행 함수들 void -> bool 
 /// </summary>
-#region 상호작용(점화,  등)
+#region 상호작용 - 범용
 // 상호작용 컨텍스트
 public readonly struct InteractionContext
 {
@@ -75,7 +75,6 @@ public interface IGatherable
 #endregion
 
 
-//  배치 초기화 인터페이스
 public interface IDisposeInitializable
 {
     void InitializeDispose(DisposeData dispose, ChunkData chunk);
