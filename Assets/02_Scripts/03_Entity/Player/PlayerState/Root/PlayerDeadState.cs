@@ -10,6 +10,7 @@ public class PlayerDeadState : PlayerRootStateBase
     public override void OnEnter()
     {
         base.OnEnter();
+        Machine.AnimData.SetRootState(Machine.AnimData.AnimHashKey.Dead);
         Debug.Log("[State] Dead 진입");
         // TODO: 사망 애니메이션 재생, 입력 비활성화
     }

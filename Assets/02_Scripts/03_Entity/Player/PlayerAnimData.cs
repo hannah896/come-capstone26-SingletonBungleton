@@ -13,6 +13,20 @@ public class PlayerAnimData
     }
 
     /// <summary>
+    /// 루트 상태 진입 시 호출. 모든 루트 라우팅 bool을 끄고 지정한 루트 bool만 켠다.
+    /// 애니메이터 BaseLayer는 이 bool로 어느 루트 SM(Locomotion/Action/Attack/Hurt/Dead)으로 갈지 결정한다.
+    /// </summary>
+    public void SetRootState(int rootBoolHash)
+    {
+        animator.SetBool(animHashKey.Locomotion, false);
+        animator.SetBool(animHashKey.Action, false);
+        animator.SetBool(animHashKey.Attack, false);
+        animator.SetBool(animHashKey.Hurt, false);
+        animator.SetBool(animHashKey.Dead, false);
+        animator.SetBool(rootBoolHash, true);
+    }
+
+    /// <summary>
     /// Bool 파라미터를 사용해 애니메이션 전환.
     /// 로코모션 관련 bool을 모두 false로 리셋한 뒤 대상 파라미터만 true로 설정.
     /// </summary>
@@ -49,13 +63,17 @@ public class PlayerAnimData
     }
 
     /// <summary>
-    /// 현재 레이어의 애니메이션이 완료되었는지 확인.
-    /// normalizedTime >= 1 이고 전환 중이 아닌 경우 true.
+    /// 애니메이터의 현재 스테이트(또는 전환 중인 목적지 스테이트)가 지정 해시와 일치하는지 확인.
+    /// 전환 중에는 목적지(next)도 검사하므로, 액션 종료 후 Locomotion으로 복귀가 시작되는 시점을 감지할 수 있다.
     /// </summary>
-    public bool IsActionAnimationCompleted(int layer = 0)
+    public bool IsInState(int stateShortHash, int layer = 0)
     {
-        return !animator.IsInTransition(layer)
-            && animator.GetCurrentAnimatorStateInfo(layer).normalizedTime >= 1f;
+        if (animator.GetCurrentAnimatorStateInfo(layer).shortNameHash == stateShortHash)
+            return true;
+        if (animator.IsInTransition(layer)
+            && animator.GetNextAnimatorStateInfo(layer).shortNameHash == stateShortHash)
+            return true;
+        return false;
     }
 
     /// <summary>

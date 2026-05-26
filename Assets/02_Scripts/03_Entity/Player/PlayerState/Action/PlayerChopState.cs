@@ -1,31 +1,9 @@
-﻿using UnityEngine;
-
-public class PlayerChopState : PlayerSubStateBase
+public class PlayerChopState : PlayerActionSubStateBase
 {
     public PlayerChopState(PlayerRootStateMachine machine) : base(machine) { }
 
-    public override void OnEnter()
-    {
-        base.OnEnter();
-        Machine.AnimData.PlayActionAnimation(Machine.AnimData.AnimHashKey.Chop);
-        Entity.FPCameraController?.PlayChopSwing();
-        Debug.Log("[State] Chop Enter");
-    }
+    protected override int ActionTrigger => Machine.AnimData.AnimHashKey.Chop;
+    protected override bool UsesToolOnComplete => true;
 
-    public override void OnExit()
-    {
-        base.OnExit();
-        Machine.AnimData.ResetActionTrigger(Machine.AnimData.AnimHashKey.Chop);
-        Debug.Log("[State] Chop Exit");
-    }
-
-    public override void Update(float time = 1)
-    {
-        base.Update(time);
-        if (Machine.AnimData.IsActionAnimationCompleted())
-        {
-            Entity.Inventory?.UseEquippedHandTool();
-            GetRootState<PlayerActionState>()?.ChangeToLocomotion();
-        }
-    }
+    // 도구 스윙은 OnEnter가 아니라 바디 chop 클립의 Animation Event(PlayerAnimEventRelay.PlayerToolUse)로 구동된다.
 }

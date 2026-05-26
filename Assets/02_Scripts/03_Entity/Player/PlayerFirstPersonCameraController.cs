@@ -129,18 +129,18 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         Quaternion restRotation = toolPivot.localRotation;
 
         DOTween.Sequence()
-            // 1. 들어올리기 (0.12s)
-            .Append(toolPivot.DOLocalRotate(new Vector3(-25f, 0f, 10f), 0.12f, RotateMode.LocalAxisAdd)
+            // 1. 들어올리기 (0.12s) — X축 크게 젖혀 들어올림
+            .Append(toolPivot.DOLocalRotate(new Vector3(-55f, 0f, 10f), 0.12f, RotateMode.LocalAxisAdd)
                 .SetEase(Ease.OutQuad))
-            // 2. 내려찍기 (0.18s, 빠르게)
-            .Append(toolPivot.DOLocalRotate(new Vector3(55f, 0f, -15f), 0.18f, RotateMode.LocalAxisAdd)
+            // 2. 내려찍기 (0.18s, 빠르게) — X축 깊게 내려찍음
+            .Append(toolPivot.DOLocalRotate(new Vector3(110f, 0f, -15f), 0.18f, RotateMode.LocalAxisAdd)
                 .SetEase(Ease.InQuart))
             // 3. 원위치 복귀 (0.28s)
             .Append(toolPivot.DOLocalRotateQuaternion(restRotation, 0.28f)
                 .SetEase(Ease.OutQuad));
 
-        // 카메라 시야: 내려찍는 타이밍에 살짝 아래로 흔들림
-        DOTween.To(() => pitchOffset, x => pitchOffset = x, 3f, 0.18f)
+        // 카메라 시야: 내려찍는 타이밍에 아래로 흔들림 (X축 연출 강화)
+        DOTween.To(() => pitchOffset, x => pitchOffset = x, 6f, 0.18f)
             .SetDelay(0.12f)
             .SetEase(Ease.InQuad)
             .OnComplete(() =>

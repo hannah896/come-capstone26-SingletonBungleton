@@ -2,6 +2,44 @@
 
 ---
 
+## 2026-05-26
+
+### 1. 플레이어 액션 상태를 애니메이터 방식에 맞게 재구성
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerState/Action/PlayerActionSubStateBase.cs`(신규), `PlayerChopState.cs`, `PlayerMineState.cs`, `PlayerDigState.cs`, `PlayerIgniteState.cs`, `PlayerInspectState.cs`, `PlayerBuildState.cs`, `PlayerCookState.cs`, `PlayerPickState.cs`, `PlayerAnimData.cs`, `PlayerAnimHashKey.cs`, `PlayerState/Root/PlayerActionState.cs`
+
+- 문제: 액션(chop 등) 종료 후 Locomotion으로 복귀가 제대로 동작하지 않음. 기존 `IsStopStateCompleted`/`IsActionAnimationCompleted`로 Stop 스테이트 ExitTime 시점을 감지하는 방식이 타이밍에 취약했음
+- FemalePlayer 애니메이터 방식 분석: AnyState 트리거로 액션 시작 → 액션 애니메이션 종료 시 `PlayerActionState` SM이 조건 없이 `PlayerLocomotionState` SM(기본 상태 Idle)으로 **자동 복귀**
+- 스크립트를 이 흐름에 맞춤: 애니메이터가 액션에 진입(Idle 이탈) → 다시 Idle 복귀하면 스크립트도 Locomotion으로 전환
+- 8개 액션 하위 상태의 중복 로직을 `PlayerActionSubStateBase`로 통합 (트리거 해시 + 도구 사용 여부만 각자 지정)
+- `PlayerAnimData`에 `IsInState(stateHash)` 추가(전환 중 목적지 next도 검사), 기존 감지 메서드 제거
+- `PlayerAnimHashKey`에서 미사용 `ActionXxxStop` 해시 제거
+- `PlayerActionState`: 중복 전환 방지 가드 추가, 타임아웃(`maxActionDuration`)은 5초 안전망으로 조정
+- **애니메이터 transition은 일절 수정하지 않음** (스크립트만 변경)
+
+### 2. RootState 전환용 Bool 파라미터 구동
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerAnimHashKey.cs`, `PlayerAnimData.cs`, `PlayerState/Root/PlayerGroundState.cs`, `PlayerActionState.cs`, `PlayerAttackState.cs`, `PlayerHurtState.cs`, `PlayerDeadState.cs`
+
+- 애니메이터 BaseLayer에 루트 상태 라우팅용 Bool(`Locomotion`, `Action`, `Attack`, `Hurt`, `Dead`)이 추가됨에 맞춰, RootState 진입 시 스크립트가 해당 bool을 켜고 나머지 루트 bool은 끄도록 구동
+- `PlayerAnimData.SetRootState(rootBoolHash)`: 모든 루트 bool을 false로 끄고 지정 bool만 true
+- 각 루트 상태 `OnEnter`에서 호출 (Locomotion/Action/Attack/Hurt/Dead). Sleep은 전용 bool이 없어 제외
+- `PlayerAnimHashKey`에 `Locomotion`, `Action` 해시 추가
+- Play Mode 진단 결과:
+  - "도구 장착 시 pick에 꽂힘" 원인 = BaseLayer entry transition이 조건 없이 PlayerActionState SM(기본 상태 Action_Pick)으로 가던 것 → `Action` bool 조건으로 게이팅 + 스크립트가 Locomotion 진입 시 Action=false로 해결
+  - "Idle로 복귀 안 함" = 스크립트가 Locomotion 진입 시 `Locomotion` bool을 켜 애니메이터가 복귀하도록 구동
+
+### 3. 도구 스윙 ↔ 바디 타격 동기화 (Animation Event 방식)
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerAnimEventRelay.cs`(신규), `PlayerState/Action/PlayerChopState.cs`, `PlayerActionSubStateBase.cs`
+
+- 기존: 도구 스윙(`PlayChopSwing`)이 액션 진입(OnEnter) 시점에 즉시 호출돼, 애니메이터 전환 블렌드만큼 늦게 보이는 바디 애니메이션보다 먼저 재생됨
+- 변경: 도구 스윙을 바디 chop 클립의 Animation Event로 구동하여 타격 순간을 일치시킴
+- `PlayerAnimEventRelay` 신규: Animator가 있는 GameObject(캐릭터 모델)에 부착하는 릴레이. `PlayerToolUse()`가 `Player.FPCameraController.PlayChopSwing()`을 호출 (벌목/채굴/땅파기 등 모든 도구 액션 이벤트 공용)
+- `PlayerChopState`의 OnEnter 시점 스윙 호출 제거, `PlayerActionSubStateBase`의 미사용 `OnActionEnter` 훅 제거
+- `PlayChopSwing` X축 회전 연출 강화 (들기 -25→-55, 내려찍기 55→110, 카메라 pitch 3→6)
+- **남은 수동 작업(Unity):** ① 캐릭터 모델 GameObject에 `PlayerAnimEventRelay` 부착 ② 도구 액션 클립 타격 프레임에 Animation Event(`PlayerToolUse`) 추가 (외부 에셋이므로 클립 복제 후 사용 권장)
+
 ## 2026-05-11
 
 ### 1. 인벤토리 입력 구조 변경

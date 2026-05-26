@@ -10,6 +10,7 @@ public class PlayerHurtState : PlayerRootStateBase
     public override void OnEnter()
     {
         base.OnEnter();
+        Machine.AnimData.SetRootState(Machine.AnimData.AnimHashKey.Hurt);
         Debug.Log("[State] Hurt 진입");
         // TODO: 피격 애니메이션 재생
     }
