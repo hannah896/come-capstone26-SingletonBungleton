@@ -66,6 +66,6 @@ public class PlayerTraceState : PlayerSubStateBase
         // Walk 속도로 목적지 방향 이동
         Vector3 dir = toTarget.normalized;
         Entity.Motor.SetHorizontalVelocity(dir, Entity.Stat.MoveSpeed);
-        Entity.Motor.RotateToward(dir, rotationSpeed, time);
+        Entity.Motor.RotateToward(dir, rotationSpeed);
     }
 }

@@ -127,13 +127,17 @@ MonoBehaviour:
   equippedToolLocalScale: {x: 1, y: 1, z: 1}
   axeMeshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
   axeMeshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
-  axeMeshLocalScale: {x: 7, y: 7, z: 1}
+  axeMeshLocalScale: {x: 7, y: 7, z: 7}
   pickaxeLocalPosition: {x: -0.07, y: -0.86, z: 2.33}
   pickaxeLocalEuler: {x: 6.952, y: -148.7, z: -5.915}
   pickaxeLocalScale: {x: 7, y: 7, z: 7}
   torchLocalPosition: {x: -0.8, y: -0.11, z: -1.09}
   torchLocalEuler: {x: -3.579, y: -30.16, z: 18.332}
   torchLocalScale: {x: 1, y: 1, z: 1}
+  equippedLightLayerName: Default
+  equippedTorchLightIntensity: 3.5
+  equippedTorchLightRange: 7
+  equippedTorchLightColor: {r: 1, g: 0.45, b: 0.18, a: 1}
 --- !u!114 &3197738375812151440
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -148,7 +152,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   resourceLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 2048
   stopDistance: 1
 --- !u!114 &5601182068425426865
 MonoBehaviour:

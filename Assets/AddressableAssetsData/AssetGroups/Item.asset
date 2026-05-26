@@ -1,0 +1,93 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Item
+  m_EditorClassIdentifier: 
+  m_GroupName: Item
+  m_GUID: 32f67073428d6154e87a876b6c0ecdfa
+  m_SerializeEntries:
+  - m_GUID: 14159bf9375720745b7db5cf8b2f5cb4
+    m_Address: Tool_Axe_Gold
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 302388d3b2a2dae4a8d0b99fd84ea529
+    m_Address: Tool_Hammer_Gold
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 39aba271fa16c5b4e9f3ce5a2e0db683
+    m_Address: Tool_Hammer_Stone
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 427752b4951672341aae668c15269636
+    m_Address: Tool_FishingRod
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 521513dc01a27324796f1bd4371f3187
+    m_Address: Tool_Axe_Stone
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 63dbd20b59aae984a912272caad50f50
+    m_Address: Tool_Pickaxe_Stone
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 85adbff4ee96e0e4da684c7a27a49dbc
+    m_Address: Tool_Pickaxe_Iron
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a9a9e56df1eca4642b9e6cdf8194a1ec
+    m_Address: Tool_Shovel_Gold
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c4d5c9e3be52a0e4296a1f2a9d7661a4
+    m_Address: Tool_Pickaxe_Gold
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c79e4f08720b0d946a5bda811d12e65c
+    m_Address: Tool_Hammer_Iron
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ce0c6b70ac067d646a1d98d9286854ef
+    m_Address: Tool_Shovel_Stone
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d333d65ac1ba90b4bb88e4cd12d525a7
+    m_Address: Tool_Axe_Iron
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d6f1a1fe544c5044b8fab84ed004468b
+    m_Address: Tool_Shovel_Iron
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fc5e71b6dadcc5a45b0a1ec18a9a0ae8
+    m_Address: Tool_Torch
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: d49714acbe7dc4846b65422625851c9a, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 7e64883631b74f94596da1ced19217f0, type: 2}
+    - {fileID: 11400000, guid: da99919e27309204c843fa80947bc759, type: 2}

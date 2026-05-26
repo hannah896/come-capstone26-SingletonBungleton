@@ -199,6 +199,15 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""ToolUse"",
+                    ""type"": ""Button"",
+                    ""id"": ""a1b2c3d4-e5f6-7890-abcd-ef1234567890"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -606,6 +615,17 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""PickUp"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b9c8d7e6-f5a4-3210-9876-543210fedcba"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""ToolUse"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -1405,6 +1425,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         m_Player_ScrollWheel = m_Player.FindAction("ScrollWheel", throwIfNotFound: true);
         m_Player_InventorySlot = m_Player.FindAction("InventorySlot", throwIfNotFound: true);
         m_Player_PickUp = m_Player.FindAction("PickUp", throwIfNotFound: true);
+        m_Player_ToolUse = m_Player.FindAction("ToolUse", throwIfNotFound: true);
         // Mobile
         m_Mobile = asset.FindActionMap("Mobile", throwIfNotFound: true);
         m_Mobile_Point = m_Mobile.FindAction("Point", throwIfNotFound: true);
@@ -1516,6 +1537,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_ScrollWheel;
     private readonly InputAction m_Player_InventorySlot;
     private readonly InputAction m_Player_PickUp;
+    private readonly InputAction m_Player_ToolUse;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -1575,6 +1597,10 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/PickUp".
         /// </summary>
         public InputAction @PickUp => m_Wrapper.m_Player_PickUp;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/ToolUse".
+        /// </summary>
+        public InputAction @ToolUse => m_Wrapper.m_Player_ToolUse;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -1637,6 +1663,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @PickUp.started += instance.OnPickUp;
             @PickUp.performed += instance.OnPickUp;
             @PickUp.canceled += instance.OnPickUp;
+            @ToolUse.started += instance.OnToolUse;
+            @ToolUse.performed += instance.OnToolUse;
+            @ToolUse.canceled += instance.OnToolUse;
         }
 
         /// <summary>
@@ -1684,6 +1713,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @PickUp.started -= instance.OnPickUp;
             @PickUp.performed -= instance.OnPickUp;
             @PickUp.canceled -= instance.OnPickUp;
+            @ToolUse.started -= instance.OnToolUse;
+            @ToolUse.performed -= instance.OnToolUse;
+            @ToolUse.canceled -= instance.OnToolUse;
         }
 
         /// <summary>
@@ -2186,6 +2218,13 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnPickUp(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "ToolUse" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnToolUse(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Mobile" which allows adding and removing callbacks.

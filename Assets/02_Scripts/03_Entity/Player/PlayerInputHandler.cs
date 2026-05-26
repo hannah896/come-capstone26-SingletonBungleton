@@ -63,6 +63,7 @@ public sealed class InputActions_PlayerInputHandler : InputActions
         p.Crouch.performed += OnCrouchPerformed;
         p.Interact.started += OnEquip;
         p.PickUp.performed += OnPickup;
+        p.ToolUse.performed += OnToolUsePerformed;
         p.ScrollWheel.performed += OnScrollWheel;
         p.ScrollWheel.canceled += OnScrollCanceled;
         p.Previous.performed += OnPrevious;
@@ -98,6 +99,7 @@ public sealed class InputActions_PlayerInputHandler : InputActions
         p.Interact.started -= OnEquip;
         p.Interact.performed -= OnEquip;
         p.PickUp.performed -= OnPickup;
+        p.ToolUse.performed -= OnToolUsePerformed;
         p.ScrollWheel.performed -= OnScrollWheel;
         p.ScrollWheel.canceled -= OnScrollCanceled;
         p.Previous.performed -= OnPrevious;
@@ -206,6 +208,12 @@ public sealed class InputActions_PlayerInputHandler : InputActions
     {
         if (inputData == null) return;
         inputData.PickupPressed = true;
+    }
+
+    private void OnToolUsePerformed(InputAction.CallbackContext ctx)
+    {
+        if (inputData == null) return;
+        inputData.ToolUsePressed = true;
     }
 
     private void OnScrollCanceled(InputAction.CallbackContext ctx)
