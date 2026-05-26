@@ -16,7 +16,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   category: 2
   ingredients:
-  - itemData: {fileID: 11400000, guid: 5e2cad9aa1cc7634383497107cfd8248, type: 2}
+  - itemData: {fileID: 11400000, guid: aabab6fae27303b44a9620eb5a5d7311, type: 2}
     amount: 1
   - itemData: {fileID: 11400000, guid: 41909ce6e3bb1334898e2b02f5f26412, type: 2}
     amount: 1

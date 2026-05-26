@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 64f7e092734e07b468c75b5208bc1759, type: 3}
-  m_Name: Recipe_Helmet
-  m_EditorClassIdentifier: 
-  recipeName: "\uD5EC\uBA67"
+  m_Name: Recipe_Axe_Iron
+  m_EditorClassIdentifier:
+  recipeName: "철도끼"
   icon: {fileID: 0}
-  category: 2
+  category: 0
   ingredients:
-  - itemData: {fileID: 11400000, guid: 9acaa5c28b0f06147905d7eff9260d7f, type: 2}
-    amount: 4
-  - itemData: {fileID: 11400000, guid: 50213bac9b38cd84aa1e1c9170c93cb7, type: 2}
+  - itemData: {fileID: 11400000, guid: f41232c7538cb644fbe7551b247ff716, type: 2}
     amount: 2
-  resultItem: {fileID: 11400000, guid: c06e0dbf626bfce47b0abe9f177cea1b, type: 2}
+  - itemData: {fileID: 11400000, guid: b50dca45200467b4595cbddcff9b6e89, type: 2}
+    amount: 2
+  resultItem: {fileID: 11400000, guid: f1caa65b86ad5e64d83808ecd8e154de, type: 2}
   resultAmount: 1

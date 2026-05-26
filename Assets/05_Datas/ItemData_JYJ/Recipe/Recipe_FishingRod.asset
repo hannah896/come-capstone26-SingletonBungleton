@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 64f7e092734e07b468c75b5208bc1759, type: 3}
-  m_Name: Recipe_Helmet
-  m_EditorClassIdentifier: 
-  recipeName: "\uD5EC\uBA67"
+  m_Name: Recipe_FishingRod
+  m_EditorClassIdentifier:
+  recipeName: "낙싯대"
   icon: {fileID: 0}
-  category: 2
+  category: 0
   ingredients:
-  - itemData: {fileID: 11400000, guid: 9acaa5c28b0f06147905d7eff9260d7f, type: 2}
-    amount: 4
-  - itemData: {fileID: 11400000, guid: 50213bac9b38cd84aa1e1c9170c93cb7, type: 2}
+  - itemData: {fileID: 11400000, guid: f41232c7538cb644fbe7551b247ff716, type: 2}
     amount: 2
-  resultItem: {fileID: 11400000, guid: c06e0dbf626bfce47b0abe9f177cea1b, type: 2}
+  - itemData: {fileID: 11400000, guid: 1443a72bdfd73b34d94f736cd1780a6d, type: 2}
+    amount: 2
+  resultItem: {fileID: 11400000, guid: 370b01c9ce1c7fb4a924febc0bc6cfe7, type: 2}
   resultAmount: 1

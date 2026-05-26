@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 64f7e092734e07b468c75b5208bc1759, type: 3}
-  m_Name: Recipe_Helmet
-  m_EditorClassIdentifier: 
-  recipeName: "\uD5EC\uBA67"
+  m_Name: Recipe_CookedMeat3
+  m_EditorClassIdentifier:
+  recipeName: "구운고기3"
   icon: {fileID: 0}
   category: 2
   ingredients:
-  - itemData: {fileID: 11400000, guid: 9acaa5c28b0f06147905d7eff9260d7f, type: 2}
-    amount: 4
-  - itemData: {fileID: 11400000, guid: 50213bac9b38cd84aa1e1c9170c93cb7, type: 2}
-    amount: 2
-  resultItem: {fileID: 11400000, guid: c06e0dbf626bfce47b0abe9f177cea1b, type: 2}
+  - itemData: {fileID: 11400000, guid: 0cbeef8cafedfa1458f91901aeeece3d, type: 2}
+    amount: 1
+  - itemData: {fileID: 11400000, guid: 41909ce6e3bb1334898e2b02f5f26412, type: 2}
+    amount: 1
+  resultItem: {fileID: 11400000, guid: 5d4d75c548548c84b8957ce941fc102e, type: 2}
   resultAmount: 1
