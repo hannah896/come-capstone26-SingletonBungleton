@@ -17,4 +17,10 @@ MonoBehaviour:
   GatherAmount: 1
   RespawnTime: 300
   AllowedToolIds: []
-  Drops: []
+  Drops:
+  - DropPrefabKey: 
+    MinDropCount: 0
+    MaxDropCount: 0
+    DropChance: 1
+  DropRadius: 0.5
+  DropFxPrefabKey: 

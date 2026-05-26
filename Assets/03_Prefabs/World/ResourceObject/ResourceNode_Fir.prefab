@@ -274,7 +274,7 @@ GameObject:
   - component: {fileID: 1640139618756613748}
   - component: {fileID: -6310372517134561763}
   m_Layer: 11
-  m_Name: Fir_4
+  m_Name: ResourceNode_Fir
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
