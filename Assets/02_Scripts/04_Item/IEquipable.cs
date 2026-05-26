@@ -5,7 +5,7 @@ public interface IEquipable
 {
     event Action<IEquipable> OnBroken;
 
-    ItemDataSO ItemData { get; }
+    ItemDataSO ItemSO { get; }
     float CurrentDurability { get; }
     bool IsUsable { get; set; }
 

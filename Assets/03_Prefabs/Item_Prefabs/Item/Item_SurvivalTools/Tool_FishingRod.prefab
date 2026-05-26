@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1733838477762562727}
-  m_Layer: 0
+  m_Layer: 20
   m_Name: GLTF_SceneRootNode
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -45,7 +45,7 @@ GameObject:
   - component: {fileID: 5644639582332681908}
   - component: {fileID: 3844514714257612893}
   - component: {fileID: 1580170445092671858}
-  m_Layer: 0
+  m_Layer: 20
   m_Name: Object_8
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -132,7 +132,7 @@ GameObject:
   - component: {fileID: 3101359148466039128}
   - component: {fileID: 7198387136087832506}
   - component: {fileID: 5790741581415684275}
-  m_Layer: 17
+  m_Layer: 20
   m_Name: Tool_FishingRod
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -217,6 +217,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _itemSO: {fileID: 11400000, guid: 370b01c9ce1c7fb4a924febc0bc6cfe7, type: 2}
   stackCount: 1
+  _torchLight: {fileID: 0}
 --- !u!1 &3974407127140445802
 GameObject:
   m_ObjectHideFlags: 0
@@ -226,7 +227,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7051721673749847866}
-  m_Layer: 0
+  m_Layer: 20
   m_Name: wrap_2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -258,7 +259,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1544271375255316053}
-  m_Layer: 0
+  m_Layer: 20
   m_Name: metal parts_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -292,7 +293,7 @@ GameObject:
   - component: {fileID: 7212355535372004092}
   - component: {fileID: 629561242630858640}
   - component: {fileID: 607005296358994850}
-  m_Layer: 0
+  m_Layer: 20
   m_Name: Object_6
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -376,7 +377,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2822163299546392353}
-  m_Layer: 0
+  m_Layer: 20
   m_Name: root
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -410,7 +411,7 @@ GameObject:
   - component: {fileID: 5684622014072377770}
   - component: {fileID: 6550789536486403275}
   - component: {fileID: 7494378215409964780}
-  m_Layer: 0
+  m_Layer: 20
   m_Name: Object_4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -494,7 +495,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6586084118993747169}
-  m_Layer: 0
+  m_Layer: 20
   m_Name: wooden_fighting_rod_final
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -526,7 +527,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5898613402262341901}
-  m_Layer: 0
+  m_Layer: 20
   m_Name: main rod_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}

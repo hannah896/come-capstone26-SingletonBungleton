@@ -45,7 +45,10 @@
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(m['name'],'->',[a['name'] for a in m.get\\('actions',[]\\)]\\) for m in d.get\\('maps',[]\\)]\")",
       "Bash(uloop fix *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\User\\\\Documents\\\\GitHub\\\\come-capstone26-SingletonBungleton\\\\Assets\\\\05_Datas\\\\ItemData_JYJ\" -Recurse -Include *.asset)",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\User\\\\Documents\\\\GitHub\\\\come-capstone26-SingletonBungleton\" -Recurse -Directory)",
+      "Bash(Sort-Object)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\User\\\\Documents\\\\GitHub\\\\come-capstone26-SingletonBungleton\\\\Assets\" -Directory | ForEach-Object { $_.Name })"
     ]
   }
 }

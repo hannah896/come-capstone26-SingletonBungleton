@@ -4,7 +4,7 @@ public interface IEatable
 {
     FoodType FoodType { get; set; }
 
-    /// <summary>신선도 (0~1, 1이 최신선)</summary>
+    /// <summary>신선도 (0~1)</summary>
     float Freshness { get; set; }
 
     /// <summary>초당 신선도 감소량</summary>
@@ -20,17 +20,22 @@ public interface IEatable
 /// 신선도는 런타임에서 감소 처리한다.
 /// </summary>
 [System.Serializable]
-public class ItemData_Food : ItemData, IEatable
+public class ItemData_Food : ItemData, IEatable, IStackable
 {
     public FoodType id;
     public float freshness = 1f;
     public float freshnessDecayRate = 0.005f;  // 기본값: 초당 0.5% 감소
     public ItemDataSO status;
 
-    public ItemData_Food(ItemDataSO data) : base(data)
+    public int stackCount { get; set; } = 1;
+    public int stackMax => data.maxStack;
+    public bool CanStackWith(ItemDataSO otherSO) => stackCount < stackMax && otherSO == data;
+
+    public ItemData_Food(ItemDataSO data, int count = 1) : base(data)
     {
         id = data.foodType;
         freshness = 1f;
+        stackCount = Mathf.Max(1, count);
     }
 
     FoodType IEatable.FoodType         { get => id;                 set => id = value; }

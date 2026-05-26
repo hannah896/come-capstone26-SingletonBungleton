@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3101359148466039128}
   - component: {fileID: 7198387136087832506}
   - component: {fileID: 5790741581415684275}
-  m_Layer: 17
+  m_Layer: 20
   m_Name: Tool_Hammer_Gold
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -97,6 +97,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _itemSO: {fileID: 11400000, guid: 543508553f5321d4eb1e41a4a37bed0b, type: 2}
   stackCount: 1
+  _torchLight: {fileID: 0}
 --- !u!1001 &4553217148423530734
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -152,6 +153,10 @@ PrefabInstance:
     - target: {fileID: 4588287879555084299, guid: a50f012797346cf4d94673b20bb14216, type: 3}
       propertyPath: m_Name
       value: Hammer
+      objectReference: {fileID: 0}
+    - target: {fileID: 4588287879555084299, guid: a50f012797346cf4d94673b20bb14216, type: 3}
+      propertyPath: m_Layer
+      value: 20
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
