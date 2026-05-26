@@ -43,6 +43,7 @@ public class Player : MonoBehaviour
     public PlayerInputData InputData => inputData;
     public PlayerStatus Stat => stat;
     public PlayerInventory Inventory => playerInventory;
+    public PlayerFirstPersonCameraController FPCameraController => fpCameraController;
     public string CurrentStateName => machine?.CurrentStateName ?? "None";
     public string CurrentSubStateName => machine?.CurrentSubStateName ?? "None";
     public bool IsGrounded => motor != null && motor.IsGrounded;

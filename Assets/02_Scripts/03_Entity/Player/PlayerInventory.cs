@@ -586,6 +586,52 @@ public class PlayerInventory : MonoBehaviour
         return 1;
     }
 
+    /// <summary>
+    /// 장착된 도구 타입으로 수행할 ActionType을 반환한다. 유효 타겟이 있을 때만 true.
+    /// </summary>
+    public bool TryGetToolActionType(out ActionType actionType)
+    {
+        actionType = ActionType.None;
+
+        ItemDataSO handItem = EquippedHand;
+        if (handItem == null || handItem.itemType != ItemType.SurvivalTool)
+            return false;
+
+        IEquipable handTool = GetEquippedItemInstance(EquipSlot.Hand);
+        if (handTool != null && !handTool.IsUsable)
+            return false;
+
+        actionType = GetActionTypeForTool(handItem.survivalToolType);
+        if (actionType == ActionType.None)
+            return false;
+
+        float range = Mathf.Max(defaultToolUseRange, handItem.attackRange);
+        if (!TryRaycastToolTarget(range, out RaycastHit hit))
+            return false;
+
+        ResourceNode node = hit.collider.GetComponentInParent<ResourceNode>();
+        if (node == null)
+            return false;
+
+        int damage = Mathf.Max(1, Mathf.RoundToInt(handItem.attackDamage));
+        var ctx = new DamageContext(gameObject, hit.point, damage, handItem.itemID);
+        return node.CanDamage(ctx);
+    }
+
+    public void UseEquippedHandTool()
+    {
+        TryUseEquippedHandTool();
+    }
+
+    private static ActionType GetActionTypeForTool(SurvivalToolType toolType) => toolType switch
+    {
+        SurvivalToolType.Axe_Stone or SurvivalToolType.Axe_Iron or SurvivalToolType.Axe_Gold         => ActionType.Chop,
+        SurvivalToolType.Pickaxe_Stone or SurvivalToolType.Pickaxe_Iron or SurvivalToolType.Pickaxe_Gold => ActionType.Mine,
+        SurvivalToolType.Shovel_Stone or SurvivalToolType.Shovel_Iron or SurvivalToolType.Shovel_Gold => ActionType.Dig,
+        SurvivalToolType.Hammer_Stone or SurvivalToolType.Hammer_Iron or SurvivalToolType.Hammer_Gold => ActionType.Build,
+        _ => ActionType.None,
+    };
+
     private void TryUseEquippedHandTool()
     {
         ItemDataSO handItem = EquippedHand;

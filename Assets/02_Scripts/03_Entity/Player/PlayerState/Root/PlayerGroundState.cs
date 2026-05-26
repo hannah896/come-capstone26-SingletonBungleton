@@ -71,6 +71,17 @@ public class PlayerLocomotionState : PlayerRootStateBase
             return;
         }
 
+        // 도구 사용 (우클릭) → 장착 도구 타입에 맞는 ActionState 전환
+        if (Input.ToolUsePressed && Motor.IsGrounded
+            && !(SubStateMachine.CurrentState is PlayerAirState))
+        {
+            if (Entity.Inventory != null && Entity.Inventory.TryGetToolActionType(out ActionType actionType))
+            {
+                Machine.ChangeState(new PlayerActionState(Machine, actionType));
+                return;
+            }
+        }
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         // ── 테스트 입력: 숫자키 1~8로 Action 직접 트리거 ─────────────
         // 1=Pick  2=Mine  3=Chop  4=Dig  5=Ignite  6=Cook  7=Inspect  8=Build

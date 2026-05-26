@@ -48,10 +48,6 @@ public class PlayerActionState : PlayerRootStateBase
     public override void Update(float time = 1)
     {
         elapsedTime += time;
-
-        if (TryInterruptAction())
-            return;
-
         base.Update(time);
 
         if (elapsedTime >= maxActionDuration)
@@ -64,35 +60,5 @@ public class PlayerActionState : PlayerRootStateBase
     public void ChangeToLocomotion()
     {
         Machine.ChangeState(new PlayerLocomotionState(Machine));
-    }
-
-    // 모든 인터럽트 입력은 PlayerInputData(New Input System 경유)에서만 읽는다.
-    private bool TryInterruptAction()
-    {
-        if (elapsedTime < minActionDuration) return false;
-
-        if (Input.AttackPressed)
-        {
-            Debug.Log($"[State] Action interrupt by Attack - {actionType}");
-            Machine.ChangeState(new PlayerAttackState(Machine));
-            return true;
-        }
-
-        if (Input.JumpPressed && Motor.CanJump)
-        {
-            Debug.Log($"[State] Action interrupt by Jump - {actionType}");
-            Motor.SetVerticalVelocity(Entity.Stat.JumpForce);
-            ChangeToLocomotion();
-            return true;
-        }
-
-        if (Input.HasMoveInput || Input.TracePressed)
-        {
-            Debug.Log($"[State] Action interrupt by Move/Trace - {actionType}");
-            ChangeToLocomotion();
-            return true;
-        }
-
-        return false;
     }
 }

@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks;
+using DG.Tweening;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -51,6 +52,7 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
 
     private float yaw;
     private float pitch;
+    private float pitchOffset;
     private PlayerInputData inputData;
     private Transform playerBody;
     private PlayerInventory playerInventory;
@@ -114,6 +116,36 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
 
         playerInventory.OnEquippedItemChanged += OnEquippedItemChanged;
         PlaceEquippedToolUnderPivot(playerInventory.EquippedHand).Forget();
+    }
+
+    /// <summary>
+    /// 도끼 휘두르기 — 1인칭 도구 스윙 + 카메라 시야 흔들림
+    /// </summary>
+    public void PlayChopSwing()
+    {
+        if (toolPivot == null) return;
+
+        toolPivot.DOKill();
+        Quaternion restRotation = toolPivot.localRotation;
+
+        DOTween.Sequence()
+            // 1. 들어올리기 (0.12s)
+            .Append(toolPivot.DOLocalRotate(new Vector3(-25f, 0f, 10f), 0.12f, RotateMode.LocalAxisAdd)
+                .SetEase(Ease.OutQuad))
+            // 2. 내려찍기 (0.18s, 빠르게)
+            .Append(toolPivot.DOLocalRotate(new Vector3(55f, 0f, -15f), 0.18f, RotateMode.LocalAxisAdd)
+                .SetEase(Ease.InQuart))
+            // 3. 원위치 복귀 (0.28s)
+            .Append(toolPivot.DOLocalRotateQuaternion(restRotation, 0.28f)
+                .SetEase(Ease.OutQuad));
+
+        // 카메라 시야: 내려찍는 타이밍에 살짝 아래로 흔들림
+        DOTween.To(() => pitchOffset, x => pitchOffset = x, 3f, 0.18f)
+            .SetDelay(0.12f)
+            .SetEase(Ease.InQuad)
+            .OnComplete(() =>
+                DOTween.To(() => pitchOffset, x => pitchOffset = x, 0f, 0.25f)
+                    .SetEase(Ease.OutQuad));
     }
 
     /// <summary>
@@ -181,7 +213,7 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         // Pitch: 눈 피벗만 상하 회전 (몸은 기울지 않음)
         pitch -= look.y * mouseSensitivity;
         pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
-        eyePivot.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+        eyePivot.localRotation = Quaternion.Euler(pitch + pitchOffset, 0f, 0f);
     }
 
     private void CacheBodyRenderers()

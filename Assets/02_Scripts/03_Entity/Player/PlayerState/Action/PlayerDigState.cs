@@ -22,6 +22,9 @@ public class PlayerDigState : PlayerSubStateBase
     {
         base.Update(time);
         if (Machine.AnimData.IsActionAnimationCompleted())
+        {
+            Entity.Inventory?.UseEquippedHandTool();
             GetRootState<PlayerActionState>()?.ChangeToLocomotion();
+        }
     }
 }
