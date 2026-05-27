@@ -24,6 +24,9 @@ public struct SpawnShapeCount
     [Min(0)] public int maxCount;
 }
 
+/// <summary>
+/// Object - ResourceNode, Item, POI 등, 전반적으로 환경에 배치되는 오브젝트에 대한 룰
+/// </summary>
 [System.Serializable]
 public class ObjectRule
 {

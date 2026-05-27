@@ -7,7 +7,7 @@ using UnityEngine;
 //[Header("=== 제작 조건 ===")]
 //[Tooltip("이 레시피 제작에 필요한 스테이션. None이면 맨손 가능.")]
 //public StationType requiredStation = StationType.None;
-// CraftingManager
+// CraftingManager 혹은 PlayerInventory의 CanCraft 검사 로직에서 이 조건을 추가하여, 플레이어가 해당 스테이션 근처에 있을 때만 제작
 //TODO:     if (!_context.IsUnlocked(recipe.requiredStation)) return false;   // CraftingManagner에서 Crafting 검사 로직에서 추가
 //TODO: 
 
