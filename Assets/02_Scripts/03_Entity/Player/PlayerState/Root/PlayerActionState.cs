@@ -43,6 +43,7 @@ public class PlayerActionState : PlayerRootStateBase
     public override void OnExit()
     {
         base.OnExit();
+        Machine.AnimData.StopAnimation(Machine.AnimData.AnimHashKey.Action);
         Debug.Log("[State] Action 퇴장");
     }
 

@@ -2,17 +2,24 @@ using UnityEngine;
 
 /// <summary>
 /// 플레이어 사망 상태 (Root)
+/// wasHit=true  → Hit 트리거 + Dead bool → CombatDeath01 (피격 사망)
+/// wasHit=false → Dead bool만          → CombatDeath02 (자연사)
 /// </summary>
 public class PlayerDeadState : PlayerRootStateBase
 {
-    public PlayerDeadState(PlayerRootStateMachine machine) : base(machine) { }
+    private readonly bool wasHit;
+
+    public PlayerDeadState(PlayerRootStateMachine machine, bool wasHit = false) : base(machine)
+    {
+        this.wasHit = wasHit;
+    }
 
     public override void OnEnter()
     {
         base.OnEnter();
-        Machine.AnimData.SetRootState(Machine.AnimData.AnimHashKey.Dead);
-        Debug.Log("[State] Dead 진입");
-        // TODO: 사망 애니메이션 재생, 입력 비활성화
+        Machine.AnimData.PlayDeadAnimation(wasHit);
+        Debug.Log($"[State] Dead 진입 (wasHit={wasHit})");
+        // TODO: 입력 비활성화, 리스폰 로직
     }
 
     public override void OnExit()

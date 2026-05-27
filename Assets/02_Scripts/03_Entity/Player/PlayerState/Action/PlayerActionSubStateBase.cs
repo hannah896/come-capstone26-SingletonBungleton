@@ -21,6 +21,9 @@ public abstract class PlayerActionSubStateBase : PlayerSubStateBase
     /// <summary>액션 완료 시 장착 도구를 사용할지 여부 (벌목/채굴/땅파기 등)</summary>
     protected virtual bool UsesToolOnComplete => false;
 
+    /// <summary>액션 완료 후 타겟이 유효하면 계속 반복할지 여부</summary>
+    protected virtual bool ShouldLoop => false;
+
     public override void OnEnter()
     {
         base.OnEnter();
@@ -47,10 +50,22 @@ public abstract class PlayerActionSubStateBase : PlayerSubStateBase
             return;
         }
 
-        // 2) 액션 애니메이션 종료 → 애니메이터가 Locomotion(Idle)으로 복귀하면 스크립트도 전환
+        // 2) 액션 애니메이션 종료 → 애니메이터가 Locomotion(Idle)으로 복귀
         if (inLocomotion)
         {
             if (UsesToolOnComplete) Entity.Inventory?.UseEquippedHandTool();
+
+            // 루프 대상이고 타겟이 아직 유효하면 애니메이션 재트리거
+            if (ShouldLoop
+                && Entity.Inventory != null
+                && Entity.Inventory.TryGetToolActionType(out _))
+            {
+                actionStarted = false;
+                Machine.AnimData.SetRootState(Machine.AnimData.AnimHashKey.Action); // 다음 전환을 위해 Action 복원
+                Machine.AnimData.PlayActionAnimation(ActionTrigger);
+                return;
+            }
+
             GetRootState<PlayerActionState>()?.ChangeToLocomotion();
         }
     }

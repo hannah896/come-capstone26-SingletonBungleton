@@ -54,7 +54,9 @@
       "Bash(grep -n -A 20 '&__TRACKED_VAR__' 'C:\\\\Users\\\\phn22\\\\2026\\\\come-capstone26-SingletonBungleton\\\\Assets\\\\04_Animations\\\\Player\\\\FemalePlayer.controller')",
       "Bash(python -c ' *)",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('Success:',d['Success'],'Errors:',d['ErrorCount'],'Warnings:',d['WarningCount']\\); [print\\('ERR:',e['Message']\\) for e in d['Errors']]\")",
-      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('Success:',d['Success'],'Errors:',d['ErrorCount']\\); [print\\('ERR:',e['Message']\\) for e in d['Errors']]\")"
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('Success:',d['Success'],'Errors:',d['ErrorCount']\\); [print\\('ERR:',e['Message']\\) for e in d['Errors']]\")",
+      "PowerShell(uloop execute-dynamic-code *)",
+      "PowerShell(Get-Content *)"
     ]
   }
 }

@@ -129,22 +129,22 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         Quaternion restRotation = toolPivot.localRotation;
 
         DOTween.Sequence()
-            // 1. 들어올리기 (0.12s) — X축 크게 젖혀 들어올림
-            .Append(toolPivot.DOLocalRotate(new Vector3(-55f, 0f, 10f), 0.12f, RotateMode.LocalAxisAdd)
+            // 1. 들어올리기 + 오른쪽으로 당기기 (0.4s)
+            .Append(toolPivot.DOLocalRotate(new Vector3(-45f, 20f, 8f), 0.4f, RotateMode.LocalAxisAdd)
                 .SetEase(Ease.OutQuad))
-            // 2. 내려찍기 (0.18s, 빠르게) — X축 깊게 내려찍음
-            .Append(toolPivot.DOLocalRotate(new Vector3(110f, 0f, -15f), 0.18f, RotateMode.LocalAxisAdd)
+            // 2. 내려찍기 + 왼쪽 아크 (0.6s)
+            .Append(toolPivot.DOLocalRotate(new Vector3(100f, -35f, -12f), 0.6f, RotateMode.LocalAxisAdd)
                 .SetEase(Ease.InQuart))
-            // 3. 원위치 복귀 (0.28s)
-            .Append(toolPivot.DOLocalRotateQuaternion(restRotation, 0.28f)
+            // 3. 원위치 복귀 (1.0s)
+            .Append(toolPivot.DOLocalRotateQuaternion(restRotation, 1.0f)
                 .SetEase(Ease.OutQuad));
 
-        // 카메라 시야: 내려찍는 타이밍에 아래로 흔들림 (X축 연출 강화)
-        DOTween.To(() => pitchOffset, x => pitchOffset = x, 6f, 0.18f)
-            .SetDelay(0.12f)
+        // 카메라 시야: 내려찍는 타이밍에 흔들림
+        DOTween.To(() => pitchOffset, x => pitchOffset = x, 6f, 0.6f)
+            .SetDelay(0.4f)
             .SetEase(Ease.InQuad)
             .OnComplete(() =>
-                DOTween.To(() => pitchOffset, x => pitchOffset = x, 0f, 0.25f)
+                DOTween.To(() => pitchOffset, x => pitchOffset = x, 0f, 0.9f)
                     .SetEase(Ease.OutQuad));
     }
 

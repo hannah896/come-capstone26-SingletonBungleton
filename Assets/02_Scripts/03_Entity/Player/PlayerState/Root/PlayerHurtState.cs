@@ -5,14 +5,18 @@ using UnityEngine;
 /// </summary>
 public class PlayerHurtState : PlayerRootStateBase
 {
+    // 피격 애니메이션 최소 재생 시간 (애니메이터 연동 전 안전망)
+    private const float hurtDuration = 0.7f;
+    private float elapsedTime;
+
     public PlayerHurtState(PlayerRootStateMachine machine) : base(machine) { }
 
     public override void OnEnter()
     {
         base.OnEnter();
+        elapsedTime = 0f;
         Machine.AnimData.SetRootState(Machine.AnimData.AnimHashKey.Hurt);
         Debug.Log("[State] Hurt 진입");
-        // TODO: 피격 애니메이션 재생
     }
 
     public override void OnExit()
@@ -23,11 +27,12 @@ public class PlayerHurtState : PlayerRootStateBase
 
     public override void Update(float time = 1)
     {
-        // TODO: 피격 애니메이션 완료 시 Locomotion으로 복귀
-        // 체력 0 이하면 Dead로 전환
+        elapsedTime += time;
+        if (elapsedTime < hurtDuration) return;
+
         if (Entity.Stat.IsDead)
         {
-            Machine.ChangeState(new PlayerDeadState(Machine));
+            Machine.ChangeState(new PlayerDeadState(Machine, wasHit: true));
             return;
         }
 

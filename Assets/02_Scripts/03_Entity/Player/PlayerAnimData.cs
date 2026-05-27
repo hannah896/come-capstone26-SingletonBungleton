@@ -5,6 +5,14 @@ public class PlayerAnimData
     private Animator animator;
     private PlayerAnimHashKey animHashKey = new();
 
+    // 각 루트 SM의 진입 상태 해시 (CrossFade 타겟)
+    private static readonly int s_idleHash         = Animator.StringToHash("Idle");
+    private static readonly int s_damageHash        = Animator.StringToHash("HumanF@Damage01");
+    private static readonly int s_combatDeath01Hash = Animator.StringToHash("HumanF@CombatDeath01");
+    private static readonly int s_combatDeath02Hash = Animator.StringToHash("HumanF@CombatDeath02");
+
+    private const float CrossFadeTime = 0.05f;
+
     public PlayerAnimHashKey AnimHashKey => animHashKey;
 
     public PlayerAnimData(Animator animator)
@@ -14,7 +22,7 @@ public class PlayerAnimData
 
     /// <summary>
     /// 루트 상태 진입 시 호출. 모든 루트 라우팅 bool을 끄고 지정한 루트 bool만 켠다.
-    /// 애니메이터 BaseLayer는 이 bool로 어느 루트 SM(Locomotion/Action/Attack/Hurt/Dead)으로 갈지 결정한다.
+    /// CrossFade로 현재 애니메이션의 exit time을 무시하고 즉시 전환한다.
     /// </summary>
     public void SetRootState(int rootBoolHash)
     {
@@ -24,6 +32,33 @@ public class PlayerAnimData
         animator.SetBool(animHashKey.Hurt, false);
         animator.SetBool(animHashKey.Dead, false);
         animator.SetBool(rootBoolHash, true);
+
+        int entryHash = GetEntryStateHash(rootBoolHash);
+        if (entryHash != 0)
+            animator.CrossFade(entryHash, CrossFadeTime, 0, 0f);
+    }
+
+    /// <summary>
+    /// Dead 전용. wasHit에 따라 다른 사망 애니메이션으로 즉시 CrossFade한다.
+    /// Entry 조건 평가를 거치지 않고 직접 타겟 상태로 전환하므로 Hit 트리거 불필요.
+    /// </summary>
+    public void PlayDeadAnimation(bool wasHit)
+    {
+        animator.SetBool(animHashKey.Locomotion, false);
+        animator.SetBool(animHashKey.Action, false);
+        animator.SetBool(animHashKey.Attack, false);
+        animator.SetBool(animHashKey.Hurt, false);
+        animator.SetBool(animHashKey.Dead, true);
+
+        int deathHash = wasHit ? s_combatDeath01Hash : s_combatDeath02Hash;
+        animator.CrossFade(deathHash, CrossFadeTime, 0, 0f);
+    }
+
+    private int GetEntryStateHash(int rootBoolHash)
+    {
+        if (rootBoolHash == animHashKey.Locomotion) return s_idleHash;
+        if (rootBoolHash == animHashKey.Hurt)       return s_damageHash;
+        return 0; // Action/Attack/Sleep 은 bool + 자체 Trigger로 처리
     }
 
     /// <summary>
@@ -74,6 +109,14 @@ public class PlayerAnimData
             && animator.GetNextAnimatorStateInfo(layer).shortNameHash == stateShortHash)
             return true;
         return false;
+    }
+
+    /// <summary>
+    /// Hit 트리거를 설정한다. Dead SM 진입 전에 호출해야 CombatDeath01로 라우팅된다.
+    /// </summary>
+    public void SetHitTrigger()
+    {
+        animator.SetTrigger(animHashKey.Hit);
     }
 
     /// <summary>

@@ -75,6 +75,7 @@ public class Player : MonoBehaviour
         var statData = await Extensions.LoadAssetAsync<PlayerStatData>("PlayerStatData")
             .AttachExternalCancellation(token);
         stat = new(statData);
+        stat.OnDamaged += HandleDamaged;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[Player] Initialized - Motor: " + (motor != null) + ", Animator: " + (animator != null));
@@ -146,6 +147,10 @@ public class Player : MonoBehaviour
     {
         if (motor == null || machine == null) return;
 
+        // 액션 연출 중에는 카메라 외 모든 입력 차단
+        if (IsLocalPlayerObject() && machine.CurrentState is PlayerActionState)
+            inputData?.SuppressAllInputs();
+
         machine.OnUpdate(deltaTime);
         motor.Tick(deltaTime);  // 중력 시뮬레이션, 착지 감지, 이동 수행
         if (IsLocalPlayerObject())
@@ -153,15 +158,33 @@ public class Player : MonoBehaviour
             playerInventory?.Tick();
             inputData?.ConsumeEventInputs();
         }
+
+        // 허기·Ego는 일시정지(Stopping) 외에는 항상 소모 (GameProcessing.None인 테스트 씬 포함)
+        if (stat != null && GameScene.GameProcessing != GameProcessing.Stopping)
+        {
+            stat.UpdateHunger(deltaTime);
+            stat.UpdateEgo(deltaTime);
+
+            // 자연사 감지 (허기·Ego로 HP가 0이 된 경우)
+            if (stat.IsDead
+                && machine.CurrentState is not PlayerDeadState
+                && machine.CurrentState is not PlayerHurtState)
+            {
+                machine.ChangeState(new PlayerDeadState(machine, wasHit: false));
+            }
+        }
     }
 
     private void OnLoopGameUpdate(float deltaTime)
     {
         machine.OnGameUpdate(deltaTime);
+    }
 
-        if (stat == null) return;
-        stat.UpdateHunger(deltaTime);
-        stat.UpdateEgo(deltaTime);
+    private void HandleDamaged(float damage)
+    {
+        if (machine == null) return;
+        if (machine.CurrentState is PlayerHurtState || machine.CurrentState is PlayerDeadState) return;
+        machine.ChangeState(new PlayerHurtState(machine));
     }
 
     private bool IsLocalPlayerObject()

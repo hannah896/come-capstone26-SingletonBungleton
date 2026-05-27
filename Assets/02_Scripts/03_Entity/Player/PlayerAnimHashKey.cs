@@ -28,6 +28,7 @@ public class PlayerAnimHashKey
     private readonly string sleep = "sleep";
     private readonly string dead = "Dead";
     private readonly string hurt = "Hurt";
+    private readonly string hit = "Hit";
     #endregion
 
     #region HashProperties
@@ -54,6 +55,7 @@ public class PlayerAnimHashKey
     public int Sleep { get; private set; }
     public int Dead { get; private set; }
     public int Hurt { get; private set; }
+    public int Hit { get; private set; }
     #endregion
 
     public PlayerAnimHashKey()
@@ -84,5 +86,6 @@ public class PlayerAnimHashKey
         Sleep = Animator.StringToHash(sleep);
         Dead = Animator.StringToHash(dead);
         Hurt = Animator.StringToHash(hurt);
+        Hit = Animator.StringToHash(hit);
     }
 }

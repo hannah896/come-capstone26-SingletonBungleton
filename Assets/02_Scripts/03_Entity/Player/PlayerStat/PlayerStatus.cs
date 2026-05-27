@@ -1,7 +1,9 @@
+using System;
 using UnityEngine;
 
 public class PlayerStatus
 {
+    public event Action<float> OnDamaged;
     #region Fields
     #region 체력
     public float MaxHp { get; private set; }
@@ -89,6 +91,8 @@ public class PlayerStatus
     {
         float finalDamage = Mathf.Max(damage - Defense, 0f);
         CurrentHp = Mathf.Max(CurrentHp - finalDamage, 0f);
+        if (finalDamage > 0f)
+            OnDamaged?.Invoke(finalDamage);
     }
 
     /// <summary>
