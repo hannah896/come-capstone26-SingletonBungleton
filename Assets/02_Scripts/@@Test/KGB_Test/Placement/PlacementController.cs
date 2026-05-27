@@ -90,8 +90,8 @@ public class PlacementController : MonoBehaviour
 
         if (playerInventory != null)
             playerInventory.OnSelectedSlotChanged += HandleSelectedSlotChanged;
-        //if (craftingManager != null)
-        //    craftingManager.OnCrafted += HandleCrafted; //TODO: CraftingManager에 OnCrafted 이벤트 추가 필요
+        if (craftingManager != null)
+            craftingManager.OnCrafted += HandleCrafted; //TODO: CraftingManager에 OnCrafted 이벤트 추가 필요
         //                                                //      OnClickedPlaceButton 이벤트로 변경하여 UI에서 배치 모드 진입하도록 변경하는 것도 
     }
 
@@ -99,8 +99,8 @@ public class PlacementController : MonoBehaviour
     {
         if (playerInventory != null)
             playerInventory.OnSelectedSlotChanged -= HandleSelectedSlotChanged;
-        //if (craftingManager != null)
-        //    craftingManager.OnCrafted -= HandleCrafted;
+        if (craftingManager != null)
+            craftingManager.OnCrafted -= HandleCrafted;
     }
     // 슬롯 변경 시 해당 슬롯의 아이템이 배치 가능한지 체크하여 배치 모드로 진입
     private void HandleSelectedSlotChanged(int slotIndex)
@@ -167,7 +167,7 @@ public class PlacementController : MonoBehaviour
         previewVisualizer?.SetVisible(true);
 
         Vector3 snappedPosition = GetSnappedPosition(worldPosition);
-        //currentPosition = snappedPosition + activeItemData.placementPivotOffset;    //TODO: ItemDataSO에 placementPivotOffset 추가 필요
+        currentPosition = snappedPosition + activeItemData.placementPivotOffset;    //TODO: ItemDataSO에 placementPivotOffset 추가 필요
 
         HandleRotationInput();
 
@@ -193,10 +193,10 @@ public class PlacementController : MonoBehaviour
 
     private void ConfirmPlacement()
     {
-        //if (activeItemData == null || activeItemData.placementPrefab == null)           //TODO: ItemDataSO에 placementPrefab 추가 필요
-        //    return;
+        if (activeItemData == null || activeItemData.placementPrefab == null)           //TODO: ItemDataSO에 placementPrefab 추가 필요
+            return;
 
-        //Instantiate(activeItemData.placementPrefab, currentPosition, currentRotation);
+        Instantiate(activeItemData.placementPrefab, currentPosition, currentRotation);
 
         if (playerInventory != null && activeItemData != null)
             playerInventory.RemoveItem(activeItemData, 1);
@@ -237,8 +237,8 @@ public class PlacementController : MonoBehaviour
 
     private Vector3 GetSnappedPosition(Vector3 worldPosition)
     {
-        //if (activeItemData == null || !activeItemData.placementSnapToGrid)                  //TODO: ItemDataSO에 placementSnapToGrid 추가 필요
-        //    return worldPosition;
+        if (activeItemData == null || !activeItemData.placementSnapToGrid)                  //TODO: ItemDataSO에 placementSnapToGrid 추가 필요
+            return worldPosition;
 
         float x = Mathf.Round(worldPosition.x / gridSize) * gridSize;
         float z = Mathf.Round(worldPosition.z / gridSize) * gridSize;
@@ -249,7 +249,7 @@ public class PlacementController : MonoBehaviour
     private bool IsPlaceableItem(ItemDataSO itemData)
     {
         return true; // TODO: 임시처리
-        //return itemData != null && itemData.isPlaceable && itemData.placementPrefab != null;
+        return itemData != null && itemData.isPlaceable && itemData.placementPrefab != null;
     }
 
     private void ClearActiveData()
