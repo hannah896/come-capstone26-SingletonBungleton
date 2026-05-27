@@ -7,7 +7,7 @@ public abstract class ItemData
 {
     public ItemDataSO data;
 
-    public ItemData(ItemDataSO data, int count = 1)
+    public ItemData(ItemDataSO data)
     {
         this.data = data;
     }
@@ -23,10 +23,10 @@ public abstract class ItemData
         return so.itemType switch
         {
             ItemType.Resource     => new Item_Resource(so, count),
-            ItemType.CombatGear   => new Item_CombatGear(so, count),
-            ItemType.SurvivalTool => new Item_SurvivalTool(so, count),
+            ItemType.CombatGear   => new Item_CombatGear(so),
+            ItemType.SurvivalTool => new Item_SurvivalTool(so),
             ItemType.Booty        => new Item_Booty(so, count),
-            ItemType.Food         => new ItemData_Food(so, count),
+            ItemType.Food         => new ItemData_Food(so),
             _                     => null
         };
     }

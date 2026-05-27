@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 5483032964755612559}
   - component: {fileID: 5344396433993286451}
   - component: {fileID: 6540704304214945957}
+  - component: {fileID: -7189911470230732605}
   m_Layer: 17
   m_Name: Booty_Horn
   m_TagString: Untagged
@@ -75,6 +76,27 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!65 &-7189911470230732605
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8857888291293560015}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.27444735, y: 1.2771137, z: 0.54183906}
+  m_Center: {x: -0.018062785, y: 0.5943352, z: -0.16456261}
 --- !u!1001 &4657624105045902637
 PrefabInstance:
   m_ObjectHideFlags: 0

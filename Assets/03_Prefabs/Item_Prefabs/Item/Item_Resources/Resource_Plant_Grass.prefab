@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 5093190694455046676}
   - component: {fileID: 1009029460935520110}
   - component: {fileID: 7621648570074764800}
+  - component: {fileID: 5869948984527322983}
   m_Layer: 17
   m_Name: Resource_Plant_Grass
   m_TagString: Untagged
@@ -75,6 +76,27 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!65 &5869948984527322983
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1875203593042857739}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.70088124, y: 0.25601327, z: 0.40717056}
+  m_Center: {x: 0.14955938, y: 0.16890904, z: 0.042132452}
 --- !u!1001 &1013754630185036918
 PrefabInstance:
   m_ObjectHideFlags: 0
