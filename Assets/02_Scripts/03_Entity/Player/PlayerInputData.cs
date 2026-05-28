@@ -60,5 +60,25 @@ public class PlayerInputData
         TracePressed = false;
     }
 
+    /// <summary>
+    /// 연출 재생 중 입력 차단. LookInput(카메라)은 유지한다.
+    /// </summary>
+    public void SuppressAllInputs()
+    {
+        MoveInput = Vector2.zero;
+        SprintHeld = false;
+        JumpPressed = false;
+        AttackPressed = false;
+        CrouchPressed = false;
+        InteractPressed = false;
+        PickupPressed = false;
+        EquipSelectedPressed = false;
+        ToolUsePressed = false;
+        QuickSlotIndex = -1;
+        QuickSlotScrollDelta = 0;
+        TracePressed = false;
+        PendingAction = ActionType.None;
+    }
+
     #endregion
 }

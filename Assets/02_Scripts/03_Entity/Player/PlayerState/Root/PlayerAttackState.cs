@@ -10,6 +10,7 @@ public class PlayerAttackState : PlayerRootStateBase
     public override void OnEnter()
     {
         base.OnEnter();
+        Machine.AnimData.SetRootState(Machine.AnimData.AnimHashKey.Attack);
         Debug.Log("[State] Attack 진입");
         // TODO: 공격 애니메이션 재생
     }

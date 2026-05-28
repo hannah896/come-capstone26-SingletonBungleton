@@ -36,5 +36,6 @@ public class PlayerStatData : EntityStatData
     public float Wetness;
     public float MaxWetness;
     public float WetnessTemperatureDecreaseRate;
-    public float WaterProofWetness;
+    [UnityEngine.Serialization.FormerlySerializedAs("WaterProofWetness")]
+    public float WaterproofRate;
 }

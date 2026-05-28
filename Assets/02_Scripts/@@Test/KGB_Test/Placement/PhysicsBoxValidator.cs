@@ -15,18 +15,17 @@ public class PhysicsBoxValidator : IPlacementValidator
     {
         if (item == null) return false;
 
-        //var fp = item.placementFootprint;
-        //int fx = Mathf.Max(1, fp.x);
-        //int fz = Mathf.Max(1, fp.y);
+        var fp = item.placementFootprint;
+        int fx = Mathf.Max(1, fp.x);
+        int fz = Mathf.Max(1, fp.y);
 
-        //Vector3 half = new(
-        //    fx * gridSize * 0.5f,
-        //    item.placementCheckHeight * 0.5f,
-        //    fz * gridSize * 0.5f);
+        Vector3 half = new(
+            fx * gridSize * 0.5f,
+            item.placementCheckHeight * 0.5f,
+            fz * gridSize * 0.5f);
 
-        //Vector3 center = position + item.placementCheckCenterOffset;
-        //return !Physics.CheckBox(center, half, rotation, blockingMask);
-        return true;
+        Vector3 center = position + item.placementCheckCenterOffset;
+        return !Physics.CheckBox(center, half, rotation, blockingMask);
     }
 
     public bool IsCellValid(Vector3 cellPosition, float cellSize)

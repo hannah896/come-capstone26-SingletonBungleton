@@ -15,9 +15,13 @@ public class UI_Panel_PlayerStatus : UI_Panel
     [SerializeField] private UI_Image UI_HungerIcon;
     [SerializeField] private UI_Image UI_HPIcon;
     [SerializeField] private UI_Image UI_EgoIcon;
+    [SerializeField] private UI_Image UI_HungerBar;
+    [SerializeField] private UI_Image UI_HPBar;
+    [SerializeField] private UI_Image UI_EgoBar;
     [SerializeField] private UI_Text UI_HungerText;
     [SerializeField] private UI_Text UI_HPText;
     [SerializeField] private UI_Text UI_EgoText;
+
 
     private PlayerStatus status;
     private StatusKind? hoveredKind;
@@ -71,6 +75,8 @@ public class UI_Panel_PlayerStatus : UI_Panel
         if (player != null)
             status = player.Stat;
 
+        RefreshFillAmounts();
+
         if (hoveredKind.HasValue)
             RefreshValue(hoveredKind.Value);
     }
@@ -80,6 +86,9 @@ public class UI_Panel_PlayerStatus : UI_Panel
         UI_HungerIcon ??= gameObject.FindChild<UI_Image>("UI_HungerIcon");
         UI_HPIcon ??= gameObject.FindChild<UI_Image>("UI_HPIcon");
         UI_EgoIcon ??= gameObject.FindChild<UI_Image>("UI_EgoIcon");
+        UI_HungerBar ??= gameObject.FindChild<UI_Image>("UI_HungerBar");
+        UI_HPBar ??= gameObject.FindChild<UI_Image>("UI_HPBar");
+        UI_EgoBar ??= gameObject.FindChild<UI_Image>("UI_EgoBar");
         UI_HungerText ??= gameObject.FindChild<UI_Text>("UI_HungerText");
         UI_HPText ??= gameObject.FindChild<UI_Text>("UI_HPText");
         UI_EgoText ??= gameObject.FindChild<UI_Text>("UI_EgoText");
@@ -218,6 +227,17 @@ public class UI_Panel_PlayerStatus : UI_Panel
 
         subscribedLoop = null;
         isLoopSubscribed = false;
+    }
+
+    private void RefreshFillAmounts()
+    {
+        float hungerFill  = status != null && status.MaxHunger > 0f ? status.CurrentHunger / status.MaxHunger : 1f;
+        float hpFill      = status != null && status.MaxHp     > 0f ? status.CurrentHp     / status.MaxHp     : 1f;
+        float egoFill     = status != null && status.MaxEgo    > 0f ? status.CurrentEgo    / status.MaxEgo    : 1f;
+
+        UI_HungerBar?.SetFill(hungerFill);
+        UI_HPBar?.SetFill(hpFill);
+        UI_EgoBar?.SetFill(egoFill);
     }
 
     private static string FormatValue(float current, float max)

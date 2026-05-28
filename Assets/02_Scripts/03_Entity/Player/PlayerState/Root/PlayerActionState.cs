@@ -6,8 +6,8 @@ using UnityEngine;
 /// </summary>
 public class PlayerActionState : PlayerRootStateBase
 {
-    private const float minActionDuration = 0.15f;
-    private const float maxActionDuration = 2.5f;
+    // 애니메이터가 액션을 끝내지 못하고 멈춘 경우를 대비한 안전망 (정상 흐름은 애니메이터 복귀로 종료)
+    private const float maxActionDuration = 5f;
 
     private readonly ActionType actionType;
     private float elapsedTime;
@@ -21,6 +21,7 @@ public class PlayerActionState : PlayerRootStateBase
     {
         base.OnEnter();
         elapsedTime = 0f;
+        Machine.AnimData.SetRootState(Machine.AnimData.AnimHashKey.Action);
         Debug.Log($"[State] Action 진입 - {actionType}");
 
         PlayerSubStateBase subState = actionType switch
@@ -42,6 +43,7 @@ public class PlayerActionState : PlayerRootStateBase
     public override void OnExit()
     {
         base.OnExit();
+        Machine.AnimData.StopAnimation(Machine.AnimData.AnimHashKey.Action);
         Debug.Log("[State] Action 퇴장");
     }
 
@@ -49,6 +51,9 @@ public class PlayerActionState : PlayerRootStateBase
     {
         elapsedTime += time;
         base.Update(time);
+
+        // 하위 상태가 이미 Locomotion으로 전환했다면 중복 전환 방지
+        if (Machine.CurrentState != this) return;
 
         if (elapsedTime >= maxActionDuration)
         {

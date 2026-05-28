@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -14,7 +15,9 @@ public class CraftingManager : MonoBehaviour
 
     private PlayerInventory inventory;
 
-    public event System.Action OnCraftingChanged;
+    public event Action OnCraftingChanged;
+
+    public event Action<RecipeDataSO, ItemDataSO, int> OnCrafted;
 
     private void Awake()
     {

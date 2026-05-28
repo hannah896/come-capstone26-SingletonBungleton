@@ -29,9 +29,12 @@ public class PlayerAirState : PlayerSubStateBase
     {
         base.Update(time);
 
-        // 공중 이동 제어 (지상 속도의 50%)
+        // 공중 이동 제어: 스프린트 중이면 달리기 속도 유지, 아니면 절반 속도
         Vector3 dir = CalcCameraRelativeDir(Input.MoveInput);
-        Entity.Motor.SetHorizontalVelocity(dir, Entity.Stat.MoveSpeed * airControlFactor);
+        float targetSpeed = Input.SprintHeld
+            ? Entity.Stat.MoveSpeed * Entity.Stat.SprintMultiplier
+            : Entity.Stat.MoveSpeed * airControlFactor;
+        Entity.Motor.SetHorizontalVelocity(dir, targetSpeed);
 
         if (dir.sqrMagnitude > 0.01f)
             Entity.Motor.RotateToward(dir, airRotationSpeed);
