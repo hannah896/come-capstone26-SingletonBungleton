@@ -53,7 +53,7 @@ public class PlayerStatus
 
     public PlayerStatus(PlayerStatData data)
     {
-        // EntityStatData 필드
+        // EntityStatData 필드 
         MaxHp = data.MaxHP;
         CurrentHp = data.CurHP;
         Attack = data.AttackDamage;
