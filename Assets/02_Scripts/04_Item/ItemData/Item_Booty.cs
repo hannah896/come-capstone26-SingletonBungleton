@@ -9,7 +9,7 @@ public class Item_Booty : ItemData, IStackable
     public BootyType bootyType;
     public string sourceMonsterName;
 
-    public int stackCount { get; set; } = 1;
+    public int stackCount { get; set; }
     public int stackMax => data.maxStack;
 
     public bool CanStackWith(ItemDataSO otherSO) => stackCount < stackMax && otherSO == data;
@@ -17,7 +17,7 @@ public class Item_Booty : ItemData, IStackable
     public Item_Booty(ItemDataSO data, int count = 1) : base(data)
     {
         bootyType = data.bootyType;
-        stackCount = count;
+        stackCount = Mathf.Max(1, count);
     }
 
     public void SetLootInfo(string monsterName)

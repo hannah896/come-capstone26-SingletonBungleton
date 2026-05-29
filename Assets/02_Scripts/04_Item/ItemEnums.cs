@@ -71,7 +71,8 @@ public enum BootyType
     Meat1,      // 생고기
     Meat2,
     Meat3,
-    Egg,        //알
+    Fish,       // 생선
+    Egg,        // 알
     Leather,    // 가죽
     Feather,    // 깃털
     Horn        // 뿔

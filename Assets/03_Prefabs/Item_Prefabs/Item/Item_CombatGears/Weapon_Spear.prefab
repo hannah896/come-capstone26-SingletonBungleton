@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3982426335704336452}
   - component: {fileID: 6136114099488518464}
   - component: {fileID: 5028886481152299529}
-  m_Layer: 17
+  m_Layer: 20
   m_Name: Weapon_Spear
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -48,6 +48,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _itemSO: {fileID: 11400000, guid: af0d40ff45c7db0458d0220260c739e8, type: 2}
+  stackCount: 1
+  _torchLight: {fileID: 0}
 --- !u!54 &6136114099488518464
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -150,7 +152,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5474014686464707439, guid: 1a8eaaa38b934ed4dbe357ed598e1318, type: 3}
       propertyPath: m_Layer
-      value: 17
+      value: 20
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

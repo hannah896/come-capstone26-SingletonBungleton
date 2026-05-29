@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 5344396433993286451}
   - component: {fileID: 6540704304214945957}
   - component: {fileID: -7189911470230732605}
-  m_Layer: 17
+  m_Layer: 18
   m_Name: Booty_Horn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -49,6 +49,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _itemSO: {fileID: 11400000, guid: 3dac3d9944fb33b45a908a2340b97911, type: 2}
   stackCount: 99
+  _torchLight: {fileID: 0}
 --- !u!54 &6540704304214945957
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -151,7 +152,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6547896281744465490, guid: 8d7853af1b66f0e4493c6429fee91a70, type: 3}
       propertyPath: m_Layer
-      value: 17
+      value: 18
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

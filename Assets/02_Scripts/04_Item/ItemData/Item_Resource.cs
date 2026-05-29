@@ -8,7 +8,7 @@ public class Item_Resource : ItemData, IStackable
 {
     public ResourceType resourceType;
 
-    public int stackCount { get; set; } = 1;
+    public int stackCount { get; set; }
     public int stackMax => data.maxStack;
 
     public bool CanStackWith(ItemDataSO otherSO) => stackCount < stackMax && otherSO == data;
@@ -16,7 +16,7 @@ public class Item_Resource : ItemData, IStackable
     public Item_Resource(ItemDataSO data, int count = 1) : base(data)
     {
         resourceType = data.resourceType;
-        stackCount = count;
+        stackCount = Mathf.Max(1, count);
 
         if (!data.isStackable)
             Debug.LogWarning($"[자원] {data.itemName}: 스택 불가 설정 확인 필요!");

@@ -21,11 +21,11 @@ TagManager:
   - 
   - 
   - 
-  - 
   - Gatherable
-  - Item
-  - 
-  - 
+  - ItemResource
+  - Booty
+  - Food
+  - Tool_CombatGear
   - 
   - 
   - 

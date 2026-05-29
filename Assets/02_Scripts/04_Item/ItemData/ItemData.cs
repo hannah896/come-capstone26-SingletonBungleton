@@ -26,8 +26,14 @@ public abstract class ItemData
             ItemType.CombatGear   => new Item_CombatGear(so),
             ItemType.SurvivalTool => new Item_SurvivalTool(so),
             ItemType.Booty        => new Item_Booty(so, count),
-            ItemType.Food         => new ItemData_Food(so),
-            _                     => null
+            ItemType.Food         => new ItemData_Food(so, count),
+            _                     => LogUnknownType(so)
         };
+    }
+
+    private static ItemData LogUnknownType(ItemDataSO so)
+    {
+        UnityEngine.Debug.LogError($"[ItemData] 알 수 없는 ItemType: {so.itemType} ({so.itemName})");
+        return null;
     }
 }

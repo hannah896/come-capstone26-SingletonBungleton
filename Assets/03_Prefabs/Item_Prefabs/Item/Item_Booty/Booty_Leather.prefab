@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3806008152954216400}
   - component: {fileID: 1804107488793237530}
   - component: {fileID: 8002537233531684376}
-  m_Layer: 17
+  m_Layer: 18
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -120,7 +120,7 @@ GameObject:
   - component: {fileID: 2271463231403333722}
   - component: {fileID: 5095994552672582182}
   - component: {fileID: 8085459005631852212}
-  m_Layer: 17
+  m_Layer: 18
   m_Name: Booty_Leather
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -205,3 +205,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _itemSO: {fileID: 11400000, guid: 50213bac9b38cd84aa1e1c9170c93cb7, type: 2}
   stackCount: 99
+  _torchLight: {fileID: 0}

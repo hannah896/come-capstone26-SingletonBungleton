@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 1035933662113956002}
   - component: {fileID: 4740830514700835942}
   - component: {fileID: 4395288255355100492}
-  m_Layer: 17
+  m_Layer: 18
   m_Name: Booty_Feather
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -97,6 +97,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _itemSO: {fileID: 11400000, guid: 591a07624aafd3b49bd884681bbc252f, type: 2}
   stackCount: 99
+  _torchLight: {fileID: 0}
 --- !u!1 &8272692925635098525
 GameObject:
   m_ObjectHideFlags: 0
@@ -108,7 +109,7 @@ GameObject:
   - component: {fileID: 5321220530617668865}
   - component: {fileID: 3215604969936712888}
   - component: {fileID: 7851694950551241015}
-  m_Layer: 0
+  m_Layer: 18
   m_Name: feather_2
   m_TagString: Untagged
   m_Icon: {fileID: 0}

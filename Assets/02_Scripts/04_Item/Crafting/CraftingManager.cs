@@ -102,4 +102,32 @@ public class CraftingManager : MonoBehaviour
             if (recipe.resultItem == resultItem) return recipe;
         return null;
     }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// 에디터 전용: 프로젝트 내 모든 RecipeDataSO를 allRecipes에 자동 로드한다.
+    /// CraftingManager 컴포넌트 우클릭 → "모든 레시피 자동 로드" 로 실행.
+    /// </summary>
+    [ContextMenu("모든 레시피 자동 로드")]
+    public void LoadAllRecipesEditor()
+    {
+        allRecipes.Clear();
+        string[] guids = UnityEditor.AssetDatabase.FindAssets("t:RecipeDataSO");
+        foreach (string guid in guids)
+        {
+            string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+            var recipe = UnityEditor.AssetDatabase.LoadAssetAtPath<RecipeDataSO>(path);
+            if (recipe != null) allRecipes.Add(recipe);
+        }
+        UnityEditor.EditorUtility.SetDirty(this);
+        Debug.Log($"[CraftingManager] 레시피 {allRecipes.Count}개 자동 로드됨");
+    }
+
+    private void OnValidate()
+    {
+        // 씬/컴포넌트가 에디터에서 열릴 때 자동 갱신
+        if (allRecipes.Count == 0)
+            LoadAllRecipesEditor();
+    }
+#endif
 }

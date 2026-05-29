@@ -493,7 +493,7 @@ public class PlayerInventory : MonoBehaviour
         if (brokenSlot == EquipSlot.None) return;
 
         UnsubscribeEquippedItemInstance(brokenSlot);
-        ClearEquippedItem(brokenSlot, brokenItem.ItemData);
+        ClearEquippedItem(brokenSlot, brokenItem.ItemSO);
     }
 
     private void UnsubscribeEquippedItemInstance(EquipSlot equipSlot)

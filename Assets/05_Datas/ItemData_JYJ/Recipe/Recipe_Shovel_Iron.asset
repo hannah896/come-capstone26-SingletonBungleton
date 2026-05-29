@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 64f7e092734e07b468c75b5208bc1759, type: 3}
+  m_Name: Recipe_Shovel_Iron
+  m_EditorClassIdentifier:
+  recipeName: "철삽"
+  icon: {fileID: 0}
+  category: 0
+  ingredients:
+  - itemData: {fileID: 11400000, guid: f41232c7538cb644fbe7551b247ff716, type: 2}
+    amount: 2
+  - itemData: {fileID: 11400000, guid: b50dca45200467b4595cbddcff9b6e89, type: 2}
+    amount: 2
+  resultItem: {fileID: 11400000, guid: 3e0f9cb5d0372ce4eb17007d8d376cc5, type: 2}
+  resultAmount: 1

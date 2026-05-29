@@ -97,6 +97,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _itemSO: {fileID: 11400000, guid: aabab6fae27303b44a9620eb5a5d7311, type: 2}
   stackCount: 99
+  _torchLight: {fileID: 0}
 --- !u!1001 &648299187729458989
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -108,6 +109,10 @@ PrefabInstance:
     - target: {fileID: 8141626460590595585, guid: fab4a792975b74f428fbba4954d6cd44, type: 3}
       propertyPath: m_Name
       value: Cherries_Rainier
+      objectReference: {fileID: 0}
+    - target: {fileID: 8141626460590595585, guid: fab4a792975b74f428fbba4954d6cd44, type: 3}
+      propertyPath: m_Layer
+      value: 17
       objectReference: {fileID: 0}
     - target: {fileID: 8914609989106795707, guid: fab4a792975b74f428fbba4954d6cd44, type: 3}
       propertyPath: m_LocalPosition.x
