@@ -13,7 +13,6 @@ using UnityEngine;
 
 public abstract class CraftingStation : Structure
 {
-    public abstract StationType StationType { get; }
 
     [Header("근접 트리거")]
     [SerializeField] private SphereCollider proximityTrigger;
@@ -84,13 +83,4 @@ public class CraftingContext
             }
         }
     }
-}
-
-public enum StationType
-{
-    None,        // 맨손 (Survival 카테고리 — 횃불, 모닥불, 망치 같은 기초)
-    Workbench,   // 제작대
-    Campfire,    // 모닥불
-    CookingPot,  // 요리솥
-    Furnace      // 화덕
 }

@@ -10,11 +10,13 @@ public class ResourceNodeData : ScriptableObject
     [Header("Meta")]
     public string Name;
 
+    [Header("Type")]
+    public ResourceNodeType ResourceNodeType;
+
     [Header("Stats")]
     public int MaxHealth = 3;               // 자원 노드의 최대 체력
     public int GatherAmount = 1;            // 채집 용 횟수
     public int RespawnTime = 300;           // 자원 노드가 파괴된 후 재생성되기까지의 시간 (초 단위)
-    public string[] AllowedToolIds;
 
     [Header("Drops")]
     public DropData[] Drops;
@@ -27,6 +29,13 @@ public class ResourceNodeData : ScriptableObject
     }
 }
 
+public enum ResourceNodeType
+{
+    None = 0,
+    Tree = 1,
+    Mine = 2,
+    Bush = 3,
+}
 
 [Serializable]
 public class DropData

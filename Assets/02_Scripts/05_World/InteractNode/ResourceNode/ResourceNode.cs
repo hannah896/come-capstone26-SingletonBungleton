@@ -54,7 +54,7 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
 
     public bool CanDamage(DamageContext context)
     {
-        return !_isDestroyed && context.Amount > 0 && IsToolAllowed(context.ToolId);
+        return !_isDestroyed && context.Amount > 0;
     }
 
     public void ApplyDamage(DamageContext context)
@@ -86,20 +86,6 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
         {
             HandleDestroyed();
         }
-    }
-    // 도구 허용 여부를 판단하는 메서드. CanDamage 메서드에서 사용됨
-    // 노드 데이터에 허용된 도구 ID 목록이 있는 경우, 해당 목록에 도구 ID가 포함되어 있는지 확인
-    protected virtual bool IsToolAllowed(string toolId)
-    {
-        if (_resourceNodeData.AllowedToolIds == null || _resourceNodeData.AllowedToolIds.Length == 0) return true;
-        if (string.IsNullOrEmpty(toolId)) return false;
-
-        for (int i = 0; i < _resourceNodeData.AllowedToolIds.Length; i++)
-        {
-            if (_resourceNodeData.AllowedToolIds[i] == toolId) return true;
-        }
-
-        return false;
     }
 
     protected virtual void OnPlacementInitialized(DisposeData placement, ChunkData chunk) { }
