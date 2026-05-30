@@ -1,14 +1,14 @@
 using UnityEngine;
 
 //TODO : IDamageable 추가 고려
+/// <summary>
+/// 모든 건축물의 공통 부모 클래스. CanInteract는 기본적으로 true
+/// </summary>
 public abstract class Structure : MonoBehaviour, IInteractable
 {
-    public abstract StationType StationType { get; }
-
-    public virtual bool CanInteract(InteractionContext ctx) => true;
-    public virtual void Interact(InteractionContext ctx) { }
+    public virtual bool CanInteract(InteractionContext interactionCtx) => true;
+    public virtual void Interact(InteractionContext interactionCtx) { }
 }
-
 
 // 건축물 타입 정의    
 public enum StationType

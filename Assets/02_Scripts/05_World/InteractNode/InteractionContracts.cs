@@ -3,12 +3,15 @@ using UnityEngine;
 /// TODO: 나중에 필요한 경우 실행 함수들 void -> bool 
 /// </summary>
 #region 상호작용 - 범용
-// 상호작용 컨텍스트
+
+/// <summary>
+/// 상호작용 컨텍스트 instigator: 상호작용을 시도하는 주체, point: 상호작용이 발생하는 지점, normal: 상호작용이 발생한 표면의 법선 벡터
+/// </summary>
 public readonly struct InteractionContext
 {
     public GameObject Instigator { get; }   //  상호작용을 시도하는 주체 (예: 플레이어)
-    public Vector3 Point { get; }
-    public Vector3 Normal { get; }
+    public Vector3 Point { get; }           //  상호작용이 발생하는 지점 (예: 클릭한 위치)
+    public Vector3 Normal { get; }          //  상호작용이 발생한 표면의 법선 벡터 
 
     public InteractionContext(GameObject instigator, Vector3 point, Vector3 normal)
     {
@@ -47,8 +50,8 @@ public readonly struct DamageContext
 //  데미지 적용 인터페이스
 public interface IDamageable
 {
-    bool CanDamage(DamageContext context);
-    void ApplyDamage(DamageContext context);
+    bool CanDamage(DamageContext damageCtx);
+    void ApplyDamage(DamageContext damageCtx);
 }
 #endregion
 

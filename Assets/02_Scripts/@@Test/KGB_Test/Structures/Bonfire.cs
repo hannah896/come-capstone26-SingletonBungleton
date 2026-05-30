@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Bonfire : Structure
+public class Bonfire : StationBase
 {
     public override StationType StationType => StationType.Bonfire;
 }

@@ -110,6 +110,10 @@ public class PlacementController : MonoBehaviour
 
         BeginPlacement(itemData);
     }
+    private bool IsPlaceableItem(ItemDataSO itemData)
+    {
+        return itemData.isPlaceable && itemData.placementPrefab != null;
+    }
 
 
     private void BeginPlacement(ItemDataSO itemData)
@@ -171,7 +175,7 @@ public class PlacementController : MonoBehaviour
 
     private void ConfirmPlacement()
     {
-        if (activeItemData == null || activeItemData.placementPrefab == null)           //TODO: ItemDataSO에 placementPrefab 추가 필요
+        if (activeItemData == null || activeItemData.placementPrefab == null)         
             return;
 
         Instantiate(activeItemData.placementPrefab, currentPosition, currentRotation);
@@ -180,8 +184,6 @@ public class PlacementController : MonoBehaviour
             playerInventory.RemoveItem(activeItemData, 1);
     }
 
-
-    // TODO: InputAction으로 변경하여 키 바인딩 시스템과 연동하는 방식으로 변경 필요
     private void HandleRotationInput()
     {
         if (Keyboard.current == null)
@@ -224,10 +226,7 @@ public class PlacementController : MonoBehaviour
         return new Vector3(x, worldPosition.y, z);
     }
 
-    private bool IsPlaceableItem(ItemDataSO itemData)
-    {
-        return itemData != null && itemData.isPlaceable && itemData.placementPrefab != null;
-    }
+   
 
     private void ClearActiveData()
     {
