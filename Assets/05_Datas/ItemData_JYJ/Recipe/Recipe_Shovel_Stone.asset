@@ -11,8 +11,8 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 64f7e092734e07b468c75b5208bc1759, type: 3}
   m_Name: Recipe_Shovel_Stone
-  m_EditorClassIdentifier:
-  recipeName: "삽"
+  m_EditorClassIdentifier: 
+  recipeName: "\uB3CC\uC0BD"
   icon: {fileID: 0}
   category: 0
   ingredients:
