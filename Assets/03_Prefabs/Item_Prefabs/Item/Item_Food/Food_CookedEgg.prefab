@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 5105702622816126061}
   - component: {fileID: 3508554087204307287}
   - component: {fileID: 8430770991424381037}
-  m_Layer: 17
+  m_Layer: 19
   m_Name: Food_CookedEgg
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -97,6 +97,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _itemSO: {fileID: 11400000, guid: a6292d283f69bfa43ad2b0c209329d01, type: 2}
   stackCount: 99
+  _torchLight: {fileID: 0}
 --- !u!1001 &302541908915712361
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -148,6 +149,10 @@ PrefabInstance:
     - target: {fileID: 689186006657018477, guid: 4ed078e3feb872147b98e7a0b4c64b88, type: 3}
       propertyPath: m_Name
       value: Egg_004
+      objectReference: {fileID: 0}
+    - target: {fileID: 689186006657018477, guid: 4ed078e3feb872147b98e7a0b4c64b88, type: 3}
+      propertyPath: m_Layer
+      value: 19
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

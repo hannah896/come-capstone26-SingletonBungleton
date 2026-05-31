@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
+  m_Name: Booty_Fish
+  m_EditorClassIdentifier: 
+  itemID: Fish
+  itemName: "\uC0DD\uC120"
+  description: "\uC0DD\uC120"
+  icon: {fileID: 0}
+  prefab: {fileID: 5241942205852143392, guid: 6567f27b049994c43bd0ee65badaca11, type: 3}
+  itemType: 3
+  survivalToolType: 0
+  combatGearType: 0
+  resourceType: 0
+  bootyType: 4
+  foodType: 0
+  isStackable: 1
+  maxStack: 99
+  equipSlot: 0
+  hasDurability: 0
+  maxDurability: 100
+  costPerDurability: 1
+  attackDamage: 0
+  attackRange: 0
+  defense: 0
+  hungerRestore: 0
+  healthRestore: 0
+  egoRestore: 0

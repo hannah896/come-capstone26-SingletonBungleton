@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3101359148466039128}
   - component: {fileID: 7198387136087832506}
   - component: {fileID: 5790741581415684275}
-  m_Layer: 17
+  m_Layer: 20
   m_Name: Tool_Shovel_Gold
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -97,6 +97,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _itemSO: {fileID: 11400000, guid: 26d56376cdb92b74f8f3ca5a48b34715, type: 2}
   stackCount: 1
+  _torchLight: {fileID: 0}
 --- !u!1001 &457177236634545151
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -152,6 +153,10 @@ PrefabInstance:
     - target: {fileID: 1805398051560037203, guid: 38aa4c7a11948b046983b6457439691a, type: 3}
       propertyPath: m_Name
       value: Shovel
+      objectReference: {fileID: 0}
+    - target: {fileID: 1805398051560037203, guid: 38aa4c7a11948b046983b6457439691a, type: 3}
+      propertyPath: m_Layer
+      value: 20
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

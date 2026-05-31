@@ -44,12 +44,25 @@ public class Item : MonoBehaviour
         itemData = ItemData.CreateFromSO(_itemSO, stackCount);
         _createdTime = Time.time;
 
+        gameObject.layer = ItemTypeToLayer(_itemSO.itemType);
+
         // 줍기용 콜라이더를 트리거로 설정
         Collider col = GetComponent<Collider>();
         if (col != null) col.isTrigger = true;
 
         BindTorchLight();
     }
+
+    // 17=Resource, 18=Booty, 19=Food, 20=Equipment(SurvivalTool/CombatGear)
+    private static int ItemTypeToLayer(ItemType type) => type switch
+    {
+        ItemType.Resource     => 17,
+        ItemType.Booty        => 18,
+        ItemType.Food         => 19,
+        ItemType.SurvivalTool => 20,
+        ItemType.CombatGear   => 20,
+        _                     => 17
+    };
 
     private void BindTorchLight()
     {
@@ -89,5 +102,6 @@ public class Item : MonoBehaviour
         stackCount = 1;
         itemData = ItemData.CreateFromSO(so, stackCount);
         _createdTime = Time.time;
+        gameObject.layer = ItemTypeToLayer(so.itemType);
     }
 }

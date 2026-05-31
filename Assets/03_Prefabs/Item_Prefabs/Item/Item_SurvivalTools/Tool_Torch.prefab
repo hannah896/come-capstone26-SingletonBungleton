@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3101359148466039128}
   - component: {fileID: 7198387136087832506}
   - component: {fileID: 5790741581415684275}
-  m_Layer: 17
+  m_Layer: 20
   m_Name: Tool_Torch
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -97,6 +97,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _itemSO: {fileID: 11400000, guid: 41909ce6e3bb1334898e2b02f5f26412, type: 2}
+  stackCount: 1
+  _torchLight: {fileID: 0}
 --- !u!1 &4187383259898819876
 GameObject:
   m_ObjectHideFlags: 0
@@ -108,7 +110,7 @@ GameObject:
   - component: {fileID: 7534580692900065434}
   - component: {fileID: 4433298543429400968}
   - component: {fileID: 652310901040402197}
-  m_Layer: 17
+  m_Layer: 20
   m_Name: Point Light
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -230,6 +232,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Torch_B
       objectReference: {fileID: 0}
+    - target: {fileID: 3474463395411865732, guid: 3f24c80895a77fa4bba15f9bd599a41b, type: 3}
+      propertyPath: m_Layer
+      value: 20
+      objectReference: {fileID: 0}
     - target: {fileID: 4286325822575307326, guid: 3f24c80895a77fa4bba15f9bd599a41b, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -269,6 +275,10 @@ PrefabInstance:
     - target: {fileID: 4286325822575307326, guid: 3f24c80895a77fa4bba15f9bd599a41b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7507293030393066193, guid: 3f24c80895a77fa4bba15f9bd599a41b, type: 3}
+      propertyPath: m_Layer
+      value: 20
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

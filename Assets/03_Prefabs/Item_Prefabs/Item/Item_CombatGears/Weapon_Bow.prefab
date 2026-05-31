@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3392226586456198390}
   - component: {fileID: 3284813682163903838}
   - component: {fileID: 6158750377548405939}
-  m_Layer: 17
+  m_Layer: 20
   m_Name: Weapon_Bow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -48,6 +48,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _itemSO: {fileID: 11400000, guid: 82a84a61e8ffb3140bbf280ca4a75188, type: 2}
+  stackCount: 1
+  _torchLight: {fileID: 0}
 --- !u!54 &3284813682163903838
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -110,7 +112,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4651264813699394226, guid: 238d5f1b77b9e494180383a7f0480c61, type: 3}
       propertyPath: m_Layer
-      value: 17
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 5460416743373746184, guid: 238d5f1b77b9e494180383a7f0480c61, type: 3}
       propertyPath: m_LocalPosition.x

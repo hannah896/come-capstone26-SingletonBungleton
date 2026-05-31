@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3101359148466039128}
   - component: {fileID: 7198387136087832506}
   - component: {fileID: 5790741581415684275}
-  m_Layer: 17
+  m_Layer: 20
   m_Name: Tool_Pickaxe_Gold
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -97,6 +97,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _itemSO: {fileID: 11400000, guid: 7ec0924a64786f04eade946dfd579b46, type: 2}
   stackCount: 1
+  _torchLight: {fileID: 0}
 --- !u!1001 &6342664215598323332
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -148,6 +149,10 @@ PrefabInstance:
     - target: {fileID: 3037096906263651766, guid: edd73a4d67498a644ac6273566effda4, type: 3}
       propertyPath: m_Name
       value: Pickaxe
+      objectReference: {fileID: 0}
+    - target: {fileID: 3037096906263651766, guid: edd73a4d67498a644ac6273566effda4, type: 3}
+      propertyPath: m_Layer
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 3541258653722461283, guid: edd73a4d67498a644ac6273566effda4, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
