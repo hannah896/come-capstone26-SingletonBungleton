@@ -15,6 +15,7 @@ MonoBehaviour:
   RegionName: REG_Forest
   TerritoryScale: 3.5
   Density: 0.6
+  RegionPlacementRule: {fileID: 11400000, guid: 8d4bf77fc6a25294d86f3a83cc1b7135, type: 2}
   POICandidates: []
   BaseHeightLevel: 1
   LandformType: 2
