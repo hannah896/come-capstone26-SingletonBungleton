@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 64f7e092734e07b468c75b5208bc1759, type: 3}
-  m_Name: Recipe_Pickaxe
+  m_Name: Recipe_CookedMeat1
   m_EditorClassIdentifier: 
-  recipeName: "\uACE1\uAD2D\uC774"
+  recipeName: "\uAD6C\uC6B4\uACE0\uAE301"
   icon: {fileID: 0}
-  category: 0
+  category: 2
   ingredients:
-  - itemData: {fileID: 11400000, guid: f41232c7538cb644fbe7551b247ff716, type: 2}
-    amount: 2
-  - itemData: {fileID: 11400000, guid: 9acaa5c28b0f06147905d7eff9260d7f, type: 2}
-    amount: 3
-  resultItem: {fileID: 11400000, guid: 5aac40e4dc847cd42825c2a20fea7fd3, type: 2}
+  - itemData: {fileID: 11400000, guid: 2dfc70791e0c5204388942da7d3fe05f, type: 2}
+    amount: 1
+  - itemData: {fileID: 11400000, guid: 41909ce6e3bb1334898e2b02f5f26412, type: 2}
+    amount: 1
+  resultItem: {fileID: 11400000, guid: 1fecbb54b066d744a880f37039875517, type: 2}
   resultAmount: 1

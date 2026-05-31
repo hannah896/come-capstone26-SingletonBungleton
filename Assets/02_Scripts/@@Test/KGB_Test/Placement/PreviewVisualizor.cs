@@ -18,6 +18,10 @@ public interface IPreviewVisualizer
         IPlacementValidator validator);
 }
 
+
+/// <summary>
+/// 고스트뷰와 그리드뷰를 관리하여 배치 위치와 유효성을 시각적으로 표현하는 컴포넌트입니다.
+/// </summary>
 public class PreviewVisualizer : MonoBehaviour, IPreviewVisualizer
 {
     [Header("Grid")]

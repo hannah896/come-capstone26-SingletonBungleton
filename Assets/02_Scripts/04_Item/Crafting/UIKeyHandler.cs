@@ -1,47 +1,35 @@
-//using UnityEngine;
+using UnityEngine;
+using UnityEngine.InputSystem;
 
-//public class UIKeyHandler : MonoBehaviour
-//{
-//    [SerializeField] private KeyCode inventoryKey = KeyCode.Tab;
-//    [SerializeField] private KeyCode craftingKey = KeyCode.C;
+public class UIKeyHandler : MonoBehaviour
+{
+    [SerializeField] private Key inventoryKey = Key.Tab;
+    [SerializeField] private Key craftingKey  = Key.C;
 
-//    [SerializeField] private GameObject inventoryPanel;
-//    [SerializeField] private GameObject craftingPanel;
+    [SerializeField] private GameObject inventoryPanel;
+    [SerializeField] private CraftingUI craftingUI;
 
-//    private CanvasGroup _craftingCG;
-//    private bool _craftingOpen = false;
-//    private bool _inventoryOpen = false;
+    private void Update()
+    {
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null) return;
 
-//    private void Start()
-//    {
-//        _craftingCG = craftingPanel.GetComponent<CanvasGroup>();
-//        inventoryPanel.SetActive(false);
-//        SetCrafting(false);
-//    }
+        if (keyboard[craftingKey].wasPressedThisFrame)
+            ToggleCrafting();
 
-//    private void Update()
-//    {
-//        if (Input.GetKeyDown(inventoryKey)) ToggleInventory();
-//        if (Input.GetKeyDown(craftingKey)) ToggleCrafting();
-//    }
+        if (keyboard[inventoryKey].wasPressedThisFrame)
+            ToggleInventory();
+    }
 
-//    private void ToggleInventory()
-//    {
-//        _inventoryOpen = !_inventoryOpen;
-//        inventoryPanel.SetActive(_inventoryOpen);
-//    }
+    private void ToggleInventory()
+    {
+        if (inventoryPanel == null) return;
+        inventoryPanel.SetActive(!inventoryPanel.activeSelf);
+    }
 
-//    private void ToggleCrafting()
-//    {
-//        _craftingOpen = !_craftingOpen;
-//        SetCrafting(_craftingOpen);
-//        if (_craftingOpen)
-//            craftingPanel.GetComponent<CraftingUI>().OpenDefault();
-//    }
-
-//    private void SetCrafting(bool open)
-//    {
-//        _craftingCG.alpha = open ? 1 : 0;
-//        _craftingCG.blocksRaycasts = open;
-//    }
-//}
+    private void ToggleCrafting()
+    {
+        if (craftingUI == null) return;
+        craftingUI.Toggle();
+    }
+}

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -31,6 +32,9 @@ public class ItemDataSO : ScriptableObject
     [Header("=== 세부 분류 (해당되는 것만 선택) ===")]
     [Tooltip("생존도구일 경우 선택")]
     public SurvivalToolType survivalToolType;
+
+    [Tooltip("이 도구로 채집 가능한 자원 목록 (생존도구용)")]
+    public List<ResourceType> harvestableResources = new List<ResourceType>();
 
     [Tooltip("전투장비일 경우 선택")]
     public CombatGearType combatGearType;

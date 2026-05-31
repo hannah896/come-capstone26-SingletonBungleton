@@ -123,10 +123,9 @@ public class WorldChunkDirector : MonoBehaviour
 
         Vector2Int playerCoord = _logicData.GetChunkCoord(
             Mathf.FloorToInt(target.position.x),
-            Mathf.FloorToInt(target.position.z));
+            Mathf.FloorToInt(target.position.z)
+            );
 
-        // 플레이어 좌표가 변하고 있는지 확인
-        Debug.Log($" 플레이어 월드 좌표: {target.position} / 청크 좌표: {playerCoord}");
 
         if (playerCoord == _currentChunkCoord) return;
 

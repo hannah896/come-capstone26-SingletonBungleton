@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: FirNodeData
   m_EditorClassIdentifier: 
   Name: FirNodeData
+  ResourceNodeType: 1
   MaxHealth: 3
   GatherAmount: 1
   RespawnTime: 300
-  AllowedToolIds: []
   Drops:
   - DropPrefabKey: 
     MinDropCount: 0

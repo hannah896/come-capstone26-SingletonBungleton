@@ -3,28 +3,6 @@ using UnityEngine.InputSystem;
 
 /// <summary>
 /// 입력과 시각화를 관리하여 플레이어가 아이템을 배치할 수 있도록 하는 컨트롤러입니다.
-/// TODO: ItemDataSO에 배치 관련 속성 추가 필요, CraftingManager에 OnCrafted 이벤트 추가 필요
-/// [Header("=== 배치 정보 ===")]
-//[Tooltip("배치 가능 아이템 여부")]
-//public bool isPlaceable = false;
-
-//[Tooltip("배치 시 사용할 프리팹")]
-//public GameObject placementPrefab;
-
-//[Tooltip("배치 크기 (그리드 기준)")]
-//public Vector2Int placementFootprint = Vector2Int.one;
-
-//[Tooltip("배치 시 피벗 오프셋")]
-//public Vector3 placementPivotOffset;
-
-//[Tooltip("그리드 스냅 여부")] -> 연속적 움직임 or 그리드 스냅 방식
-//public bool placementSnapToGrid = true;
-
-//[Tooltip("배치 가능 체크 높이")]
-//public float placementCheckHeight = 2f;
-
-//[Tooltip("체크 박스 중심 오프셋")]
-//public Vector3 placementCheckCenterOffset;
 ///// </summary>
 public class PlacementController : MonoBehaviour
 {
@@ -132,6 +110,10 @@ public class PlacementController : MonoBehaviour
 
         BeginPlacement(itemData);
     }
+    private bool IsPlaceableItem(ItemDataSO itemData)
+    {
+        return itemData.isPlaceable && itemData.placementPrefab != null;
+    }
 
 
     private void BeginPlacement(ItemDataSO itemData)
@@ -193,7 +175,7 @@ public class PlacementController : MonoBehaviour
 
     private void ConfirmPlacement()
     {
-        if (activeItemData == null || activeItemData.placementPrefab == null)           //TODO: ItemDataSO에 placementPrefab 추가 필요
+        if (activeItemData == null || activeItemData.placementPrefab == null)         
             return;
 
         Instantiate(activeItemData.placementPrefab, currentPosition, currentRotation);
@@ -202,8 +184,6 @@ public class PlacementController : MonoBehaviour
             playerInventory.RemoveItem(activeItemData, 1);
     }
 
-
-    // TODO: InputAction으로 변경하여 키 바인딩 시스템과 연동하는 방식으로 변경 필요
     private void HandleRotationInput()
     {
         if (Keyboard.current == null)
@@ -246,11 +226,7 @@ public class PlacementController : MonoBehaviour
         return new Vector3(x, worldPosition.y, z);
     }
 
-    private bool IsPlaceableItem(ItemDataSO itemData)
-    {
-        return true; // TODO: 임시처리
-        return itemData != null && itemData.isPlaceable && itemData.placementPrefab != null;
-    }
+   
 
     private void ClearActiveData()
     {

@@ -11,14 +11,14 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 64f7e092734e07b468c75b5208bc1759, type: 3}
   m_Name: Recipe_Pickaxe_Iron
-  m_EditorClassIdentifier:
-  recipeName: "철곡괭이"
+  m_EditorClassIdentifier: 
+  recipeName: "\uCCA0\uACE1\uAD2D\uC774"
   icon: {fileID: 0}
   category: 0
   ingredients:
   - itemData: {fileID: 11400000, guid: f41232c7538cb644fbe7551b247ff716, type: 2}
     amount: 2
   - itemData: {fileID: 11400000, guid: b50dca45200467b4595cbddcff9b6e89, type: 2}
-    amount: 2
+    amount: 3
   resultItem: {fileID: 11400000, guid: 9e6704d5c5132834594962d2ac92fc07, type: 2}
   resultAmount: 1

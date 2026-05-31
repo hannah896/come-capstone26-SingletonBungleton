@@ -31,7 +31,7 @@ public class UI_Panel : UI
         OnCloseEvent = null;
     }
     #region EditorSetting
-    
+
 #if UNITY_EDITOR
     private void OnValidate()
     {
@@ -50,6 +50,7 @@ public class UI_Panel : UI
             // Component 상속 타입이면 이름으로 찾기
             if (field.FieldType.IsSubclassOf(typeof(Component)))
             {
+                if (field.GetValue(this) != null) continue; // 이미 연결된 거 보존
                 field.SetValue(this, FindComponent(field.FieldType, field.Name));
                 continue;
             }
@@ -78,6 +79,6 @@ public class UI_Panel : UI
         }
     }
 #endif
-    
+
     #endregion
 }

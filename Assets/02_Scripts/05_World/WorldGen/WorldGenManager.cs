@@ -23,6 +23,7 @@ public class WorldGenManager : MonoBehaviour
     }
     #endregion
 
+    
     [SerializeField] private WorldGraphDirector _worldGraphDirector;
     [SerializeField] private WorldChunkDirector _worldChunkDirector;
     [SerializeField] private WorldRenderDirector _worldRenderDirector;
@@ -30,7 +31,8 @@ public class WorldGenManager : MonoBehaviour
 
     [SerializeField] private WorldSimulationManager _simulationManager;
 
-    [SerializeField] private GameObject _demoPlayer;
+    private const string PLAYER_ADDRESSKEY = "Player";
+    private GameObject _playerInstance;
 
     [SerializeField] private int _currentSeed = 0;            // 현재 유지 중인 시드값
 
@@ -185,24 +187,29 @@ public class WorldGenManager : MonoBehaviour
             // ==========================================================
             // 4단계: 플레이어 탐색 및 StartRegion으로 
             // ==========================================================
-            if (_demoPlayer == null)
+            if (_playerInstance == null)
             {
-                foreach (GameObject rootObj in UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects())
+                GameObject playerPrefab = await Extensions.LoadAssetAsync<GameObject>(
+                    PLAYER_ADDRESSKEY,
+                    AssetCacheType.Required,
+                    _cts.Token
+                );
+                if (playerPrefab == null)
                 {
-                    if (rootObj.CompareTag("Player"))
-                    {
-                        _demoPlayer = rootObj;
-                        break;
-                    }
+                    Debug.LogWarning($"🚨 플레이어 프리팹 로드 실패: '{PLAYER_ADDRESSKEY}'");
+                }
+                else
+                {
+                    _playerInstance = Instantiate(playerPrefab);
                 }
             }
 
-            if (_demoPlayer != null)
+            if (_playerInstance != null)
             {
-                _demoPlayer.transform.position = new Vector3(startingX, 10f, startingZ);
-                _demoPlayer.SetActive(true);
+                _playerInstance.transform.position = new Vector3(startingX, 10f, startingZ);
+                _playerInstance.SetActive(true);
 
-                _worldChunkDirector.SetTarget(_demoPlayer.transform);
+                _worldChunkDirector.SetTarget(_playerInstance.transform);
                 Debug.Log("🎯 플레이어 StartRegion 자동 탐색 및 안전 스폰 완료!");
             }
             else
