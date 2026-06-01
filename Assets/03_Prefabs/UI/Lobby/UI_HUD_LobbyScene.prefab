@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 9154124990773839100}
   - component: {fileID: 792311924858881747}
   m_Layer: 5
-  m_Name: UI_KGB_TestScene
+  m_Name: UI_HUD_LobbyScene
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -282,6 +282,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: WorldGenerateText
       objectReference: {fileID: 0}
+    - target: {fileID: 7535669648949928010, guid: 64e9af8e6d93a4292beefbe33a19f307, type: 3}
+      propertyPath: m_Type
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7535669648949928010, guid: 64e9af8e6d93a4292beefbe33a19f307, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 4361fe5a7a12bb941bb89ec173738628, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

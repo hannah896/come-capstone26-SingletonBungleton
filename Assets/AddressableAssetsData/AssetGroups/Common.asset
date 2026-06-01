@@ -16,7 +16,7 @@ MonoBehaviour:
   m_GUID: 1355e2feab16e06409f202acb6043666
   m_SerializeEntries:
   - m_GUID: 0f9147e697b9de9429447a6b59652439
-    m_Address: UI_WorldGenPopup
+    m_Address: UI_Popup_WorldGen
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

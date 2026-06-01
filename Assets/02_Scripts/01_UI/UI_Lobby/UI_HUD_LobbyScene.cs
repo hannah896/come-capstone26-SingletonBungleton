@@ -1,7 +1,7 @@
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
-public class UI_KGB_TestScene : UI_Hud
+public class UI_HUD_LobbyScene : UI_Hud
 {
     [SerializeField] private UI_Button WorldGenerateButton;
 
@@ -30,6 +30,6 @@ public class UI_KGB_TestScene : UI_Hud
         Debug.Log("World Generate Button Clicked");
         if (Main.UI == null) return;
 
-        Main.UI.ShowPopup<UI_WorldGenPopup>(clickGuard: true).Forget();
+        Main.UI.ShowPopup<UI_Popup_WorldGen>(clickGuard: true).Forget();
     }
 }

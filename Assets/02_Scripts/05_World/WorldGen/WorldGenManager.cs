@@ -45,6 +45,9 @@ public class WorldGenManager : MonoBehaviour
     public WorldGraphDirector GraphDirector => _worldGraphDirector;
     public WorldSettings WorldSettings => _worldSettings;
 
+    /// <summary>WorldSettings 에셋 로드가 완료되어 월드 생성이 가능한 상태인지 여부.</summary>
+    public bool IsWorldSettingsLoaded => _isWorldSettingsLoaded;
+
     void OnDestroy()
     {
         _cts?.Cancel();
@@ -94,27 +97,56 @@ public class WorldGenManager : MonoBehaviour
     }
     #endregion
 
+    /// <summary>
+    /// 시드를 내부에서 랜덤 생성하여 월드를 생성합니다. (기존 호환용)
+    /// </summary>
     public UniTask GenerateWorldFromUI(WorldBranchSetting branch, WorldLoopSetting loop)
+    {
+        int seed = UnityEngine.Random.Range(int.MinValue, int.MaxValue);
+        return GenerateWorld(branch, loop, seed, WorldSize.Large);
+    }
+
+    /// <summary>
+    /// 외부에서 확정한 설정(시드 포함)으로 월드를 생성합니다.
+    /// 로비에서 결정한 WorldGenRequest를 게임씬이 그대로 주입할 때 사용합니다.
+    /// </summary>
+    /// <param name="external">씬 전환 등 외부 취소 토큰. 전달 시 내부 토큰과 연결됩니다.</param>
+    public UniTask GenerateWorld(
+        WorldBranchSetting branch,
+        WorldLoopSetting loop,
+        int seed,
+        WorldSize size = WorldSize.Large,
+        CancellationToken external = default)
     {
         return GenerateWorldWithSettings(() =>
         {
-            _currentSeed = UnityEngine.Random.Range(int.MinValue, int.MaxValue);
+            _currentSeed = seed;
 
-            _worldSettings.WorldSeed = _currentSeed;
-            _worldSettings.WorldSize = WorldSize.Large;
+            _worldSettings.WorldSeed = seed;
+            _worldSettings.WorldSize = size;
             _worldSettings.WorldBranch = branch;
             _worldSettings.WorldLoop = loop;
 
-            Debug.Log($"UI 옵션으로 월드 생성. 시드: {_currentSeed}, Branch: {branch}, Loop: {loop}");
-        });
+            Debug.Log($"월드 생성. 시드: {seed}, Size: {size}, Branch: {branch}, Loop: {loop}");
+        }, external);
     }
 
-    private async UniTask GenerateWorldWithSettings(Action applySettings)
+    /// <summary>월드 생성 진행률(0~1)과 현재 단계 설명.</summary>
+    public event Action<float, string> OnProgress;
+
+    private void ReportProgress(float value, string label)
+    {
+        OnProgress?.Invoke(Mathf.Clamp01(value), label);
+    }
+
+    private async UniTask GenerateWorldWithSettings(Action applySettings, CancellationToken external = default)
     {
         _isStartedWorldGeneration = true;
         _cts?.Cancel();
         _cts?.Dispose();
-        _cts = new CancellationTokenSource();
+        _cts = external.CanBeCanceled
+            ? CancellationTokenSource.CreateLinkedTokenSource(external)
+            : new CancellationTokenSource();
 
         if (!_isWorldSettingsLoaded || _worldSettings == null)
         {
@@ -125,8 +157,11 @@ public class WorldGenManager : MonoBehaviour
         try
         {
             Debug.Log("=== 월드 생성 시작 ===");
+            ReportProgress(0.05f, "월드 설정 적용");
 
             applySettings?.Invoke();
+
+            ReportProgress(0.15f, "그래프 생성");
 
             // ==========================================================
             // 1단계: 논리 데이터 생성 및 청크 분할
@@ -137,11 +172,15 @@ public class WorldGenManager : MonoBehaviour
             var graphData = _worldGraphDirector.GetWorldGraphData();
             var logicData = _worldGraphDirector.GetWorldLogicData();
 
+            ReportProgress(0.35f, "렌더 초기화");
+
             // ==========================================================
             // 2단계: 렌더 디렉터 초기화 및 에셋 로드 
             // ==========================================================
             _worldRenderDirector.ClearAllChunks();
             await _worldRenderDirector.InitializeAsync(_worldSettings, graphData, _cts.Token);
+
+            ReportProgress(0.55f, "스폰 좌표 계산");
 
             // ==========================================================
             // 3단계: 플레이어 스폰 좌표 계산
@@ -184,6 +223,8 @@ public class WorldGenManager : MonoBehaviour
 
             Vector2Int spawnChunkCoord = logicData.GetChunkCoord(startingX, startingZ);
 
+            ReportProgress(0.7f, "플레이어 준비");
+
             // ==========================================================
             // 4단계: 플레이어 탐색 및 StartRegion으로 
             // ==========================================================
@@ -217,6 +258,8 @@ public class WorldGenManager : MonoBehaviour
                 Debug.LogWarning("🚨 하이어라키에 'Player' 태그를 가진 오브젝트가 없습니다!");
             }
 
+            ReportProgress(0.85f, "스폰 지역 로드");
+
             // ==========================================================
             // 5단계: 청크 디렉터 초기화 및 스폰 지역 확정 렌더링 대기
             // ==========================================================
@@ -227,6 +270,8 @@ public class WorldGenManager : MonoBehaviour
 
             _simulationManager = Extensions.GetOrAddComponent<WorldSimulationManager>(this.gameObject);
             _simulationManager.Initialize(_worldChunkDirector);
+
+            ReportProgress(1f, "완료");
         }
         catch (OperationCanceledException)
         {

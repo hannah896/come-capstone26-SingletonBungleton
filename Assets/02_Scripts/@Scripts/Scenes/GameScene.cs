@@ -257,11 +257,51 @@ public class GameScene : SceneBase
 
     #endregion
 
-    public override UniTask EnterScene(CancellationToken token)
+    public override async UniTask EnterScene(CancellationToken token)
     {
         _playPrefs = Prefs.Get<PlayPrefs>();
+
+        // 로비에서 넘어온 월드 생성 요청이 있으면, 로딩 화면(전환 오버레이)을 유지한 채
+        // 월드 생성이 끝날 때까지 여기서 대기합니다.
+        // (SceneManagerEx가 EnterScene을 await한 뒤에야 오버레이를 내리므로 자연스럽게 동작)
+        await GenerateWorldIfRequested(token);
+
         StartGame(_playPrefs.Stage.Value);
-        return UniTask.CompletedTask;
+    }
+    /// <summary>
+    /// 추가된 부분
+    /// </summary>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    private async UniTask GenerateWorldIfRequested(CancellationToken token)
+    {
+        if (!WorldGenRequest.HasRequest) return;
+
+        UI_Popup_Loading loadingPopup = await Extensions.ShowPopup<UI_Popup_Loading>(clickGuard: true, token: token);
+
+        await UniTask.WaitUntil(() => WorldGenManager.Instance != null, cancellationToken: token);
+        WorldGenManager worldGen = WorldGenManager.Instance;
+
+        Action<float, string> handler = (value, label) =>
+        {
+            if (loadingPopup != null)
+            {
+                loadingPopup.SetProgress(value, label);
+            }
+        };
+
+        worldGen.OnProgress += handler;
+
+        try
+        {
+            WorldGenRequest.Data req = WorldGenRequest.Consume();
+            await worldGen.GenerateWorld(req.Branch, req.Loop, req.Seed, req.Size, token);
+        }
+        finally
+        {
+            worldGen.OnProgress -= handler;
+            if (loadingPopup != null) loadingPopup.Close();
+        }
     }
 
     public override void ExitScene()
