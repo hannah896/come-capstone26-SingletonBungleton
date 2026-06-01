@@ -96,7 +96,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _itemSO: {fileID: 11400000, guid: 1fecbb54b066d744a880f37039875517, type: 2}
-  stackCount: 99
+  stackCount: 1
   _torchLight: {fileID: 0}
 --- !u!1001 &279147774684811154
 PrefabInstance:

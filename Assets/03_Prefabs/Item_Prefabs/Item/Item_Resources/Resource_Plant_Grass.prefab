@@ -48,7 +48,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _itemSO: {fileID: 11400000, guid: 1443a72bdfd73b34d94f736cd1780a6d, type: 2}
-  stackCount: 99
+  stackCount: 1
+  _torchLight: {fileID: 0}
 --- !u!54 &7621648570074764800
 Rigidbody:
   m_ObjectHideFlags: 0

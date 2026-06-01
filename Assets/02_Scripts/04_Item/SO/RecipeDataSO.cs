@@ -1,21 +1,17 @@
 using UnityEngine;
 
-/// <summary>
-/// 크래프팅 레시피 데이터
-/// - 필요 재료 목록
-/// - 제작 결과 아이템
-/// </summary>
-/// 
-
 [CreateAssetMenu(fileName = "Recipe_", menuName = "Game/Recipe Data")]
 public class RecipeDataSO : ScriptableObject
 {
     [Header("=== 기본 정보 ===")]
     public string recipeName;
-    public Sprite icon;
 
     [Header("=== 카테고리 ===")]
     public RecipeCategory category;
+
+    [Header("=== 프로토타입 스테이션 ===")]
+    [Tooltip("이 레시피를 처음 제작하기 위해 필요한 작업대. 한 번 제작하면 어디서든 가능.")]
+    public CraftStation requiredStation = CraftStation.None;
 
     [Header("=== 필요 재료 ===")]
     public RecipeIngredient[] ingredients;
@@ -25,7 +21,6 @@ public class RecipeDataSO : ScriptableObject
     public int resultAmount = 1;
 }
 
-// 재료 하나 (아이템 + 필요 수량)
 [System.Serializable]
 public struct RecipeIngredient
 {
@@ -41,4 +36,12 @@ public enum RecipeCategory
     Weapons,    // 무기
     Structures, // 건물
     Moon        // 달
+}
+
+// 작업대 티어 (높은 티어는 낮은 티어 레시피도 제작 가능)
+public enum CraftStation
+{
+    None      = 0,  // 맨손 제작
+    Workbench = 1,  // 작업대
+    Forge     = 2,  // 용광로
 }
