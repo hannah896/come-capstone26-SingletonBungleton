@@ -2,7 +2,7 @@ using Cysharp.Threading.Tasks;
 using System;
 using UnityEngine;
 
-public class UI_WorldGenPopup : UI_Popup
+public class UI_Popup_WorldGen : UI_Popup
 {
     #region Fields
     [SerializeField] private UI_Button BranchPrevButton;
@@ -95,12 +95,25 @@ public class UI_WorldGenPopup : UI_Popup
         WorldBranchSetting branch = BranchOptions[_branchIndex];
         WorldLoopSetting loop = LoopOptions[_loopIndex];
 
-        //TODO: 임시 싱글톤을 통해 호출, 나중에 리팩토링 필요.
+        // 시드는 여기(로비)에서 확정 → 재현/공유 가능.
+        int seed = UnityEngine.Random.Range(int.MinValue, int.MaxValue);
+        WorldGenRequest.Set(branch, loop, seed);
+
+        Close();
+
+        // 분기는 = "지금 어디서 팝업을 열었나"
+        // 이미 WorldGenManager가 있는 씬(에디터/테스트)이면 그 자리에서 생성하고,
+        // 없으면 게임씬으로 전환하여 로딩 화면(전환 오버레이) 동안 GameScene이 생성합니다.
         if (WorldGenManager.Instance != null)
         {
-            WorldGenManager.Instance.GenerateWorldFromUI(branch, loop).Forget();
+            WorldGenRequest.Data req = WorldGenRequest.Consume();
+            WorldGenManager.Instance.GenerateWorld(req.Branch, req.Loop, req.Seed, req.Size).Forget();
         }
-        Close();
+        else
+        {
+            // 게임씬 EnterScene 함수에서  WorldGenRequest.HasRequest 체크 → Consume → GenerateWorld 호출됨.
+            Extensions.ChangeScene("GameScene");
+        }
     }
 
     private void OnClickClose()

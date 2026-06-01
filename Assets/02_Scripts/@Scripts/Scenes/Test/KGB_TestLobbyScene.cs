@@ -4,12 +4,12 @@ using System.Threading;
 using UnityEngine;
 
 // Scene 이름과 동일한 클래스명이어야 합니다.
-public class KGB_TestScene : SceneBase
+public class KGB_TestLobbyScene : SceneBase
 {
     public override async UniTask EnterScene(CancellationToken token)
     {
         // 씬 진입 시 실행될 로직 (필요 시 작성)
-        Debug.Log("[KGB_TestScene] Scene Entered");
+        Debug.Log("[KGB_TestLobbyScene] Scene Entered");
 
         await Extensions.Instantiate<AudioManager>("AudioManager");
 

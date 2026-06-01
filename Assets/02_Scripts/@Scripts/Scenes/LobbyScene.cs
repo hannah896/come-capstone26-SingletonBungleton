@@ -228,7 +228,8 @@ public class LobbyScene : SceneBase
 
     public override void ExitScene()
     {
-        throw new NotImplementedException();
+        // 씬을 떠날 때 진행 중인 팝업 체인을 정리합니다.
+        StopPopupChain();
     }
 }
 
