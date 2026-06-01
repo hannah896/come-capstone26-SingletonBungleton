@@ -42,17 +42,6 @@ public class BoardManager : ContentManager
     #region Game State Check
 
     /// <summary>
-    /// 클리어 조건을 확인합니다.
-    /// </summary>
-    public void CheckClear()
-    {
-        if (Current.IsAllClear())
-        {
-            GameScene.GameState = GameState.Success;
-        }
-    }
-
-    /// <summary>
     /// 실패 조건을 확인합니다.
     /// </summary>
     public bool CheckFail()

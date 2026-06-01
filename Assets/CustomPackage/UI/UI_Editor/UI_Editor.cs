@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using Blossom.Preference;
+using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 
@@ -30,11 +31,9 @@ public class UI_Editor : UI_Panel {
     private TMP_InputField _inputPassword;
     private TMP_InputField _inputStage;
     private TMP_InputField _inputGold;
-    private TMP_InputField _inputHeart;
 
     private UI_Text _txtCameraMove;
     private UI_Text _txtCameraZoom;
-    private UI_Text _txtHeartInfinity;
     private UI_Text _txtAdRemove;
     private UI_Text _txtSendEvent;
     
@@ -64,11 +63,9 @@ public class UI_Editor : UI_Panel {
         _inputPassword = gameObject.FindChild<TMP_InputField>("Input_Password");
         _inputStage = gameObject.FindChild<TMP_InputField>("Input_Stage");
         _inputGold = gameObject.FindChild<TMP_InputField>("Input_Gold");
-        _inputHeart = gameObject.FindChild<TMP_InputField>("Input_Heart");
-        
+
         _txtCameraMove = gameObject.FindChild<UI_Text>("Txt_CameraMove");
         _txtCameraZoom = gameObject.FindChild<UI_Text>("Txt_CameraZoom");
-        _txtHeartInfinity = gameObject.FindChild<UI_Text>("Txt_HeartInfinity");
         _txtAdRemove =  gameObject.FindChild<UI_Text>("Txt_AdRemove");
         _txtSendEvent = gameObject.FindChild<UI_Text>("Txt_SendClearEvent");
         
@@ -76,14 +73,11 @@ public class UI_Editor : UI_Panel {
         gameObject.FindChild<UI_Button>("Btn_PasswordEnter").SetEvent(OnEnterPassword);
         gameObject.FindChild<UI_Button>("Btn_StageEnter").SetEvent(OnEnterStage);
         gameObject.FindChild<UI_Button>("Btn_GoldEnter").SetEvent(OnEnterGold);
-        gameObject.FindChild<UI_Button>("Btn_HeartEnter").SetEvent(OnEnterHeart);
         gameObject.FindChild<UI_Button>("Btn_Close").SetEvent(OnEnterClose);
-        gameObject.FindChild<UI_Button>("Btn_Clear").SetEvent(OnEnterClear);
         gameObject.FindChild<UI_Button>("Btn_Failed").SetEvent(OnEnterFailed);
-        
+
         gameObject.FindChild<UI_Button>("Btn_CameraMove").SetEvent(OnEnterCameraMove);
         gameObject.FindChild<UI_Button>("Btn_CameraZoom").SetEvent(OnEnterCameraZoom);
-        gameObject.FindChild<UI_Button>("Btn_HeartInfinity").SetEvent(OnEnterHeartInfinity);
         //gameObject.FindChild<UI_Button>("Btn_AdRemove").SetEvent(OnEnterAdRemove);
         gameObject.FindChild<UI_Button>("Btn_SendClearEvent").SetEvent(OnEnterSendClearLog);
 
@@ -139,7 +133,7 @@ public class UI_Editor : UI_Panel {
             Debug.LogError($"scene is invalid");
             return;
         }
-        scene.StartGame(stageNum);
+        scene.StartGame(stageNum).Forget();
     }
 
     private void OnEnterGold()
@@ -151,18 +145,6 @@ public class UI_Editor : UI_Panel {
             return;
         }
         _currencyPrefs.Currency.Value = gold;
-    }
-
-    private void OnEnterHeart()
-    {
-        int heart = 0;
-        if (!int.TryParse(_inputHeart.text, out heart))
-        {
-            Debug.LogError($"Gold Number is invalid, : {_inputHeart.text}");
-            return;
-        }
-        heart = Mathf.Clamp(heart, 0, 3);
-        GameScene.HeartCount = heart;
     }
 
     private void OnEnterPassword()
@@ -178,12 +160,6 @@ public class UI_Editor : UI_Panel {
     
     private void ResetEditorClickCount() => _clickEditorCount = 0;
     private void SettingEditor(bool active) => _objSetting.gameObject.SetActive(active);
-    private void OnEnterClear()
-    {
-        GameScene scene = Main.Scene.Current as GameScene;
-        if (scene == null) return;
-        scene.SuccessGame();
-    }
     private void OnEnterFailed()
     {
         GameScene scene = Main.Scene.Current as GameScene;
@@ -211,17 +187,6 @@ public class UI_Editor : UI_Panel {
         sb.AppendLine("Zoom");
         // sb.Append($"{GetActiveString(isActive)}");
         _txtCameraZoom.Text = sb.ToString();
-    }
-
-    private void OnEnterHeartInfinity()
-    {
-        GameScene.IsInfinityHeart = !GameScene.IsInfinityHeart;
-        bool isActive = GameScene.IsInfinityHeart;
-        StringBuilder sb = new();
-        sb.AppendLine("Heart");
-        sb.AppendLine("Infinity");
-        sb.Append($"{GetActiveString(isActive)}");
-        _txtHeartInfinity.Text = sb.ToString();
     }
 
     private void OnEnterSendClearLog()

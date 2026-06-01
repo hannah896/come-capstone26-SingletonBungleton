@@ -2,6 +2,63 @@
 
 ---
 
+## 2026-06-01
+
+### 17. 모바일 게임 프레임워크 잔재 제거 (IAP/광고)
+
+**파일:** `Assets/CustomPackage/Main/Loading/UI_Loading_Iap.cs`(삭제), `UI_Loading_Ads.cs`(삭제), `Assets/03_Prefabs/@Base/UI/UI_Screen_Iap.prefab`(삭제), `UI_Screen_Ads.prefab`(삭제), `Assets/AddressableAssetsData/AssetGroups/Common.asset`
+
+- 프로젝트가 모바일 게임 부팅/수익화 프레임워크 위에 올라가 있어, 인앱결제(IAP)/광고(Ads) 로딩 화면 잔재를 제거
+- IAP/Ads 로딩 화면 스크립트 2개와 프리팹 2개 삭제 (껍데기만 있고 실제 수익화 로직은 없었음)
+- `Common.asset`의 Addressable 등록 항목(`UI_Screen_Iap`, `UI_Screen_Ads`)도 제거
+- 코드/씬에서 직접 호출되는 곳이 없어 안전하게 제거됨
+
+**변경 이유:** 우리 게임은 돈스타브류 멀티플레이 생존게임으로, 모바일식 IAP/광고 시스템이 필요 없음.
+
+### 18. GameScene 흐름을 WorldGen 기반으로 재구성 (맵 생성 → 플레이어 소환)
+
+**파일:** `Assets/02_Scripts/@Scripts/Scenes/GameScene.cs`, `Assets/02_Scripts/@Scripts/Game/GameEvents.cs`
+
+- WIP로 컴파일이 깨져 있던 `GameScene.cs`를 정리하고 게임 시작 흐름을 명확화
+- `EnterScene` → `StartGame()`: WorldGenManager를 **런타임에 동적 생성**(`new GameObject().AddComponent<WorldGenManager>()`)한 뒤, WorldSettings(Addressable) 로드를 `UniTask.WaitUntil`로 대기하고 `GenerateWorldFromUI(Default, Default)`를 `await`하여 **맵 생성이 온전히 끝난 뒤** 진행
+- WorldGenManager/디렉터들이 인스펙터 의존성 없이 self-init 되도록 설계돼 있어 씬에 미리 배치할 필요 없음 (GameScene.unity는 Directional Light만 있는 빈 씬)
+- 플레이어 소환은 경보(KGB)님의 `WorldGen` 내부 로직(StartRegion 위치 자동 계산 포함)을 그대로 사용 — GameScene은 생성 완료를 기다리기만 함
+- 송제우님의 `BoardManager`/`Board` 맵 시스템은 사용하지 않도록 호출 제거
+- 맵 + 플레이어 소환 완료 후 `GameProcessing.Processing` + `GameState.Playing`으로 전환 (타이머/게임 업데이트 활성화)
+- 저장 시스템 대비 분기 자리(`hasSavedWorld`) TODO로 마련: 저장 데이터 있으면 로드, 없으면 새 맵 자동 생성
+- `SceneBase`는 MonoBehaviour가 아니므로 동작하지 않던 `Update()`/`OnDisable()`/Coroutine 잔재 제거, 루프 이벤트 정리는 `ExitScene`으로 이동
+
+**검증:** PlayMode 실행 결과 `WorldSettings 로드 완료` → `UI 옵션으로 월드 생성. 시드: ..., Branch: Default, Loop: Default` → 월드 그래프 생성(Region 13개) → Player 소환 후 상태머신(Idle/Walk/Attack) 정상 작동 확인.
+
+**남은 TODO/이슈:** 소환된 플레이어가 자신의 HUD(`UI_Hud_Game`)를 띄우는 단계는 다음 작업으로 남김. 저장/로드 분기 구현 필요. GameScene에 AudioManager가 없어 JSAM 에러 발생(비치명적) — 필요 시 EnterScene에서 AudioManager 생성 추가.
+
+### 19. 클리어(Success)·하트(Heart) 목숨제 잔재 전면 제거
+
+**파일:** `Assets/02_Scripts/@Scripts/Scenes/GameScene.cs`, `Assets/02_Scripts/@Scripts/Game/GameEvents.cs`, `Assets/02_Scripts/@Scripts/Managers/GameManager.cs`, `BoardManager.cs`, `Assets/CustomPackage/UI/UI_Editor/UI_Editor.cs`
+
+- 생존게임에 맞지 않는 캐주얼/모바일식 시스템(스테이지 클리어, 하트 목숨제)을 전부 제거
+- `GameScene`: `HeartCount`/`MaxHeartCount`/`IsInfinityHeart`/`_heartCount`, `SuccessGame()`, `GameState.Success` 분기 제거
+- `GameEvents`: `OnGameClear`, `OnChangeHeart` 제거 (`OnGameOver`는 게임오버용으로 유지)
+- `GameManager`/`BoardManager`: 클리어 조건 검사 `CheckClear()` 제거 (`CheckFail()`은 유지)
+- `UI_Editor`(개발 치트 패널): 하트 입력/무한하트 토글/클리어 버튼 관련 필드·바인딩·핸들러 제거 (게임오버 버튼은 유지)
+- `GameState` enum에 `Playing`/`InTutorial` 추가하여 `TimeManager`·`UI_Popup_Tutorial`이 참조하던 미정의 상태 컴파일 오류 해결
+
+**검증:** `uloop compile --force-recompile`로 전체 재컴파일 — 에러 0건. 잔여 참조(`HeartCount`/`SuccessGame`/`GameState.Success` 등) `rg` 검색 0건 확인.
+
+### 20. 점프 체감 튜닝 (둥실거림 → 묵직)
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerGravity.cs`, `Assets/05_Datas/SO/PlayerStatData/PlayerStatData.asset`
+
+- 점프가 "새마냥" 가볍게 떠다니는 문제 보정. 점프 높이(≈1.6m)는 유지하되 더 빠릿하고 묵직하게
+- `PlayerGravity.gravityAcceleration`: -20 → -32
+- `PlayerStatData.JumpForce`: 8 → 10.1 (같은 높이 유지: h = v²/2g)
+- 체공 시간 ≈0.8초 → ≈0.63초
+- 점프 시스템은 Rigidbody가 아닌 커스텀 중력(`PlayerGravity` 순수 C#) 기반 유지 — 값만 조정
+
+**검증:** 컴파일 에러 0건. 실제 점프 체감은 PlayMode에서 확인 필요.
+
+---
+
 ## 2026-05-26
 
 ### 1. 플레이어 액션 상태를 애니메이터 방식에 맞게 재구성

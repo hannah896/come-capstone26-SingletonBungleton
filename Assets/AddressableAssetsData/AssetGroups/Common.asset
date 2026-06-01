@@ -45,11 +45,6 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 6b2e9ed6fce4a2648909e3bba7491ec5
-    m_Address: UI_Screen_Iap
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 92d15a646582d8147aae3d4d3dc8a278
     m_Address: UI_Screen_Fade
     m_ReadOnly: 0
@@ -62,11 +57,6 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 9ebcd66ab4045844187672673de88087
     m_Address: Canvas_Hud
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: ad4d6f0f372463042928e52d859b1005
-    m_Address: UI_Screen_Ads
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
