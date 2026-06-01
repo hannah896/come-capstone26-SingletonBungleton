@@ -15,10 +15,11 @@ MonoBehaviour:
   itemID: CookedEgg
   itemName: "\uC775\uD78C \uC54C"
   description: "\uC74C\uC2DD_\uC775\uD78C \uC54C \uC785\uB2C8\uB2E4."
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: f6fbe392534bf5747bd9294519b378a4, type: 3}
   prefab: {fileID: 828052658877537744, guid: 0629e171a501f4346b4804f6e1cd9e73, type: 3}
   itemType: 4
   survivalToolType: 0
+  harvestableResources: 
   combatGearType: 0
   resourceType: 0
   bootyType: 0
@@ -28,9 +29,17 @@ MonoBehaviour:
   equipSlot: 0
   hasDurability: 0
   maxDurability: 0
+  costPerDurability: 1
   attackDamage: 0
   attackRange: 0
   defense: 0
   hungerRestore: 10
   healthRestore: 6
-  sanityRestore: 4
+  egoRestore: 4
+  isPlaceable: 0
+  placementPrefab: {fileID: 0}
+  placementFootprint: {x: 1, y: 1}
+  placementPivotOffset: {x: 0, y: 0, z: 0}
+  placementSnapToGrid: 1
+  placementCheckHeight: 2
+  placementCheckCenterOffset: {x: 0, y: 0, z: 0}

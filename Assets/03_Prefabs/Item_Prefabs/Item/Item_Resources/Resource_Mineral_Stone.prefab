@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2899629528610572022}
   - component: {fileID: 549981429345679312}
   - component: {fileID: 8476236581299956406}
+  - component: {fileID: -5755085000658571509}
   m_Layer: 17
   m_Name: Resource_Mineral_Stone
   m_TagString: Untagged
@@ -76,6 +77,27 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!65 &-5755085000658571509
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8835945005989742766}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 0.40376982, z: 0.7329742}
+  m_Center: {x: 0, y: 0.18400685, z: 0.03146273}
 --- !u!1001 &8732028361805564088
 PrefabInstance:
   m_ObjectHideFlags: 0

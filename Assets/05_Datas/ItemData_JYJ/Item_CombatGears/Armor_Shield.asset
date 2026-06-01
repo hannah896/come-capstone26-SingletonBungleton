@@ -15,10 +15,11 @@ MonoBehaviour:
   itemID: Shield
   itemName: "\uBC29\uD328"
   description: "\uBC29\uC5B4\uAD6C \uBC29\uD328\uC785\uB2C8\uB2E4."
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 31b806cfb952a564bb9d10d24cdf6e38, type: 3}
   prefab: {fileID: 3688159182379531423, guid: e69c19b2b45ba6046ba04bef1c56c385, type: 3}
   itemType: 1
   survivalToolType: 0
+  harvestableResources: 
   combatGearType: 6
   resourceType: 0
   bootyType: 0
@@ -28,9 +29,17 @@ MonoBehaviour:
   equipSlot: 3
   hasDurability: 1
   maxDurability: 100
+  costPerDurability: 1
   attackDamage: 0
   attackRange: 0
   defense: 40
   hungerRestore: 0
   healthRestore: 0
   egoRestore: 0
+  isPlaceable: 0
+  placementPrefab: {fileID: 0}
+  placementFootprint: {x: 1, y: 1}
+  placementPivotOffset: {x: 0, y: 0, z: 0}
+  placementSnapToGrid: 1
+  placementCheckHeight: 2
+  placementCheckCenterOffset: {x: 0, y: 0, z: 0}

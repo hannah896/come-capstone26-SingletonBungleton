@@ -15,7 +15,7 @@ MonoBehaviour:
   itemID: Pickaxe_Iron
   itemName: "\uCCA0\uACE1\uAD2D\uC774"
   description: 
-  icon: {fileID: 21300000, guid: d1647b5f156131a419b1ccf269bf7358, type: 3}
+  icon: {fileID: 21300000, guid: e5415062fbcbd3647a820c18d07a24bb, type: 3}
   prefab: {fileID: 3590119427674651755, guid: 85adbff4ee96e0e4da684c7a27a49dbc, type: 3}
   itemType: 0
   survivalToolType: 5

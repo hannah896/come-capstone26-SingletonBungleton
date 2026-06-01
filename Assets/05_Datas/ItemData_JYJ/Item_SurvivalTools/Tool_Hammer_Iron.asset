@@ -15,7 +15,7 @@ MonoBehaviour:
   itemID: Hammer_Iron
   itemName: "\uCCA0\uB9DD\uCE58"
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 6af62ff41277d2d40a6874b603783163, type: 3}
   prefab: {fileID: 3590119427674651755, guid: c79e4f08720b0d946a5bda811d12e65c, type: 3}
   itemType: 0
   survivalToolType: 8

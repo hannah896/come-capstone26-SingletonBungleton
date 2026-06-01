@@ -15,10 +15,11 @@ MonoBehaviour:
   itemID: Torch
   itemName: "\uD683\uBD88"
   description: "\uC5B4\uB460\uC744 \uBC1D\uD600\uC8FC\uB294  \uD683\uBD88\uC785\uB2C8\uB2E4."
-  icon: {fileID: 21300000, guid: 65766fa1a30d77a4d981274ac0bee441, type: 3}
+  icon: {fileID: 21300000, guid: 1eb77888ceb71f4458256b0aeb7ab786, type: 3}
   prefab: {fileID: 3590119427674651755, guid: fc5e71b6dadcc5a45b0a1ec18a9a0ae8, type: 3}
   itemType: 0
   survivalToolType: 14
+  harvestableResources: 
   combatGearType: 0
   resourceType: 0
   bootyType: 0
@@ -35,3 +36,10 @@ MonoBehaviour:
   hungerRestore: 0
   healthRestore: 0
   egoRestore: 0
+  isPlaceable: 0
+  placementPrefab: {fileID: 0}
+  placementFootprint: {x: 1, y: 1}
+  placementPivotOffset: {x: 0, y: 0, z: 0}
+  placementSnapToGrid: 1
+  placementCheckHeight: 2
+  placementCheckCenterOffset: {x: 0, y: 0, z: 0}

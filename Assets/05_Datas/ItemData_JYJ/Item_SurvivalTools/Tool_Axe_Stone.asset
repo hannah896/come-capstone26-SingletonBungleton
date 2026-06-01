@@ -15,7 +15,7 @@ MonoBehaviour:
   itemID: Axe_Stone
   itemName: "\uB3CC\uB3C4\uB07C"
   description: 
-  icon: {fileID: 21300000, guid: ad6090d7d43aa5e4caaacf8fc2273b3b, type: 3}
+  icon: {fileID: 21300000, guid: bcca1aa0bb49ba640a4e656bccb0d022, type: 3}
   prefab: {fileID: 3590119427674651755, guid: 521513dc01a27324796f1bd4371f3187, type: 3}
   itemType: 0
   survivalToolType: 1

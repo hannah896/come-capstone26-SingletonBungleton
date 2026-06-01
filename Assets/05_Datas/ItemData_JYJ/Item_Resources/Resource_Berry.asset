@@ -15,10 +15,11 @@ MonoBehaviour:
   itemID: Berry
   itemName: "\uC5F4\uB9E4"
   description: "\uC790\uC6D0_\uC5F4\uB9E4\uC785\uB2C8\uB2E4."
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 5a54cd6da9208ef41999fd15be1184dc, type: 3}
   prefab: {fileID: 8489190849846322403, guid: 0b0fc605e989f3f43832169420eb496f, type: 3}
   itemType: 2
   survivalToolType: 0
+  harvestableResources: 
   combatGearType: 0
   resourceType: 4
   bootyType: 0
@@ -28,9 +29,17 @@ MonoBehaviour:
   equipSlot: 0
   hasDurability: 0
   maxDurability: 0
+  costPerDurability: 1
   attackDamage: 0
   attackRange: 0
   defense: 0
   hungerRestore: 0
   healthRestore: 0
-  sanityRestore: 0
+  egoRestore: 0
+  isPlaceable: 0
+  placementPrefab: {fileID: 0}
+  placementFootprint: {x: 1, y: 1}
+  placementPivotOffset: {x: 0, y: 0, z: 0}
+  placementSnapToGrid: 1
+  placementCheckHeight: 2
+  placementCheckCenterOffset: {x: 0, y: 0, z: 0}

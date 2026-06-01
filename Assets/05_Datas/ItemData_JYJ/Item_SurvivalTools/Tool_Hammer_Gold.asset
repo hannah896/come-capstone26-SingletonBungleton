@@ -15,7 +15,7 @@ MonoBehaviour:
   itemID: Hammer_Gold
   itemName: "\uAE08\uB9DD\uCE58"
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: ab03bcaa1646815408a79ed789409f6f, type: 3}
   prefab: {fileID: 3590119427674651755, guid: 302388d3b2a2dae4a8d0b99fd84ea529, type: 3}
   itemType: 0
   survivalToolType: 9
