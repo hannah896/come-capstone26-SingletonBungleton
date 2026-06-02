@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 
 /// <summary>
@@ -61,6 +62,15 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
         if (required != HarvestToolType.None && !ToolMatches(context.ActionType, required))
         {
             Debug.Log($"[{_resourceNodeData.Name}] 필요 도구: {required} / 현재: {context.ActionType}");
+            return false;
+        }
+
+        // 도구의 채집 가능 노드 타입 체크
+        if (context.HarvestableNodeTypes != null
+            && context.HarvestableNodeTypes.Count > 0
+            && !context.HarvestableNodeTypes.Contains(_resourceNodeData.ResourceNodeType))
+        {
+            Debug.Log($"[{_resourceNodeData.Name}] 이 도구로 채집할 수 없는 노드입니다. (노드: {_resourceNodeData.ResourceNodeType})");
             return false;
         }
 

@@ -653,7 +653,7 @@ public class PlayerInventory : MonoBehaviour
 
         int damage = Mathf.Max(1, Mathf.RoundToInt(handItem.attackDamage));
         ActionType actionType = GetActionTypeForTool(handItem.survivalToolType);
-        var damageContext = new DamageContext(gameObject, hit.point, damage, handItem.itemID, actionType);
+        var damageContext = new DamageContext(gameObject, hit.point, damage, handItem.itemID, actionType, handItem.harvestableNodeTypes);
         if (!node.CanDamage(damageContext))
             return;
 

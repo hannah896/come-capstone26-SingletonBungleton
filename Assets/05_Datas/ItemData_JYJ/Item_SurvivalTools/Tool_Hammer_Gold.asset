@@ -19,7 +19,7 @@ MonoBehaviour:
   prefab: {fileID: 3590119427674651755, guid: 302388d3b2a2dae4a8d0b99fd84ea529, type: 3}
   itemType: 0
   survivalToolType: 9
-  harvestableResources: 0600000007000000
+  harvestableNodeTypes:
   combatGearType: 0
   resourceType: 0
   bootyType: 0
