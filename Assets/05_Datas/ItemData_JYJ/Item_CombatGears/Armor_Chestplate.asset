@@ -15,7 +15,7 @@ MonoBehaviour:
   itemID: Chestplate
   itemName: "\uAC11\uC637"
   description: "\uBC29\uC5B4\uAD6C \uAC11\uC637\uC785\uB2C8\uB2E4."
-  icon: {fileID: 21300000, guid: be604c5139918ad44920ac0f5070cb1b, type: 3}
+  icon: {fileID: 21300000, guid: 9714beff54aaac645b842c998b55bf66, type: 3}
   prefab: {fileID: 5671968366998541486, guid: 4c63637817e991e4a8415243d3baca22, type: 3}
   itemType: 1
   survivalToolType: 0

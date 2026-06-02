@@ -15,7 +15,7 @@ MonoBehaviour:
   itemID: Helmet
   itemName: "\uD5EC\uBA67"
   description: "\uBC29\uC5B4\uAD6C \uD5EC\uBA67\uC785\uB2C8\uB2E4."
-  icon: {fileID: 21300000, guid: 7b38bb3f5ac1a8f46b0fa9e9e9004347, type: 3}
+  icon: {fileID: 21300000, guid: 9fe78103250fb12488ed973410cb7e06, type: 3}
   prefab: {fileID: 7810457714980307102, guid: 9e8825677fc895d419af53a07717203c, type: 3}
   itemType: 1
   survivalToolType: 0

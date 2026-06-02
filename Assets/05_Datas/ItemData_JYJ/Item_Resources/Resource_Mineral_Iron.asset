@@ -15,7 +15,7 @@ MonoBehaviour:
   itemID: Mineral_Iron
   itemName: "\uCCA0"
   description: "\uAD11\uC11D\uC790\uC6D0_\uCCA0\uC785\uB2C8\uB2E4."
-  icon: {fileID: 21300000, guid: 465b86742687a1444b75399a61b14040, type: 3}
+  icon: {fileID: 21300000, guid: ea03aa7be8abe7048872008e1914c1b7, type: 3}
   prefab: {fileID: 1799256547270814821, guid: a2c6d75b65c27024c9f5833ed11e82a5, type: 3}
   itemType: 2
   survivalToolType: 0
