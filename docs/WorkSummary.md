@@ -2,6 +2,116 @@
 
 ---
 
+## 2026-06-02
+
+### 3. NEXON 한글 폰트 SDF 굽기 — Light 웨이트 마저 굽기
+
+**파일:** `Assets/09_Font/Editor/KoreanFontBaker.cs`, `Assets/09_Font/NEXON Football Gothic L SDF.asset`
+
+- B(Bold)는 전체 한글 음절(11,318자)로 구워져 있었으나 L(Light)은 ASCII 일부(45자)만 들어가 한글이 □로 깨지던 상태 → L도 동일하게 마저 구움
+- `KoreanFontBaker`가 B 전용 하드코딩이라, `Bake(otf, sdf, name)` 공통 메서드로 일반화하고 메뉴를 분리: `Tools/Font/Bake NEXON Korean SDF (Bold) / (Light) / (Both)`
+- 굽기 스펙은 B와 동일(SamplingPointSize 80, Padding 8, Atlas 4096px, SDFAA, Dynamic + 멀티아틀라스, 가~힣 전체 pre-bake). 기존 경로 덮어쓰기로 `.meta` guid 유지 → FontsSo 등 기존 참조 보존
+- `uloop execute-dynamic-code`로 `KoreanFontBaker.BakeLight()` 실행
+
+**검증:** `uloop compile --force-recompile` 에러 0건. 굽기 로그 — L SDF 문자 11,318자 / 글리프 11,318개 / 아틀라스 2장(4096px) / 누락 0자 (B와 동일). 에셋 크기 ~71MB. (콘솔의 LiberationSans 폴백 한글 누락 경고는 폰트 굽기와 무관한 별개 런타임 이슈 — UI_Text가 아직 기본 폴백 폰트 참조)
+
+### 1. 스테이지(Stage)·보드(Board) 시스템 전면 제거
+
+**파일:** `StageData.cs`, `DataManager.cs`, `Extensions.cs`, `PlayPrefs.cs`, `GameScene.cs`, `GameManager.cs`, `ScreenManager.cs`, `Main.cs`, `UI_Editor.cs`, `UI_Popup_LeaveGame.cs`, `TextManager.cs` / (삭제) `BoardManager.cs`, `Models/Board/Board.cs`, `Models/Board/BoardObject.cs`
+
+- 우리 게임(돈스타브류 생존게임)에는 스테이지/레벨 개념이 없어, 캐주얼·모바일식 스테이지 시스템과 그에 묶인 미사용 Board 시스템을 전부 제거
+- **스테이지 데이터:** `StageData` 클래스, `DataManager`의 `_stageData`/`LoadStageData()`/`GetStageData()`/`GetMaxStageCount()`/`EditorStageData`, `Extensions.GetStageData`, `Main.BlossomPath.RESOURCES_STAGEDATA` 상수 제거
+  - `StageData.cs`에 함께 있던 `Difficulty`/`ColorType`/`Direction`/`Orientation` enum은 `Utilities.cs`·`UI_DifficultyImage.cs`에서 광범위하게 쓰여 **보존**(클래스만 제거)
+- **레벨(Stage) Prefs:** `PlayPrefs.Stage`/`_stage`, `DataManager.PrefsSync`의 동기화, `GameScene.CurrentStage`/`StartGame(int)` 파라미터, `UI_Popup_LeaveGame`의 "Level N" 표시, `TextManager`의 `PlayerLevel` 캐시·이벤트 제거
+- **Board 시스템:** `BoardManager`(매니저 미등록 죽은 클래스), `Board`, `BoardObject` 파일 삭제. `GameManager`의 `Current(Board)`/`GenerateBoard()`/`GenerateBoardObject()` 제거. Board는 호출처가 없어 `Main.Game.Current`가 항상 null이었고, 실제 맵 생성은 WorldGen이 전담
+- **카메라:** `ScreenManager.SetGameCamera()`가 항상 null인 `Board` 크기로 카메라 영역을 잡던 잠재적 NRE 죽은 코드라 통째 제거, `SetCamera()`는 배경색 설정만 남김. 미사용 `CameraYBuffer` 필드도 정리
+- **UI_Editor**(개발 치트 패널): Stage 입력 필드/바인딩/`OnEnterStage()` 핸들러, `GetMaxStageCount()` 참조 제거
+
+**검증:** `uloop compile --force-recompile` 전체 재컴파일 — 에러 0건, 경고 15건(모두 기존 경고, 이번 작업이 추가한 `CameraYBuffer` 경고는 정리 완료). 잔여 참조(`StageData`/`GenerateBoard`/`.Stage` 등) `rg` 검색 결과 게임 코드 0건(Photon의 무관한 `Stage` enum만 잔존).
+
+### 2. 메인 카메라 2D 배경판 잔재 코드 정리 (시네머신/Perspective 유지)
+
+**파일:** `Assets/CustomPackage/Main/Screen/Camera/MainCameraObject.cs`, `MainCamera.cs`, `Assets/02_Scripts/@Scripts/Managers/ScreenManager.cs`
+
+- `MainCameraObject` 프리팹 진단 결과 **이미 3D 준비 완료**: `orthographic: 0`(원근), `CinemachineBrain` 존재(FP 가상 카메라 추적용), `ClearFlags: Skybox`. 시네머신 구조는 그대로 유지
+- 2D 캐주얼 게임 잔재인 **단색 배경판(SpriteRenderer "Background")** 관련 미사용 코드 제거:
+  - `MainCameraObject`: `_spriteBG` 필드, `ActiveSpriteBG()`/`SetSpriteBG()`/`SetSpriteColor()` 제거 (호출처 0건). 카메라 배경색 설정 범용 유틸 `SetColorCameraBG()`는 유지
+  - `MainCamera`: 위 SpriteBG 래퍼 3종 제거
+  - `ScreenManager`: 카메라 배경을 **흰색**으로 칠하던 죽은 `SetCamera()`(외부 호출 0건) + `CameraColorBG` 상수 제거
+- 프리팹(.prefab) 자체 수정(Background 자식 GameObject 삭제, z위치/배경색 정리)은 작업자가 Unity 에디터에서 직접 진행 예정 — **CinemachineBrain은 삭제 금지**
+
+**검증:** `uloop compile --force-recompile` — 에러 0건, 경고 15건(모두 기존 경고).
+
+## 2026-06-01
+
+### 17. 모바일 게임 프레임워크 잔재 제거 (IAP/광고)
+
+**파일:** `Assets/CustomPackage/Main/Loading/UI_Loading_Iap.cs`(삭제), `UI_Loading_Ads.cs`(삭제), `Assets/03_Prefabs/@Base/UI/UI_Screen_Iap.prefab`(삭제), `UI_Screen_Ads.prefab`(삭제), `Assets/AddressableAssetsData/AssetGroups/Common.asset`
+
+- 프로젝트가 모바일 게임 부팅/수익화 프레임워크 위에 올라가 있어, 인앱결제(IAP)/광고(Ads) 로딩 화면 잔재를 제거
+- IAP/Ads 로딩 화면 스크립트 2개와 프리팹 2개 삭제 (껍데기만 있고 실제 수익화 로직은 없었음)
+- `Common.asset`의 Addressable 등록 항목(`UI_Screen_Iap`, `UI_Screen_Ads`)도 제거
+- 코드/씬에서 직접 호출되는 곳이 없어 안전하게 제거됨
+
+**변경 이유:** 우리 게임은 돈스타브류 멀티플레이 생존게임으로, 모바일식 IAP/광고 시스템이 필요 없음.
+
+### 18. GameScene 흐름을 WorldGen 기반으로 재구성 (맵 생성 → 플레이어 소환)
+
+**파일:** `Assets/02_Scripts/@Scripts/Scenes/GameScene.cs`, `Assets/02_Scripts/@Scripts/Game/GameEvents.cs`
+
+- WIP로 컴파일이 깨져 있던 `GameScene.cs`를 정리하고 게임 시작 흐름을 명확화
+- `EnterScene` → `StartGame()`: WorldGenManager를 **런타임에 동적 생성**(`new GameObject().AddComponent<WorldGenManager>()`)한 뒤, WorldSettings(Addressable) 로드를 `UniTask.WaitUntil`로 대기하고 `GenerateWorldFromUI(Default, Default)`를 `await`하여 **맵 생성이 온전히 끝난 뒤** 진행
+- WorldGenManager/디렉터들이 인스펙터 의존성 없이 self-init 되도록 설계돼 있어 씬에 미리 배치할 필요 없음 (GameScene.unity는 Directional Light만 있는 빈 씬)
+- 플레이어 소환은 경보(KGB)님의 `WorldGen` 내부 로직(StartRegion 위치 자동 계산 포함)을 그대로 사용 — GameScene은 생성 완료를 기다리기만 함
+- 송제우님의 `BoardManager`/`Board` 맵 시스템은 사용하지 않도록 호출 제거
+- 맵 + 플레이어 소환 완료 후 `GameProcessing.Processing` + `GameState.Playing`으로 전환 (타이머/게임 업데이트 활성화)
+- 저장 시스템 대비 분기 자리(`hasSavedWorld`) TODO로 마련: 저장 데이터 있으면 로드, 없으면 새 맵 자동 생성
+- `SceneBase`는 MonoBehaviour가 아니므로 동작하지 않던 `Update()`/`OnDisable()`/Coroutine 잔재 제거, 루프 이벤트 정리는 `ExitScene`으로 이동
+
+**검증:** PlayMode 실행 결과 `WorldSettings 로드 완료` → `UI 옵션으로 월드 생성. 시드: ..., Branch: Default, Loop: Default` → 월드 그래프 생성(Region 13개) → Player 소환 후 상태머신(Idle/Walk/Attack) 정상 작동 확인.
+
+**남은 TODO/이슈:** 소환된 플레이어가 자신의 HUD(`UI_Hud_Game`)를 띄우는 단계는 다음 작업으로 남김. 저장/로드 분기 구현 필요. GameScene에 AudioManager가 없어 JSAM 에러 발생(비치명적) — 필요 시 EnterScene에서 AudioManager 생성 추가.
+
+### 19. 클리어(Success)·하트(Heart) 목숨제 잔재 전면 제거
+
+**파일:** `Assets/02_Scripts/@Scripts/Scenes/GameScene.cs`, `Assets/02_Scripts/@Scripts/Game/GameEvents.cs`, `Assets/02_Scripts/@Scripts/Managers/GameManager.cs`, `BoardManager.cs`, `Assets/CustomPackage/UI/UI_Editor/UI_Editor.cs`
+
+- 생존게임에 맞지 않는 캐주얼/모바일식 시스템(스테이지 클리어, 하트 목숨제)을 전부 제거
+- `GameScene`: `HeartCount`/`MaxHeartCount`/`IsInfinityHeart`/`_heartCount`, `SuccessGame()`, `GameState.Success` 분기 제거
+- `GameEvents`: `OnGameClear`, `OnChangeHeart` 제거 (`OnGameOver`는 게임오버용으로 유지)
+- `GameManager`/`BoardManager`: 클리어 조건 검사 `CheckClear()` 제거 (`CheckFail()`은 유지)
+- `UI_Editor`(개발 치트 패널): 하트 입력/무한하트 토글/클리어 버튼 관련 필드·바인딩·핸들러 제거 (게임오버 버튼은 유지)
+- `GameState` enum에 `Playing`/`InTutorial` 추가하여 `TimeManager`·`UI_Popup_Tutorial`이 참조하던 미정의 상태 컴파일 오류 해결
+
+**검증:** `uloop compile --force-recompile`로 전체 재컴파일 — 에러 0건. 잔여 참조(`HeartCount`/`SuccessGame`/`GameState.Success` 등) `rg` 검색 0건 확인.
+
+### 20. 점프 체감 튜닝 (둥실거림 → 묵직)
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerGravity.cs`, `Assets/05_Datas/SO/PlayerStatData/PlayerStatData.asset`
+
+- 점프가 "새마냥" 가볍게 떠다니는 문제 보정. 점프 높이(≈1.6m)는 유지하되 더 빠릿하고 묵직하게
+- `PlayerGravity.gravityAcceleration`: -20 → -32
+- `PlayerStatData.JumpForce`: 8 → 10.1 (같은 높이 유지: h = v²/2g)
+- 체공 시간 ≈0.8초 → ≈0.63초
+- 점프 시스템은 Rigidbody가 아닌 커스텀 중력(`PlayerGravity` 순수 C#) 기반 유지 — 값만 조정
+
+**검증:** 컴파일 에러 0건. 실제 점프 체감은 PlayMode에서 확인 필요.
+
+### 21. 씬 흐름 정립 (Init→Lobby→Game) + 로비 옵션 주입 + 진행률 로딩 화면
+
+**파일:** `Assets/CustomPackage/Main/Loading/UI_Screen_StartLoading.cs`, `Assets/02_Scripts/@Scripts/Scenes/GameScene.cs`, `Assets/CustomPackage/Main/Loading/UI_Screen_Transition.cs`
+
+- **부팅 흐름**: 부팅 로딩(`UI_Screen_StartLoading`)이 끝나면 `GameScene`으로 직행하던 것을 `LobbyScene`으로 변경 → `InitScene → (StartLoading) → LobbyScene → (UI_Popup_WorldGen) → GameScene` 흐름 정립
+- **로비 옵션 주입**: `GameScene.StartGame`이 `WorldGenRequest`를 무시하고 기본값만 쓰던 것을 수정. `WorldGenRequest.HasRequest`면 `Consume()`하여 로비에서 확정한 branch/loop/seed로 `WorldGenManager.GenerateWorld(...)` 호출, 없으면(직접 진입 테스트) 기본 옵션으로 생성
+- **로딩 흐름 보장**: 로비→게임 전환은 `SceneManagerEx.ChangeSceneAsync`가 `ShowScreen → 씬 Additive 로드 → await EnterScene(맵+플레이어 생성) → finally HideScreen` 구조라, GameScene의 `EnterScene`이 `await StartGame()`을 기다리므로 "생성 완료 후 로딩 닫기"가 자동 보장됨 (추가 코드 불필요)
+- **진행률 로딩 화면**: `UI_Screen_Transition`을 강화 — `WorldGenManager.OnProgress`(0.05~1.0 단계별 발행)를 구독해 로딩바(`Img_Bar_F`)와 단계 텍스트(`Txt_Stage`)에 표시, 랜덤 팁(`Txt_Tip`)을 3.5초마다 교체. UI 요소는 `FindChild` + null 가드라 프리팹에 없으면 기존처럼 페이드만 동작(다른 씬 전환 무영향). 이벤트 해제는 `OnDestroy`에서.
+
+**검증:** `uloop compile --force-recompile` 에러 0건.
+
+**남은 TODO/이슈:** 진행률/팁이 실제로 보이려면 `UI_Screen_Transition.prefab`에 `Img_Bar_F`(UI_Image), `Txt_Stage`(UI_Text), `Txt_Tip`(UI_Text) 자식 오브젝트를 추가해야 함(코드는 준비됨).
+
+---
+
 ## 2026-05-26
 
 ### 1. 플레이어 액션 상태를 애니메이터 방식에 맞게 재구성

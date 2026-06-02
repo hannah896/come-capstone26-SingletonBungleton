@@ -361,11 +361,6 @@ public static class Extensions
     public static List<T> GetAllData<T>() where T : Data => Main.Data.GetAll<T>();
 
     /// <summary>
-    /// 스테이지 데이터를 가져옵니다.
-    /// </summary>
-    public static StageData GetStageData(int stage) => Main.Data.GetStageData(stage);
-
-    /// <summary>
     /// 특정 키가 존재하는지 확인합니다.
     /// </summary>
     public static bool ContainsDataKey<T>(string key) where T : Data => Main.Data.ContainsKey<T>(key);

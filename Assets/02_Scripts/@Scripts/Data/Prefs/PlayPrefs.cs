@@ -50,8 +50,6 @@ public class PlayPrefs : PrefData {
         set => _localizeContry = (int)value;
     }
 
-    public PrefValue<int> Stage => _stage ??= new(1, this);
-    
     #endregion
     
     #region Fields
@@ -61,8 +59,6 @@ public class PlayPrefs : PrefData {
     [SerializeField] private long _lastSessionTime;
     [SerializeField] private bool _isAcceptedRating;
     [SerializeField] private int _localizeContry;
-
-    [SerializeField] private PrefValue<int> _stage;
 
     public event Action<string> OnProfileNameChanged;
     
@@ -78,12 +74,6 @@ public class PlayPrefs : PrefData {
         _profileName = "pLaYeR";
         _firstSessionTime = Def.TimeMin;
         _lastSessionTime = Def.TimeMin;
-        _stage = new(1, this);
     }
 
-    [OnDeserialized]
-    private void OnDeserialized(StreamingContext context) {
-        _stage ??= new(1, this);
-    }
-    
 }

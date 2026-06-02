@@ -19,7 +19,7 @@ MonoBehaviour:
   Defense: 5
   MinAttackPeriod: 1
   SprintMultiplier: 1.5
-  JumpForce: 8
+  JumpForce: 10.1
   DayDurationMinutes: 12
   MaxHunger: 150
   CurHunger: 150

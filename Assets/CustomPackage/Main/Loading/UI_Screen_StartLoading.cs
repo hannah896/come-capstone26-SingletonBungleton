@@ -99,7 +99,7 @@ public class UI_Screen_StartLoading : UI_Screen
             //Main.Ads.ShowAppOpenAd();
         }
 
-        Main.Scene.ChangeScene("GameScene");
+        Main.Scene.ChangeScene("LobbyScene");
         FadeOutLoading();
     }
 

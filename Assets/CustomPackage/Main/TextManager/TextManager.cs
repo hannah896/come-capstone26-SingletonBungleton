@@ -13,7 +13,6 @@ public class TextManager : CoreManager
 {
     #region Constants
 
-    private const string PlayerLevelKey = "PlayerLevel";
     private const string PlayerGoldKey = "PlayerGold";
     private const string PlayerHearthKey = "PlayerHearth";
 
@@ -65,11 +64,9 @@ public class TextManager : CoreManager
     {
         try
         {
-            currentData[PlayerLevelKey] = (_playPrefs.Stage.Value).ToString();
             currentData[PlayerGoldKey] = (_currencyPrefs.Currency.Value).ToString();
             currentData[PlayerHearthKey] = (_currencyPrefs.Lives.Value).ToString();
 
-            _playPrefs.Stage.OnValueChanged += i => currentData[PlayerLevelKey] = i.ToString();
             _currencyPrefs.Currency.OnValueChanged += i => currentData[PlayerGoldKey] = i.ToString();
             _currencyPrefs.Lives.OnValueChanged += i => currentData[PlayerHearthKey] = i.ToString();
         }

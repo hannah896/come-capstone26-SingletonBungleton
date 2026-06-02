@@ -1,0 +1,65 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Lobby
+  m_EditorClassIdentifier: 
+  m_GroupName: Lobby
+  m_GUID: 122ca5a371d5e254c9a9ee374705bc9b
+  m_SerializeEntries:
+  - m_GUID: 06ab755db6a846749b152af97f1500f2
+    m_Address: Environment
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - LobbyScene
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2973d48c186b46a4f909a1e6edb800a6
+    m_Address: Global Volume
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - LobbyScene
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4135c1c4f53a74748a8f736f7fe96bb2
+    m_Address: Particle Systems
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - LobbyScene
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 993e11a9265123b448d2c0659331725e
+    m_Address: Borders
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - LobbyScene
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a11a46ff743af7149ae0f45f34bcdf24
+    m_Address: Directional Light
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - LobbyScene
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f86540d0d51b0c646ac6e917d5cc4233
+    m_Address: Terrain
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - LobbyScene
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fb5d34dd84e3d274d895ef80fa32c7b6
+    m_Address: Water_1
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - LobbyScene
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: d49714acbe7dc4846b65422625851c9a, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: c3700330055b41b4c9bfe20f94217b9f, type: 2}
+    - {fileID: 11400000, guid: 06032b0c595ac16429314a173eb129b3, type: 2}

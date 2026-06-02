@@ -15,9 +15,6 @@ public class DataManager : PrimaryManager
 {
     #region Fields
 
-    // 스테이지 번호별 텍스트 에셋
-    private Dictionary<int, TextAsset> _stageData = new();
-
     // 타입별 데이터 딕셔너리
     private Dictionary<Type, Dictionary<string, Data>> _data = new();
 
@@ -32,20 +29,12 @@ public class DataManager : PrimaryManager
 
     #endregion
 
-    #region Properties
-
-    // 에디터용 스테이지 데이터
-    public StageData EditorStageData { get; set; }
-
-    #endregion
-
     #region Initialization
 
     protected override async UniTask OnInitializeAsync()
     {
         await base.OnInitializeAsync();
         LoadData();
-        LoadStageData();
         PrefsInitialize();
     }
 
@@ -80,13 +69,6 @@ public class DataManager : PrimaryManager
                 _data[type][pair.Key] = pair.Value;
             }
         }
-    }
-
-    // 스테이지 데이터 로드
-    private void LoadStageData()
-    {
-        _stageData = Resources.LoadAll<TextAsset>($"{BlossomPath.RESOURCES_STAGEDATA}")
-            .ToDictionary(x => int.Parse(x.name.Replace("Stage", "")), x => x);
     }
 
     #endregion
@@ -162,36 +144,6 @@ public class DataManager : PrimaryManager
         return dictionary.Values.Select(x => x as T).ToList();
     }
 
-    /// <summary>
-    /// 스테이지 데이터를 가져옵니다.
-    /// </summary>
-    public StageData GetStageData(int stage)
-    {
-        if (!_stageData.TryGetValue(stage, out TextAsset textAsset)) return null;
-        try
-        {
-            JsonSerializerSettings settings = new();
-            settings.Converters.Add(new Vector2IntDictionaryConverter());
-            StageData stageData = JsonConvert.DeserializeObject<StageData>(textAsset.text, settings);
-            return stageData;
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"[DataManager] GetStageData({stage}): Failed to deserialize stage data: {e.Message}");
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// 최대 스테이지 수를 반환합니다.
-    /// </summary>
-    public int GetMaxStageCount()
-    {
-        int stageCount = 0;
-        stageCount = _stageData.Select(x => x.Key).Max();
-        return stageCount;
-    }
-
     #endregion
 
     #region Prefs
@@ -227,7 +179,6 @@ public class DataManager : PrimaryManager
         _currency.Currency.DisplayValueSync();
         _currency.Lives.DisplayValueSync();
         _currency.LivesUnlimitedRemainTime.DisplayValueSync();
-        _play.Stage.DisplayValueSync();
     }
 
     #endregion

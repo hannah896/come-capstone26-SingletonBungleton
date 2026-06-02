@@ -6,8 +6,7 @@ public class GameEvents {
     public static Action OnGamePause;
     public static Action OnGameResume;
     public static Action OnGameContinue;
-    public static Action OnGameClear;
-    public static Action OnGameOver;
 
-    public static Action<int> OnChangeHeart;
+    // 게임 오버 (사망)
+    public static Action OnGameOver;
 }

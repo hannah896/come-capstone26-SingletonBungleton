@@ -60,6 +60,7 @@ MonoBehaviour:
   m_BuildAddressablesWithPlayerBuild: 0
   m_overridePlayerVersion: '[UnityEditor.PlayerSettings.bundleVersion]'
   m_GroupAssets:
+  - {fileID: 11400000, guid: 3ead471349c3f7c4e95a4f2d4d3490e5, type: 2}
   - {fileID: 11400000, guid: e6ccef0b5b2540943a9c90cbdb1c304d, type: 2}
   - {fileID: 11400000, guid: 3ca174560c64618448f1a1c619c2b170, type: 2}
   - {fileID: 11400000, guid: 700adfa6a96acf647bb247e6b4bbb1e9, type: 2}
@@ -110,6 +111,7 @@ MonoBehaviour:
     m_LabelNames:
     - default
     - EveryScene
+    - LobbyScene
   m_SchemaTemplates: []
   m_GroupTemplateObjects:
   - {fileID: 11400000, guid: e7ab815488528f64289e35f404d2c676, type: 2}

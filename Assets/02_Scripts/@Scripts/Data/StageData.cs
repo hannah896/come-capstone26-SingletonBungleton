@@ -1,10 +1,3 @@
-public class StageData : Data
-{
-    public int Index { get; set; }
-    public Difficulty Difficulty { get; set; }
-
-}
-
 public enum Difficulty
 {
     Normal,
