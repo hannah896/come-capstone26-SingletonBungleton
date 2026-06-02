@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using static UnityEditor.Timeline.Actions.MenuPriority;
 
 /// <summary>
 /// 플레이어가 직접 들고 있는 인벤토리입니다.
@@ -614,7 +615,7 @@ public class PlayerInventory : MonoBehaviour
             return false;
 
         int damage = Mathf.Max(1, Mathf.RoundToInt(handItem.attackDamage));
-        var ctx = new DamageContext(gameObject, hit.point, damage, handItem.itemID);
+        var ctx = new DamageContext(gameObject, hit.point, damage, handItem.itemID, actionType, handItem.harvestableNodeTypes);
         return node.CanDamage(ctx);
     }
 
