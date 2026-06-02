@@ -90,6 +90,13 @@ public class ItemDataSO : ScriptableObject
     public float egoRestore = 0f;
 
 
+    [Header("=== 아이템 태그 ===")]
+    [Tooltip("이 아이템의 사용 용도 (복수 선택 가능)")]
+    public ItemTag tags = ItemTag.None;
+
+    /// <summary>특정 태그를 가지고 있는지 확인.</summary>
+    public bool HasTag(ItemTag tag) => (tags & tag) != 0;
+
     [Header("=== 배치 정보 ===")]
     [Tooltip("배치 가능 아이템 여부")]
     public bool isPlaceable = false;

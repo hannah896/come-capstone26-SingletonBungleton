@@ -17,6 +17,7 @@ MonoBehaviour:
   MaxHealth: 3
   GatherAmount: 1
   RespawnTime: 300
+  RequiredTool: 2
   Drops: []
   DropRadius: 0.5
   DropFxPrefabKey: 
