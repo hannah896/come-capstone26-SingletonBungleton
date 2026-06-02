@@ -1,4 +1,3 @@
-using Blossom.Preference;
 using Cysharp.Threading.Tasks;
 using System;
 using System.Threading;
@@ -44,9 +43,6 @@ public class GameScene : SceneBase
 
     public static GameProcessing GameProcessing { get; set; }
 
-    // 현재 스테이지 데이터 (스테이지/저장 로드 시 사용 예정)
-    public static StageData CurrentStage { get; private set; }
-
     // 인게임 HUD (플레이어 소환 후 표시 예정)
     public UI_Hud_Game UIHud { get; private set; }
 
@@ -55,8 +51,6 @@ public class GameScene : SceneBase
     #region Fields
 
     private static GameState _gameState = GameState.None;
-
-    private PlayPrefs _playPrefs;
 
     // 단계별 이벤트 (구독자가 단계 진입을 감지)
     public event Action OnGameWorldGenerate;   // 맵 생성 단계
@@ -68,8 +62,7 @@ public class GameScene : SceneBase
 
     public override async UniTask EnterScene(CancellationToken token)
     {
-        _playPrefs = Prefs.Get<PlayPrefs>();
-        await StartGame(_playPrefs.Stage.Value);
+        await StartGame();
     }
 
     public override void ExitScene()
@@ -86,7 +79,7 @@ public class GameScene : SceneBase
     /// 게임 시작 흐름. 맵 생성이 온전히 끝난 뒤 플레이어 소환까지 진행한다.
     /// (플레이어 소환과 StartRegion 배치는 WorldGen 내부에서 처리됨)
     /// </summary>
-    public async UniTask StartGame(int stage = -1)
+    public async UniTask StartGame()
     {
         CancellationToken token = Main.Scene.CurrentToken;
 
@@ -115,11 +108,23 @@ public class GameScene : SceneBase
         }
         else
         {
-            // #3. 플레이어 생성 단계 — 새 맵 자동 생성
+            // #3. 플레이어 생성 단계 — 맵 생성 (WorldGen 내부에서 플레이어 소환까지 완료)
             GameState = GameState.Player;
-            await WorldGenManager.Instance.GenerateWorldFromUI(
-                WorldBranchSetting.Default,
-                WorldLoopSetting.Default);
+
+            if (WorldGenRequest.HasRequest)
+            {
+                // 로비(UI_Popup_WorldGen)에서 확정한 옵션·시드로 생성
+                WorldGenRequest.Data req = WorldGenRequest.Consume();
+                await WorldGenManager.Instance.GenerateWorld(
+                    req.Branch, req.Loop, req.Seed, req.Size, token);
+            }
+            else
+            {
+                // 로비를 거치지 않고 직접 진입한 경우(에디터 테스트 등) 기본 옵션으로 새 맵 자동 생성
+                await WorldGenManager.Instance.GenerateWorldFromUI(
+                    WorldBranchSetting.Default,
+                    WorldLoopSetting.Default);
+            }
         }
 
         // 여기 도달 = 맵 생성 + 플레이어 소환 완료 → 게임 진행 시작

@@ -29,7 +29,6 @@ public class UI_Editor : UI_Panel {
     private GameObject _objSetting;
     
     private TMP_InputField _inputPassword;
-    private TMP_InputField _inputStage;
     private TMP_InputField _inputGold;
 
     private UI_Text _txtCameraMove;
@@ -61,7 +60,6 @@ public class UI_Editor : UI_Panel {
 
         _objSetting = gameObject.FindChild("SettingEditor");
         _inputPassword = gameObject.FindChild<TMP_InputField>("Input_Password");
-        _inputStage = gameObject.FindChild<TMP_InputField>("Input_Stage");
         _inputGold = gameObject.FindChild<TMP_InputField>("Input_Gold");
 
         _txtCameraMove = gameObject.FindChild<UI_Text>("Txt_CameraMove");
@@ -71,7 +69,6 @@ public class UI_Editor : UI_Panel {
         
         _canvas = GetComponent<Canvas>();
         gameObject.FindChild<UI_Button>("Btn_PasswordEnter").SetEvent(OnEnterPassword);
-        gameObject.FindChild<UI_Button>("Btn_StageEnter").SetEvent(OnEnterStage);
         gameObject.FindChild<UI_Button>("Btn_GoldEnter").SetEvent(OnEnterGold);
         gameObject.FindChild<UI_Button>("Btn_Close").SetEvent(OnEnterClose);
         gameObject.FindChild<UI_Button>("Btn_Failed").SetEvent(OnEnterFailed);
@@ -111,29 +108,6 @@ public class UI_Editor : UI_Panel {
             _inputPassword.gameObject.SetActive(true);
             _objSetting.gameObject.SetActive(false);
         }
-    }
-
-    private void OnEnterStage()
-    {
-        int stageNum = 1;
-        if (!int.TryParse(_inputStage.text, out stageNum))
-        {
-            Debug.LogError($"Enter Stage Number is invalid, string : {_inputStage.text}");
-            return;
-        }
-        StageData data = Main.Data.GetStageData(stageNum);
-        if (data == null)
-        {
-            Debug.LogError($"Enter Stage Number is invalid, : {_inputStage.text}");
-            return;
-        }
-        GameScene scene = Main.Scene.Current as GameScene;
-        if (scene == null)
-        {
-            Debug.LogError($"scene is invalid");
-            return;
-        }
-        scene.StartGame(stageNum).Forget();
     }
 
     private void OnEnterGold()
@@ -191,11 +165,6 @@ public class UI_Editor : UI_Panel {
 
     private void OnEnterSendClearLog()
     {
-        int maxStage = Main.Data.GetMaxStageCount();
-        //for (int i = 1; i <= maxStage; i++)
-        //{
-        //    Main.AnalyticsSDK.LogEvent($"rca_clear_{i:D4}", null, AnalyticsType.GF);
-        //}
         StringBuilder sb = new();
         sb.AppendLine("Send Clear");
         sb.AppendLine("Event Log");
