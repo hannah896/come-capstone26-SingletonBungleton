@@ -41,6 +41,7 @@ public class LoadingManager : CoreManager
 
         if (Main.IsEditorMode) return;
 
+        // 부팅 로딩 화면(진행률 로딩바). 로딩 완료 시 LobbyScene으로 전환된다.
         Extensions.ShowScreen<UI_Screen_StartLoading>();
     }
 

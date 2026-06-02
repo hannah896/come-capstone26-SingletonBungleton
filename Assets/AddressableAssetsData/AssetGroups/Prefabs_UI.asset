@@ -27,6 +27,11 @@ MonoBehaviour:
     m_SerializedLabels:
     - EveryScene
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: dc40b564b6c58eb4c81b029d3d167c46
+    m_Address: UI_HUD_LobbyScene
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e4eacf203d2774077a500f1f27a30dff
     m_Address: UI_Loading_Transition
     m_ReadOnly: 0
