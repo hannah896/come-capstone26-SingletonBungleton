@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   recipeName: "\uCE7C"
   icon: {fileID: 0}
-  category: 3
+  category: 2
   ingredients:
   - itemData: {fileID: 11400000, guid: b50dca45200467b4595cbddcff9b6e89, type: 2}
     amount: 2

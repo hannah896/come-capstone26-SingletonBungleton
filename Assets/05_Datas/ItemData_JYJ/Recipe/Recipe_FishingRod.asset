@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 64f7e092734e07b468c75b5208bc1759, type: 3}
   m_Name: Recipe_FishingRod
   m_EditorClassIdentifier: 
-  recipeName: "\uB099\uC2EF\uB300"
-  icon: {fileID: 0}
+  recipeName: "\uB09A\uC2EF\uB300"
   category: 0
+  requiredStation: 0
   ingredients:
   - itemData: {fileID: 11400000, guid: f41232c7538cb644fbe7551b247ff716, type: 2}
     amount: 2

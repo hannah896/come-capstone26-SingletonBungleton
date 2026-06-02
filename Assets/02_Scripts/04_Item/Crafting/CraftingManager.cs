@@ -119,7 +119,7 @@ public class CraftingManager : MonoBehaviour
         var result = new List<RecipeDataSO>();
         foreach (var recipe in allRecipes)
         {
-            if (recipe.category != category) continue;
+            if (category != RecipeCategory.All && recipe.category != category) continue;
             if (onlyCraftable && !CanCraft(recipe)) continue;
             result.Add(recipe);
         }

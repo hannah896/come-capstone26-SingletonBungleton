@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   recipeName: "구운고기3"
   icon: {fileID: 0}
-  category: 2
+  category: 4
   ingredients:
   - itemData: {fileID: 11400000, guid: 0cbeef8cafedfa1458f91901aeeece3d, type: 2}
     amount: 1

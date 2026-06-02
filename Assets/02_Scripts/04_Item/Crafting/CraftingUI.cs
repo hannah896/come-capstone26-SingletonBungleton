@@ -30,14 +30,17 @@ public class CraftingUI : UI_Panel
     [Header("스테이션 안내 (선택)")]
     [SerializeField] private TextMeshProUGUI stationHintText;
 
+    // 배열 인덱스 = Inspector categoryTabButtons 배열 순서와 반드시 일치
     private static readonly RecipeCategory[] Categories =
     {
-        RecipeCategory.Tools,
-        RecipeCategory.Light,
-        RecipeCategory.Survival,
-        RecipeCategory.Weapons,
-        RecipeCategory.Structures,
-        RecipeCategory.Moon,
+        RecipeCategory.Tools,      // [0] 도구
+        RecipeCategory.Light,      // [1] 광원
+        RecipeCategory.Weapons,    // [2] 무기
+        RecipeCategory.Armor,      // [3] 방어구
+        RecipeCategory.Survival,   // [4] 생존
+        RecipeCategory.Structures, // [5] 구조물
+        RecipeCategory.Medicine,   // [6] 치료제
+        RecipeCategory.All,        // [7] 전체
     };
 
     private static readonly Color TabSelectedColor = new(1f, 0.8f, 0.2f, 1f);

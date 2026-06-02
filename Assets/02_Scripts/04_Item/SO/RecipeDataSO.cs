@@ -30,12 +30,14 @@ public struct RecipeIngredient
 
 public enum RecipeCategory
 {
-    Tools,      // 도구
-    Light,      // 광원
-    Survival,   // 생존
-    Weapons,    // 무기
-    Structures, // 건물
-    Moon        // 달
+    Tools      = 0,  // 도구
+    Light      = 1,  // 광원
+    Weapons    = 2,  // 무기
+    Armor      = 3,  // 방어구
+    Survival   = 4,  // 생존
+    Structures = 5,  // 구조물
+    Medicine   = 6,  // 치료제
+    All        = 7,  // 모두
 }
 
 // 작업대 티어 (높은 티어는 낮은 티어 레시피도 제작 가능)
