@@ -15,7 +15,7 @@ MonoBehaviour:
   itemID: Pickaxe_Stone
   itemName: "\uB3CC\uACE1\uAD2D\uC774"
   description: 
-  icon: {fileID: 21300000, guid: d1647b5f156131a419b1ccf269bf7358, type: 3}
+  icon: {fileID: 21300000, guid: be59e4fac16a40f479b41b98f2da6c2f, type: 3}
   prefab: {fileID: 3590119427674651755, guid: 63dbd20b59aae984a912272caad50f50, type: 3}
   itemType: 0
   survivalToolType: 4

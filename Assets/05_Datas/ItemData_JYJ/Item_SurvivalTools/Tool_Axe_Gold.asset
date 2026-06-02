@@ -15,7 +15,7 @@ MonoBehaviour:
   itemID: Axe_Gold
   itemName: "\uAE08\uB3C4\uB07C"
   description: 
-  icon: {fileID: 21300000, guid: c23e02dfd734a334e88c4d4972df0b95, type: 3}
+  icon: {fileID: 21300000, guid: 22c43819c2ca6fa4db7de399e9972681, type: 3}
   prefab: {fileID: 3590119427674651755, guid: 14159bf9375720745b7db5cf8b2f5cb4, type: 3}
   itemType: 0
   survivalToolType: 3

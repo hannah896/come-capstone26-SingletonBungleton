@@ -15,7 +15,7 @@ MonoBehaviour:
   itemID: Axe_Iron
   itemName: "\uCCA0\uB3C4\uB07C"
   description: 
-  icon: {fileID: 21300000, guid: fa59224b5f17506439197fc7aee9d854, type: 3}
+  icon: {fileID: 21300000, guid: 09b7d5119fa37034eac43d18bd782941, type: 3}
   prefab: {fileID: 3590119427674651755, guid: d333d65ac1ba90b4bb88e4cd12d525a7, type: 3}
   itemType: 0
   survivalToolType: 2

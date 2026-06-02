@@ -12,25 +12,34 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
   m_Name: Food_RoastedBerry
   m_EditorClassIdentifier: 
-  itemID: RoastedBerry1
-  itemName: "\uAD6C\uC6B4\uBCA0\uB9AC1"
+  itemID: RoastedBerry
+  itemName: "\uAD6C\uC6B4\uBCA0\uB9AC"
   description: "\uBD88\uC5D0 \uAD6C\uC6B4 \uBCA0\uB9AC"
-  icon: {fileID: 0}
-  prefab: {fileID: 560207506994663984, guid: 01a79c57f000320498dbbc57105c37d9, type: 3}
+  icon: {fileID: 21300000, guid: 2fa2ce6a6af4b2e41a8b52b5b9eaf371, type: 3}
+  prefab: {fileID: 828052658877537744, guid: c5f9676423053e7439c6348cca072e12, type: 3}
   itemType: 4
   survivalToolType: 0
+  harvestableResources: 
   combatGearType: 0
   resourceType: 0
   bootyType: 0
-  foodType: 4
+  foodType: 5
   isStackable: 1
   maxStack: 30
   equipSlot: 0
   hasDurability: 0
   maxDurability: 0
+  costPerDurability: 1
   attackDamage: 0
   attackRange: 0
   defense: 0
   hungerRestore: 20
   healthRestore: 5
-  sanityRestore: 10
+  egoRestore: 10
+  isPlaceable: 0
+  placementPrefab: {fileID: 0}
+  placementFootprint: {x: 1, y: 1}
+  placementPivotOffset: {x: 0, y: 0, z: 0}
+  placementSnapToGrid: 1
+  placementCheckHeight: 2
+  placementCheckCenterOffset: {x: 0, y: 0, z: 0}

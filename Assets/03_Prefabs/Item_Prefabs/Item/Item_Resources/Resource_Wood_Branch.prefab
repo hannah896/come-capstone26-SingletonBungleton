@@ -204,4 +204,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _itemSO: {fileID: 11400000, guid: f41232c7538cb644fbe7551b247ff716, type: 2}
-  stackCount: 99
+  stackCount: 1
+  _torchLight: {fileID: 0}

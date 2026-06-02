@@ -15,10 +15,11 @@ MonoBehaviour:
   itemID: Grass
   itemName: "\uD480"
   description: "\uC790\uC6D0_\uD480\uC785\uB2C8\uB2E4."
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 2c470548df19f994fb07a6cd63bf7780, type: 3}
   prefab: {fileID: 1875203593042857739, guid: 6403a498658558b40a51f0a3aa9dd6f5, type: 3}
   itemType: 2
   survivalToolType: 0
+  harvestableResources: 
   combatGearType: 0
   resourceType: 10
   bootyType: 0
@@ -28,9 +29,17 @@ MonoBehaviour:
   equipSlot: 0
   hasDurability: 0
   maxDurability: 0
+  costPerDurability: 1
   attackDamage: 0
   attackRange: 0
   defense: 0
   hungerRestore: 0
   healthRestore: 0
   egoRestore: 0
+  isPlaceable: 0
+  placementPrefab: {fileID: 0}
+  placementFootprint: {x: 1, y: 1}
+  placementPivotOffset: {x: 0, y: 0, z: 0}
+  placementSnapToGrid: 1
+  placementCheckHeight: 2
+  placementCheckCenterOffset: {x: 0, y: 0, z: 0}

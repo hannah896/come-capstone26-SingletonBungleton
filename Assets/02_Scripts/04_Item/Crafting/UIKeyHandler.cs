@@ -3,10 +3,7 @@ using UnityEngine.InputSystem;
 
 public class UIKeyHandler : MonoBehaviour
 {
-    [SerializeField] private Key inventoryKey = Key.Tab;
-    [SerializeField] private Key craftingKey  = Key.C;
-
-    [SerializeField] private GameObject inventoryPanel;
+    [SerializeField] private Key craftingKey = Key.C;
     [SerializeField] private CraftingUI craftingUI;
 
     private void Update()
@@ -16,15 +13,6 @@ public class UIKeyHandler : MonoBehaviour
 
         if (keyboard[craftingKey].wasPressedThisFrame)
             ToggleCrafting();
-
-        if (keyboard[inventoryKey].wasPressedThisFrame)
-            ToggleInventory();
-    }
-
-    private void ToggleInventory()
-    {
-        if (inventoryPanel == null) return;
-        inventoryPanel.SetActive(!inventoryPanel.activeSelf);
     }
 
     private void ToggleCrafting()
