@@ -1,8 +1,6 @@
 using Cysharp.Threading.Tasks;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using JSAM;
 using System.Threading;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -10,9 +8,11 @@ using Object = UnityEngine.Object;
 public class LobbyScene : SceneBase
 {
     #region Properties
-    
-    public UI_Hud_Lobby HudLobbyUIHud { get; private set; }
 
+    // 로비 HUD
+    public UI_HUD_LobbyScene Hud { get; private set; }
+
+    // 로비 상태 — 상태 전환 시 이벤트를 발생시키는 허브 (UI_Hud_Lobby 등이 구독)
     public static LobbyState LobbyState
     {
         get => _lobbyState;
@@ -20,13 +20,16 @@ public class LobbyScene : SceneBase
         {
             if (_lobbyState == value) return;
             _lobbyState = value;
-            if (LobbyState == LobbyState.Ready)
+
+            switch (_lobbyState)
             {
-                (Main.Scene.Current as LobbyScene)?.OnLobbyReady?.Invoke();
-            }
-            else if (LobbyState == LobbyState.Start)
-            {
-                (Main.Scene.Current as LobbyScene)?.OnLobbyStart?.Invoke();
+                case LobbyState.Ready:
+                    (Main.Scene.Current as LobbyScene)?.OnLobbyReady?.Invoke();
+                    break;
+
+                case LobbyState.Start:
+                    (Main.Scene.Current as LobbyScene)?.OnLobbyStart?.Invoke();
+                    break;
             }
         }
     }
@@ -34,203 +37,83 @@ public class LobbyScene : SceneBase
     #endregion
 
     #region Fields
-    
-    // 팝업 체인 시스템
-    private Queue<PopupInfo> _popupQueue = new();
-    private bool _isProcessingPopups = false;
-    private static LobbyState _lobbyState;
+
+    private static LobbyState _lobbyState = LobbyState.None;
 
     public event Action OnLobbyReady;
     public event Action OnLobbyStart;
 
+    // 소환한 로비 환경 오브젝트 (씬 퇴장 시 정리용)
+    private readonly List<GameObject> _spawnedObjects = new();
+
     #endregion
 
-    #region Popup Info Class
+    #region Scene Lifecycle
 
-    private class PopupInfo
+    public override async UniTask EnterScene(CancellationToken token)
     {
-        public System.Func<bool> Condition { get; set; }
-        public System.Func<UI_Popup> OpenAction { get; set; }
-        public string Name { get; set; }
+        // 로딩 화면(전환 오버레이)은 여기서 닫지 않는다.
+        // SceneManagerEx.ChangeSceneAsync가 EnterScene 완료 후 finally에서 HideScreenAsync를 호출하므로,
+        // 아래 맵 소환 + Spline + HUD가 모두 await로 끝난 뒤에야 로딩이 닫혀 로비가 "딱" 보인다.
 
-        public PopupInfo(string name, System.Func<bool> condition, System.Func<UI_Popup> openAction)
+        // #1. Addressable "LobbyScene" 라벨이 걸린 로비 환경 오브젝트들을 소환
+        //     (Terrain/Water/Environment 등 정적 배경이라 풀링 대신 1회 인스턴스화)
+        List<GameObject> prefabs = await Extensions.LoadAssetsByLabelAsync<GameObject>("LobbyScene", token: token);
+        foreach (GameObject prefab in prefabs)
         {
-            Name = name;
-            Condition = condition;
-            OpenAction = openAction;
+            if (prefab == null) continue;
+            _spawnedObjects.Add(Object.Instantiate(prefab));
         }
-    }
 
-    #endregion
+        // #2. 맵 주위를 빙빙 도는 배경 카메라 연출 (런타임 원형 Spline)
+        if (_spawnedObjects.Count > 0)
+        {
+            Bounds mapBounds = CalculateBounds(_spawnedObjects);
+            var orbit = new GameObject(nameof(LobbyBackgroundOrbit)).AddComponent<LobbyBackgroundOrbit>();
+            orbit.Setup(mapBounds);
+            _spawnedObjects.Add(orbit.gameObject);
+        }
 
-    private void OnEnable()
-    {
+        Hud = await Extensions.ShowHud<UI_HUD_LobbyScene>();
+
+        // SceneBase는 MonoBehaviour가 아니므로 OnEnable 대신 진입 시점에 초기 상태 설정
         LobbyState = LobbyState.Ready;
-    }
-
-    private async void InitializeLobbySequence()
-    {
-        // #00. Scene Audio Sounds(BGM)
-        AudioManager.StopAllMusic();
-        // AudioManager.PlayMusic(BgmKey.BgmLobby);
-        
-        // #01. UI Setup - 먼저 UI를 생성하고 초기화만
-        HudLobbyUIHud = Object.FindFirstObjectByType<UI_Hud_Lobby>();
-        if (!HudLobbyUIHud)
-        {
-            HudLobbyUIHud = await Main.Resource.LoadAssetAsync<UI_Hud_Lobby>();
-        }
-
-        // #02. UI 초기화 및 홈페이지로 강제 설정
-        await InitializeUIWithHomePage();
-        await UniTask.NextFrame();
-        
-        // #04. Sequence Start
-        SequenceEntryPoint();
-    }
-
-    private async UniTask InitializeUIWithHomePage()
-    {
-        // UI 초기화
-        HudLobbyUIHud.Initialize();
-        
-        //// 홈페이지로 즉시 설정 (애니메이션 없이)
-        //HudLobbyUIHud.Nav.NavigateTo(PageType.Lobby, immediate: true);
-        
-        // 한 프레임 대기하여 UI가 완전히 설정되도록 함
-        await UniTask.NextFrame();
-        
-        // 최종 Set 호출
-        HudLobbyUIHud.Set(this);
-    }
-
-    private void SequenceEntryPoint()
-    {
-        PopupSequence();
-        return;
-        
-        //남은 골드 이동 애니메이션이 있는지 확인하고 있다면 바로 팝업 실행 후 리턴.
-        // var difference = _userPrefs.Gold.Value - _userPrefs.Gold.VisualValue;
-        // if (difference <= 0)
-        // {
-        //     PopupSequence();
-        //     return;
-        // }
-        //
-        // var pageHome = LobbyUI.Page.GetPage<UI_PageHome>(ePageType.Lobby);
-        // var startPosition = pageHome.StartRoot.position;
-        //
-        // RewardProvider.Play(RewardKey.Gold, (int)difference, 5, startPosition, PopupSequence);
-    }
-
-    #region Popup Chain System
-
-    public void PopupSequence()
-    {
-        // 팝업 체인 설정 (순서 중요!)
-        SetupPopupChain();
-        
-        // 체인 시작
-        StartPopupChain();
-    }
-
-    private void SetupPopupChain()
-    {
-        _popupQueue.Clear();
-
-        // 1. 평점 팝업 (레벨 조건 + 미수락)
-        // _popupQueue.Enqueue(new PopupInfo(
-        //     "Rating",
-        //     () => !_userPrefs.IsAcceptedRating && _userPrefs.Level.Value == Constant.Level_Rating,
-        //     () => Main.UI.OpenPopup<UI_Rating>()
-        // ));
-
-        // 추가 팝업들...
-        // _popupQueue.Enqueue(new PopupInfo(...));
-    }
-
-    private void StartPopupChain()
-    {
-        if (_isProcessingPopups) return;
-        
-        _isProcessingPopups = true;
-        ProcessNextPopup();
-    }
-
-    private void ProcessNextPopup()
-    {
-        // 큐가 비었으면 종료
-        if (_popupQueue.Count == 0)
-        {
-            _isProcessingPopups = false;
-            return;
-        }
-
-        var popupInfo = _popupQueue.Dequeue();
-        if (!popupInfo.Condition())
-        {
-            ProcessNextPopup();
-            return;
-        }
-
-        var popup = popupInfo.OpenAction();
-        if (!popup)
-        {
-            ProcessNextPopup();
-            return;
-        }
-        
-        SetupPopupCloseCallback(popup);
-    }
-
-    private void SetupPopupCloseCallback(UI_Popup popup)
-    {
-        var originalCloseAction = popup.OnCloseEvent;
-        popup.OnCloseEvent.AddListener(() =>
-        {
-            originalCloseAction?.Invoke();
-            ProcessNextPopup();
-        });
-    }
-
-    /// <summary>
-    /// 체인 강제 중단
-    /// </summary>
-    public void StopPopupChain()
-    {
-        _popupQueue.Clear();
-        _isProcessingPopups = false;
-    }
-
-    /// <summary>
-    /// 특정 팝업만 즉시 열기 (체인 무시)
-    /// </summary>
-    public async void OpenPopupImmediate<T>() where T : UI_Popup
-    {
-        await Extensions.ShowPopup<T>();
-    }
-
-    #endregion
-    
-    private void OnDestroy()
-    {
-        if (!AudioManager.Instance || !AudioManagerInternal.Instance) return;
-        
-        AudioManager.StopAllMusic();
-    }
-
-    public override UniTask EnterScene(CancellationToken token)
-    {
-        Main.UI.HideScreen(3);
-        InitializeLobbySequence();
-        return UniTask.CompletedTask;
     }
 
     public override void ExitScene()
     {
-        // 씬을 떠날 때 진행 중인 팝업 체인을 정리합니다.
-        StopPopupChain();
+        // 소환한 로비 환경 오브젝트 정리
+        foreach (GameObject go in _spawnedObjects)
+        {
+            if (go != null) Object.Destroy(go);
+        }
+        _spawnedObjects.Clear();
     }
+
+    #endregion
+
+    #region Helpers
+
+    // 소환한 오브젝트들의 Renderer를 모두 감싸는 월드 bounds 계산
+    private static Bounds CalculateBounds(List<GameObject> objects)
+    {
+        Bounds bounds = default;
+        bool initialized = false;
+
+        foreach (GameObject go in objects)
+        {
+            if (go == null) continue;
+            foreach (Renderer r in go.GetComponentsInChildren<Renderer>())
+            {
+                if (!initialized) { bounds = r.bounds; initialized = true; }
+                else bounds.Encapsulate(r.bounds);
+            }
+        }
+
+        return bounds;
+    }
+
+    #endregion
 }
 
 public enum LobbyState

@@ -13,7 +13,49 @@
 - 굽기 스펙은 B와 동일(SamplingPointSize 80, Padding 8, Atlas 4096px, SDFAA, Dynamic + 멀티아틀라스, 가~힣 전체 pre-bake). 기존 경로 덮어쓰기로 `.meta` guid 유지 → FontsSo 등 기존 참조 보존
 - `uloop execute-dynamic-code`로 `KoreanFontBaker.BakeLight()` 실행
 
-**검증:** `uloop compile --force-recompile` 에러 0건. 굽기 로그 — L SDF 문자 11,318자 / 글리프 11,318개 / 아틀라스 2장(4096px) / 누락 0자 (B와 동일). 에셋 크기 ~71MB. (콘솔의 LiberationSans 폴백 한글 누락 경고는 폰트 굽기와 무관한 별개 런타임 이슈 — UI_Text가 아직 기본 폴백 폰트 참조)
+**검증:** `uloop compile --force-recompile` 에러 0건. 굽기 로그 — L SDF 문자 11,318자 / 글리프 11,318개 / 아틀라스 2장(4096px) / 누락 0자 (B와 동일).
+
+### 7. 로비 배경 연출 — 맵 곳곳을 누비는 Spline 카메라 + 로딩 흐름
+
+**파일:** `Assets/02_Scripts/01_UI/UI_Lobby/LobbyBackgroundOrbit.cs`(신규), `Assets/02_Scripts/@Scripts/Scenes/LobbyScene.cs`
+
+- 로비 배경으로 **메인 카메라가 맵 곳곳을 누비는 Spline 경로** 연출 (`com.unity.splines` 2.8.4)
+- `LobbyBackgroundOrbit`(신규 MonoBehaviour): `Setup(Bounds)`로 맵 bounds를 받아 **런타임에 맵 안팎을 구불구불 누비는 닫힌 Spline 자동 생성**(각도 균등 + 지점별 반경/높이 시드 변주), `Main.Loop.OnUpdate`에서 `EvaluatePosition`/`EvaluateTangent`로 **메인 카메라**를 경로 따라 이동시키고 진행 방향 전방을 살짝 아래로 주시. 이벤트 해제·Cinemachine 복구는 `OnDestroy`
+  - 처음엔 배경 전용 카메라 + 원형 orbit이었으나 → 사용자 요청으로 **메인 카메라가 직접**(로비는 Cinemachine 미사용, brain 있으면 잠시 비활성) + **원형이 아닌 맵 곳곳 누비는 경로**로 변경
+  - 조정 파라미터: `tourDuration`(속도), `waypointCount`, `wanderSeed`, `inner/outerRadiusScale`, `heightScale`, `heightVariation`, `lookAhead`, `lookDownStrength`
+- `LobbyScene.EnterScene`: 환경 소환 직후 bounds(`CalculateBounds`)를 계산해 `LobbyBackgroundOrbit` 생성/Setup(정리 목록에 추가, ExitScene에서 파괴)
+- **로딩 흐름**: EnterScene 맨 앞의 조기 `Main.UI.HideScreen(3)` 제거 → `SceneManagerEx.ChangeSceneAsync`의 `finally HideScreenAsync`가 **EnterScene(맵+Spline+HUD await) 완료 후** 로딩을 닫아, 모두 준비된 뒤 로비가 "딱" 보이게
+- **HUD 키 수정**: `ShowHud<UI_HUD_LobbyScene>()`가 타입명으로 키를 찾아 `No Location` 실패 → 실제 등록 주소 `"UI_HUD_Lobby"`를 명시(`ShowHud<UI_HUD_LobbyScene>("UI_HUD_Lobby")`)
+
+**검증:** PlayMode(ChangeScene 강제 진입)에서 메인 카메라가 맵 곳곳을 이동(시간차 캡처 2장 구도 상이), HUD("Lunacide" + 방 만들기/방 들어가기/종료) 정상 표시, 한글 폰트 정상 확인. **남은 이슈**: InitScene 부팅 자체가 `UI_Screen_StartLoading.prefab`에 해당 컴포넌트 대신 `UI_LoadingCanvas`(UI_Popup)가 붙은 불일치로 막혀 있어, InitScene부터의 전체 흐름은 그 프리팹을 고쳐야 검증 가능(로비/Spline 작업과 무관한 기존 부팅 인프라 문제).
+
+### 6. LobbyScene 단순화 — HUD 표시 + 환경 오브젝트 소환
+
+**파일:** `Assets/02_Scripts/@Scripts/Scenes/LobbyScene.cs`
+
+- `SceneBase`는 순수 추상 클래스(MonoBehaviour 아님)인데 기존 LobbyScene이 `OnEnable()`/`OnDestroy()` MonoBehaviour 콜백을 써 **호출되지 않던 문제** + `_popupQueue`/`_isProcessingPopups` **필드 미선언으로 컴파일 에러 8건** 상태였음
+- GameScene 스타일로 재작성: 복잡한 팝업 체인 시스템(`PopupInfo`/`_popupQueue`/`SetupPopupChain` 등)·`InitializeLobbySequence`·MonoBehaviour 콜백 전부 제거
+- `EnterScene`: ① Addressable **`LobbyScene` 라벨** 환경 오브젝트(Terrain/Water/Environment 등 7종) 소환 → 정적 배경이라 풀링 대신 1회 `Instantiate` ② `UI_HUD_LobbyScene` HUD 표시 ③ `LobbyState = Ready`(OnEnable에 있던 로직 이전)
+- `ExitScene`: 소환한 환경 오브젝트 정리
+- `LobbyState`/`OnLobbyReady`/`OnLobbyStart`/`LobbyState` enum은 **유지** — `UI_Hud_Lobby.cs`가 구독 중이라 제거 시 컴파일 깨짐
+
+**검증:** `uloop compile --force-recompile` 에러 0건 (이전 8건 해소).
+
+### 5. 로비 방 만들기 버튼 → GameScene 전환(로딩 화면) 연결
+
+**파일:** `Assets/02_Scripts/01_UI/UI_Lobby/UI_HUD_LobbyScene.cs`
+
+- 비어 있던 `OnMakeRoom()`(방 만들기 버튼 핸들러)에 `Extensions.ChangeScene("GameScene")` 연결
+- `SceneManagerEx.ChangeSceneAsync`가 `UI_Screen_Transition`(전환 오버레이)을 자동으로 띄워 **로딩 화면 역할**을 하고, GameScene `EnterScene`이 월드 생성을 끝낸 뒤 닫힘 — `UI_Popup_WorldGen.OnClickGenerate`의 else 분기와 동일 패턴
+- `WorldGenRequest`를 별도로 Set하지 않으므로 GameScene이 기본 옵션으로 월드 생성. 방 데이터 UI는 기존 TODO로 유지
+
+**검증:** `uloop compile` 에러 0건.
+
+### 4. 텍스트 하단 그림자 현상 — TMP Essential Resources 문제로 해결
+
+- 모든 TMP 텍스트 글자 **하단에 흐릿한 그림자 띠**가 보이는 현상 발견
+- 처음엔 새로 구운 L 폰트만의 문제로 의심했으나, **B 폰트·기본 LiberationSans 등 기존 폰트까지 전부 동일**하게 나타나는 걸 확인 → 특정 폰트/베이커 문제가 아니라 **TMP 전역 렌더링(셰이더/필수 리소스) 문제**로 판명
+- **해결:** TMP **Essential Resources**를 (재)임포트하니 그림자 현상 사라짐 (`Window > TextMeshPro > Import TMP Essential Resources`)
 
 ### 1. 스테이지(Stage)·보드(Board) 시스템 전면 제거
 
