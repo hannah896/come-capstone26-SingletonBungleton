@@ -76,12 +76,18 @@ public class LobbyScene : SceneBase
 
         Hud = await Extensions.ShowHud<UI_HUD_LobbyScene>();
 
+        // 로비 BGM 재생
+        Extensions.PlayBGM(AudioLibraryMusic.LobbyBGM);
+
         // SceneBase는 MonoBehaviour가 아니므로 OnEnable 대신 진입 시점에 초기 상태 설정
         LobbyState = LobbyState.Ready;
     }
 
     public override void ExitScene()
     {
+        // 로비를 떠날 때 BGM 정지
+        Main.JSAM.StopBGM();
+
         // 소환한 로비 환경 오브젝트 정리
         foreach (GameObject go in _spawnedObjects)
         {

@@ -41,16 +41,8 @@ public class LoadingManager : CoreManager
 
         if (Main.IsEditorMode) return;
 
-        // 부팅 로딩 화면을 fire-and-forget으로 띄운다 (await하면 매니저 초기화가 블록되어 부팅이 멈춤).
-        ShowBootLoadingAsync().Forget();
-    }
-
-    // 부팅 로딩 화면 표시. 프리팹(주소 "UI_Screen_StartLoading")에는 UI_LoadingCanvas 컴포넌트가 붙어 있어
-    // 그 타입으로 로드한 뒤 Set()으로 로딩 시퀀스를 시작한다. (로딩 완료 시 LobbyScene으로 전환)
-    private async UniTaskVoid ShowBootLoadingAsync()
-    {
-        UI_LoadingCanvas loading = await Extensions.ShowPopup<UI_LoadingCanvas>("UI_Screen_StartLoading");
-        loading?.Set();
+        // 부팅 로딩 화면(진행률 로딩바). 로딩 완료 시 LobbyScene으로 전환된다.
+        Extensions.ShowScreen<UI_Screen_StartLoading>();
     }
 
     /// <summary>

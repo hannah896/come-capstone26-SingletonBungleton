@@ -22,9 +22,9 @@ public class UI_Screen_Transition : UI_Screen
     private CanvasGroup _cg;
 
     // 진행률/팁 UI (프리팹에 있으면 자동 연동, 없으면 null → 단순 페이드)
-    private UI_Image _imgBar;
-    private UI_Text _txtStage;
-    private UI_Text _txtTip;
+    [SerializeField] private UI_Image UI_Image_Progressbar;
+    [SerializeField] private UI_Text UI_Text_ProgressText;
+    [SerializeField] private UI_Text UI_Text_Tip;
 
     // 월드 생성 진행률 연동
     private WorldGenManager _boundWorldGen;
@@ -54,10 +54,13 @@ public class UI_Screen_Transition : UI_Screen
 
         _cg = gameObject.GetOrAddComponent<CanvasGroup>();
 
-        // 선택적 UI 요소 — 프리팹에 있으면 진행률/팁을 표시, 없으면 페이드만
-        _imgBar = gameObject.FindChild<UI_Image>("Img_Bar_F");
-        _txtStage = gameObject.FindChild<UI_Text>("Txt_Stage");
-        _txtTip = gameObject.FindChild<UI_Text>("Txt_Tip");
+        // 선택적 UI 요소 — 프리팹에 있으면 진행률/팁을 표시, 없으면 페이드만\
+        if (UI_Image_Progressbar == null)
+            UI_Image_Progressbar = gameObject.FindChild<UI_Image>("Img_Bar_F");
+        if (UI_Text_ProgressText == null)
+            UI_Text_ProgressText = gameObject.FindChild<UI_Text>("Txt_Stage");
+        if (UI_Text_Tip == null)
+            UI_Text_Tip = gameObject.FindChild<UI_Text>("Txt_Tip");
 
         return true;
     }
@@ -75,8 +78,8 @@ public class UI_Screen_Transition : UI_Screen
         _boundWorldGen = null;
         _tipTimer = 0f;
 
-        if (_imgBar != null) _imgBar.SetFill(0f);
-        if (_txtStage != null) _txtStage.Text = string.Empty;
+        if (UI_Image_Progressbar != null) UI_Image_Progressbar.SetFill(0f);
+        if (UI_Text_ProgressText != null) UI_Text_ProgressText.Text = string.Empty;
         ShowRandomTip();
     }
 
@@ -120,14 +123,14 @@ public class UI_Screen_Transition : UI_Screen
 
     private void OnWorldGenProgress(float value, string label)
     {
-        if (_imgBar != null) _imgBar.SetFill(value);
-        if (_txtStage != null) _txtStage.Text = label;
+        if (UI_Image_Progressbar != null) UI_Image_Progressbar.SetFill(value);
+        if (UI_Text_ProgressText != null) UI_Text_ProgressText.Text = label;
     }
 
     private void ShowRandomTip()
     {
-        if (_txtTip == null || Tips.Length == 0) return;
-        _txtTip.Text = Tips[UnityEngine.Random.Range(0, Tips.Length)];
+        if (UI_Text_Tip == null || Tips.Length == 0) return;
+        UI_Text_Tip.Text = Tips[UnityEngine.Random.Range(0, Tips.Length)];
     }
 
     private void Unsubscribe()
