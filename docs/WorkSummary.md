@@ -2,6 +2,44 @@
 
 ---
 
+## 2026-06-03
+
+### 1. 설정 팝업 — UI_Popup_SettingUI (볼륨 슬라이더 + 입력 차단)
+
+**파일:** `Assets/02_Scripts/@Scripts/UI/Popups/UI_Popup_SettingUI.cs`(신규), `Assets/03_Prefabs/@Base/UI/UI_Popup_SettingUI.prefab`(사용자가 프리팹화)
+
+- 프리팹 구조: `UI_Popup_SettingUI` → `BG`(풀스크린 Image) + `UI_Panel/VerticalLayout/{All,BGM,SFX}/UI_Slider_*` + `UI_Button_CloseBtn`. `UI_Popup` 상속
+- **볼륨 슬라이더 3종** — `UI_Slider_Master`→마스터, `UI_Slider_BGM`→음악, `UI_Slider_SFX`→효과음. `[SerializeField]`로 인스펙터 연결(UI_Panel.OnValidate가 필드명=오브젝트명으로 자동 할당) + null이면 `FindChild<Slider>` fallback
+- **볼륨 반영/저장**: 자체 PlayerPrefs 키·`AudioManager` 직접 참조를 모두 걷어내고 `Extensions.Set/GetXxxVolume` 경유로 일원화(아래 2번 참고). 슬라이더 변경 시 `Extensions.SetXxxVolume`, 닫을 때 `Extensions.SaveVolume()`. 초기값은 `Extensions.GetXxxVolume()` → `SetValueWithoutNotify`로 콜백 없이 반영. 영속성은 JSAM이 자동 처리하므로 게임 시작 시 자동 적용됨
+- **입력 차단**(사용자 결정): ① 뒤쪽 클릭 차단은 **풀스크린 `BG` 오브젝트**(Anchor stretch + raycastTarget, alpha≈0.61 딤)가 담당 — 초안의 코드 생성 `CreateClickBlocker()`는 사용자가 BG를 직접 만들면서 불필요해져 제거 ② **게임씬일 때만**(`Main.Scene.Current is GameScene`) `RemoveInput<InputActions_PlayerInputHandler>`로 플레이어 입력 차단, `Close()`에서 `AddInput`으로 복구
+- `UI_Popup.OnDestroy`가 private이라 자식에서 OnDestroy 오버라이드 시 충돌 → 슬라이더 리스너는 팝업과 함께 파괴되므로 별도 해제 생략, 입력 복구는 `Close()`에서 처리
+
+**검증:** `uloop compile` 에러 0건. **미검증**: PlayMode에서 실제 슬라이더 조작/볼륨 반영/입력 차단 동작은 아직 런타임 확인 안 함.
+
+### 2. SFX(및 BGM) 볼륨 버그 수정 + 볼륨 API 일원화 — JSAMManager / Extensions
+
+**파일:** `Assets/CustomPackage/Main/JSAMManager/JSAMManager.cs`, `Assets/02_Scripts/@Scripts/99_Utils/Extensions.cs`
+
+- 증상: 설정 UI의 SFX 슬라이더를 줄여도 효과음 크기가 안 변함
+- 원인: 효과음 실제 볼륨은 `ModifiedSoundVolume`(= 마스터 × `SoundVolume` × !muted)에 비례하는데, `JSAMManager.PlaySFX`가 **효과음을 재생할 때마다 `AudioManager.SoundVolume = 0.8f`로 채널 볼륨을 덮어써서** 슬라이더로 줄인 값이 매 재생마다 리셋됨. `PlayBGM`도 `MusicVolume`을 동일하게 덮어쓰는 같은 버그(BGM은 자주 재생되지 않아 티가 덜 났음)
+- 수정 ①: `PlaySFX`/`PlayBGM`에서 채널 볼륨 덮어쓰기 줄 제거. 호출처는 모두 `vol` 인자 없이 기본값만 써서 영향 없음(`vol` 파라미터는 시그니처 호환 위해 유지)
+- 수정 ②(볼륨 API 일원화): **JSAM이 볼륨 영속성을 이미 내장**(JSAMSettings `saveVolumeToPlayerPrefs=1`, `JSAM_*_VOL` 키. `AudioManagerInternal.Awake→LoadVolumeSettings`로 시작 시 자동 로드, `OnDestroy→SaveVolumeSettings`로 종료 시 자동 저장)인 것을 확인 → 자체 `Setting_Vol_*` 키를 버리고 JSAM 내장 영속성에 위임
+  - `JSAMManager`에 `MasterVolume/BGMVolume/SFXVolume` 프로퍼티 + `SetMasterVolume/SetBGMVolume/SetSFXVolume(float)` + `SaveVolume()`(`AudioManager.InternalInstance.SaveVolumeSettings()`) 추가
+  - `Extensions`에 `Set/GetMasterVolume·BGMVolume·SFXVolume`, `SaveVolume()` 래퍼 추가
+  - 설정 UI는 이 Extensions API만 사용(앞 1번 반영). **게임 시작 시 마지막 볼륨 자동 적용**은 JSAM 자동 로드로 해결(별도 부팅 코드 불필요)
+
+### 3. 로비 종료 버튼이 안 먹던 문제 — UI_HUD_LobbyScene
+
+**파일:** `Assets/02_Scripts/01_UI/UI_Lobby/UI_HUD_LobbyScene.cs`
+
+- 증상: 로비 HUD의 `UI_Button_Exit`를 눌러도 종료 안 됨
+- 원인: `OnExit`이 `Application.Quit()`인데 **에디터 플레이 모드에서는 무동작**(빌드에서만 종료)
+- 수정: `#if UNITY_EDITOR`에서 `EditorApplication.isPlaying = false`, 빌드에선 `Application.Quit()`
+
+**검증:** `uloop compile` 에러 0건(경고는 전부 기존). **미검증**: PlayMode에서 효과음 볼륨 실시간 변화·로비 종료 동작은 아직 런타임 확인 안 함.
+
+---
+
 ## 2026-06-02
 
 ### 3. NEXON 한글 폰트 SDF 굽기 — Light 웨이트 마저 굽기
