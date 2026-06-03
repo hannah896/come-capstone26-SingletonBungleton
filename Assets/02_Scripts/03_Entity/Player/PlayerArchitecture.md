@@ -276,8 +276,7 @@ PlayerRootStateMachine
 │   ├── PlayerIdleState (Sub)        정지
 │   ├── PlayerWalkState (Sub)        걷기 (MoveSpeed)
 │   ├── PlayerRunState (Sub)         달리기 (MoveSpeed × SprintMultiplier)
-│   ├── PlayerAirState (Sub)         공중 (airControlFactor = 0.5)
-│   └── PlayerTraceState (Sub)       추적 (TODO: 대상 따라가기)
+│   └── PlayerAirState (Sub)         공중 (airControlFactor = 0.5)
 │
 ├── PlayerActionState (Root) ─────── 상호작용 행동
 │   ├── PlayerPickState (Sub)        채집
@@ -359,8 +358,7 @@ Assets/02_Scripts/03_Entity/Player/
     │   ├── PlayerDeadState.cs         # 사망 (Root)
     │   └── PlayerSleepState.cs        # 수면 (Root)
     ├── Locomotion/
-    │   ├── PlayerAirState.cs          # 공중 (Sub)
-    │   └── PlayerTraceState.cs        # 추적 (Sub)
+    │   └── PlayerAirState.cs          # 공중 (Sub)
     ├── Sub/Ground/
     │   ├── PlayerWalkState.cs         # 걷기 (Sub)
     │   └── PlayerRunState.cs          # 달리기 (Sub)

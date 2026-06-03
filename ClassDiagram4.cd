@@ -667,7 +667,7 @@
   <Class Name="UI_Hud_Player" Collapsed="true">
     <Position X="43.25" Y="11.75" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAAAAAAACCAgAQAAAEEQAAAAAAAAAAABCAAAAZAAAAA=</HashCode>
+      <HashCode>ACABEAAACCAgAQAAAEEQAgAAAAAgAAARCAAAAZCACAA=</HashCode>
       <FileName>Assets\02_Scripts\01_UI\Player\UI_Hud_Player.cs</FileName>
     </TypeIdentifier>
   </Class>
@@ -843,7 +843,7 @@
   <Class Name="Player" Collapsed="true">
     <Position X="59.5" Y="5.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>BgACAAIAByAAAQBAIAMAJAAAAAAAAgAIAAMACiTADEA=</HashCode>
+      <HashCode>BgACAAIAByAAAQAAIAMAJAAAAAAAAgAIAAMACiTADEA=</HashCode>
       <FileName>Assets\02_Scripts\03_Entity\Player\Player.cs</FileName>
     </TypeIdentifier>
   </Class>
@@ -892,7 +892,7 @@
   <Class Name="PlayerInputData" Collapsed="true">
     <Position X="52.5" Y="6.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AoABAAAAEECBQAAAACAAgAACBCAAAAIAAAgAAQBAAAA=</HashCode>
+      <HashCode>AoABAAAAEACBQAAAAAAAgAACBCAAAAAAAAgAAQBAAAA=</HashCode>
       <FileName>Assets\02_Scripts\03_Entity\Player\PlayerInputData.cs</FileName>
     </TypeIdentifier>
   </Class>
@@ -906,7 +906,7 @@
   <Class Name="PlayerInventory" Collapsed="true">
     <Position X="54.25" Y="6.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>BAKjogKIMgZAgAQQSAgQGEAIgYpABxKEgjB4QQKWQE0=</HashCode>
+      <HashCode>BAKjogKIMgZAoAQQSAgQGEAIgYpABxKEgjB4QQKWQE0=</HashCode>
       <FileName>Assets\02_Scripts\03_Entity\Player\PlayerInventory.cs</FileName>
     </TypeIdentifier>
   </Class>
@@ -1022,13 +1022,6 @@
       <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Locomotion\PlayerIdleState.cs</FileName>
     </TypeIdentifier>
   </Class>
-  <Class Name="PlayerTraceState" Collapsed="true">
-    <Position X="35" Y="4.75" Width="1.5" />
-    <TypeIdentifier>
-      <HashCode>AAQAAAAAAAAAAAAAAAAAAAAAAAAQAAAAQIBABAAAAAA=</HashCode>
-      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Locomotion\PlayerTraceState.cs</FileName>
-    </TypeIdentifier>
-  </Class>
   <Class Name="PlayerActionState" Collapsed="true">
     <Position X="20.5" Y="4.75" Width="1.5" />
     <TypeIdentifier>
@@ -1053,7 +1046,7 @@
   <Class Name="PlayerLocomotionState" Collapsed="true">
     <Position X="25.75" Y="4.75" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAQAAAAAAAAAAAABBAAAAAAAAAKQACAAAJBACAEAAIQ=</HashCode>
+      <HashCode>AAQAAAAAAAAAAAABAAAAAAAAAAKQACAAAJBACAEAAAQ=</HashCode>
       <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Root\PlayerGroundState.cs</FileName>
     </TypeIdentifier>
   </Class>
@@ -1090,13 +1083,6 @@
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAQAAEAAAAAAAAEAAAIAAAAAAAAAAAAAA=</HashCode>
       <FileName>Assets\02_Scripts\03_Entity\Player\PlayerSubStateBase.cs</FileName>
-    </TypeIdentifier>
-  </Class>
-  <Class Name="PlayerTracer" Collapsed="true">
-    <Position X="59.5" Y="6.5" Width="1.5" />
-    <TypeIdentifier>
-      <HashCode>AAAAgAAAAgAAAAAAAAgAACAAAAAAIAAIAAAAAEAACAA=</HashCode>
-      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerTracer.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="EntityStatData" Collapsed="true">

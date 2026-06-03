@@ -38,6 +38,23 @@
 
 **검증:** `uloop compile` 에러 0건(경고는 전부 기존). **미검증**: PlayMode에서 효과음 볼륨 실시간 변화·로비 종료 동작은 아직 런타임 확인 안 함.
 
+### 4. 미사용 PlayerCameraController(3인칭) 삭제
+
+**파일:** `PlayerCameraController.cs`(+meta) 삭제, `PlayerArchitecture.md`·`ClassDiagram1.cd` 참조 정리
+
+- 코드 참조·씬/프리팹 부착 모두 없는 dead code(현재는 `PlayerFirstPersonCameraController` 1인칭 사용) → 삭제
+
+### 5. 자원 채취 입력 정리 — Trace 자동이동 제거 + 크로스헤어 조준 반응
+
+**파일:** `PlayerTracer.cs`·`PlayerTraceState.cs` 삭제, `Player.cs`·`PlayerGroundState.cs`(PlayerLocomotionState)·`PlayerInputData.cs`·`UI_Hud_Player.cs` 수정, `PlayerArchitecture.md`·`ClassDiagram1.cd` 정리
+
+- 배경: 채취(도구 사용)는 이미 `PlayerInventory.TryRaycastToolTarget`가 **화면 정중앙**(`ViewportPointToRay(0.5,0.5)`) 레이캐스트로 동작 중. 마우스 위치 레이캐스트는 `PlayerTracer`(클릭→자동이동 Trace)에만 쓰였고, 도착 후 액션 연결(`PendingAction`)이 **설정되는 코드가 없어** 반쪽짜리였음
+- **Trace 자동이동 제거**(사용자 결정): `PlayerTracer`/`PlayerTraceState` 삭제, `Player`의 `playerTracer` 필드/Bind/OnValidate 제거, `PlayerLocomotionState`의 `traceState`·`TracePressed` 분기·`ChangeToTrace` 제거, `PlayerInputData`의 `TracePressed`/`TraceDestination`/`PendingAction` 및 리셋 제거
+  - 단, **애니메이터 연결된 Trace 애니**(`PlayerAnimHashKey.Trace`, `PlayerAnimData`의 `SetBool(Trace,...)`)는 [[feedback_animator_no_edit]] 규칙대로 **보존**(애니메이터 정합성 유지, 자동이동 재도입 시 재사용)
+- **크로스헤어 조준 반응**: 사용자가 추가한 `UI_Hud_Player/UI_Image_Focus`(중앙 십자)를 `UI_Image`로 연결. `Main.Loop.OnUpdate`에서 매 프레임 `Inventory.TryGetToolActionType`으로 채취 가능 여부 판정 → 가능하면 강조색(노랑)+1.3배, 아니면 기본(흰 반투명)+1배. 구독 해제는 [[feedback_no_ondisable_unsub]]대로 `OnDestroy`에서
+
+**검증:** `uloop compile` 에러 0건(경고는 전부 기존). **미검증**: PlayMode에서 크로스헤어 강조·채취 동작은 아직 런타임 확인 안 함. **참고**: `UI_Image_Focus`의 `Raycast Target`은 끄는 게 좋음(현재 켜짐, 동작엔 영향 없으나 불필요)
+
 ---
 
 ## 2026-06-02

@@ -182,13 +182,6 @@
       <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Locomotion\PlayerIdleState.cs</FileName>
     </TypeIdentifier>
   </Class>
-  <Class Name="PlayerTraceState" Collapsed="true">
-    <Position X="29.25" Y="5" Width="1.5" />
-    <TypeIdentifier>
-      <HashCode>AAQAAAAAAAAAAAAAAAAAAAAAAAAQAAAAQIBABAAAAAA=</HashCode>
-      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Locomotion\PlayerTraceState.cs</FileName>
-    </TypeIdentifier>
-  </Class>
   <Class Name="PlayerActionState" Collapsed="true">
     <Position X="19" Y="2.25" Width="1.5" />
     <TypeIdentifier>
@@ -250,13 +243,6 @@
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAQAAEAAAAAAAAEAAAIAAAAAAAAAAAAAA=</HashCode>
       <FileName>Assets\02_Scripts\03_Entity\Player\PlayerSubStateBase.cs</FileName>
-    </TypeIdentifier>
-  </Class>
-  <Class Name="PlayerTracer" Collapsed="true">
-    <Position X="34.5" Y="14.25" Width="2.75" />
-    <TypeIdentifier>
-      <HashCode>AAAAgAAAAgAAAAAAAAgAACAAAAAAIAAIAAAAAEAACAA=</HashCode>
-      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerTracer.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Font Name="맑은 고딕" Size="9" />

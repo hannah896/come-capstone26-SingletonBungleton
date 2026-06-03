@@ -1,14 +1,13 @@
 using UnityEngine;
 /// <summary>
 /// 플레이어 이동 상태 (Root)
-/// Sub: Idle, Walk, Run, Trace, Air
+/// Sub: Idle, Walk, Run, Air
 /// </summary>
 public class PlayerLocomotionState : PlayerRootStateBase
 {
     private PlayerIdleState idleState;
     private PlayerWalkState walkState;
     private PlayerRunState runState;
-    private PlayerTraceState traceState;
     private PlayerAirState airState;
 
     public PlayerLocomotionState(PlayerRootStateMachine machine) : base(machine) { }
@@ -22,7 +21,6 @@ public class PlayerLocomotionState : PlayerRootStateBase
         idleState = new PlayerIdleState(Machine);
         walkState = new PlayerWalkState(Machine);
         runState = new PlayerRunState(Machine);
-        traceState = new PlayerTraceState(Machine);
         airState = new PlayerAirState(Machine);
 
         SubStateMachine.Init(idleState);
@@ -38,14 +36,6 @@ public class PlayerLocomotionState : PlayerRootStateBase
 
     public override void Update(float time = 1)
     {
-        // 자원 클릭 → Trace (공중 제외)
-        if (Input.TracePressed && Motor.IsGrounded
-            && !(SubStateMachine.CurrentState is PlayerAirState))
-        {
-            ChangeToTrace();
-            return;
-        }
-
         // 점프 입력 (지면 또는 코요테 타임)
         if (Input.JumpPressed && Motor.CanJump
             && !(SubStateMachine.CurrentState is PlayerAirState))
@@ -88,7 +78,6 @@ public class PlayerLocomotionState : PlayerRootStateBase
     public void ChangeToIdle() => SubStateMachine.ChangeState(idleState);
     public void ChangeToWalk() => SubStateMachine.ChangeState(walkState);
     public void ChangeToRun() => SubStateMachine.ChangeState(runState);
-    public void ChangeToTrace() => SubStateMachine.ChangeState(traceState);
     public void ChangeToAir() => SubStateMachine.ChangeState(airState);
 
     private void StartJump(float time)

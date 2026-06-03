@@ -26,13 +26,6 @@ public class PlayerInputData
     public int QuickSlotIndex { get; set; } = -1;
     public int QuickSlotScrollDelta { get; set; }
 
-    // 자원 오브젝트 클릭 → 자동 이동 요청
-    public bool TracePressed { get; set; }
-    public Vector3 TraceDestination { get; set; }
-
-    // 상호작용 도달 시 수행할 액션 타입
-    public ActionType PendingAction { get; set; }
-
     #endregion
 
     #region 파생 프로퍼티
@@ -57,7 +50,6 @@ public class PlayerInputData
         ToolUsePressed = false;
         QuickSlotIndex = -1;
         QuickSlotScrollDelta = 0;
-        TracePressed = false;
     }
 
     /// <summary>
@@ -76,8 +68,6 @@ public class PlayerInputData
         ToolUsePressed = false;
         QuickSlotIndex = -1;
         QuickSlotScrollDelta = 0;
-        TracePressed = false;
-        PendingAction = ActionType.None;
     }
 
     #endregion
