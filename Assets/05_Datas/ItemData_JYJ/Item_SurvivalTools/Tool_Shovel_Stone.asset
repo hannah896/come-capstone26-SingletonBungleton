@@ -15,11 +15,11 @@ MonoBehaviour:
   itemID: Shovel_Stone
   itemName: "\uB3CC\uC0BD"
   description: 
-  icon: {fileID: 21300000, guid: ae2cda20af6bece4db18399c04d94f20, type: 3}
+  icon: {fileID: 21300000, guid: d9d746c1e42626542bd79a22098643bc, type: 3}
   prefab: {fileID: 3590119427674651755, guid: ce0c6b70ac067d646a1d98d9286854ef, type: 3}
   itemType: 0
   survivalToolType: 10
-  harvestableResources: 0a000000
+  harvestableNodeTypes: 03000000
   combatGearType: 0
   resourceType: 0
   bootyType: 0

@@ -325,7 +325,6 @@ public abstract class ContentManager : Managers { }
 public static class BlossomPath
 {
     public static readonly string RESOURCES_DATA = "Data";
-    public static readonly string RESOURCES_STAGEDATA = "StageData";
 }
 
 /// <summary>

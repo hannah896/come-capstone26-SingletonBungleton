@@ -9,16 +9,6 @@ using UnityEngine;
 /// </summary>
 public class ScreenManager : CoreManager
 {
-    #region Constants
-
-    // 카메라 배경색
-    private static readonly Color CameraColorBG = new Color(1, 1, 1, 1);
-
-    // 카메라 Y 버퍼
-    private static float CameraYBuffer = 10f;
-
-    #endregion
-
     #region Fields
 
     // 메인 카메라 래퍼
@@ -100,50 +90,6 @@ public class ScreenManager : CoreManager
     #endregion
 
     #region Camera Setup
-
-    /// <summary>
-    /// 카메라를 설정합니다.
-    /// </summary>
-    public void SetCamera()
-    {
-        if (Main.Scene.Current is GameScene)
-        {
-            UI_Hud_Game uiHud = (Main.Scene.Current as GameScene)?.UIHud;
-            float topUIRatio = uiHud.TopUIRatio;
-            float bottomUIRatio = uiHud.BottomUIRatio;
-            SetGameCamera(topUIRatio, bottomUIRatio);
-            Main.Screen.MainCamera.SetColorCameraBG(CameraColorBG);
-        }
-    }
-
-    // 게임 카메라 설정
-    private void SetGameCamera(float topUIRatio = 0, float bottomUIRatio = 0)
-    {
-        // #1. 게임 보드 크기 받아오기.
-        Board board = Main.Game.Current;
-        Vector2 center = board.Center;
-        Vector2 size = board.Size;
-
-        // #2. 화면 비율 받아오기.
-        Aspect = Screen.width / (float)Screen.height;
-        ReverseAspect = Screen.height / (float)Screen.width;
-
-        // #3. 카메라 크기 계산.
-        float xMin = (Board.MarginLeft + Board.MarginRight + size.x) * 0.5f * ReverseAspect;
-        float yMin = (Board.MarginTop + Board.MarginBottom + size.y) * 0.5f / (1 - topUIRatio - bottomUIRatio);
-        float cameraSizeY = Mathf.Max(xMin, yMin) + CameraYBuffer;
-        float cameraSizeX = cameraSizeY * Aspect;
-        CameraSize = new(cameraSizeX, cameraSizeY);
-
-        // #5. 카메라 위치 계산.
-        float cameraCenterX = center.x;
-        float cameraCenterY = center.y;
-        CameraPosition = new(cameraCenterX, cameraCenterY, -10);
-
-        // #6. 카메라 설정 적용.
-        Camera.orthographicSize = CameraSize.y;
-        Camera.transform.position = CameraPosition;
-    }
 
     /// <summary>
     /// 월드 좌표를 스크린 좌표로 변환합니다.

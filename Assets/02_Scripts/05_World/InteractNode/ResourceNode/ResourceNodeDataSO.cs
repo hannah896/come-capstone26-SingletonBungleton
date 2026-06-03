@@ -18,6 +18,10 @@ public class ResourceNodeData : ScriptableObject
     public int GatherAmount = 1;            // 채집 용 횟수
     public int RespawnTime = 300;           // 자원 노드가 파괴된 후 재생성되기까지의 시간 (초 단위)
 
+    [Header("Required Harvest Tool")]
+    [Tooltip("이 자원을 채집하기 위해 필요한 도구 (None = 맨손 가능)")]
+    public HarvestToolType RequiredTool = HarvestToolType.None;
+
     [Header("Drops")]
     public DropData[] Drops;
 

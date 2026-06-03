@@ -2,6 +2,158 @@
 
 ---
 
+## 2026-06-02
+
+### 3. NEXON 한글 폰트 SDF 굽기 — Light 웨이트 마저 굽기
+
+**파일:** `Assets/09_Font/Editor/KoreanFontBaker.cs`, `Assets/09_Font/NEXON Football Gothic L SDF.asset`
+
+- B(Bold)는 전체 한글 음절(11,318자)로 구워져 있었으나 L(Light)은 ASCII 일부(45자)만 들어가 한글이 □로 깨지던 상태 → L도 동일하게 마저 구움
+- `KoreanFontBaker`가 B 전용 하드코딩이라, `Bake(otf, sdf, name)` 공통 메서드로 일반화하고 메뉴를 분리: `Tools/Font/Bake NEXON Korean SDF (Bold) / (Light) / (Both)`
+- 굽기 스펙은 B와 동일(SamplingPointSize 80, Padding 8, Atlas 4096px, SDFAA, Dynamic + 멀티아틀라스, 가~힣 전체 pre-bake). 기존 경로 덮어쓰기로 `.meta` guid 유지 → FontsSo 등 기존 참조 보존
+- `uloop execute-dynamic-code`로 `KoreanFontBaker.BakeLight()` 실행
+
+**검증:** `uloop compile --force-recompile` 에러 0건. 굽기 로그 — L SDF 문자 11,318자 / 글리프 11,318개 / 아틀라스 2장(4096px) / 누락 0자 (B와 동일).
+
+### 7. 로비 배경 연출 — 맵 곳곳을 누비는 Spline 카메라 + 로딩 흐름
+
+**파일:** `Assets/02_Scripts/01_UI/UI_Lobby/LobbyBackgroundOrbit.cs`(신규), `Assets/02_Scripts/@Scripts/Scenes/LobbyScene.cs`
+
+- 로비 배경으로 **메인 카메라가 맵 곳곳을 누비는 Spline 경로** 연출 (`com.unity.splines` 2.8.4)
+- `LobbyBackgroundOrbit`(신규 MonoBehaviour): `Setup(Bounds)`로 맵 bounds를 받아 **런타임에 맵 안팎을 구불구불 누비는 닫힌 Spline 자동 생성**(각도 균등 + 지점별 반경/높이 시드 변주), `Main.Loop.OnUpdate`에서 `EvaluatePosition`/`EvaluateTangent`로 **메인 카메라**를 경로 따라 이동시키고 진행 방향 전방을 살짝 아래로 주시. 이벤트 해제·Cinemachine 복구는 `OnDestroy`
+  - 처음엔 배경 전용 카메라 + 원형 orbit이었으나 → 사용자 요청으로 **메인 카메라가 직접**(로비는 Cinemachine 미사용, brain 있으면 잠시 비활성) + **원형이 아닌 맵 곳곳 누비는 경로**로 변경
+  - 조정 파라미터: `tourDuration`(속도), `waypointCount`, `wanderSeed`, `inner/outerRadiusScale`, `heightScale`, `heightVariation`, `lookAhead`, `lookDownStrength`
+- `LobbyScene.EnterScene`: 환경 소환 직후 bounds(`CalculateBounds`)를 계산해 `LobbyBackgroundOrbit` 생성/Setup(정리 목록에 추가, ExitScene에서 파괴)
+- **로딩 흐름**: EnterScene 맨 앞의 조기 `Main.UI.HideScreen(3)` 제거 → `SceneManagerEx.ChangeSceneAsync`의 `finally HideScreenAsync`가 **EnterScene(맵+Spline+HUD await) 완료 후** 로딩을 닫아, 모두 준비된 뒤 로비가 "딱" 보이게
+- **HUD 키 수정**: `ShowHud<UI_HUD_LobbyScene>()`가 타입명으로 키를 찾아 `No Location` 실패 → 실제 등록 주소 `"UI_HUD_Lobby"`를 명시(`ShowHud<UI_HUD_LobbyScene>("UI_HUD_Lobby")`)
+
+**검증:** PlayMode(ChangeScene 강제 진입)에서 메인 카메라가 맵 곳곳을 이동(시간차 캡처 2장 구도 상이), HUD("Lunacide" + 방 만들기/방 들어가기/종료) 정상 표시, 한글 폰트 정상 확인. **남은 이슈**: InitScene 부팅 자체가 `UI_Screen_StartLoading.prefab`에 해당 컴포넌트 대신 `UI_LoadingCanvas`(UI_Popup)가 붙은 불일치로 막혀 있어, InitScene부터의 전체 흐름은 그 프리팹을 고쳐야 검증 가능(로비/Spline 작업과 무관한 기존 부팅 인프라 문제).
+
+### 6. LobbyScene 단순화 — HUD 표시 + 환경 오브젝트 소환
+
+**파일:** `Assets/02_Scripts/@Scripts/Scenes/LobbyScene.cs`
+
+- `SceneBase`는 순수 추상 클래스(MonoBehaviour 아님)인데 기존 LobbyScene이 `OnEnable()`/`OnDestroy()` MonoBehaviour 콜백을 써 **호출되지 않던 문제** + `_popupQueue`/`_isProcessingPopups` **필드 미선언으로 컴파일 에러 8건** 상태였음
+- GameScene 스타일로 재작성: 복잡한 팝업 체인 시스템(`PopupInfo`/`_popupQueue`/`SetupPopupChain` 등)·`InitializeLobbySequence`·MonoBehaviour 콜백 전부 제거
+- `EnterScene`: ① Addressable **`LobbyScene` 라벨** 환경 오브젝트(Terrain/Water/Environment 등 7종) 소환 → 정적 배경이라 풀링 대신 1회 `Instantiate` ② `UI_HUD_LobbyScene` HUD 표시 ③ `LobbyState = Ready`(OnEnable에 있던 로직 이전)
+- `ExitScene`: 소환한 환경 오브젝트 정리
+- `LobbyState`/`OnLobbyReady`/`OnLobbyStart`/`LobbyState` enum은 **유지** — `UI_Hud_Lobby.cs`가 구독 중이라 제거 시 컴파일 깨짐
+
+**검증:** `uloop compile --force-recompile` 에러 0건 (이전 8건 해소).
+
+### 5. 로비 방 만들기 버튼 → GameScene 전환(로딩 화면) 연결
+
+**파일:** `Assets/02_Scripts/01_UI/UI_Lobby/UI_HUD_LobbyScene.cs`
+
+- 비어 있던 `OnMakeRoom()`(방 만들기 버튼 핸들러)에 `Extensions.ChangeScene("GameScene")` 연결
+- `SceneManagerEx.ChangeSceneAsync`가 `UI_Screen_Transition`(전환 오버레이)을 자동으로 띄워 **로딩 화면 역할**을 하고, GameScene `EnterScene`이 월드 생성을 끝낸 뒤 닫힘 — `UI_Popup_WorldGen.OnClickGenerate`의 else 분기와 동일 패턴
+- `WorldGenRequest`를 별도로 Set하지 않으므로 GameScene이 기본 옵션으로 월드 생성. 방 데이터 UI는 기존 TODO로 유지
+
+**검증:** `uloop compile` 에러 0건.
+
+### 4. 텍스트 하단 그림자 현상 — TMP Essential Resources 문제로 해결
+
+- 모든 TMP 텍스트 글자 **하단에 흐릿한 그림자 띠**가 보이는 현상 발견
+- 처음엔 새로 구운 L 폰트만의 문제로 의심했으나, **B 폰트·기본 LiberationSans 등 기존 폰트까지 전부 동일**하게 나타나는 걸 확인 → 특정 폰트/베이커 문제가 아니라 **TMP 전역 렌더링(셰이더/필수 리소스) 문제**로 판명
+- **해결:** TMP **Essential Resources**를 (재)임포트하니 그림자 현상 사라짐 (`Window > TextMeshPro > Import TMP Essential Resources`)
+
+### 1. 스테이지(Stage)·보드(Board) 시스템 전면 제거
+
+**파일:** `StageData.cs`, `DataManager.cs`, `Extensions.cs`, `PlayPrefs.cs`, `GameScene.cs`, `GameManager.cs`, `ScreenManager.cs`, `Main.cs`, `UI_Editor.cs`, `UI_Popup_LeaveGame.cs`, `TextManager.cs` / (삭제) `BoardManager.cs`, `Models/Board/Board.cs`, `Models/Board/BoardObject.cs`
+
+- 우리 게임(돈스타브류 생존게임)에는 스테이지/레벨 개념이 없어, 캐주얼·모바일식 스테이지 시스템과 그에 묶인 미사용 Board 시스템을 전부 제거
+- **스테이지 데이터:** `StageData` 클래스, `DataManager`의 `_stageData`/`LoadStageData()`/`GetStageData()`/`GetMaxStageCount()`/`EditorStageData`, `Extensions.GetStageData`, `Main.BlossomPath.RESOURCES_STAGEDATA` 상수 제거
+  - `StageData.cs`에 함께 있던 `Difficulty`/`ColorType`/`Direction`/`Orientation` enum은 `Utilities.cs`·`UI_DifficultyImage.cs`에서 광범위하게 쓰여 **보존**(클래스만 제거)
+- **레벨(Stage) Prefs:** `PlayPrefs.Stage`/`_stage`, `DataManager.PrefsSync`의 동기화, `GameScene.CurrentStage`/`StartGame(int)` 파라미터, `UI_Popup_LeaveGame`의 "Level N" 표시, `TextManager`의 `PlayerLevel` 캐시·이벤트 제거
+- **Board 시스템:** `BoardManager`(매니저 미등록 죽은 클래스), `Board`, `BoardObject` 파일 삭제. `GameManager`의 `Current(Board)`/`GenerateBoard()`/`GenerateBoardObject()` 제거. Board는 호출처가 없어 `Main.Game.Current`가 항상 null이었고, 실제 맵 생성은 WorldGen이 전담
+- **카메라:** `ScreenManager.SetGameCamera()`가 항상 null인 `Board` 크기로 카메라 영역을 잡던 잠재적 NRE 죽은 코드라 통째 제거, `SetCamera()`는 배경색 설정만 남김. 미사용 `CameraYBuffer` 필드도 정리
+- **UI_Editor**(개발 치트 패널): Stage 입력 필드/바인딩/`OnEnterStage()` 핸들러, `GetMaxStageCount()` 참조 제거
+
+**검증:** `uloop compile --force-recompile` 전체 재컴파일 — 에러 0건, 경고 15건(모두 기존 경고, 이번 작업이 추가한 `CameraYBuffer` 경고는 정리 완료). 잔여 참조(`StageData`/`GenerateBoard`/`.Stage` 등) `rg` 검색 결과 게임 코드 0건(Photon의 무관한 `Stage` enum만 잔존).
+
+### 2. 메인 카메라 2D 배경판 잔재 코드 정리 (시네머신/Perspective 유지)
+
+**파일:** `Assets/CustomPackage/Main/Screen/Camera/MainCameraObject.cs`, `MainCamera.cs`, `Assets/02_Scripts/@Scripts/Managers/ScreenManager.cs`
+
+- `MainCameraObject` 프리팹 진단 결과 **이미 3D 준비 완료**: `orthographic: 0`(원근), `CinemachineBrain` 존재(FP 가상 카메라 추적용), `ClearFlags: Skybox`. 시네머신 구조는 그대로 유지
+- 2D 캐주얼 게임 잔재인 **단색 배경판(SpriteRenderer "Background")** 관련 미사용 코드 제거:
+  - `MainCameraObject`: `_spriteBG` 필드, `ActiveSpriteBG()`/`SetSpriteBG()`/`SetSpriteColor()` 제거 (호출처 0건). 카메라 배경색 설정 범용 유틸 `SetColorCameraBG()`는 유지
+  - `MainCamera`: 위 SpriteBG 래퍼 3종 제거
+  - `ScreenManager`: 카메라 배경을 **흰색**으로 칠하던 죽은 `SetCamera()`(외부 호출 0건) + `CameraColorBG` 상수 제거
+- 프리팹(.prefab) 자체 수정(Background 자식 GameObject 삭제, z위치/배경색 정리)은 작업자가 Unity 에디터에서 직접 진행 예정 — **CinemachineBrain은 삭제 금지**
+
+**검증:** `uloop compile --force-recompile` — 에러 0건, 경고 15건(모두 기존 경고).
+
+## 2026-06-01
+
+### 17. 모바일 게임 프레임워크 잔재 제거 (IAP/광고)
+
+**파일:** `Assets/CustomPackage/Main/Loading/UI_Loading_Iap.cs`(삭제), `UI_Loading_Ads.cs`(삭제), `Assets/03_Prefabs/@Base/UI/UI_Screen_Iap.prefab`(삭제), `UI_Screen_Ads.prefab`(삭제), `Assets/AddressableAssetsData/AssetGroups/Common.asset`
+
+- 프로젝트가 모바일 게임 부팅/수익화 프레임워크 위에 올라가 있어, 인앱결제(IAP)/광고(Ads) 로딩 화면 잔재를 제거
+- IAP/Ads 로딩 화면 스크립트 2개와 프리팹 2개 삭제 (껍데기만 있고 실제 수익화 로직은 없었음)
+- `Common.asset`의 Addressable 등록 항목(`UI_Screen_Iap`, `UI_Screen_Ads`)도 제거
+- 코드/씬에서 직접 호출되는 곳이 없어 안전하게 제거됨
+
+**변경 이유:** 우리 게임은 돈스타브류 멀티플레이 생존게임으로, 모바일식 IAP/광고 시스템이 필요 없음.
+
+### 18. GameScene 흐름을 WorldGen 기반으로 재구성 (맵 생성 → 플레이어 소환)
+
+**파일:** `Assets/02_Scripts/@Scripts/Scenes/GameScene.cs`, `Assets/02_Scripts/@Scripts/Game/GameEvents.cs`
+
+- WIP로 컴파일이 깨져 있던 `GameScene.cs`를 정리하고 게임 시작 흐름을 명확화
+- `EnterScene` → `StartGame()`: WorldGenManager를 **런타임에 동적 생성**(`new GameObject().AddComponent<WorldGenManager>()`)한 뒤, WorldSettings(Addressable) 로드를 `UniTask.WaitUntil`로 대기하고 `GenerateWorldFromUI(Default, Default)`를 `await`하여 **맵 생성이 온전히 끝난 뒤** 진행
+- WorldGenManager/디렉터들이 인스펙터 의존성 없이 self-init 되도록 설계돼 있어 씬에 미리 배치할 필요 없음 (GameScene.unity는 Directional Light만 있는 빈 씬)
+- 플레이어 소환은 경보(KGB)님의 `WorldGen` 내부 로직(StartRegion 위치 자동 계산 포함)을 그대로 사용 — GameScene은 생성 완료를 기다리기만 함
+- 송제우님의 `BoardManager`/`Board` 맵 시스템은 사용하지 않도록 호출 제거
+- 맵 + 플레이어 소환 완료 후 `GameProcessing.Processing` + `GameState.Playing`으로 전환 (타이머/게임 업데이트 활성화)
+- 저장 시스템 대비 분기 자리(`hasSavedWorld`) TODO로 마련: 저장 데이터 있으면 로드, 없으면 새 맵 자동 생성
+- `SceneBase`는 MonoBehaviour가 아니므로 동작하지 않던 `Update()`/`OnDisable()`/Coroutine 잔재 제거, 루프 이벤트 정리는 `ExitScene`으로 이동
+
+**검증:** PlayMode 실행 결과 `WorldSettings 로드 완료` → `UI 옵션으로 월드 생성. 시드: ..., Branch: Default, Loop: Default` → 월드 그래프 생성(Region 13개) → Player 소환 후 상태머신(Idle/Walk/Attack) 정상 작동 확인.
+
+**남은 TODO/이슈:** 소환된 플레이어가 자신의 HUD(`UI_Hud_Game`)를 띄우는 단계는 다음 작업으로 남김. 저장/로드 분기 구현 필요. GameScene에 AudioManager가 없어 JSAM 에러 발생(비치명적) — 필요 시 EnterScene에서 AudioManager 생성 추가.
+
+### 19. 클리어(Success)·하트(Heart) 목숨제 잔재 전면 제거
+
+**파일:** `Assets/02_Scripts/@Scripts/Scenes/GameScene.cs`, `Assets/02_Scripts/@Scripts/Game/GameEvents.cs`, `Assets/02_Scripts/@Scripts/Managers/GameManager.cs`, `BoardManager.cs`, `Assets/CustomPackage/UI/UI_Editor/UI_Editor.cs`
+
+- 생존게임에 맞지 않는 캐주얼/모바일식 시스템(스테이지 클리어, 하트 목숨제)을 전부 제거
+- `GameScene`: `HeartCount`/`MaxHeartCount`/`IsInfinityHeart`/`_heartCount`, `SuccessGame()`, `GameState.Success` 분기 제거
+- `GameEvents`: `OnGameClear`, `OnChangeHeart` 제거 (`OnGameOver`는 게임오버용으로 유지)
+- `GameManager`/`BoardManager`: 클리어 조건 검사 `CheckClear()` 제거 (`CheckFail()`은 유지)
+- `UI_Editor`(개발 치트 패널): 하트 입력/무한하트 토글/클리어 버튼 관련 필드·바인딩·핸들러 제거 (게임오버 버튼은 유지)
+- `GameState` enum에 `Playing`/`InTutorial` 추가하여 `TimeManager`·`UI_Popup_Tutorial`이 참조하던 미정의 상태 컴파일 오류 해결
+
+**검증:** `uloop compile --force-recompile`로 전체 재컴파일 — 에러 0건. 잔여 참조(`HeartCount`/`SuccessGame`/`GameState.Success` 등) `rg` 검색 0건 확인.
+
+### 20. 점프 체감 튜닝 (둥실거림 → 묵직)
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/PlayerGravity.cs`, `Assets/05_Datas/SO/PlayerStatData/PlayerStatData.asset`
+
+- 점프가 "새마냥" 가볍게 떠다니는 문제 보정. 점프 높이(≈1.6m)는 유지하되 더 빠릿하고 묵직하게
+- `PlayerGravity.gravityAcceleration`: -20 → -32
+- `PlayerStatData.JumpForce`: 8 → 10.1 (같은 높이 유지: h = v²/2g)
+- 체공 시간 ≈0.8초 → ≈0.63초
+- 점프 시스템은 Rigidbody가 아닌 커스텀 중력(`PlayerGravity` 순수 C#) 기반 유지 — 값만 조정
+
+**검증:** 컴파일 에러 0건. 실제 점프 체감은 PlayMode에서 확인 필요.
+
+### 21. 씬 흐름 정립 (Init→Lobby→Game) + 로비 옵션 주입 + 진행률 로딩 화면
+
+**파일:** `Assets/CustomPackage/Main/Loading/UI_Screen_StartLoading.cs`, `Assets/02_Scripts/@Scripts/Scenes/GameScene.cs`, `Assets/CustomPackage/Main/Loading/UI_Screen_Transition.cs`
+
+- **부팅 흐름**: 부팅 로딩(`UI_Screen_StartLoading`)이 끝나면 `GameScene`으로 직행하던 것을 `LobbyScene`으로 변경 → `InitScene → (StartLoading) → LobbyScene → (UI_Popup_WorldGen) → GameScene` 흐름 정립
+- **로비 옵션 주입**: `GameScene.StartGame`이 `WorldGenRequest`를 무시하고 기본값만 쓰던 것을 수정. `WorldGenRequest.HasRequest`면 `Consume()`하여 로비에서 확정한 branch/loop/seed로 `WorldGenManager.GenerateWorld(...)` 호출, 없으면(직접 진입 테스트) 기본 옵션으로 생성
+- **로딩 흐름 보장**: 로비→게임 전환은 `SceneManagerEx.ChangeSceneAsync`가 `ShowScreen → 씬 Additive 로드 → await EnterScene(맵+플레이어 생성) → finally HideScreen` 구조라, GameScene의 `EnterScene`이 `await StartGame()`을 기다리므로 "생성 완료 후 로딩 닫기"가 자동 보장됨 (추가 코드 불필요)
+- **진행률 로딩 화면**: `UI_Screen_Transition`을 강화 — `WorldGenManager.OnProgress`(0.05~1.0 단계별 발행)를 구독해 로딩바(`Img_Bar_F`)와 단계 텍스트(`Txt_Stage`)에 표시, 랜덤 팁(`Txt_Tip`)을 3.5초마다 교체. UI 요소는 `FindChild` + null 가드라 프리팹에 없으면 기존처럼 페이드만 동작(다른 씬 전환 무영향). 이벤트 해제는 `OnDestroy`에서.
+
+**검증:** `uloop compile --force-recompile` 에러 0건.
+
+**남은 TODO/이슈:** 진행률/팁이 실제로 보이려면 `UI_Screen_Transition.prefab`에 `Img_Bar_F`(UI_Image), `Txt_Stage`(UI_Text), `Txt_Tip`(UI_Text) 자식 오브젝트를 추가해야 함(코드는 준비됨).
+
+---
+
 ## 2026-05-26
 
 ### 1. 플레이어 액션 상태를 애니메이터 방식에 맞게 재구성

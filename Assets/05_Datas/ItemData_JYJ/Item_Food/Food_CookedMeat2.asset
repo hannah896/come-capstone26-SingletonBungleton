@@ -15,10 +15,11 @@ MonoBehaviour:
   itemID: CookedMeat2
   itemName: "\uAD6C\uC6B4\uACE0\uAE302"
   description: "\uC74C\uC2DD_\uAD6C\uC6B4\uACE0\uAE302 \uC785\uB2C8\uB2E4."
-  icon: {fileID: 0}
-  prefab: {fileID: 828052658877537744, guid: 51f24b103ebc56a4a8b2e3435d1f6e80, type: 3}
+  icon: {fileID: 21300000, guid: 4fe5618eee2825449aff1361cce934e3, type: 3}
+  prefab: {fileID: 828052658877537744, guid: 3700a27fbb9b3294cbf0d5fd13a83831, type: 3}
   itemType: 4
   survivalToolType: 0
+  harvestableResources: 
   combatGearType: 0
   resourceType: 0
   bootyType: 0
@@ -28,9 +29,17 @@ MonoBehaviour:
   equipSlot: 0
   hasDurability: 0
   maxDurability: 0
+  costPerDurability: 1
   attackDamage: 0
   attackRange: 0
   defense: 0
   hungerRestore: 30
   healthRestore: 10
-  sanityRestore: 5
+  egoRestore: 5
+  isPlaceable: 0
+  placementPrefab: {fileID: 0}
+  placementFootprint: {x: 1, y: 1}
+  placementPivotOffset: {x: 0, y: 0, z: 0}
+  placementSnapToGrid: 1
+  placementCheckHeight: 2
+  placementCheckCenterOffset: {x: 0, y: 0, z: 0}

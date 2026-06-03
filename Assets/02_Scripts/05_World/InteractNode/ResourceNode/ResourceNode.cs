@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 
 /// <summary>
@@ -54,8 +55,38 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
 
     public bool CanDamage(DamageContext context)
     {
-        return !_isDestroyed && context.Amount > 0;
+        if (_isDestroyed || context.Amount <= 0) return false;
+
+        // 필요 도구 체크
+        HarvestToolType required = _resourceNodeData.RequiredTool;
+        if (required != HarvestToolType.None && !ToolMatches(context.ActionType, required))
+        {
+            Debug.Log($"[{_resourceNodeData.Name}] 필요 도구: {required} / 현재: {context.ActionType}");
+            return false;
+        }
+
+        // 도구의 채집 가능 노드 타입 체크
+        if (context.HarvestableNodeTypes != null
+            && context.HarvestableNodeTypes.Count > 0
+            && !context.HarvestableNodeTypes.Contains(_resourceNodeData.ResourceNodeType))
+        {
+            Debug.Log($"[{_resourceNodeData.Name}] 이 도구로 채집할 수 없는 노드입니다. (노드: {_resourceNodeData.ResourceNodeType})");
+            return false;
+        }
+
+        return true;
     }
+
+    private static bool ToolMatches(ActionType action, HarvestToolType required) => required switch
+    {
+        HarvestToolType.Axe        => action == ActionType.Chop,
+        HarvestToolType.Pickaxe    => action == ActionType.Mine,
+        HarvestToolType.Shovel     => action == ActionType.Dig,
+        HarvestToolType.Hammer     => action == ActionType.Build,
+        HarvestToolType.FishingRod => action == ActionType.Pick,
+        HarvestToolType.AnyTool    => action != ActionType.None,
+        _                          => true,
+    };
 
     public void ApplyDamage(DamageContext context)
     {
@@ -106,8 +137,7 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
 
         if (_placement != null && _chunk != null)
         {
-            // 파괴된 시간을 기록
-            float currentTime = WorldClock.Instance.TotalInGameSeconds;
+            float currentTime = WorldClock.Instance != null ? WorldClock.Instance.TotalInGameSeconds : 0f;
             float targetRespawnTime = currentTime + _resourceNodeData.RespawnTime;
             _chunk.MarkObjectDestroyed(_placement.instanceId, targetRespawnTime);
         }

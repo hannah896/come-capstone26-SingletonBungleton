@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4858542261268398436}
-  - component: {fileID: 6771953823004208135}
+  - component: {fileID: -1255961853251253603}
   m_Layer: 5
   m_Name: UI_Screen_StartLoading
   m_TagString: Untagged
@@ -39,7 +39,7 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &6771953823004208135
+--- !u!114 &-1255961853251253603
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -48,19 +48,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 286359107387193214}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 55880865a24da40f4b6dcf8f2aef2e6d, type: 3}
+  m_Script: {fileID: 11500000, guid: 00f70131bd71ecf489e77e149b93533a, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UI_LoadingCanvas
-  OnOpenEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  OnCloseEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  OnDestroyEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  AnimationType: 0
+  m_EditorClassIdentifier: 
 --- !u!1 &5461368484672253875
 GameObject:
   m_ObjectHideFlags: 0
@@ -150,12 +140,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3613e9f726bca481f830099d3b8f40fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_Image
-  OnOpenEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  OnCloseEvent:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &6447990619827579141
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -433,12 +417,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3613e9f726bca481f830099d3b8f40fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_Image
-  OnOpenEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  OnCloseEvent:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &3747032172613643490
 MonoBehaviour:
   m_ObjectHideFlags: 0

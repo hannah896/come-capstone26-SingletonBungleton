@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using static UnityEditor.Timeline.Actions.MenuPriority;
 
 /// <summary>
 /// 플레이어가 직접 들고 있는 인벤토리입니다.
@@ -614,7 +615,7 @@ public class PlayerInventory : MonoBehaviour
             return false;
 
         int damage = Mathf.Max(1, Mathf.RoundToInt(handItem.attackDamage));
-        var ctx = new DamageContext(gameObject, hit.point, damage, handItem.itemID);
+        var ctx = new DamageContext(gameObject, hit.point, damage, handItem.itemID, actionType, handItem.harvestableNodeTypes);
         return node.CanDamage(ctx);
     }
 
@@ -652,14 +653,13 @@ public class PlayerInventory : MonoBehaviour
             return;
 
         int damage = Mathf.Max(1, Mathf.RoundToInt(handItem.attackDamage));
-        var damageContext = new DamageContext(gameObject, hit.point, damage, handItem.itemID);
+        ActionType actionType = GetActionTypeForTool(handItem.survivalToolType);
+        var damageContext = new DamageContext(gameObject, hit.point, damage, handItem.itemID, actionType, handItem.harvestableNodeTypes);
         if (!node.CanDamage(damageContext))
             return;
 
         node.ApplyDamage(damageContext);
         handTool?.UseDurability();
-
-        //TODO: 도구 타입에 따른 상호작용 분기 (예: 나무에는 도끼, 돌에는 곡괭이 등)
     }
 
     private bool TryRaycastToolTarget(float range, out RaycastHit hit)

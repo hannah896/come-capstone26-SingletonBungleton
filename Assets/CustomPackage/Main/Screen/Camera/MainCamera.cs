@@ -19,7 +19,4 @@ public class MainCamera
     }
     
     public void SetColorCameraBG(Color color) => Object?.SetColorCameraBG(color);
-    public void ActiveSpriteBG(bool active) => Object?.ActiveSpriteBG(active);
-    public void SetSpriteBG(Sprite sprite) => Object?.SetSpriteBG(sprite);
-    public void SetSpriteColor(Color color) => Object?.SetSpriteColor(color);
 }

@@ -15,11 +15,11 @@ MonoBehaviour:
   itemID: Pickaxe_Gold
   itemName: "\uAE08\uACE1\uAD2D\uC774"
   description: 
-  icon: {fileID: 21300000, guid: d1647b5f156131a419b1ccf269bf7358, type: 3}
+  icon: {fileID: 21300000, guid: fcb122bcdc0b5cb4890230b40efd9ac6, type: 3}
   prefab: {fileID: 3590119427674651755, guid: c4d5c9e3be52a0e4296a1f2a9d7661a4, type: 3}
   itemType: 0
   survivalToolType: 6
-  harvestableResources: 0500000006000000070000000800000009000000
+  harvestableNodeTypes: 02000000
   combatGearType: 0
   resourceType: 0
   bootyType: 0

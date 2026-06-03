@@ -33,8 +33,8 @@ public class ItemDataSO : ScriptableObject
     [Tooltip("생존도구일 경우 선택")]
     public SurvivalToolType survivalToolType;
 
-    [Tooltip("이 도구로 채집 가능한 자원 목록 (생존도구용)")]
-    public List<ResourceType> harvestableResources = new List<ResourceType>();
+    [Tooltip("이 도구로 채집 가능한 노드 타입 목록 (생존도구용, None = 제한 없음)")]
+    public List<ResourceNodeType> harvestableNodeTypes = new List<ResourceNodeType>();
 
     [Tooltip("전투장비일 경우 선택")]
     public CombatGearType combatGearType;
@@ -89,6 +89,13 @@ public class ItemDataSO : ScriptableObject
     [FormerlySerializedAs("sanityRestore")]
     public float egoRestore = 0f;
 
+
+    [Header("=== 아이템 태그 ===")]
+    [Tooltip("이 아이템의 사용 용도 (복수 선택 가능)")]
+    public ItemTag tags = ItemTag.None;
+
+    /// <summary>특정 태그를 가지고 있는지 확인.</summary>
+    public bool HasTag(ItemTag tag) => (tags & tag) != 0;
 
     [Header("=== 배치 정보 ===")]
     [Tooltip("배치 가능 아이템 여부")]

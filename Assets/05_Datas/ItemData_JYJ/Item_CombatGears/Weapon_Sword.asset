@@ -15,10 +15,11 @@ MonoBehaviour:
   itemID: Sword
   itemName: "\uCE7C"
   description: "\uADFC\uAC70\uB9AC \uBB34\uAE30 \uCE7C\uC785\uB2C8\uB2E4."
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: bea7f4f3f706be54eab845c36b8b3705, type: 3}
   prefab: {fileID: 1908796587553689737, guid: ec526efbe3d7afb49981f535aef51076, type: 3}
   itemType: 1
   survivalToolType: 0
+  harvestableResources: 
   combatGearType: 3
   resourceType: 0
   bootyType: 0
@@ -28,9 +29,17 @@ MonoBehaviour:
   equipSlot: 3
   hasDurability: 1
   maxDurability: 100
+  costPerDurability: 1
   attackDamage: 30
   attackRange: 10
   defense: 0
   hungerRestore: 0
   healthRestore: 0
   egoRestore: 0
+  isPlaceable: 0
+  placementPrefab: {fileID: 0}
+  placementFootprint: {x: 1, y: 1}
+  placementPivotOffset: {x: 0, y: 0, z: 0}
+  placementSnapToGrid: 1
+  placementCheckHeight: 2
+  placementCheckCenterOffset: {x: 0, y: 0, z: 0}

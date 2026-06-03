@@ -41,13 +41,16 @@ public class JSAMManager : PrimaryManager
         // 씬이 완전히 로드될 때까지 대기 (BeforeSceneLoad에서 호출되므로)
         await UniTask.Yield(PlayerLoopTiming.Update);
 
-        // 오디오 매니저 오브젝트 탐색
+        // 오디오 매니저 오브젝트 탐색/생성
         if (!Object.FindFirstObjectByType<AudioManager>())
         {
             AudioManager go = await Main.Resource.LoadAssetAsync<AudioManager>("AudioManager");
-            var prefab = GameObject.Instantiate(go);
-            prefab.name = "@Audio";
-            prefab.transform.SetSiblingIndex(2);
+            if (go != null)
+            {
+                var prefab = GameObject.Instantiate(go);
+                prefab.name = "@Audio";
+                prefab.transform.SetSiblingIndex(2);
+            }
         }
 
         _settingPrefs = Prefs.Get<SettingPrefs>();

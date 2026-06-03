@@ -1,15 +1,13 @@
-using Blossom.Preference;
 using Cysharp.Threading.Tasks;
 using System;
 using System.Threading;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using Object = UnityEngine.Object;
 
 public class GameScene : SceneBase
 {
     #region Properties
 
+    // 게임 상태 — 상태 전환 시 해당 단계의 처리를 발생시키는 허브
     public static GameState GameState
     {
         get => _gameState;
@@ -17,40 +15,35 @@ public class GameScene : SceneBase
         {
             if (_gameState == value) return;
             _gameState = value;
-            if (_gameState == GameState.InTutorial)
+
+            switch (_gameState)
             {
-                (Main.Scene.Current as GameScene)?.OnGameTutorial?.Invoke();
-            }
-            else if (_gameState == GameState.Playing)
-            {
-                GameEvents.OnGameStart?.Invoke();
-                (Main.Scene.Current as GameScene)?.OnGameStart?.Invoke();
-            }
-            else if (_gameState == GameState.Success)
-            {
-                GameEvents.OnGameClear?.Invoke();
-                if (Main.IsEditorMode)
-                    Main.Scene.Load("EditorScene");
-                else
-                    (Main.Scene.Current as GameScene)?.SuccessGame();
-            }
-            else if (_gameState == GameState.Failed)
-            {
-                GameProcessing = GameProcessing.Stopping;
-                GameEvents.OnGameOver?.Invoke();
-                if (Main.IsEditorMode)
-                    Main.Scene.Load("EditorScene");
-                else
-                    (Main.Scene.Current as GameScene)?.FailGame();
+                case GameState.World:
+                    // 맵 생성 단계 진입
+                    (Main.Scene.Current as GameScene)?.OnGameWorldGenerate?.Invoke();
+                    break;
+
+                case GameState.Player:
+                    // 플레이어 생성 단계 진입
+                    (Main.Scene.Current as GameScene)?.OnGamePlayerGenerate?.Invoke();
+                    break;
+
+                case GameState.Failed:
+                    // 게임 오버 (사망)
+                    GameProcessing = GameProcessing.Stopping;
+                    GameEvents.OnGameOver?.Invoke();
+                    if (Main.IsEditorMode)
+                        Main.Scene.Load("EditorScene");
+                    else
+                        (Main.Scene.Current as GameScene)?.FailGame();
+                    break;
             }
         }
     }
 
     public static GameProcessing GameProcessing { get; set; }
 
-    // public static ItemType CurrentItemType { get; set; }
-
-    public static StageData CurrentStage { get; private set; }
+    // 인게임 HUD (플레이어 소환 후 표시 예정)
     public UI_Hud_Game UIHud { get; private set; }
 
     #endregion
@@ -58,267 +51,108 @@ public class GameScene : SceneBase
     #region Fields
 
     private static GameState _gameState = GameState.None;
-    private const int MaxHeartCount = 3;
 
-    public static int HeartCount
-    {
-        get => _heartCount;
-        set
-        {
-            int setValue = value;
-            if (IsInfinityHeart) setValue = MaxHeartCount;
-            if (setValue == _heartCount) return;
-            _heartCount = setValue;
-            GameEvents.OnChangeHeart?.Invoke(setValue);
-        }
-    }
-
-    private static int _heartCount;
-    public static bool IsInfinityHeart = false;
-
-    private PlayPrefs _playPrefs;
-
-    private Coroutine _coEndGame;
-
-    public event Action OnGameReady;
-    public event Action OnGameTutorial;
-    public event Action OnGameStart;
+    // 단계별 이벤트 (구독자가 단계 진입을 감지)
+    public event Action OnGameWorldGenerate;   // 맵 생성 단계
+    public event Action OnGamePlayerGenerate;  // 플레이어 생성 단계
 
     #endregion
 
-    #region MonoBehaviours
-
-    private void OnDisable() { Main.Loop.ResetGameEvent(); }
-
-    protected void Update()
-    {
-        Main.Time.OnUpdate(Time.deltaTime);
-
-        // TEMP!
-#if UNITY_EDITOR || UNITY_STANDALONE || UNITY_STANDALONE_WIN
-        if (Keyboard.current.sKey.wasPressedThisFrame)
-        {
-            GameState = GameState.Success;
-        }
-        else if (Keyboard.current.fKey.wasPressedThisFrame)
-        {
-            GameState = GameState.Failed;
-        }
-        else if (Keyboard.current.escapeKey.wasPressedThisFrame)
-        {
-            if (Main.IsEditorMode)
-            {
-                GameState = GameState.None;
-                Main.Scene.Load("EditorScene");
-            }
-        }
-#endif
-    }
-
-    #endregion
-
-    #region Game
-
-    public void StartGame(int stage = -1)
-    {
-        //Main.Ads.ShowInterstitialCheckSave(() =>
-        //{
-        //    ResetGame();
-        //    InitGame(stage);
-        //});
-    }
-
-    public void RetryGame()
-    {
-        int stage = CurrentStage.Index;
-        StartGame(stage);
-    }
-
-    private void ResetGame()
-    {
-        Main.Clear();
-        Main.Loop.ResetGameEvent();
-        GameProcessing = GameProcessing.Stopping;
-        RefillHeart();
-        Main.Game.Clear();
-    }
-
-    public void RefillHeart() => HeartCount = MaxHeartCount;
-
-    private async void InitGame(int stage = -1)
-    {
-        // #1. Stage 불러오기.
-        if (Main.IsEditorMode)
-            CurrentStage = Main.Data.EditorStageData;
-        else
-        {
-            if (stage == -1) stage = _playPrefs.Stage.Value;
-            SetStageData(stage);
-        }
-
-        // #2. 개체 생성.
-        Main.Game.GenerateBoard(CurrentStage);
-
-        // #3. 개체 오브젝트 생성.
-        Main.Game.GenerateBoardObject();
-
-        // #5. UI 생성.
-        UIHud = Object.FindFirstObjectByType<UI_Hud_Game>();
-        if (UIHud == null)
-        {
-            UIHud = await Extensions.ShowHud<UI_Hud_Game>();
-        }
-
-        // #6. 카메라 및 인풋 설정.
-        Main.Screen.SetCamera();
-        InputController.AllowInput = true;
-        // Main.Input.SetInputActions(InputActionType.None);
-
-        // #7. 게임 시작.
-        GameEvents.OnGameReady?.Invoke();
-        OnGameReady?.Invoke();
-        GameState = GameState.Playing;
-        GameProcessing = GameProcessing.Processing;
-
-        UIHud.Set(this);
-        // Main.Screen.StartGameCameraAnimation(() => Main.Input.SetInputActions(InputActionType.GameScenePlay));
-
-        // #8. 튜토리얼 확인
-        // foreach (TutorialLevelType type in Enum.GetValues(typeof(TutorialLevelType)))
-        // {
-        //     if (type == TutorialLevelType.None) continue;
-        //     if (stage == (int)type)
-        //     {
-        //         UI_Panel_Tutorial panel = await Extensions.ShowPopup<UI_Panel_Tutorial>();
-        //         panel.Set(type);
-        //         break;
-        //     }
-        // }
-    }
-
-    public void SuccessGame()
-    {
-        if (GameState == GameState.Waiting) return;
-        GameState = GameState.Waiting;
-
-        Prefs.Get<PlayPrefs>().Stage.Value = CurrentStage.Index + 1;
-        //Main.AnalyticsSDK.LogEvent($"rca_clear_{CurrentStage.Index:D4}", null, AnalyticsType.GF);
-        CoSuccessGame();
-    }
-
-    private async void CoSuccessGame()
-    {
-        await UniTask.WaitForSeconds(1f);
-        GameProcessing = GameProcessing.Stopping;
-        //UI_Popup_StageCompleted popup = await Extensions.ShowPopup<UI_Popup_StageCompleted>();
-        //popup.Set();
-    }
-
-    public void FailGame()
-    {
-        if (GameState == GameState.Waiting) return;
-        GameState = GameState.Waiting;
-        CoFailedGame();
-    }
-
-    private async void CoFailedGame()
-    {
-        await UniTask.WaitForSeconds(1f);
-
-        //if (CurrentStage.Index < AdsManager.ShowInterstitialStage)
-        //{
-        //    UI_Popup_RetryFree popup = await Extensions.ShowPopup<UI_Popup_RetryFree>();
-        //    popup.Set();
-        //}
-        //else
-        //{
-        //    UI_Popup_RetryAds popup = await Extensions.ShowPopup<UI_Popup_RetryAds>();
-        //    popup.Set();
-        //}
-    }
-
-    #endregion
-
-    private void SetStageData(int stage)
-    {
-        if (stage == -1) CurrentStage = Main.Data.GetStageData(1);
-        else CurrentStage = Main.Data.GetStageData(stage) ?? Main.Data.GetStageData(_playPrefs.Stage.Value - 1);
-    }
-
-    #region Events
-
-    private void OnSecondGameTimer(NyoTimer timer) { }
-
-    private void OnTimeEndGameTimer(NyoTimer timer)
-    {
-        if (Main.IsEditorMode) return;
-        GameState = GameState.Failed;
-    }
-
-    #endregion
+    #region Scene Lifecycle
 
     public override async UniTask EnterScene(CancellationToken token)
     {
-        _playPrefs = Prefs.Get<PlayPrefs>();
-
-        // 로비에서 넘어온 월드 생성 요청이 있으면, 로딩 화면(전환 오버레이)을 유지한 채
-        // 월드 생성이 끝날 때까지 여기서 대기합니다.
-        // (SceneManagerEx가 EnterScene을 await한 뒤에야 오버레이를 내리므로 자연스럽게 동작)
-        await GenerateWorldIfRequested(token);
-
-        StartGame(_playPrefs.Stage.Value);
-    }
-    /// <summary>
-    /// 추가된 부분
-    /// </summary>
-    /// <param name="token"></param>
-    /// <returns></returns>
-    private async UniTask GenerateWorldIfRequested(CancellationToken token)
-    {
-        if (!WorldGenRequest.HasRequest) return;
-
-        UI_Popup_Loading loadingPopup = await Extensions.ShowPopup<UI_Popup_Loading>(clickGuard: true, token: token);
-
-        await UniTask.WaitUntil(() => WorldGenManager.Instance != null, cancellationToken: token);
-        WorldGenManager worldGen = WorldGenManager.Instance;
-
-        Action<float, string> handler = (value, label) =>
-        {
-            if (loadingPopup != null)
-            {
-                loadingPopup.SetProgress(value, label);
-            }
-        };
-
-        worldGen.OnProgress += handler;
-
-        try
-        {
-            WorldGenRequest.Data req = WorldGenRequest.Consume();
-            await worldGen.GenerateWorld(req.Branch, req.Loop, req.Seed, req.Size, token);
-        }
-        finally
-        {
-            worldGen.OnProgress -= handler;
-            if (loadingPopup != null) loadingPopup.Close();
-        }
+        await StartGame();
     }
 
     public override void ExitScene()
     {
-        return;
+        // 게임 루프 이벤트 정리
+        Main.Loop.ResetGameEvent();
     }
+
+    #endregion
+
+    #region Game Flow
+
+    /// <summary>
+    /// 게임 시작 흐름. 맵 생성이 온전히 끝난 뒤 플레이어 소환까지 진행한다.
+    /// (플레이어 소환과 StartRegion 배치는 WorldGen 내부에서 처리됨)
+    /// </summary>
+    public async UniTask StartGame()
+    {
+        CancellationToken token = Main.Scene.CurrentToken;
+
+        // #1. 맵 생성 단계 — WorldGen 매니저를 동적 생성 (씬에 미리 배치할 필요 없음)
+        GameState = GameState.World;
+
+        if (WorldGenManager.Instance == null)
+        {
+            // 디렉터는 Start()에서 자동 부착되고, WorldSettings는 Addressable로 self-init 됨
+            new GameObject(nameof(WorldGenManager)).AddComponent<WorldGenManager>();
+        }
+
+        // WorldGenManager.Start()의 WorldSettings(Addressable) 로드 완료까지 대기
+        await UniTask.WaitUntil(() => WorldGenManager.Instance != null, cancellationToken: token);
+        await UniTask.WaitUntil(() => WorldGenManager.Instance.WorldSettings != null, cancellationToken: token);
+
+        // #2. 맵 로드/생성
+        //     - 저장된 월드 데이터가 있으면 로드
+        //     - 없으면 새 맵을 자동 생성 (WorldGen 내부에서 맵 생성 + 플레이어 소환까지 완료)
+        // TODO: 저장 시스템 구현 후 분기 조건 교체
+        bool hasSavedWorld = false;
+
+        if (hasSavedWorld)
+        {
+            // TODO: 저장된 월드 데이터 로드 후 플레이어 배치
+        }
+        else
+        {
+            // #3. 플레이어 생성 단계 — 맵 생성 (WorldGen 내부에서 플레이어 소환까지 완료)
+            GameState = GameState.Player;
+
+            if (WorldGenRequest.HasRequest)
+            {
+                // 로비(UI_Popup_WorldGen)에서 확정한 옵션·시드로 생성
+                WorldGenRequest.Data req = WorldGenRequest.Consume();
+                await WorldGenManager.Instance.GenerateWorld(
+                    req.Branch, req.Loop, req.Seed, req.Size, token);
+            }
+            else
+            {
+                // 로비를 거치지 않고 직접 진입한 경우(에디터 테스트 등) 기본 옵션으로 새 맵 자동 생성
+                await WorldGenManager.Instance.GenerateWorldFromUI(
+                    WorldBranchSetting.Default,
+                    WorldLoopSetting.Default);
+            }
+        }
+
+        // 여기 도달 = 맵 생성 + 플레이어 소환 완료 → 게임 진행 시작
+        GameProcessing = GameProcessing.Processing;
+        GameState = GameState.Playing;
+
+        // TODO: 소환된 플레이어가 자신의 HUD(UI_Hud_Game)를 띄우는 단계 (다음 작업)
+    }
+
+    /// <summary>게임 오버 처리. (UI_Editor 및 상태 전환에서 호출)</summary>
+    public void FailGame()
+    {
+        // TODO: 게임 오버 연출 및 후처리
+    }
+
+    #endregion
 }
 
 public enum GameState
 {
     None = -1,
-    Ready = 0,
-    InTutorial,
-    Playing,
-    Success,
-    Failed,
-    Waiting, // Success, Fail
+    World = 0,   // 맵 생성중
+    Player,      // 플레이어 생성중
+    Check,       // 게임 시작 전 최종 초기화중
+    Ready,       // 준비 완료
+    Playing,     // 게임 진행중
+    InTutorial,  // 튜토리얼 진행중
+    Failed,      // 게임 오버 (사망)
 }
 
 public enum GameProcessing

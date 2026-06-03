@@ -65,8 +65,8 @@ public class UI_LoadingCanvas : UI_Popup
             onChangeProgress?.Invoke(_showTime / LoadingTime);
         }
 
-        Main.Scene.ChangeScene("GameScene");
-        
+        Main.Scene.ChangeScene("LobbyScene");
+
         // 첫 세션 타임에서 하루가 지난 시점에서 앱 오픈 광고 실행
         if (_playPrefs.FirstSessionTime.GetElapsedTime() > 24 * 60f)
         {

@@ -41,6 +41,11 @@ public class LoadingManager : CoreManager
 
         if (Main.IsEditorMode) return;
 
+        // 부팅 로딩 → LobbyScene 전환은 InitScene에서 시작했을 때만 수행한다.
+        // (테스트 씬 등 다른 씬에서 PlayMode를 시작하면 부팅 로딩을 띄우지 않고 그 씬을 그대로 유지)
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != "InitScene") return;
+
+        // 부팅 로딩 화면(진행률 로딩바). 로딩 완료 시 LobbyScene으로 전환된다.
         Extensions.ShowScreen<UI_Screen_StartLoading>();
     }
 

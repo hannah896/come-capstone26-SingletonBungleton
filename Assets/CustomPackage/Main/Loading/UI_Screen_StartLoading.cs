@@ -93,13 +93,7 @@ public class UI_Screen_StartLoading : UI_Screen
     {
         onLoadingComplete?.Invoke();
 
-        // 첫 세션 타임에서 하루가 지난 시점에서 앱 오픈 광고 실행
-        if (_playPrefs.FirstSessionTime.GetElapsedTime() > 24 * 60f)
-        {
-            //Main.Ads.ShowAppOpenAd();
-        }
-
-        Main.Scene.ChangeScene("GameScene");
+        Main.Scene.ChangeScene("LobbyScene");
         FadeOutLoading();
     }
 

@@ -96,7 +96,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _itemSO: {fileID: 11400000, guid: 39463f4bc81ae344aba67fa74226e2ef, type: 2}
-  stackCount: 99
+  stackCount: 1
+  _torchLight: {fileID: 0}
 --- !u!1 &947731511383944509
 GameObject:
   m_ObjectHideFlags: 0

@@ -15,10 +15,11 @@ MonoBehaviour:
   itemID: Wood_Plank
   itemName: "\uC7A5\uC791"
   description: "\uB098\uBB34\uC790\uC6D0_\uC7A5\uC791\uC785\uB2C8\uB2E4."
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 08b36a0cc434bdb409330930b64da63f, type: 3}
   prefab: {fileID: 3731413996719802003, guid: 4ca7088b98bfd774a87cd730880bfb21, type: 3}
   itemType: 2
   survivalToolType: 0
+  harvestableResources: 
   combatGearType: 0
   resourceType: 2
   bootyType: 0
@@ -28,9 +29,17 @@ MonoBehaviour:
   equipSlot: 0
   hasDurability: 0
   maxDurability: 0
+  costPerDurability: 1
   attackDamage: 0
   attackRange: 0
   defense: 0
   hungerRestore: 0
   healthRestore: 0
   egoRestore: 0
+  isPlaceable: 0
+  placementPrefab: {fileID: 0}
+  placementFootprint: {x: 1, y: 1}
+  placementPivotOffset: {x: 0, y: 0, z: 0}
+  placementSnapToGrid: 1
+  placementCheckHeight: 2
+  placementCheckCenterOffset: {x: 0, y: 0, z: 0}

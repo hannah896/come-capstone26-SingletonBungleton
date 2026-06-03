@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 /// <summary>
 /// TODO: 나중에 필요한 경우 실행 함수들 void -> bool 
@@ -33,18 +34,25 @@ public interface IInteractable
 // 데미지 컨텍스트
 public readonly struct DamageContext
 {
-    //  데미지를 가하는 주체
     public GameObject Instigator { get; }
     public Vector3 Point { get; }
     public int Amount { get; }
     public string ToolId { get; }
+    /// <summary>도구 종류 (자원 노드의 requiredTool 체크에 사용)</summary>
+    public ActionType ActionType { get; }
+    /// <summary>이 도구로 채집 가능한 노드 타입 목록 (null 또는 빈 목록이면 제한 없음)</summary>
+    public IReadOnlyList<ResourceNodeType> HarvestableNodeTypes { get; }
 
-    public DamageContext(GameObject instigator, Vector3 point, int amount, string toolId)
+    public DamageContext(GameObject instigator, Vector3 point, int amount, string toolId,
+                         ActionType actionType = ActionType.None,
+                         IReadOnlyList<ResourceNodeType> harvestableNodeTypes = null)
     {
         Instigator = instigator;
         Point = point;
         Amount = amount;
         ToolId = toolId;
+        ActionType = actionType;
+        HarvestableNodeTypes = harvestableNodeTypes;
     }
 }
 //  데미지 적용 인터페이스

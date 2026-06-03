@@ -2,10 +2,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// 크래프팅 로직 매니저.
-/// Player.Start() 또는 UI에서 Bind(playerInventory)를 호출해 인벤토리와 연결한다.
-/// </summary>
 public class CraftingManager : MonoBehaviour
 {
     public static CraftingManager Instance { get; private set; }
@@ -14,27 +10,60 @@ public class CraftingManager : MonoBehaviour
     public List<RecipeDataSO> allRecipes = new();
 
     private PlayerInventory inventory;
+    private readonly HashSet<string> learnedRecipes = new();
+    private CraftStation nearbyStation = CraftStation.None;
+
+    private const string LearnedPrefKey = "CraftingManager_Learned";
 
     public event Action OnCraftingChanged;
-
     public event Action<RecipeDataSO, ItemDataSO, int> OnCrafted;
 
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
+        LoadLearnedRecipes();
     }
 
-    /// <summary>인벤토리 연결. Player가 초기화된 후 호출한다.</summary>
     public void Bind(PlayerInventory playerInventory)
     {
         inventory = playerInventory;
     }
 
-    /// <summary>재료가 충분한지 확인한다.</summary>
+    // ── 스테이션 ────────────────────────────────────────────────
+
+    /// <summary>플레이어가 작업대에 입장/퇴장할 때 호출한다.</summary>
+    public void SetNearbyStation(CraftStation station)
+    {
+        nearbyStation = station;
+        OnCraftingChanged?.Invoke();
+    }
+
+    public CraftStation GetNearbyStation() => nearbyStation;
+
+    // ── 레시피 잠금/해금 ─────────────────────────────────────────
+
+    /// <summary>이 레시피를 제작 가능한 상태인지 확인 (재료와 무관하게 스테이션/해금 조건만).</summary>
+    public bool IsUnlocked(RecipeDataSO recipe)
+    {
+        if (recipe.requiredStation == CraftStation.None) return true;
+        if (learnedRecipes.Contains(recipe.name)) return true;
+        return nearbyStation >= recipe.requiredStation;
+    }
+
+    /// <summary>잠겨 있는 레시피인지 (스테이션 없고 미해금).</summary>
+    public bool IsLocked(RecipeDataSO recipe) => !IsUnlocked(recipe);
+
+    /// <summary>이 레시피를 이전에 프로토타입한 적 있는지.</summary>
+    public bool IsLearned(RecipeDataSO recipe) =>
+        recipe.requiredStation == CraftStation.None || learnedRecipes.Contains(recipe.name);
+
+    // ── 크래프팅 로직 ────────────────────────────────────────────
+
     public bool CanCraft(RecipeDataSO recipe)
     {
         if (recipe == null || recipe.resultItem == null || inventory == null) return false;
+        if (IsLocked(recipe)) return false;
 
         foreach (var ingredient in recipe.ingredients)
         {
@@ -49,10 +78,6 @@ public class CraftingManager : MonoBehaviour
         return true;
     }
 
-    /// <summary>
-    /// 크래프팅 실행. 성공 시 재료 소모 후 결과 아이템을 인벤토리에 추가.
-    /// 인벤토리가 가득 찬 경우 재료를 반환하고 false를 돌려준다.
-    /// </summary>
     public bool Craft(RecipeDataSO recipe)
     {
         if (!CanCraft(recipe)) return false;
@@ -70,23 +95,37 @@ public class CraftingManager : MonoBehaviour
         }
         else
         {
+            // 스테이션이 필요했던 레시피는 최초 제작 시 영구 해금
+            if (recipe.requiredStation != CraftStation.None && !learnedRecipes.Contains(recipe.name))
+            {
+                learnedRecipes.Add(recipe.name);
+                SaveLearnedRecipes();
+                Debug.Log($"[크래프팅] {recipe.recipeName} 레시피 해금됨");
+            }
+
             Debug.Log($"[크래프팅] {recipe.recipeName} 제작 완료");
+            OnCrafted?.Invoke(recipe, recipe.resultItem, recipe.resultAmount);
         }
 
         OnCraftingChanged?.Invoke();
         return success;
     }
 
-    /// <summary>카테고리별 레시피 목록 반환.</summary>
-    public List<RecipeDataSO> GetRecipesByCategory(RecipeCategory category)
+    // ── 레시피 조회 ──────────────────────────────────────────────
+
+    /// <param name="onlyCraftable">true면 현재 재료가 충분한 것만 반환.</param>
+    public List<RecipeDataSO> GetRecipesByCategory(RecipeCategory category, bool onlyCraftable = false)
     {
         var result = new List<RecipeDataSO>();
         foreach (var recipe in allRecipes)
-            if (recipe.category == category) result.Add(recipe);
+        {
+            if (category != RecipeCategory.All && recipe.category != category) continue;
+            if (onlyCraftable && !CanCraft(recipe)) continue;
+            result.Add(recipe);
+        }
         return result;
     }
 
-    /// <summary>현재 인벤토리 기준 제작 가능한 레시피만 반환.</summary>
     public List<RecipeDataSO> GetCraftableRecipes()
     {
         var result = new List<RecipeDataSO>();
@@ -95,7 +134,6 @@ public class CraftingManager : MonoBehaviour
         return result;
     }
 
-    /// <summary>결과 아이템으로 레시피를 검색한다.</summary>
     public RecipeDataSO GetRecipeByResult(ItemDataSO resultItem)
     {
         foreach (var recipe in allRecipes)
@@ -103,11 +141,32 @@ public class CraftingManager : MonoBehaviour
         return null;
     }
 
+    // ── 저장/불러오기 ─────────────────────────────────────────────
+
+    private void SaveLearnedRecipes()
+    {
+        PlayerPrefs.SetString(LearnedPrefKey, string.Join(",", learnedRecipes));
+        PlayerPrefs.Save();
+    }
+
+    private void LoadLearnedRecipes()
+    {
+        string saved = PlayerPrefs.GetString(LearnedPrefKey, string.Empty);
+        if (string.IsNullOrEmpty(saved)) return;
+        foreach (var entry in saved.Split(','))
+            if (!string.IsNullOrEmpty(entry)) learnedRecipes.Add(entry);
+    }
+
+    /// <summary>개발용: 모든 학습 데이터 초기화.</summary>
+    [ContextMenu("해금 데이터 초기화")]
+    public void ClearLearnedRecipes()
+    {
+        learnedRecipes.Clear();
+        PlayerPrefs.DeleteKey(LearnedPrefKey);
+        OnCraftingChanged?.Invoke();
+    }
+
 #if UNITY_EDITOR
-    /// <summary>
-    /// 에디터 전용: 프로젝트 내 모든 RecipeDataSO를 allRecipes에 자동 로드한다.
-    /// CraftingManager 컴포넌트 우클릭 → "모든 레시피 자동 로드" 로 실행.
-    /// </summary>
     [ContextMenu("모든 레시피 자동 로드")]
     public void LoadAllRecipesEditor()
     {
@@ -125,7 +184,6 @@ public class CraftingManager : MonoBehaviour
 
     private void OnValidate()
     {
-        // 씬/컴포넌트가 에디터에서 열릴 때 자동 갱신
         if (allRecipes.Count == 0)
             LoadAllRecipesEditor();
     }

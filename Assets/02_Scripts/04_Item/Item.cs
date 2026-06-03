@@ -25,8 +25,6 @@ public class Item : MonoBehaviour
     /// <summary>SO 참조. itemData가 있으면 거기서, 없으면 _itemSO 직접 반환.</summary>
     public ItemDataSO ItemDataSO => itemData?.data ?? _itemSO;
 
-    private float _createdTime;
-
     private void Awake()
     {
         Init();
@@ -42,7 +40,6 @@ public class Item : MonoBehaviour
 
         stackCount = Mathf.Max(1, stackCount);
         itemData = ItemData.CreateFromSO(_itemSO, stackCount);
-        _createdTime = Time.time;
 
         gameObject.layer = ItemTypeToLayer(_itemSO.itemType);
 
@@ -101,7 +98,11 @@ public class Item : MonoBehaviour
         _itemSO = so;
         stackCount = 1;
         itemData = ItemData.CreateFromSO(so, stackCount);
-        _createdTime = Time.time;
         gameObject.layer = ItemTypeToLayer(so.itemType);
+
+        Collider col = GetComponent<Collider>();
+        if (col != null) col.isTrigger = true;
+
+        BindTorchLight();
     }
 }

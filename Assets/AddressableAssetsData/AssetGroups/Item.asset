@@ -15,6 +15,16 @@ MonoBehaviour:
   m_GroupName: Item
   m_GUID: 32f67073428d6154e87a876b6c0ecdfa
   m_SerializeEntries:
+  - m_GUID: 0629e171a501f4346b4804f6e1cd9e73
+    m_Address: Food_CookedEgg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 0b0fc605e989f3f43832169420eb496f
+    m_Address: Resource_Berry
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 14159bf9375720745b7db5cf8b2f5cb4
     m_Address: Tool_Axe_Gold
     m_ReadOnly: 0
@@ -25,13 +35,53 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3700a27fbb9b3294cbf0d5fd13a83831
+    m_Address: Food_CookedMeat2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 39aba271fa16c5b4e9f3ce5a2e0db683
     m_Address: Tool_Hammer_Stone
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3a83f5e3969b30848909267662094b10
+    m_Address: Resource_Wood_Charcoal
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3b5ae01959c9d254dac78ae425cf85e4
+    m_Address: Booty_Leather
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 40576fc570b22894fb147afcbb6ea60c
+    m_Address: Booty_Horn
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 427752b4951672341aae668c15269636
     m_Address: Tool_FishingRod
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 43186e8a344219746a4fc2625e321839
+    m_Address: Booty_Egg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4c63637817e991e4a8415243d3baca22
+    m_Address: Armor_Chestplate
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4ca7088b98bfd774a87cd730880bfb21
+    m_Address: Resource_Wood_Plank
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 51f24b103ebc56a4a8b2e3435d1f6e80
+    m_Address: Food_CookedMeat1
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -45,8 +95,53 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6403a498658558b40a51f0a3aa9dd6f5
+    m_Address: Resource_Plant_Grass
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6567f27b049994c43bd0ee65badaca11
+    m_Address: Booty_Fish
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 65fe1a7058af5f747bb2864fd41cf2f0
+    m_Address: Weapon_Spear
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6bcac75bfeaaafc42a1e39a298060882
+    m_Address: Resource_Mineral_Coal
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 837f2e78cd4169d4382f6e15f1354d33
+    m_Address: Resource_Mineral_Gold
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 85adbff4ee96e0e4da684c7a27a49dbc
     m_Address: Tool_Pickaxe_Iron
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9415e2b532c743745889e8e76738a981
+    m_Address: Booty_Meat1
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9e8825677fc895d419af53a07717203c
+    m_Address: Armor_Helmet
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a2c6d75b65c27024c9f5833ed11e82a5
+    m_Address: Resource_Mineral_Iron
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a98462d218708ca408bfadf004f7e8e5
+    m_Address: Booty_Meat3
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -55,8 +150,33 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b104807b5fd8a18429aa3084295c497d
+    m_Address: Resource_Mineral_Flint
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bf4ca2cb6c14d1b4583f4196a9ef4b9a
+    m_Address: Food_CookedMeat3
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bfa8fc4155788e64abd2bce6ada98def
+    m_Address: Booty_Feather
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bfd2819a276da864ab3f272d424e04e5
+    m_Address: Booty_Meat2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: c4d5c9e3be52a0e4296a1f2a9d7661a4
     m_Address: Tool_Pickaxe_Gold
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c5f9676423053e7439c6348cca072e12
+    m_Address: Food_RoastedBerry
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -75,13 +195,68 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d3657af4ea132f644812f3399079c80b
+    m_Address: Resource_Mineral_Stone
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d52b8fec3a8418545bbe5b05e07ec9ff
+    m_Address: Weapon_Bow
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: d6f1a1fe544c5044b8fab84ed004468b
     m_Address: Tool_Shovel_Iron
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: decbc6357436d154e9e0afe9a9df1c32
+    m_Address: Resource_Wood_Branch
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e69c19b2b45ba6046ba04bef1c56c385
+    m_Address: Armor_Shield
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ec526efbe3d7afb49981f535aef51076
+    m_Address: Weapon_Sword
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: fc5e71b6dadcc5a45b0a1ec18a9a0ae8
     m_Address: Tool_Torch
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 550896e55cf888149bf733be49197743
+    m_Address: DroppedItem_Base
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bf278275138ab274b8bb5185a33e519c
+    m_Address: Gold_Object
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e72d358e838a0d544bc559132294f5f2
+    m_Address: Grass_Object
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7e4a4a94890860245972ad5c07e4a26e
+    m_Address: Stone_Object
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a9ac6438f9f9dec47bea0a8475fdebed
+    m_Address: Tree_Object
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9dbefc22cc191c9439f079d99d9b2354
+    m_Address: Tool_Bonfire
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

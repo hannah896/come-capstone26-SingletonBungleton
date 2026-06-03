@@ -15,10 +15,11 @@ MonoBehaviour:
   itemID: Mineral_Iron
   itemName: "\uCCA0"
   description: "\uAD11\uC11D\uC790\uC6D0_\uCCA0\uC785\uB2C8\uB2E4."
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: ea03aa7be8abe7048872008e1914c1b7, type: 3}
   prefab: {fileID: 1799256547270814821, guid: a2c6d75b65c27024c9f5833ed11e82a5, type: 3}
   itemType: 2
   survivalToolType: 0
+  harvestableResources: 
   combatGearType: 0
   resourceType: 8
   bootyType: 0
@@ -35,3 +36,10 @@ MonoBehaviour:
   hungerRestore: 0
   healthRestore: 0
   egoRestore: 0
+  isPlaceable: 0
+  placementPrefab: {fileID: 0}
+  placementFootprint: {x: 1, y: 1}
+  placementPivotOffset: {x: 0, y: 0, z: 0}
+  placementSnapToGrid: 1
+  placementCheckHeight: 2
+  placementCheckCenterOffset: {x: 0, y: 0, z: 0}

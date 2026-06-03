@@ -23,14 +23,12 @@ public class MainCameraObject : InitBehaviour
     }
 
     private Camera _camera;
-    private SpriteRenderer _spriteBG;
 
     public override bool Initialize()
     {
         if (!base.Initialize()) return false;
-        
+
         Camera = GetComponentInChildren<Camera>();
-        _spriteBG = GetComponentInChildren<SpriteRenderer>();
         if (Camera == null)
         {
             Debug.LogError("Camera not found");
@@ -50,7 +48,4 @@ public class MainCameraObject : InitBehaviour
     public void RemoveCameraChangeAction(Action<Camera> action) => OnChangeCamera -= action;
     public void ClearCameraChangeAction() => OnChangeCamera = null;
     public void SetColorCameraBG(Color color) => Camera.backgroundColor = color;
-    public void ActiveSpriteBG(bool active) => _spriteBG.enabled = active;
-    public void SetSpriteBG(Sprite sprite) => _spriteBG.sprite = sprite;
-    public void SetSpriteColor(Color color) => _spriteBG.color = color;
 }

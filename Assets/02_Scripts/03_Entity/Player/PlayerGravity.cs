@@ -6,7 +6,7 @@ using UnityEngine;
 public class PlayerGravity
 {
     // 설정값
-    private readonly float gravityAcceleration = -20f;
+    private readonly float gravityAcceleration = -32f;
     private readonly float maxFallSpeed = -40f;
     private readonly float groundedPullDown = -2f;
 

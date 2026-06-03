@@ -10,7 +10,7 @@ public class Item_SurvivalTool : ItemData_Equipable
 {
     public SurvivalToolType survivalToolType;
     public float CostPerDurability => data.costPerDurability;
-    public IReadOnlyList<ResourceType> HarvestableResources => data.harvestableResources;
+    public IReadOnlyList<ResourceNodeType> HarvestableNodeTypes => data.harvestableNodeTypes;
 
     public event Action<bool> OnTorchToggled;
     public bool IsLit => _isLit;

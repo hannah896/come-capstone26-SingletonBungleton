@@ -97,7 +97,12 @@ public class SceneManagerEx : ContentManager
 
         try
         {
-            await Main.UI.ShowScreenAsync<UI_Screen_Transition>();
+            // GameScene 전환만 WorldGen 진행률 게이지(UI_Screen_Transition)를 띄우고,
+            // 그 외 전환(예: Init→Lobby)은 단순 페이드(UI_Screen_Fade)로 처리한다.
+            if (sceneName == "GameScene")
+                await Main.UI.ShowScreenAsync<UI_Screen_Transition>();
+            else
+                await Main.UI.ShowScreenAsync<UI_Screen_Fade>();
             await UniTask.Delay(200, cancellationToken: token);
 
             Cleanup();
@@ -138,16 +143,21 @@ public class SceneManagerEx : ContentManager
     // 이전 씬들을 언로드
     private async UniTask UnloadOldScenes(string currentSceneName, CancellationToken token)
     {
+        // 언로드 대상을 먼저 수집한다.
+        // await UnloadSceneAsync로 씬이 하나씩 줄어드는데 루프가 캡처한 sceneCount를 계속 쓰면
+        // GetSceneAt(i)가 범위를 벗어나 IndexOutOfRangeException("Scene index N is out of range")이 난다.
+        var targets = new System.Collections.Generic.List<Scene>();
         int sceneCount = SceneManager.sceneCount;
         for (int i = 0; i < sceneCount; i++)
         {
             Scene scene = SceneManager.GetSceneAt(i);
             if (scene.name == currentSceneName || scene.name == "InitScene") continue;
+            if (scene.isLoaded) targets.Add(scene);
+        }
 
-            if (scene.isLoaded)
-            {
-                await SceneManager.UnloadSceneAsync(scene).ToUniTask(cancellationToken: token);
-            }
+        foreach (Scene scene in targets)
+        {
+            await SceneManager.UnloadSceneAsync(scene).ToUniTask(cancellationToken: token);
         }
     }
 

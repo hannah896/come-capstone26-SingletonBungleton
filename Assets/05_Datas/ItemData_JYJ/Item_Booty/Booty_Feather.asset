@@ -15,10 +15,11 @@ MonoBehaviour:
   itemID: Feather
   itemName: "\uAE43\uD138"
   description: "\uB3D9\uBB3C\uC774 \uB4DC\uB78D\uD55C \uAE43\uD138\uC785\uB2C8\uB2E4."
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d57299a347284e147a0a09fed40b478b, type: 3}
   prefab: {fileID: 3204618846965255845, guid: bfa8fc4155788e64abd2bce6ada98def, type: 3}
   itemType: 3
   survivalToolType: 0
+  harvestableResources: 
   combatGearType: 0
   resourceType: 0
   bootyType: 6
@@ -28,9 +29,17 @@ MonoBehaviour:
   equipSlot: 0
   hasDurability: 0
   maxDurability: 100
+  costPerDurability: 1
   attackDamage: 0
   attackRange: 0
   defense: 0
   hungerRestore: 0
   healthRestore: 0
   egoRestore: 0
+  isPlaceable: 0
+  placementPrefab: {fileID: 0}
+  placementFootprint: {x: 1, y: 1}
+  placementPivotOffset: {x: 0, y: 0, z: 0}
+  placementSnapToGrid: 1
+  placementCheckHeight: 2
+  placementCheckCenterOffset: {x: 0, y: 0, z: 0}

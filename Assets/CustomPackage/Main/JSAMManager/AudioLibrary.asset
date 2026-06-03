@@ -13,11 +13,18 @@ MonoBehaviour:
   m_Name: AudioLibrary
   m_EditorClassIdentifier: com.Brogrammist.JSAM::JSAM.AudioLibrary
   soundCategories:
-  - 
+  - Walk
+  - UI
   musicCategories:
-  - 
-  Sounds: []
-  Music: []
+  - BGM
+  Sounds:
+  - {fileID: 11400000, guid: d32e2d980f7627c499cf6aa2469307ed, type: 2}
+  - {fileID: 11400000, guid: 9353af0406128ac47a25ff629a89fe71, type: 2}
+  - {fileID: 11400000, guid: 5842858484e744340a2dbaa032fd8c84, type: 2}
+  - {fileID: 11400000, guid: 5188ecd482bd99e458da7c756290bf25, type: 2}
+  - {fileID: 11400000, guid: f28371ab8d284a047b1c0ce52103b128, type: 2}
+  Music:
+  - {fileID: 11400000, guid: ac7e7dcb1aa399f42b361b9898075bbd, type: 2}
   useCustomNames: 0
   generatedName: AudioLibrary
   musicEnum: 
@@ -29,10 +36,19 @@ MonoBehaviour:
   soundNamespace: 
   soundNamespaceGenerated: 
   soundCategoriesToList:
-  - name: 
-    files: []
+  - name: Walk
+    files:
+    - {fileID: 11400000, guid: d32e2d980f7627c499cf6aa2469307ed, type: 2}
+    - {fileID: 11400000, guid: 9353af0406128ac47a25ff629a89fe71, type: 2}
+    - {fileID: 11400000, guid: 5842858484e744340a2dbaa032fd8c84, type: 2}
+    - {fileID: 11400000, guid: 5188ecd482bd99e458da7c756290bf25, type: 2}
+    foldout: 1
+  - name: UI
+    files:
+    - {fileID: 11400000, guid: f28371ab8d284a047b1c0ce52103b128, type: 2}
     foldout: 1
   musicCategoriesToList:
-  - name: 
-    files: []
+  - name: BGM
+    files:
+    - {fileID: 11400000, guid: ac7e7dcb1aa399f42b361b9898075bbd, type: 2}
     foldout: 1

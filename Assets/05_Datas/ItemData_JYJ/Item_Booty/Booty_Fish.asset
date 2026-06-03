@@ -15,10 +15,11 @@ MonoBehaviour:
   itemID: Fish
   itemName: "\uC0DD\uC120"
   description: "\uC0DD\uC120"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 0630578c388b6af41b5d529c86e92ba5, type: 3}
   prefab: {fileID: 5241942205852143392, guid: 6567f27b049994c43bd0ee65badaca11, type: 3}
   itemType: 3
   survivalToolType: 0
+  harvestableResources: 
   combatGearType: 0
   resourceType: 0
   bootyType: 4
@@ -35,3 +36,10 @@ MonoBehaviour:
   hungerRestore: 0
   healthRestore: 0
   egoRestore: 0
+  isPlaceable: 0
+  placementPrefab: {fileID: 0}
+  placementFootprint: {x: 1, y: 1}
+  placementPivotOffset: {x: 0, y: 0, z: 0}
+  placementSnapToGrid: 1
+  placementCheckHeight: 2
+  placementCheckCenterOffset: {x: 0, y: 0, z: 0}
