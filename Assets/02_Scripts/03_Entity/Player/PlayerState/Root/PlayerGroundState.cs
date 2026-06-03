@@ -52,14 +52,7 @@ public class PlayerLocomotionState : PlayerRootStateBase
             return;
         }
 
-        // 공격 입력
-        if (Input.AttackPressed)
-        {
-            Machine.ChangeState(new PlayerAttackState(Machine));
-            return;
-        }
-
-        // 도구 사용 (우클릭) → 장착 도구 타입에 맞는 ActionState 전환
+        // 도구 사용 (좌클릭) → 장착 도구 타입에 맞는 ActionState 전환
         if (Input.ToolUsePressed && Motor.IsGrounded
             && !(SubStateMachine.CurrentState is PlayerAirState))
         {

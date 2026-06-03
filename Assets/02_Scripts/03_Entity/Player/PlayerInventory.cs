@@ -77,7 +77,10 @@ public class PlayerInventory : MonoBehaviour
             MoveSelectedSlot(inputData.QuickSlotScrollDelta);
 
         if (inputData.PickupPressed)
-            TryPickupNearest();
+        {
+            if (!TryPickupFocused())
+                TryPickupNearest();
+        }
 
         if (inputData.EquipSelectedPressed)
             EquipSelectedSlot();
@@ -518,6 +521,27 @@ public class PlayerInventory : MonoBehaviour
             UnsubscribeEquippedItemInstance(slotsToClear[i]);
     }
 
+
+    private bool TryPickupFocused()
+    {
+        Camera camera = Camera.main;
+        if (camera == null) return false;
+
+        Ray ray = camera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        if (!Physics.Raycast(ray, out RaycastHit hit, pickupRadius, pickupLayer, QueryTriggerInteraction.Collide))
+            return false;
+
+        if (!TryGetPickupCandidate(hit.collider, out PickupCandidate candidate))
+            return false;
+
+        bool added = AddItem(candidate.ItemData, candidate.Amount, out int remainingAmount);
+        ApplyPickupResult(candidate, remainingAmount);
+
+        if (added || remainingAmount <= 0)
+            Destroy(candidate.GameObject);
+
+        return true;
+    }
 
     private void TryPickupNearest()
     {

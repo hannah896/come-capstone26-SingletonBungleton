@@ -55,6 +55,59 @@
 
 **검증:** `uloop compile` 에러 0건(경고는 전부 기존). **미검증**: PlayMode에서 크로스헤어 강조·채취 동작은 아직 런타임 확인 안 함. **참고**: `UI_Image_Focus`의 `Raycast Target`은 끄는 게 좋음(현재 켜짐, 동작엔 영향 없으나 불필요)
 
+### 6. 입력 재배치 — 채취=좌클릭, 시야 회전=우클릭 홀드 (RotateView 액션 신설)
+
+**파일:** `Assets/InputSystem_Actions.inputactions`(+생성 `InputSystem_Actions.cs` 재임포트), `PlayerInputData.cs`, `PlayerInputHandler.cs`, `PlayerFirstPersonCameraController.cs`, `PlayerGroundState.cs`
+
+- 최종 매핑: **채취(`ToolUse`) = 좌클릭(`<Mouse>/leftButton`)**, **시야 회전(`RotateView`) = 우클릭 홀드(`<Mouse>/rightButton`)**
+- 시야 회전 게이트: `OnLateUpdateLoop`가 `LookInput`을 매 프레임 무조건 적용하던 것을 `look = RotateViewHeld ? LookInput : Vector2.zero`로 변경(우클릭 안 누르면 시야 고정 + 커서 자유). `RotateViewHeld`는 연속 입력이라 `SuppressAllInputs`에서만 리셋
+- **정석(New Input System InputActions 흐름)**: `RotateView`(Button) 액션 신설 → `AssetDatabase.ImportAsset(ForceUpdate)`로 C# 재생성 → `InputActions_PlayerInputHandler`에서 `RotateView.started`/`canceled` → `PlayerInputData.RotateViewHeld` → 카메라 컨트롤러가 읽음
+- 좌클릭이 채취가 되면서 기존 `Attack`(좌클릭)과 겹쳐 `PlayerLocomotionState`에서 공격 분기가 먼저 잡혀 채취가 안 되는 문제 → **공격 분기 제거**(공격은 어차피 미구현 빈 껍데기·보류). `PlayerAttackState` 클래스 자체는 추후 위해 보존
+- **폐기한 시행착오**: 좌클릭 시야회전(공격 충돌) → `Keyboard.current.ctrlKey` 직접 폴링(InputActions 추상화 위배, 사용자 지적) → Ctrl(leftCtrl) 액션 → 최종 우클릭. 바인딩은 `.cs`에 임베드되므로 변경 때마다 재임포트 필요
+- **보류**: 공격(우클릭 통합/조준 대상 분기)은 `PlayerAttackState` 미구현이라 다음에
+
+**검증:** `uloop compile` 에러 0·경고 0. **미검증**: PlayMode에서 좌클릭 채취·우클릭 홀드 시야 회전 동작은 아직 런타임 확인 안 함.
+
+### 7. 설정 팝업 — 오디오/입력 탭 분리 + 마우스 감도 연동
+
+**파일:** `UI_Popup_SettingUI.cs`, `PlayerFirstPersonCameraController.cs`
+
+- 프리팹 구조(사용자 작성): `UI_Panel` 아래 `Menu`[Audio 버튼, Input 버튼] + `UI_AudioSetting`(Master/BGM/SFX) + `UI_InputSetting`(기본 비활성, `UI_Slider_MouseSensitivity`) + CloseBtn
+- **탭 전환**: Audio 버튼 → 오디오 패널만, Input 버튼 → 입력 패널만(`ShowAudioTab`/`ShowInputTab`이 `SetActive` 토글). `Initialize`에서 기본 오디오 탭
+- **마우스 감도**: `UI_Slider_MouseSensitivity`(0.5~10) → `PlayerFirstPersonCameraController.SetMouseSensitivity`로 즉시 반영 + `PlayerPrefs("Setting_MouseSensitivity")` 저장. 카메라는 `Bind` 시 `PlayerPrefs.GetFloat`로 로드 → **다음 실행에도 유지**(사용자 요청). 감도 키는 카메라에 `public const`로 두고 SettingUI가 공유
+- 활성 카메라는 `FindFirstObjectByType<PlayerFirstPersonCameraController>`로 찾아 반영(로비 등 카메라 없으면 PlayerPrefs만 저장, 다음 게임 시작 시 로드)
+- `SetupSlider`에 min/max 파라미터 추가(볼륨 0~1, 감도 0.5~10 공용). 모든 `[SerializeField]`는 이름 기반 `FindChild` fallback(비활성 포함이라 `UI_InputSetting`도 연결)
+
+**검증:** `uloop compile` 에러 0건. **미검증**: PlayMode에서 탭 전환·감도 반영·재시작 후 감도 유지는 아직 런타임 확인 안 함.
+
+### 8. 이동 발소리 SFX — 걷기 Walk1 / 달리기 Walk2·Walk3 교대
+
+**파일:** `PlayerWalkState.cs`, `PlayerRunState.cs`
+
+- 이동 중(`HasMoveInput`) 일정 주기로 발소리 SFX를 `Extensions.PlaySFX`로 재생
+- **걷기**: `AudioLibrarySounds.Walk1`, 0.5s 간격
+- **달리기**: `Walk2 ↔ Walk3` 번갈아(왼발/오른발 느낌), 0.3s 간격(걷기보다 빠르게)
+- 각 상태 `OnEnter`에서 `footstepTimer = interval`로 두어 진입 즉시 첫 발소리. SFX 음소거/볼륨은 JSAM·설정 UI가 그대로 적용(`JSAMManager.PlaySFX`가 `SetSFX`·`SoundVolume` 반영)
+
+**검증:** `uloop compile` 에러 0건. **미검증**: PlayMode에서 실제 발소리 재생·간격·교대는 아직 런타임 확인 안 함.
+
+### 9. 플레이어 스탯 디버그 에디터 툴 + 무적
+
+**파일:** `PlayerStatus.cs`, `Assets/02_Scripts/@Scripts/Editor/PlayerStatDebugWindow.cs`(신규)
+
+- `PlayerStatus.Invincible`(디버그 무적): `TakeDamage` 무시 + 허기로 인한 HP 감소 무시 + `IsDead => !Invincible && CurrentHp<=0`(체력 0이어도 사망 X)
+- `PlayerStatDebugWindow`(EditorWindow, 메뉴 `Tools/Player/Stat Debug`): PlayMode에서 `FindFirstObjectByType<Player>`로 활성 플레이어를 찾아 ① 무적 토글 ② HP/허기/Ego를 입력값만큼 회복(`RestoreHp/Hunger/Ego`) + 각 MAX + 모두 MAX. `OnInspectorUpdate`에서 `Repaint`로 실시간 표시
+
+### 10. 발소리 SFX가 너무 작던 문제 — 3D→2D 전환
+
+**파일:** `Assets/06_Audio/AudioSO/Sound/Walk1~4.asset`
+
+- 증상: 발소리가 너무 작게 들림
+- 원인: `Walk1~4`가 `spatialize:1`(3D) + `maxDistance:0`, 전역 `spatialSound:1`. JSAM은 `spatialBlend=1`(3D)일 때 AudioListener(메인 카메라)와 소스 거리로 감쇠하는데, `JSAMManager.PlaySFX`가 위치 없이 재생 → 소스가 원점(0,0,0)에 생기고 `maxDistance:0`이라 거리만 있으면 거의 무음
+- 수정: 발소리는 플레이어 본인 소리라 거리 감쇠 불필요 → `Walk1~4`를 `spatialize:0`(2D)로 변경(`WoodClick`은 이미 2D). 2D는 `spatialBlend=0`이라 거리·위치 무관 일정 볼륨. `AssetDatabase.Refresh`로 반영
+
+**검증:** `uloop compile` 에러 0건. **미검증**: PlayMode에서 무적·스탯 채우기·발소리 음량은 아직 런타임 확인 안 함.
+
 ---
 
 ## 2026-06-02

@@ -7,12 +7,17 @@ public class PlayerWalkState : PlayerSubStateBase
 {
     private const float rotationSpeed = 10f;
 
+    // 걷기 발소리(Walk1) 재생 주기
+    private const float footstepInterval = 1.0f;
+    private float footstepTimer;
+
     public PlayerWalkState(PlayerRootStateMachine machine) : base(machine) { }
 
     public override void OnEnter()
     {
         base.OnEnter();
         Machine.AnimData.PlayLocomotionAnimation(Machine.AnimData.AnimHashKey.Walk);
+        footstepTimer = footstepInterval; // 진입 즉시 첫 발소리
         Debug.Log("[State] Walk 진입");
     }
 
@@ -40,6 +45,14 @@ public class PlayerWalkState : PlayerSubStateBase
         Vector3 dir = CalcCameraRelativeDir(Input.MoveInput);
         Entity.Motor.SetHorizontalVelocity(dir, Entity.Stat.MoveSpeed);
         Entity.Motor.RotateToward(dir, rotationSpeed);
+
+        // 걷기 발소리(Walk1) 주기 재생
+        footstepTimer += time;
+        if (footstepTimer >= footstepInterval)
+        {
+            Extensions.PlaySFX(AudioLibrarySounds.Walk1);
+            footstepTimer = 0f;
+        }
 
         if (Input.SprintHeld)
         {

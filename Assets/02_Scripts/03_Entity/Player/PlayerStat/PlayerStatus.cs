@@ -4,6 +4,10 @@ using UnityEngine;
 public class PlayerStatus
 {
     public event Action<float> OnDamaged;
+
+    // 디버그용 무적 — 데미지/허기로 인한 체력 감소를 무시하고 체력이 0이어도 사망하지 않음
+    public bool Invincible { get; set; }
+
     #region Fields
     #region 체력
     public float MaxHp { get; private set; }
@@ -89,6 +93,8 @@ public class PlayerStatus
 
     public void TakeDamage(float damage)
     {
+        if (Invincible) return;
+
         float finalDamage = Mathf.Max(damage - Defense, 0f);
         CurrentHp = Mathf.Max(CurrentHp - finalDamage, 0f);
         if (finalDamage > 0f)
@@ -104,7 +110,7 @@ public class PlayerStatus
     {
         CurrentHunger = Mathf.Max(CurrentHunger - HungerDrain / 60f * deltaTime, 0f);
 
-        if (CurrentHunger <= 0f)
+        if (CurrentHunger <= 0f && !Invincible)
             CurrentHp = Mathf.Max(CurrentHp - HungerHPDecreaseRate * deltaTime, 0f);
     }
 
@@ -126,5 +132,5 @@ public class PlayerStatus
     public void RestoreEgo(float amount)
         => CurrentEgo = Mathf.Min(CurrentEgo + amount, MaxEgo);
 
-    public bool IsDead => CurrentHp <= 0f;
+    public bool IsDead => !Invincible && CurrentHp <= 0f;
 }
