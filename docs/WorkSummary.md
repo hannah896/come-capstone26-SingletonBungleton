@@ -80,6 +80,34 @@
 
 **검증:** `uloop compile` 에러 0건. **미검증**: PlayMode에서 탭 전환·감도 반영·재시작 후 감도 유지는 아직 런타임 확인 안 함.
 
+### 8. 이동 발소리 SFX — 걷기 Walk1 / 달리기 Walk2·Walk3 교대
+
+**파일:** `PlayerWalkState.cs`, `PlayerRunState.cs`
+
+- 이동 중(`HasMoveInput`) 일정 주기로 발소리 SFX를 `Extensions.PlaySFX`로 재생
+- **걷기**: `AudioLibrarySounds.Walk1`, 0.5s 간격
+- **달리기**: `Walk2 ↔ Walk3` 번갈아(왼발/오른발 느낌), 0.3s 간격(걷기보다 빠르게)
+- 각 상태 `OnEnter`에서 `footstepTimer = interval`로 두어 진입 즉시 첫 발소리. SFX 음소거/볼륨은 JSAM·설정 UI가 그대로 적용(`JSAMManager.PlaySFX`가 `SetSFX`·`SoundVolume` 반영)
+
+**검증:** `uloop compile` 에러 0건. **미검증**: PlayMode에서 실제 발소리 재생·간격·교대는 아직 런타임 확인 안 함.
+
+### 9. 플레이어 스탯 디버그 에디터 툴 + 무적
+
+**파일:** `PlayerStatus.cs`, `Assets/02_Scripts/@Scripts/Editor/PlayerStatDebugWindow.cs`(신규)
+
+- `PlayerStatus.Invincible`(디버그 무적): `TakeDamage` 무시 + 허기로 인한 HP 감소 무시 + `IsDead => !Invincible && CurrentHp<=0`(체력 0이어도 사망 X)
+- `PlayerStatDebugWindow`(EditorWindow, 메뉴 `Tools/Player/Stat Debug`): PlayMode에서 `FindFirstObjectByType<Player>`로 활성 플레이어를 찾아 ① 무적 토글 ② HP/허기/Ego를 입력값만큼 회복(`RestoreHp/Hunger/Ego`) + 각 MAX + 모두 MAX. `OnInspectorUpdate`에서 `Repaint`로 실시간 표시
+
+### 10. 발소리 SFX가 너무 작던 문제 — 3D→2D 전환
+
+**파일:** `Assets/06_Audio/AudioSO/Sound/Walk1~4.asset`
+
+- 증상: 발소리가 너무 작게 들림
+- 원인: `Walk1~4`가 `spatialize:1`(3D) + `maxDistance:0`, 전역 `spatialSound:1`. JSAM은 `spatialBlend=1`(3D)일 때 AudioListener(메인 카메라)와 소스 거리로 감쇠하는데, `JSAMManager.PlaySFX`가 위치 없이 재생 → 소스가 원점(0,0,0)에 생기고 `maxDistance:0`이라 거리만 있으면 거의 무음
+- 수정: 발소리는 플레이어 본인 소리라 거리 감쇠 불필요 → `Walk1~4`를 `spatialize:0`(2D)로 변경(`WoodClick`은 이미 2D). 2D는 `spatialBlend=0`이라 거리·위치 무관 일정 볼륨. `AssetDatabase.Refresh`로 반영
+
+**검증:** `uloop compile` 에러 0건. **미검증**: PlayMode에서 무적·스탯 채우기·발소리 음량은 아직 런타임 확인 안 함.
+
 ---
 
 ## 2026-06-02
