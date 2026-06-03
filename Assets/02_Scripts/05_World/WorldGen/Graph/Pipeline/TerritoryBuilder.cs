@@ -161,6 +161,8 @@ public class TerritoryBuilder : IGraphPipelineStage
             // 타일 데이터를 각 노드의 RegionData에 할당하여 소유 타일 목록 구축
             await AssignOwnedTilesToRegionsAsync();
 
+            TryAssignStartRegionSpawnTile();
+
             // 영향력 맵 생성 - 각 타일이 해안선과 영토 경계선에서 얼마나 떨어져 있는지 계산하여 영향력 값으로 저장
             await GenerateInfluenceMapAsync();
 
@@ -917,4 +919,44 @@ public class TerritoryBuilder : IGraphPipelineStage
     }
 
     #endregion
+
+    private void TryAssignStartRegionSpawnTile()
+    {
+        if (_worldSettings?.CurrentStory?.StartRegion == null) return;
+
+        RegionData startRegion = _worldSettings.CurrentStory.StartRegion;
+        Node startNode = _graphResult.Nodes.FirstOrDefault(n => n.RegionData == startRegion);
+        if (startNode == null || startNode.OwnedTiles == null || startNode.OwnedTiles.Count == 0) return;
+
+        long sumX = 0;
+        long sumY = 0;
+        foreach (Vector2Int tile in startNode.OwnedTiles)
+        {
+            sumX += tile.x;
+            sumY += tile.y;
+        }
+
+        Vector2 center = new Vector2(
+            (float)sumX / startNode.OwnedTiles.Count,
+            (float)sumY / startNode.OwnedTiles.Count
+        );
+
+        Vector2Int closest = startNode.OwnedTiles[0];
+        float bestDist = float.MaxValue;
+
+        foreach (Vector2Int tile in startNode.OwnedTiles)
+        {
+            float dx = tile.x - center.x;
+            float dy = tile.y - center.y;
+            float dist = (dx * dx) + (dy * dy);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                closest = tile;
+            }
+        }
+
+        _worldLogicData.SpawnTile = closest;
+        Debug.Log($"[TerritoryBuilder] StartRegion 스폰 타일 결정: ({closest.x}, {closest.y})");
+    }
 }

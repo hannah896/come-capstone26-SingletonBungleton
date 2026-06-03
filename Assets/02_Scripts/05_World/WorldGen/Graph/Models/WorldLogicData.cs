@@ -31,8 +31,8 @@ public class WorldLogicData
     public InfluenceData[,] CoastlineDataWorld { get; set; }     // 해안선 거리 기반 영향력 (0.4 ~ 1.2)
     public InfluenceData[,] RegionEdgeDataWorld { get; set; } // 지역 경계 거리 기반 영향력 (0.0 ~ 1.0)
 
+    public Vector2Int SpawnTile { get; set; }
 
-    
 
     public WorldLogicData(Vector2Int gridSize, int chunkSize)
     {

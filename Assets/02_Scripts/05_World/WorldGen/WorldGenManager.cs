@@ -32,6 +32,7 @@ public class WorldGenManager : MonoBehaviour
     [SerializeField] private WorldSimulationManager _simulationManager;
 
     private const string PLAYER_ADDRESSKEY = "Player";
+    private const string GROUND_LAYER_NAME = "Ground";
     private GameObject _playerInstance;
 
     [SerializeField] private int _currentSeed = 0;            // 현재 유지 중인 시드값
@@ -180,93 +181,66 @@ public class WorldGenManager : MonoBehaviour
             _worldRenderDirector.ClearAllChunks();
             await _worldRenderDirector.InitializeAsync(_worldSettings, graphData, _cts.Token);
 
-            ReportProgress(0.55f, "스폰 좌표 계산");
+            ReportProgress(0.55f, "스폰 좌표");
 
             // ==========================================================
-            // 3단계: 플레이어 스폰 좌표 계산
+            // 3단계: 플레이어 스폰 좌표 가져오기
             // ==========================================================
             Vector2Int mapSize = _worldSettings.GetWorldSize();
             int startingX = Mathf.RoundToInt(mapSize.x * 0.5f);
             int startingZ = Mathf.RoundToInt(mapSize.y * 0.5f);
 
-            bool foundStartRegion = false;
-
-            foreach (var node in graphData.Nodes)
+            Vector2Int spawnTile = logicData.SpawnTile;
+            if (spawnTile.x >= 0 && spawnTile.y >= 0)
             {
-                if (node.RegionData.RegionName.Contains("Start"))
-                {
-                    if (node.OwnedTiles.Count > 0)
-                    {
-                        long sumX = 0;
-                        long sumY = 0;
-                        foreach (Vector2Int tile in node.OwnedTiles)
-                        {
-                            sumX += tile.x;
-                            sumY += tile.y;
-                        }
-                        startingX = (int)(sumX / node.OwnedTiles.Count);
-                        startingZ = (int)(sumY / node.OwnedTiles.Count);
-                        foundStartRegion = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!foundStartRegion)
-            {
-                Debug.LogWarning("🚨 StartRegion을 찾지 못해 맵 중앙 좌표를 사용합니다.");
+                startingX = spawnTile.x;
+                startingZ = spawnTile.y;
+                Debug.Log($"✅ StartRegion 스폰 타일 좌표: ({startingX}, {startingZ})");
             }
             else
             {
-                Debug.Log($"✅ StartRegion 탐색 성공! 스폰 타일 좌표: ({startingX}, {startingZ})");
+                Debug.LogWarning("🚨 StartRegion 스폰 좌표를 찾지 못해 맵 중앙 좌표를 사용합니다.");
             }
+
 
             Vector2Int spawnChunkCoord = logicData.GetChunkCoord(startingX, startingZ);
 
-            ReportProgress(0.7f, "플레이어 준비");
+            ReportProgress(0.7f, "스폰 지역 렌더링 중");
 
             // ==========================================================
-            // 4단계: 플레이어 탐색 및 StartRegion으로 
-            // ==========================================================
-            if (_playerInstance == null)
-            {
-                GameObject playerPrefab = await Extensions.LoadAssetAsync<GameObject>(
-                    PLAYER_ADDRESSKEY,
-                    AssetCacheType.Required,
-                    _cts.Token
-                );
-                if (playerPrefab == null)
-                {
-                    Debug.LogWarning($"🚨 플레이어 프리팹 로드 실패: '{PLAYER_ADDRESSKEY}'");
-                }
-                else
-                {
-                    _playerInstance = Instantiate(playerPrefab);
-                }
-            }
-
-            if (_playerInstance != null)
-            {
-                _playerInstance.transform.position = new Vector3(startingX, 10f, startingZ);
-                _playerInstance.SetActive(true);
-
-                _worldChunkDirector.SetTarget(_playerInstance.transform);
-                Debug.Log("🎯 플레이어 StartRegion 자동 탐색 및 안전 스폰 완료!");
-            }
-            else
-            {
-                Debug.LogWarning("🚨 하이어라키에 'Player' 태그를 가진 오브젝트가 없습니다!");
-            }
-
-            ReportProgress(0.85f, "스폰 지역 로드");
-
-            // ==========================================================
-            // 5단계: 청크 디렉터 초기화 및 스폰 지역 확정 렌더링 대기
+            // 4단계: 청크 디렉터 초기화 및 스폰 지역 확정 렌더링 대기
             // ==========================================================
             _worldChunkDirector.Initialize(logicData, _worldRenderDirector);
 
             await _worldChunkDirector.LoadInitialSpawnAreaAsync(spawnChunkCoord);
             Debug.Log("월드 생성이 완료되었습니다!");
+
+            ReportProgress(0.85f, "플레이어 준비");
+
+            // ==========================================================
+            // 5단계: 플레이어 탐색 및 StartRegion으로 
+            // ==========================================================
+            if (_playerInstance == null)
+            {
+                Player player = await Extensions.Instantiate<Player>("Player");
+                if (player != null)
+                {
+                    _playerInstance = player.gameObject;
+                }
+            }
+
+            if (_playerInstance != null)
+            {
+                _playerInstance.SetActive(true);
+                 var spawnTileHeight = logicData.GetHeightAt(startingX, startingZ);
+                _playerInstance.transform.position = new Vector3(startingX, spawnTileHeight + 20f, startingZ);
+                _worldChunkDirector.isPlayerSpawned = true;
+                _worldChunkDirector.SetTarget(_playerInstance.transform);
+            }
+            else
+            {
+                Debug.LogWarning("🚨 'Player' 오브젝트가 없습니다!");
+            }
 
             _simulationManager = Extensions.GetOrAddComponent<WorldSimulationManager>(this.gameObject);
             _simulationManager.Initialize(_worldChunkDirector);
@@ -278,6 +252,7 @@ public class WorldGenManager : MonoBehaviour
             Debug.Log("맵 생성 취소됨");
         }
     }
+
 
 #if UNITY_EDITOR
     #region Debug & Gizmos

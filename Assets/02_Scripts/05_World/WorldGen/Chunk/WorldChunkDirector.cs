@@ -27,6 +27,7 @@ public class WorldChunkDirector : MonoBehaviour
     private bool _isUpdatingChunks;
     private bool _hasPendingRequest;
     private bool _isInitialLoadComplete = false;
+    public bool isPlayerSpawned = false;
     private Vector2Int _pendingCoord;
     private bool _isInitialized;
 
@@ -78,12 +79,12 @@ public class WorldChunkDirector : MonoBehaviour
             Debug.LogWarning(" WorldChunkDirector가 초기화되지 않았습니다.");
             return;
         }
-        Vector2Int initialCoord = ResolveInitialChunkCoord(spawnCoord);
-        _currentChunkCoord = initialCoord;
-        await UpdateVisibleChunks(initialCoord).AttachExternalCancellation(this.GetCancellationTokenOnDestroy());
+        Vector2Int startingCoord = ResolveInitialChunkCoord(spawnCoord);
+        _currentChunkCoord = startingCoord;
+        await UpdateVisibleChunks(startingCoord).AttachExternalCancellation(this.GetCancellationTokenOnDestroy());
 
         _isInitialLoadComplete = true;
-        Debug.Log($"[WorldChunkDirector] 초기 청크 로딩 완료: {initialCoord}");
+        Debug.Log($"[WorldChunkDirector] 초기 청크 로딩 완료: {startingCoord}");
     }
 
     private Vector2Int ResolveInitialChunkCoord(Vector2Int startingCoord)
@@ -107,7 +108,7 @@ public class WorldChunkDirector : MonoBehaviour
 
     private void OnChunkUpdate(float deltaTime)
     {
-        if (!_isInitialLoadComplete || _logicData == null) return;
+        if (!_isInitialLoadComplete || _logicData == null || !isPlayerSpawned) return;
 
         Transform target = _trackTarget;
         if (target == null && Camera.main != null)
