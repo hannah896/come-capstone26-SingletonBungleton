@@ -1,0 +1,263 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Player">
+    <Position X="34.5" Y="4.75" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>BgACAAIAByAAAQBAIAMAJAAAAAAAAgAIAAMACiTADEA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\Player.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerAnimData" Collapsed="true">
+    <Position X="37.75" Y="3.5" Width="3" />
+    <TypeIdentifier>
+      <HashCode>BAAAAgAIEEIAgAAAAEAgAABAQACAAAAAIAAACQAAAAI=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerAnimData.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerAnimEventRelay" Collapsed="true">
+    <Position X="34.25" Y="16.25" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAgAAAAEA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerAnimEventRelay.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerAnimHashKey" Collapsed="true">
+    <Position X="41.25" Y="3.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAICBgBCAyAAYgEgACIAhABAEIQA4JDIAKCASAAAgAY=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerAnimHashKey.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerFirstPersonCameraController" Collapsed="true">
+    <Position X="34.5" Y="13.5" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AgMOiAQAJwIQIAgAAEUGEMACCDAwAkQckiKUGjSymCQ=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerFirstPersonCameraController.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerGravity" Collapsed="true">
+    <Position X="40.5" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAEAEAAAAAkAAAACAAAAAAAAAAAAgAAAAAAAAAIA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerGravity.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerGroundDetector" Collapsed="true">
+    <Position X="38" Y="9.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AIQEEgAAEAAAQAACAAAAAAAEAQAEAAAAEhIACACAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerGroundDetector.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerInputData" Collapsed="true">
+    <Position X="41.25" Y="7" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AoABAAAAEECBQAAAACAAgAACBCAAAAIAAAgAAQBAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerInputData.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="InputActions_PlayerInputHandler" Collapsed="true">
+    <Position X="37.75" Y="7" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AMUEgAAAAhEEgAAAgBAAQIABAgAECAABAAAAoAKAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerInputHandler.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerInventory" Collapsed="true">
+    <Position X="34.5" Y="12.75" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>BAKjogKIMgZAgAQQSAgQGEAIgYpABxKEgjB4QQKWQE0=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerInventory.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerMotor" Collapsed="true">
+    <Position X="34.5" Y="12" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAEGEgABAAIAAACABACBAAEAQAEAAAAEAoACQAEREA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerMotor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerRootStateBase" Collapsed="true">
+    <Position X="24.5" Y="0.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAIAAAAAQAAEAAAAAAAAEAAAAAAAAAEAAAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerRootStateBase.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerRootStateMachine">
+    <Position X="12" Y="0.75" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAIAIAAAAAAAAAAAAAEAAAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerRootStateMachine.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerStatData" Collapsed="true">
+    <Position X="41.25" Y="4.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AgABAACAACAIEAAACAZAGIAAAAAAACBAAAFAAAAEAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerStat\PlayerStatData.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerStatus" Collapsed="true">
+    <Position X="37.75" Y="4.75" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AgCBABCAACAIEBAACIQAGIQABIBAICBAAAFAigAEAAw=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerStat\PlayerStatus.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerActionSubStateBase" Collapsed="true">
+    <Position X="24.75" Y="5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IAQAAAAAIAAAAAAAAAAAAQAAAAAQAAAAAIIAAAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Action\PlayerActionSubStateBase.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerBuildState" Collapsed="true">
+    <Position X="22.5" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Action\PlayerBuildState.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerChopState" Collapsed="true">
+    <Position X="27" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAIAAAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Action\PlayerChopState.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerCookState" Collapsed="true">
+    <Position X="29.25" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Action\PlayerCookState.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerDigState" Collapsed="true">
+    <Position X="31.5" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAIAAAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Action\PlayerDigState.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerIgniteState" Collapsed="true">
+    <Position X="15.75" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Action\PlayerIgniteState.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerInspectState" Collapsed="true">
+    <Position X="18" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Action\PlayerInspectState.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerMineState" Collapsed="true">
+    <Position X="20.25" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAIAAAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Action\PlayerMineState.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerPickState" Collapsed="true">
+    <Position X="24.75" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Action\PlayerPickState.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerAirState" Collapsed="true">
+    <Position X="22" Y="5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAAAAAAgAAAAAAAAAAAQAAAAAIAAAAABAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Locomotion\PlayerAirState.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerIdleState" Collapsed="true">
+    <Position X="27" Y="5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAIAAAAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Locomotion\PlayerIdleState.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerTraceState" Collapsed="true">
+    <Position X="29.25" Y="5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAAAAAAAAAAAAAAAAAAQAAAAQIBABAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Locomotion\PlayerTraceState.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerActionState" Collapsed="true">
+    <Position X="19" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ABQAAAAAAQAAAAgAAAAAAAAAAAAQACAAAIAAAAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Root\PlayerActionState.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerAttackState" Collapsed="true">
+    <Position X="21.25" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAIAAAAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Root\PlayerAttackState.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerDeadState" Collapsed="true">
+    <Position X="23.5" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAIAAACAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Root\PlayerDeadState.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerLocomotionState" Collapsed="true">
+    <Position X="25.75" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAAAAAABBAAAAAAAAAKQACAAAJBACAEAAIQ=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Root\PlayerGroundState.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerHurtState" Collapsed="true">
+    <Position X="28" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAEAAAAQAAAAAAAAAAAAAAAAAQAAAAAIAAAAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Root\PlayerHurtState.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerSleepState" Collapsed="true">
+    <Position X="30.25" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAIAAAAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Root\PlayerSleepState.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerRunState" Collapsed="true">
+    <Position X="31.5" Y="5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAIBAAAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Sub\Ground\PlayerRunState.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerWalkState" Collapsed="true">
+    <Position X="19" Y="5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAIBAAAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerState\Sub\Ground\PlayerWalkState.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerSubStateBase" Collapsed="true">
+    <Position X="24.75" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAQAAEAAAAAAAAEAAAIAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerSubStateBase.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerTracer" Collapsed="true">
+    <Position X="34.5" Y="14.25" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAgAAAAgAAAAAAAAgAACAAAAAAIAAIAAAAAEAACAA=</HashCode>
+      <FileName>Assets\02_Scripts\03_Entity\Player\PlayerTracer.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="맑은 고딕" Size="9" />
+</ClassDiagram>

@@ -209,39 +209,6 @@ OnLoopGameUpdate(deltaTime)
 
 ---
 
-### 6. PlayerCameraController
-
-| 항목 | 내용 |
-|------|------|
-| **위치** | `Player/PlayerCameraController.cs` |
-| **역할** | 3인칭 카메라 피벗 회전 (Cinemachine과 연동) |
-
-**동작 방식:**
-
-```
-LookInput(마우스 델타) → Yaw/Pitch 갱신 → 카메라 피벗 Transform 회전
-CinemachineCamera는 이 피벗의 Follow/LookAt을 따름
-```
-
-**설정값:**
-
-| 값 | 기본 | 설명 |
-|----|------|------|
-| `mouseSensitivity` | 2.0 | 마우스 감도 |
-| `minPitch` | -30° | 최소 상하 각도 |
-| `maxPitch` | 70° | 최대 상하 각도 |
-
-**구현해야 할 기능:**
-
-- [ ] 카메라 충돌 처리 (벽 뒤로 카메라가 뚫고 가지 않게)
-- [ ] 잠금(Lock-on) 카메라 모드 (전투 시 적을 바라봄)
-- [ ] 카메라 흔들림 (피격, 폭발 등)
-- [ ] 줌 인/아웃 (마우스 스크롤)
-- [ ] FOV 변화 (달리기 시 넓어짐)
-- [ ] 감도 설정 UI 연동
-
----
-
 ### 7. PlayerStatus
 
 | 항목 | 내용 |
@@ -370,7 +337,6 @@ Assets/02_Scripts/03_Entity/Player/
 ├── PlayerMotor.cs                     # 이동/물리 실행
 ├── PlayerGroundDetector.cs            # 지면 감지
 ├── PlayerGravity.cs                   # 중력 시뮬레이션
-├── PlayerCameraController.cs          # 3인칭 카메라
 ├── PlayerInputHandler.cs              # 입력 콜백 → 데이터 기록
 ├── PlayerInputData.cs                 # 입력 데이터
 ├── PlayerAnimData.cs                  # 애니메이션 헬퍼
