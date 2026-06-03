@@ -116,6 +116,12 @@ public class Player : MonoBehaviour
         // Trace 레이캐스터 바인딩
         playerTracer?.Bind(inputData);
         playerInventory?.Bind(this, inputData);
+        if (playerInventory != null)
+        {
+            CraftingManager.Instance?.Bind(playerInventory);
+            var craftingUI = Object.FindObjectOfType<CraftingUI>(true);
+            craftingUI?.Bind(playerInventory);
+        }
 
         var hud = await Extensions.ShowHud<UI_Hud_Player>();
         hud.Player = this;

@@ -83,7 +83,10 @@ public class PlayerInventory : MonoBehaviour
             EquipSelectedSlot();
 
         if (inputData.ToolUsePressed)
-            TryUseEquippedHandTool();
+        {
+            if (!TryCookAtBonfire())
+                TryUseEquippedHandTool();
+        }
     }
 
     public void SetSlotCount(int count)
@@ -632,6 +635,14 @@ public class PlayerInventory : MonoBehaviour
         SurvivalToolType.Hammer_Stone or SurvivalToolType.Hammer_Iron or SurvivalToolType.Hammer_Gold => ActionType.Build,
         _ => ActionType.None,
     };
+
+    private bool TryCookAtBonfire()
+    {
+        if (!TryRaycastToolTarget(defaultToolUseRange + 1f, out RaycastHit hit)) return false;
+        BonfireCooker bonfire = hit.collider.GetComponentInParent<BonfireCooker>();
+        if (bonfire == null) return false;
+        return bonfire.TryCookFromInventory(this);
+    }
 
     private void TryUseEquippedHandTool()
     {

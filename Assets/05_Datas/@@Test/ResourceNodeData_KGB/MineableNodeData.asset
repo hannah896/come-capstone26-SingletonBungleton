@@ -18,6 +18,10 @@ MonoBehaviour:
   GatherAmount: 1
   RespawnTime: 300
   RequiredTool: 2
-  Drops: []
+  Drops:
+  - DropPrefabKey: Resource_Mineral_Stone
+    MinDropCount: 1
+    MaxDropCount: 2
+    DropChance: 1
   DropRadius: 0.5
   DropFxPrefabKey: 
