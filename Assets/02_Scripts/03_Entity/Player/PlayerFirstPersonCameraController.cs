@@ -22,6 +22,9 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     [SerializeField] private float minPitch = -80f;
     [SerializeField] private float maxPitch = 80f;
 
+    // 마우스 감도 PlayerPrefs 키 (설정 UI와 공유)
+    public const string MouseSensitivityKey = "Setting_MouseSensitivity";
+
     [Header("1인칭 표시")]
     [SerializeField] private bool hidePlayerBodyInFirstPerson = true;
     [SerializeField] private Transform toolPivot;
@@ -92,8 +95,19 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         yaw = body.eulerAngles.y;
         pitch = 0f;
 
+        // 저장된 마우스 감도 로드 (없으면 인스펙터 기본값 유지)
+        mouseSensitivity = PlayerPrefs.GetFloat(MouseSensitivityKey, mouseSensitivity);
+
         CacheBodyRenderers();
         ApplyBodyVisibility();
+    }
+
+    /// <summary>
+    /// 마우스 감도를 런타임에 변경한다. (설정 UI에서 호출)
+    /// </summary>
+    public void SetMouseSensitivity(float value)
+    {
+        mouseSensitivity = Mathf.Max(0.01f, value);
     }
 
     public void SetLocalView(bool value)

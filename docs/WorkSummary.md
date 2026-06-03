@@ -68,6 +68,18 @@
 
 **검증:** `uloop compile` 에러 0·경고 0. **미검증**: PlayMode에서 좌클릭 채취·우클릭 홀드 시야 회전 동작은 아직 런타임 확인 안 함.
 
+### 7. 설정 팝업 — 오디오/입력 탭 분리 + 마우스 감도 연동
+
+**파일:** `UI_Popup_SettingUI.cs`, `PlayerFirstPersonCameraController.cs`
+
+- 프리팹 구조(사용자 작성): `UI_Panel` 아래 `Menu`[Audio 버튼, Input 버튼] + `UI_AudioSetting`(Master/BGM/SFX) + `UI_InputSetting`(기본 비활성, `UI_Slider_MouseSensitivity`) + CloseBtn
+- **탭 전환**: Audio 버튼 → 오디오 패널만, Input 버튼 → 입력 패널만(`ShowAudioTab`/`ShowInputTab`이 `SetActive` 토글). `Initialize`에서 기본 오디오 탭
+- **마우스 감도**: `UI_Slider_MouseSensitivity`(0.5~10) → `PlayerFirstPersonCameraController.SetMouseSensitivity`로 즉시 반영 + `PlayerPrefs("Setting_MouseSensitivity")` 저장. 카메라는 `Bind` 시 `PlayerPrefs.GetFloat`로 로드 → **다음 실행에도 유지**(사용자 요청). 감도 키는 카메라에 `public const`로 두고 SettingUI가 공유
+- 활성 카메라는 `FindFirstObjectByType<PlayerFirstPersonCameraController>`로 찾아 반영(로비 등 카메라 없으면 PlayerPrefs만 저장, 다음 게임 시작 시 로드)
+- `SetupSlider`에 min/max 파라미터 추가(볼륨 0~1, 감도 0.5~10 공용). 모든 `[SerializeField]`는 이름 기반 `FindChild` fallback(비활성 포함이라 `UI_InputSetting`도 연결)
+
+**검증:** `uloop compile` 에러 0건. **미검증**: PlayMode에서 탭 전환·감도 반영·재시작 후 감도 유지는 아직 런타임 확인 안 함.
+
 ---
 
 ## 2026-06-02
