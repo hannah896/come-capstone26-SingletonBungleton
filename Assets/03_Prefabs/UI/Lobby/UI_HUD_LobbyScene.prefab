@@ -58,6 +58,7 @@ MonoBehaviour:
       m_Calls: []
   UI_Button_MakeRoom: {fileID: 3666638587299573095}
   UI_Button_EnterRoom: {fileID: 8674292143280867631}
+  UI_Button_Setting: {fileID: 6907907587398405993}
   UI_Button_Exit: {fileID: 3786677870016246467}
 --- !u!1 &7802918936699448346
 GameObject:
@@ -593,6 +594,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 64e9af8e6d93a4292beefbe33a19f307, type: 3}
+--- !u!114 &6907907587398405993 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7611303497571751312, guid: 64e9af8e6d93a4292beefbe33a19f307, type: 3}
+  m_PrefabInstance: {fileID: 3926322408266947321}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf7cb9865f82f4ea0a580996f0785702, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UI_Button
 --- !u!224 &7146884838650353757 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6148482803329221284, guid: 64e9af8e6d93a4292beefbe33a19f307, type: 3}
