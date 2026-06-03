@@ -43,6 +43,24 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     [SerializeField] private Vector3 torchLocalPosition = new(-1f, 0.25f, 3.2f);
     [SerializeField] private Vector3 torchLocalEuler = new(0f, 0f, -8f);
     [SerializeField] private Vector3 torchLocalScale = new(0.18f, 0.85f, 0.18f);
+    [SerializeField] private Vector3 hammerMeshLocalPosition = new(1.38f, -1.5f, 2.56f);
+    [SerializeField] private Vector3 hammerMeshLocalEuler = new(26.14f, -168.4f, -12.8f);
+    [SerializeField] private Vector3 hammerMeshLocalScale = new(7f, 7f, 7f);
+    [SerializeField] private Vector3 shovelLocalPosition = new(-0.07f, -0.86f, 2.33f);
+    [SerializeField] private Vector3 shovelLocalEuler = new(6.952f, -148.7f, -5.915f);
+    [SerializeField] private Vector3 shovelLocalScale = new(7f, 7f, 7f);
+    [SerializeField] private Vector3 weaponLocalPosition = new(-1f, 0f, 3.2f);
+    [SerializeField] private Vector3 weaponLocalEuler = Vector3.zero;
+    [SerializeField] private Vector3 weaponLocalScale = Vector3.one;
+    [SerializeField] private Vector3 weaponMeshLocalPosition = new(1.38f, -1.5f, 2.56f);
+    [SerializeField] private Vector3 weaponMeshLocalEuler = new(26.14f, -168.4f, -12.8f);
+    [SerializeField] private Vector3 weaponMeshLocalScale = new(7f, 7f, 7f);
+    [SerializeField] private Vector3 shieldLocalPosition = new(-1f, 0f, 3.2f);
+    [SerializeField] private Vector3 shieldLocalEuler = Vector3.zero;
+    [SerializeField] private Vector3 shieldLocalScale = Vector3.one;
+    [SerializeField] private Vector3 shieldMeshLocalPosition = new(1.38f, -1.5f, 2.56f);
+    [SerializeField] private Vector3 shieldMeshLocalEuler = new(26.14f, -168.4f, -12.8f);
+    [SerializeField] private Vector3 shieldMeshLocalScale = new(7f, 7f, 7f);
 
     [Header("토치 조명")]
     [SerializeField] private string equippedLightLayerName = "Default";
@@ -290,6 +308,55 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
             return;
         }
 
+        // 망치
+        if (itemData != null &&
+            (itemData.survivalToolType == SurvivalToolType.Hammer_Stone
+            || itemData.survivalToolType == SurvivalToolType.Hammer_Iron
+            || itemData.survivalToolType == SurvivalToolType.Hammer_Gold))
+        {
+            toolTransform.localPosition = equippedToolLocalPosition;
+            toolTransform.localRotation = Quaternion.Euler(equippedToolLocalEuler);
+            toolTransform.localScale = equippedToolLocalScale;
+            ApplyChildMeshTransform(hammerMeshLocalPosition, hammerMeshLocalEuler, hammerMeshLocalScale);
+            return;
+        }
+
+        // 삽
+        if (itemData != null &&
+            (itemData.survivalToolType == SurvivalToolType.Shovel_Stone
+            || itemData.survivalToolType == SurvivalToolType.Shovel_Iron
+            || itemData.survivalToolType == SurvivalToolType.Shovel_Gold))
+        {
+            toolTransform.localPosition = shovelLocalPosition;
+            toolTransform.localRotation = Quaternion.Euler(shovelLocalEuler);
+            toolTransform.localScale = shovelLocalScale;
+            return;
+        }
+
+        // 무기 (창, 칼, 활)
+        if (itemData != null &&
+            (itemData.combatGearType == CombatGearType.Spear
+            || itemData.combatGearType == CombatGearType.Sword
+            || itemData.combatGearType == CombatGearType.Bow))
+        {
+            toolTransform.localPosition = weaponLocalPosition;
+            toolTransform.localRotation = Quaternion.Euler(weaponLocalEuler);
+            toolTransform.localScale = weaponLocalScale;
+            ApplyChildMeshTransform(weaponMeshLocalPosition, weaponMeshLocalEuler, weaponMeshLocalScale);
+            return;
+        }
+
+        // 방패 (뒷면이 플레이어를 향하도록 Y축 180도 추가)
+        if (itemData != null && itemData.combatGearType == CombatGearType.Shield)
+        {
+            toolTransform.localPosition = shieldLocalPosition;
+            toolTransform.localRotation = Quaternion.Euler(shieldLocalEuler);
+            toolTransform.localScale = shieldLocalScale;
+            ApplyChildMeshTransform(shieldMeshLocalPosition, shieldMeshLocalEuler + new Vector3(0f, 180f, 0f), shieldMeshLocalScale);
+            return;
+        }
+
+        // 기본값 (도끼 포함)
         toolTransform.localPosition = equippedToolLocalPosition;
         toolTransform.localRotation = Quaternion.Euler(equippedToolLocalEuler);
         toolTransform.localScale = equippedToolLocalScale;
@@ -302,18 +369,20 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
 
     private void ApplyAxeMeshViewTransform()
     {
-        Transform meshTransform = equippedToolObject.transform.Find("axe");
-        if (meshTransform == null)
-        {
-            Renderer renderer = equippedToolObject.GetComponentInChildren<Renderer>(true);
-            meshTransform = renderer != null ? renderer.transform : null;
-        }
+        ApplyChildMeshTransform(axeMeshLocalPosition, axeMeshLocalEuler, axeMeshLocalScale);
+    }
 
+    private void ApplyChildMeshTransform(Vector3 pos, Vector3 euler, Vector3 scale)
+    {
+        if (equippedToolObject == null) return;
+
+        Renderer renderer = equippedToolObject.GetComponentInChildren<Renderer>(true);
+        Transform meshTransform = renderer != null ? renderer.transform : null;
         if (meshTransform == null) return;
 
-        meshTransform.localPosition = axeMeshLocalPosition;
-        meshTransform.localRotation = Quaternion.Euler(axeMeshLocalEuler);
-        meshTransform.localScale = axeMeshLocalScale;
+        meshTransform.localPosition = pos;
+        meshTransform.localRotation = Quaternion.Euler(euler);
+        meshTransform.localScale = scale;
     }
 
     private void ClearEquippedToolView()
