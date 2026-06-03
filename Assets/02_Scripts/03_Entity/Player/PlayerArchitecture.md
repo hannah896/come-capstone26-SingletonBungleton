@@ -209,39 +209,6 @@ OnLoopGameUpdate(deltaTime)
 
 ---
 
-### 6. PlayerCameraController
-
-| 항목 | 내용 |
-|------|------|
-| **위치** | `Player/PlayerCameraController.cs` |
-| **역할** | 3인칭 카메라 피벗 회전 (Cinemachine과 연동) |
-
-**동작 방식:**
-
-```
-LookInput(마우스 델타) → Yaw/Pitch 갱신 → 카메라 피벗 Transform 회전
-CinemachineCamera는 이 피벗의 Follow/LookAt을 따름
-```
-
-**설정값:**
-
-| 값 | 기본 | 설명 |
-|----|------|------|
-| `mouseSensitivity` | 2.0 | 마우스 감도 |
-| `minPitch` | -30° | 최소 상하 각도 |
-| `maxPitch` | 70° | 최대 상하 각도 |
-
-**구현해야 할 기능:**
-
-- [ ] 카메라 충돌 처리 (벽 뒤로 카메라가 뚫고 가지 않게)
-- [ ] 잠금(Lock-on) 카메라 모드 (전투 시 적을 바라봄)
-- [ ] 카메라 흔들림 (피격, 폭발 등)
-- [ ] 줌 인/아웃 (마우스 스크롤)
-- [ ] FOV 변화 (달리기 시 넓어짐)
-- [ ] 감도 설정 UI 연동
-
----
-
 ### 7. PlayerStatus
 
 | 항목 | 내용 |
@@ -309,8 +276,7 @@ PlayerRootStateMachine
 │   ├── PlayerIdleState (Sub)        정지
 │   ├── PlayerWalkState (Sub)        걷기 (MoveSpeed)
 │   ├── PlayerRunState (Sub)         달리기 (MoveSpeed × SprintMultiplier)
-│   ├── PlayerAirState (Sub)         공중 (airControlFactor = 0.5)
-│   └── PlayerTraceState (Sub)       추적 (TODO: 대상 따라가기)
+│   └── PlayerAirState (Sub)         공중 (airControlFactor = 0.5)
 │
 ├── PlayerActionState (Root) ─────── 상호작용 행동
 │   ├── PlayerPickState (Sub)        채집
@@ -370,7 +336,6 @@ Assets/02_Scripts/03_Entity/Player/
 ├── PlayerMotor.cs                     # 이동/물리 실행
 ├── PlayerGroundDetector.cs            # 지면 감지
 ├── PlayerGravity.cs                   # 중력 시뮬레이션
-├── PlayerCameraController.cs          # 3인칭 카메라
 ├── PlayerInputHandler.cs              # 입력 콜백 → 데이터 기록
 ├── PlayerInputData.cs                 # 입력 데이터
 ├── PlayerAnimData.cs                  # 애니메이션 헬퍼
@@ -393,8 +358,7 @@ Assets/02_Scripts/03_Entity/Player/
     │   ├── PlayerDeadState.cs         # 사망 (Root)
     │   └── PlayerSleepState.cs        # 수면 (Root)
     ├── Locomotion/
-    │   ├── PlayerAirState.cs          # 공중 (Sub)
-    │   └── PlayerTraceState.cs        # 추적 (Sub)
+    │   └── PlayerAirState.cs          # 공중 (Sub)
     ├── Sub/Ground/
     │   ├── PlayerWalkState.cs         # 걷기 (Sub)
     │   └── PlayerRunState.cs          # 달리기 (Sub)

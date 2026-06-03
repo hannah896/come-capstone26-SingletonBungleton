@@ -28,10 +28,6 @@ public class Player : MonoBehaviour
     [SerializeField] private PlayerFirstPersonCameraController fpCameraController;
     #endregion
 
-    #region Trace
-    [SerializeField] private PlayerTracer playerTracer;
-    #endregion
-
     #region Inventory
     [SerializeField] private PlayerInventory playerInventory;
     #endregion
@@ -56,8 +52,6 @@ public class Player : MonoBehaviour
             animator = GetComponentInChildren<Animator>();
         if (motor == null)
             motor = GetComponent<PlayerMotor>();
-        if (playerTracer == null)
-            playerTracer = GetComponent<PlayerTracer>();
         if (playerInventory == null)
             playerInventory = GetComponent<PlayerInventory>();
     }
@@ -113,8 +107,6 @@ public class Player : MonoBehaviour
         if (fpCameraController != null)
             await fpCameraController.InitCameraAsync();
 
-        // Trace 레이캐스터 바인딩
-        playerTracer?.Bind(inputData);
         playerInventory?.Bind(this, inputData);
         if (playerInventory != null)
         {
