@@ -15,7 +15,7 @@ MonoBehaviour:
   m_GroupName: Prefabs_ResourceNode
   m_GUID: b0dc5580bd3e65945b189b562a76a9bf
   m_SerializeEntries:
-  - m_GUID: 136b5964ccd5c284fb803235a50cc10c
+  - m_GUID: 47525b05d0712b4448dba24350cc3dd3
     m_Address: ResourceNode_Fir
     m_ReadOnly: 0
     m_SerializedLabels: []
