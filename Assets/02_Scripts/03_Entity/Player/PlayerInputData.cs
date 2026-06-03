@@ -12,6 +12,9 @@ public class PlayerInputData
     public Vector2 LookInput { get; set; }
     public bool SprintHeld { get; set; }
 
+    // Ctrl 키(RotateView)를 누르고 있는 동안에만 LookInput으로 시야를 회전시킨다.
+    public bool RotateViewHeld { get; set; }
+
     #endregion
 
     #region 이벤트 입력 (한 프레임만 유효 - ConsumeEventInputs에서 리셋)
@@ -59,6 +62,7 @@ public class PlayerInputData
     {
         MoveInput = Vector2.zero;
         SprintHeld = false;
+        RotateViewHeld = false;
         JumpPressed = false;
         AttackPressed = false;
         CrouchPressed = false;
