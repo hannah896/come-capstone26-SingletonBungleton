@@ -17,6 +17,8 @@ public class UIKeyHandler : MonoBehaviour
 
     private void ToggleCrafting()
     {
+        if (craftingUI == null)
+            craftingUI = Object.FindObjectOfType<CraftingUI>(true);
         if (craftingUI == null) return;
         craftingUI.Toggle();
     }

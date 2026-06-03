@@ -83,7 +83,18 @@ public class GameScene : SceneBase
     {
         CancellationToken token = Main.Scene.CurrentToken;
 
-        // #1. 맵 생성 단계 — WorldGen 매니저를 동적 생성 (씬에 미리 배치할 필요 없음)
+        // #1. 크래프팅 시스템 선행 생성 (플레이어 Bind보다 먼저 존재해야 함)
+        if (CraftingManager.Instance == null)
+            new GameObject(nameof(CraftingManager)).AddComponent<CraftingManager>();
+
+        // CraftingUI를 UIManager HUD 캔버스에 로드 (시작 시 숨김)
+        var craftingUI = await Main.UI.ShowHudOverlay<CraftingUI>("CraftingUI");
+        if (craftingUI != null) craftingUI.gameObject.SetActive(false);
+
+        // UIKeyHandler는 CraftingUI와 별도 오브젝트로 생성 (UI가 꺼져도 입력 감지 유지)
+        new GameObject("UIKeyHandler").AddComponent<UIKeyHandler>();
+
+        // #2. 맵 생성 단계 — WorldGen 매니저를 동적 생성 (씬에 미리 배치할 필요 없음)
         GameState = GameState.World;
 
         if (WorldGenManager.Instance == null)
