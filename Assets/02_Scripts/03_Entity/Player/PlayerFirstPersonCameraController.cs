@@ -204,7 +204,8 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         if (toolCamera == null)
             ConfigureToolCamera();
 
-        Vector2 look = inputData.LookInput;
+        // Ctrl 키(RotateView)를 누르고 있는 동안에만 마우스 이동값으로 시야를 회전시킨다.
+        Vector2 look = inputData.RotateViewHeld ? inputData.LookInput : Vector2.zero;
 
         // Yaw: 플레이어 몸체를 좌우 회전 (1인칭에서 몸이 카메라 방향과 일치)
         yaw += look.x * mouseSensitivity;

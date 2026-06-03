@@ -208,6 +208,15 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""RotateView"",
+                    ""type"": ""Button"",
+                    ""id"": ""b2c3d4e5-f6a7-8901-bcde-f12345678901"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -621,11 +630,22 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""b9c8d7e6-f5a4-3210-9876-543210fedcba"",
-                    ""path"": ""<Mouse>/rightButton"",
+                    ""path"": ""<Mouse>/leftButton"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": "";Keyboard&Mouse"",
                     ""action"": ""ToolUse"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""c3d4e5f6-a7b8-9012-cdef-123456789012"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""RotateView"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -1426,6 +1446,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         m_Player_InventorySlot = m_Player.FindAction("InventorySlot", throwIfNotFound: true);
         m_Player_PickUp = m_Player.FindAction("PickUp", throwIfNotFound: true);
         m_Player_ToolUse = m_Player.FindAction("ToolUse", throwIfNotFound: true);
+        m_Player_RotateView = m_Player.FindAction("RotateView", throwIfNotFound: true);
         // Mobile
         m_Mobile = asset.FindActionMap("Mobile", throwIfNotFound: true);
         m_Mobile_Point = m_Mobile.FindAction("Point", throwIfNotFound: true);
@@ -1538,6 +1559,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_InventorySlot;
     private readonly InputAction m_Player_PickUp;
     private readonly InputAction m_Player_ToolUse;
+    private readonly InputAction m_Player_RotateView;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -1601,6 +1623,10 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/ToolUse".
         /// </summary>
         public InputAction @ToolUse => m_Wrapper.m_Player_ToolUse;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/RotateView".
+        /// </summary>
+        public InputAction @RotateView => m_Wrapper.m_Player_RotateView;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -1666,6 +1692,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @ToolUse.started += instance.OnToolUse;
             @ToolUse.performed += instance.OnToolUse;
             @ToolUse.canceled += instance.OnToolUse;
+            @RotateView.started += instance.OnRotateView;
+            @RotateView.performed += instance.OnRotateView;
+            @RotateView.canceled += instance.OnRotateView;
         }
 
         /// <summary>
@@ -1716,6 +1745,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @ToolUse.started -= instance.OnToolUse;
             @ToolUse.performed -= instance.OnToolUse;
             @ToolUse.canceled -= instance.OnToolUse;
+            @RotateView.started -= instance.OnRotateView;
+            @RotateView.performed -= instance.OnRotateView;
+            @RotateView.canceled -= instance.OnRotateView;
         }
 
         /// <summary>
@@ -2225,6 +2257,13 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnToolUse(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "RotateView" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnRotateView(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Mobile" which allows adding and removing callbacks.

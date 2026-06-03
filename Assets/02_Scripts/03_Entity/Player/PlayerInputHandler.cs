@@ -64,6 +64,8 @@ public sealed class InputActions_PlayerInputHandler : InputActions
         p.Interact.started += OnEquip;
         p.PickUp.performed += OnPickup;
         p.ToolUse.performed += OnToolUsePerformed;
+        p.RotateView.started += OnRotateViewStarted;
+        p.RotateView.canceled += OnRotateViewCanceled;
         p.ScrollWheel.performed += OnScrollWheel;
         p.ScrollWheel.canceled += OnScrollCanceled;
         p.Previous.performed += OnPrevious;
@@ -100,6 +102,8 @@ public sealed class InputActions_PlayerInputHandler : InputActions
         p.Interact.performed -= OnEquip;
         p.PickUp.performed -= OnPickup;
         p.ToolUse.performed -= OnToolUsePerformed;
+        p.RotateView.started -= OnRotateViewStarted;
+        p.RotateView.canceled -= OnRotateViewCanceled;
         p.ScrollWheel.performed -= OnScrollWheel;
         p.ScrollWheel.canceled -= OnScrollCanceled;
         p.Previous.performed -= OnPrevious;
@@ -214,6 +218,19 @@ public sealed class InputActions_PlayerInputHandler : InputActions
     {
         if (inputData == null) return;
         inputData.ToolUsePressed = true;
+    }
+
+    // Ctrl 키를 누르는 동안 시야 회전 활성화
+    private void OnRotateViewStarted(InputAction.CallbackContext ctx)
+    {
+        if (inputData == null) return;
+        inputData.RotateViewHeld = true;
+    }
+
+    private void OnRotateViewCanceled(InputAction.CallbackContext ctx)
+    {
+        if (inputData == null) return;
+        inputData.RotateViewHeld = false;
     }
 
     private void OnScrollCanceled(InputAction.CallbackContext ctx)
