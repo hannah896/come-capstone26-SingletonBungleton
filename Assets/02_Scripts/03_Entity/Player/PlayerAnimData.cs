@@ -126,7 +126,6 @@ public class PlayerAnimData
     {
         animator.SetBool(animHashKey.Idle, false);
         animator.SetBool(animHashKey.Walk, false);
-        animator.SetBool(animHashKey.Trace, false);
         animator.SetBool(animHashKey.Run, false);
         animator.SetBool(animHashKey.Jump, false);
     }

@@ -66,4 +66,12 @@ public class PlayerActionState : PlayerRootStateBase
     {
         Machine.ChangeState(new PlayerLocomotionState(Machine));
     }
+
+    /// <summary>
+    /// 액션 애니메이션의 효과 프레임 Animation Event(Player 경유)를 현재 하위 액션 상태로 전달.
+    /// </summary>
+    public void OnActionEvent()
+    {
+        (SubStateMachine.CurrentState as PlayerActionSubStateBase)?.OnActionEvent();
+    }
 }

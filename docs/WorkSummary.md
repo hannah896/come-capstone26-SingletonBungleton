@@ -50,7 +50,7 @@
 
 - 배경: 채취(도구 사용)는 이미 `PlayerInventory.TryRaycastToolTarget`가 **화면 정중앙**(`ViewportPointToRay(0.5,0.5)`) 레이캐스트로 동작 중. 마우스 위치 레이캐스트는 `PlayerTracer`(클릭→자동이동 Trace)에만 쓰였고, 도착 후 액션 연결(`PendingAction`)이 **설정되는 코드가 없어** 반쪽짜리였음
 - **Trace 자동이동 제거**(사용자 결정): `PlayerTracer`/`PlayerTraceState` 삭제, `Player`의 `playerTracer` 필드/Bind/OnValidate 제거, `PlayerLocomotionState`의 `traceState`·`TracePressed` 분기·`ChangeToTrace` 제거, `PlayerInputData`의 `TracePressed`/`TraceDestination`/`PendingAction` 및 리셋 제거
-  - 단, **애니메이터 연결된 Trace 애니**(`PlayerAnimHashKey.Trace`, `PlayerAnimData`의 `SetBool(Trace,...)`)는 [[feedback_animator_no_edit]] 규칙대로 **보존**(애니메이터 정합성 유지, 자동이동 재도입 시 재사용)
+  - 처음엔 `PlayerAnimData`의 Trace 관련을 보존하려 했으나, **애니메이터에 `Trace` 파라미터가 실제로 없어서**(보존 판단이 오판) `ResetLocomotionBools()`가 존재하지 않는 `Trace`에 `SetBool` 호출 → 채취 후 Idle 복귀 시 런타임 에러(`Parameter 'Hash' does not exist`). 후속으로 그 `SetBool(Trace,...)` 줄을 제거해 애니메이터에 맞춤([[feedback_animator_no_edit]]). `PlayerAnimHashKey.Trace` 정의만 미사용으로 남음
 - **크로스헤어 조준 반응**: 사용자가 추가한 `UI_Hud_Player/UI_Image_Focus`(중앙 십자)를 `UI_Image`로 연결. `Main.Loop.OnUpdate`에서 매 프레임 `Inventory.TryGetToolActionType`으로 채취 가능 여부 판정 → 가능하면 강조색(노랑)+1.3배, 아니면 기본(흰 반투명)+1배. 구독 해제는 [[feedback_no_ondisable_unsub]]대로 `OnDestroy`에서
 
 **검증:** `uloop compile` 에러 0건(경고는 전부 기존). **미검증**: PlayMode에서 크로스헤어 강조·채취 동작은 아직 런타임 확인 안 함. **참고**: `UI_Image_Focus`의 `Raycast Target`은 끄는 게 좋음(현재 켜짐, 동작엔 영향 없으나 불필요)

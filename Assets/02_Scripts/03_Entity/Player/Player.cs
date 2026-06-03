@@ -63,6 +63,11 @@ public class Player : MonoBehaviour
         // machine과 inputData는 동기적으로 먼저 생성 (Start()가 await 복귀 전에 실행될 수 있으므로)
         inputData = new PlayerInputData();
         machine = new PlayerRootStateMachine(this, animator);
+
+        // 1인칭에서 몸 렌더러를 숨겨도(컬링) 애니 상태가 멈추지 않도록 항상 평가하게 강제.
+        // (컬링되면 액션 애니가 진행/종료되지 않아 PlayerActionState가 timeout으로만 꺼지는 문제 방지)
+        if (animator != null)
+            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
         if (playerInventory == null)
             playerInventory = Extensions.GetOrAddComponent<PlayerInventory>(gameObject);
 
@@ -176,6 +181,16 @@ public class Player : MonoBehaviour
     private void OnLoopGameUpdate(float deltaTime)
     {
         machine.OnGameUpdate(deltaTime);
+    }
+
+    /// <summary>
+    /// 액션 애니메이션의 Stop 프레임 Animation Event(PlayerAnimEventRelay 경유)를
+    /// 현재 액션 상태로 전달한다.
+    /// </summary>
+    public void OnActionAnimationEvent()
+    {
+        if (machine?.CurrentState is PlayerActionState action)
+            action.OnActionEvent();
     }
 
     private void HandleDamaged(float damage)

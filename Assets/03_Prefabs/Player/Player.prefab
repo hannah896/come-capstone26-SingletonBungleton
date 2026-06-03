@@ -132,6 +132,24 @@ MonoBehaviour:
   torchLocalPosition: {x: -0.8, y: -0.11, z: -1.09}
   torchLocalEuler: {x: -3.579, y: -30.16, z: 18.332}
   torchLocalScale: {x: 1, y: 1, z: 1}
+  hammerMeshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
+  hammerMeshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
+  hammerMeshLocalScale: {x: 7, y: 7, z: 7}
+  shovelLocalPosition: {x: -0.07, y: -0.86, z: 2.33}
+  shovelLocalEuler: {x: 6.952, y: -148.7, z: -5.915}
+  shovelLocalScale: {x: 7, y: 7, z: 7}
+  weaponLocalPosition: {x: -1, y: 0, z: 3.2}
+  weaponLocalEuler: {x: 0, y: 0, z: 0}
+  weaponLocalScale: {x: 1, y: 1, z: 1}
+  weaponMeshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
+  weaponMeshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
+  weaponMeshLocalScale: {x: 7, y: 7, z: 7}
+  shieldLocalPosition: {x: -1, y: 0, z: 3.2}
+  shieldLocalEuler: {x: 0, y: 0, z: 0}
+  shieldLocalScale: {x: 1, y: 1, z: 1}
+  shieldMeshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
+  shieldMeshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
+  shieldMeshLocalScale: {x: 7, y: 7, z: 7}
   equippedLightLayerName: Default
   equippedTorchLightIntensity: 3.5
   equippedTorchLightRange: 7
@@ -348,6 +366,10 @@ PrefabInstance:
       propertyPath: m_Controller
       value: 
       objectReference: {fileID: 9100000, guid: addff773f87457c4698d2bf5868f981d, type: 2}
+    - target: {fileID: 5866666021909216657, guid: 7ba053ea9b532bd4784dc795612d69e0, type: 3}
+      propertyPath: m_CullingMode
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: 7ba053ea9b532bd4784dc795612d69e0, type: 3}
       propertyPath: m_ApplyRootMotion
       value: 0

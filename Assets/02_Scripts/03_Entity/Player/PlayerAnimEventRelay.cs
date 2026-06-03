@@ -22,4 +22,13 @@ public class PlayerAnimEventRelay : MonoBehaviour
     {
         player?.FPCameraController?.PlayChopSwing();
     }
+
+    /// <summary>
+    /// 액션(채굴/벌목 등) 클립의 Stop 모션 프레임 Animation Event가 호출.
+    /// 도구 데미지 적용 + 반복/종료 판정을 현재 액션 상태로 전달한다.
+    /// </summary>
+    public void OnActionStop()
+    {
+        player?.OnActionAnimationEvent();
+    }
 }
