@@ -60,6 +60,7 @@ public class CraftingUI : UI_Panel
         if (!base.Initialize()) return false;
         SetupCategoryTabs();
         SetupFilterButton();
+        craftButton?.onClick.AddListener(Craft);
         return true;
     }
 
@@ -73,6 +74,8 @@ public class CraftingUI : UI_Panel
     {
         if (CraftingManager.Instance != null)
             CraftingManager.Instance.OnCraftingChanged -= OnCraftingChanged;
+        if (playerInventory != null)
+            playerInventory.OnInventoryChanged -= OnCraftingChanged;
     }
 
     private void Update()
@@ -104,7 +107,14 @@ public class CraftingUI : UI_Panel
 
     public void Bind(PlayerInventory inventory)
     {
+        if (playerInventory != null)
+            playerInventory.OnInventoryChanged -= OnCraftingChanged;
+
         playerInventory = inventory;
+
+        if (playerInventory != null)
+            playerInventory.OnInventoryChanged += OnCraftingChanged;
+
         RefreshDetail();
     }
 

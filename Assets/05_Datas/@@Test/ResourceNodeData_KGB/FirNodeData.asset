@@ -19,9 +19,13 @@ MonoBehaviour:
   RespawnTime: 300
   RequiredTool: 1
   Drops:
-  - DropPrefabKey: 
-    MinDropCount: 0
-    MaxDropCount: 0
+  - DropPrefabKey: Resource_Wood_Branch
+    MinDropCount: 2
+    MaxDropCount: 3
     DropChance: 1
-  DropRadius: 0.5
+  - DropPrefabKey: Resource_Wood_Plank
+    MinDropCount: 1
+    MaxDropCount: 2
+    DropChance: 1
+  DropRadius: 0.8
   DropFxPrefabKey: 

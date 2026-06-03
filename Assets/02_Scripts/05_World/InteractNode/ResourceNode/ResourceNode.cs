@@ -123,10 +123,9 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
     protected virtual void OnInteracted(InteractionContext context) { }
     protected virtual void OnDamaged(DamageContext context) { }
     protected virtual void OnGathered(GatherContext context) { }
-    protected virtual void OnDestroyed() 
+    protected virtual void OnDestroyed()
     {
         _deathPosition = transform.position;
-        Debug.Log($"{ResourceNodeData.Name} 파괴됨! 위치: {_deathPosition}");
     }
 
     private void HandleDestroyed()
