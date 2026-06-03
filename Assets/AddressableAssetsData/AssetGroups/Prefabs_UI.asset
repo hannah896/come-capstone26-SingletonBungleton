@@ -15,6 +15,21 @@ MonoBehaviour:
   m_GroupName: Prefabs_UI
   m_GUID: 2411e90366f22fd44a7a6ee35752873b
   m_SerializeEntries:
+  - m_GUID: 0f9147e697b9de9429447a6b59652439
+    m_Address: UI_Popup_WorldGen
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1f59c7298045f3e41911f300418eaa3a
+    m_Address: UI_Hud_PlayerInventory
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 37905398519c0a049b888e714dd5c1d7
+    m_Address: UI_Screen_StartLoading
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 45dc1db2f43944772bc1917712a974bc
     m_Address: UI_LoadingCanvas
     m_ReadOnly: 0
@@ -27,8 +42,18 @@ MonoBehaviour:
     m_SerializedLabels:
     - EveryScene
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 92d15a646582d8147aae3d4d3dc8a278
+    m_Address: UI_Screen_Fade
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: dc40b564b6c58eb4c81b029d3d167c46
     m_Address: UI_HUD_LobbyScene
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e39146833b2bc1647b750258f9b390cb
+    m_Address: UI_Hud_PlayerStatus
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -37,6 +62,16 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels:
     - EveryScene
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e998d47af87bdb4418295ce934844380
+    m_Address: UI_Screen_Transition
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f52294187ea9e9a40a7d2ab69925173f
+    m_Address: UI_Popup_SettingUI
+    m_ReadOnly: 0
+    m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: d49714acbe7dc4846b65422625851c9a, type: 2}

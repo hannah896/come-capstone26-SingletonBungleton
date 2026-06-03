@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using static UnityEditor.Timeline.Actions.MenuPriority;
 
 /// <summary>
 /// 플레이어가 직접 들고 있는 인벤토리입니다.

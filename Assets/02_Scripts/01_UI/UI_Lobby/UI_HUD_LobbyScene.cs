@@ -5,7 +5,9 @@ public class UI_HUD_LobbyScene : UI_Hud
 {
     [SerializeField] private UI_Button UI_Button_MakeRoom;
     [SerializeField] private UI_Button UI_Button_EnterRoom;
+    [SerializeField] private UI_Button UI_Button_Setting;
     [SerializeField] private UI_Button UI_Button_Exit;
+
 
     protected override void Start()
     {
@@ -17,6 +19,9 @@ public class UI_HUD_LobbyScene : UI_Hud
 
         UI_Button_EnterRoom.SetDownUpButton();
         UI_Button_EnterRoom.OnButtonUp += OnEnterRoom;
+
+        UI_Button_Setting.SetDownUpButton();
+        UI_Button_Setting.OnButtonUp += OnSetting;
 
         UI_Button_Exit.SetDownUpButton();
         UI_Button_Exit.OnButtonUp += OnExit;
@@ -36,8 +41,19 @@ public class UI_HUD_LobbyScene : UI_Hud
 
     }
 
+    private void OnSetting() 
+    {
+        Extensions.ShowPopup<UI_Popup_SettingUI>().Forget();
+    }
+
+
     private void OnExit()
     {
+#if UNITY_EDITOR
+        // 에디터 플레이 모드에서는 Application.Quit()이 동작하지 않으므로 플레이 모드를 종료한다.
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
         Application.Quit();
+#endif
     }
 }

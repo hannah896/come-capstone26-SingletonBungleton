@@ -233,6 +233,41 @@ public static class Extensions
     /// </summary>
     public static void PlaySFX(AudioLibrarySounds key) => Main.JSAM.PlaySFX(key);
 
+    /// <summary>
+    /// 마스터 볼륨을 설정합니다. (0~1)
+    /// </summary>
+    public static void SetMasterVolume(float value) => Main.JSAM.SetMasterVolume(value);
+
+    /// <summary>
+    /// BGM(음악) 볼륨을 설정합니다. (0~1)
+    /// </summary>
+    public static void SetBGMVolume(float value) => Main.JSAM.SetBGMVolume(value);
+
+    /// <summary>
+    /// SFX(효과음) 볼륨을 설정합니다. (0~1)
+    /// </summary>
+    public static void SetSFXVolume(float value) => Main.JSAM.SetSFXVolume(value);
+
+    /// <summary>
+    /// 현재 마스터 볼륨을 반환합니다. (0~1)
+    /// </summary>
+    public static float GetMasterVolume() => Main.JSAM.MasterVolume;
+
+    /// <summary>
+    /// 현재 BGM(음악) 볼륨을 반환합니다. (0~1)
+    /// </summary>
+    public static float GetBGMVolume() => Main.JSAM.BGMVolume;
+
+    /// <summary>
+    /// 현재 SFX(효과음) 볼륨을 반환합니다. (0~1)
+    /// </summary>
+    public static float GetSFXVolume() => Main.JSAM.SFXVolume;
+
+    /// <summary>
+    /// 볼륨 설정을 즉시 저장합니다.
+    /// </summary>
+    public static void SaveVolume() => Main.JSAM.SaveVolume();
+
     #endregion
 
     #region Input
