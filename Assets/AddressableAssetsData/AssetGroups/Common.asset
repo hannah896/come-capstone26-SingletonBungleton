@@ -15,6 +15,11 @@ MonoBehaviour:
   m_GroupName: Common
   m_GUID: 1355e2feab16e06409f202acb6043666
   m_SerializeEntries:
+  - m_GUID: 02bc4506f0baf164bbf1819d87ebbaec
+    m_Address: Player_Male
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 2c50d873c029ef243a017465c51035ba
     m_Address: Canvas_View
     m_ReadOnly: 0
