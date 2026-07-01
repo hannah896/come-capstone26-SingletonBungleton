@@ -8,11 +8,18 @@ public class MonsterStateMachine : StateMachine<MobState<Monster>>
     public MonsterStateMachine(Monster owner)
     {
         this.owner = owner;
-        Init(new MobIdleState<Monster>(owner, this)); // 초기 상태
+        Init(new MonsterIdleState(owner, this)); // 초기 상태
     }
+
+    public void ToIdle()
+        => ChangeState(new MonsterIdleState(owner, this));
+
+    public void ToChase()
+        => ChangeState(new MonsterChaseState(owner, this));
+
+    public void ToAttack()
+        => ChangeState(new MonsterAttackState(owner, this));
 
     public void ToDead()
         => ChangeState(new MobDeadState<Monster>(owner, this));
-
-    // TODO: ToChase() / ToAttack() 등 몬스터 전용 전환 추가
 }

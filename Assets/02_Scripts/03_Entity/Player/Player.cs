@@ -2,7 +2,7 @@ using Cysharp.Threading.Tasks;
 using Fusion;
 using UnityEngine;
 
-public class Player : MonoBehaviour
+public class Player : MonoBehaviour, IDamageable
 {
     #region State
     [SerializeField] private PlayerRootStateMachine machine;
@@ -192,6 +192,19 @@ public class Player : MonoBehaviour
         if (machine?.CurrentState is PlayerActionState action)
             action.OnActionEvent();
     }
+
+    #region IDamageable
+    // 몬스터 등 외부 공격 수신구. 자원 채집과 동일한 DamageContext 계약을 사용한다.
+    public bool CanDamage(DamageContext damageCtx)
+        => stat != null && !stat.IsDead && damageCtx.Amount > 0;
+
+    public void ApplyDamage(DamageContext damageCtx)
+    {
+        if (!CanDamage(damageCtx)) return;
+        // TakeDamage → OnDamaged → HandleDamaged 로 PlayerHurtState 전환까지 이어진다.
+        stat.TakeDamage(damageCtx.Amount);
+    }
+    #endregion
 
     private void HandleDamaged(float damage)
     {

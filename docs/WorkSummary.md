@@ -2,6 +2,54 @@
 
 ---
 
+## 2026-06-30
+
+### 1. 몬스터 AI — 인지·추적·공격 (Idle→Chase→Attack)
+
+**파일(신규):** `Assets/02_Scripts/03_Entity/Mob/Monster/MonsterState/{MonsterIdleState,MonsterChaseState,MonsterAttackState}.cs`
+**파일(수정):** `Monster.cs`, `MonsterStateMachine.cs`, `MonsterStatData.cs`, `Mob.cs`, `Player.cs`
+
+- **상태 머신 완성**: 기존 Idle/Dead 골격만 있던 것을 `MonsterIdleState`(탐색)→`MonsterChaseState`(추적)→`MonsterAttackState`(공격)로 확장. `MonsterStateMachine`에 `ToIdle/ToChase/ToAttack` 추가, 초기 상태를 `MonsterIdleState`로. 상태 클래스는 기존 `MobState<Monster>` 패턴 그대로 사용
+- **AI 메카닉은 Monster 본체에 집중**(상태 클래스는 전환 판단만): `AcquireTarget()`(Physics.OverlapSphere + Player 컴포넌트 필터 + FOV), `IsTargetValid()`(DetectRange·생존), `IsTargetInAttackRange()`, `ChaseStep()`(회전+MoveSpeed 전진), `FaceTargetStep()`, `PerformAttack()`(DamageContext→IDamageable), `PlayAnim()`(HasState 가드로 경고 없는 선택적 재생)
+- **타게팅 = OverlapSphere(가) 방식**: `targetMask`(LayerMask, 기본 Everything) + `GetComponentInParent<Player>()`로 가장 가까운 생존 플레이어 선택. 멀티플레이에서 최근접 플레이어 추적
+- **MonsterStatData 확장**: `AttackRange` 추가, `FOV`/`DetectRange`에 기본값·Tooltip 부여
+- **Player가 IDamageable 구현**(신규): 기존엔 자원 노드만 IDamageable이라 플레이어가 피해 수신 불가였음. `ApplyDamage`→`PlayerStatus.TakeDamage`→`OnDamaged`→`PlayerHurtState` 전환까지 연결
+- **풀링 리셋 버그 방지**: `Mob`이 `IPoolable` 구현 → `OnSpawn`에서 `InitStatus()`로 풀 HP 리셋(죽은 채 재사용 방지). `Monster.OnSpawn`은 추가로 타깃/상태머신을 Idle로 리셋
+
+**변경 이유:** MonsterStateMachine이 Idle→Dead만 있어 스폰해도 가만히 있다 죽기만 했고, Player에 IDamageable이 없어 몬스터가 때릴 수단 자체가 없었음. NavMesh 미사용 프로젝트라 이동은 transform 직접 스티어링으로 구현.
+
+**검증:** `uloop compile --wait-for-domain-reload true` → Success, ErrorCount 0, WarningCount 0.
+
+### 2. 몬스터 스탯 SO 주입 방식 (스폰 시 MonsterStatData 채움)
+
+**파일(수정):** `Mob.cs`, `Monster.cs`
+
+- 프리팹에 `statData`를 고정으로 박지 않고, **스폰 시점에 종류별 `MonsterStatData`(SO)를 주입**하는 흐름으로 전환. 만들어둔 `.asset` 9개를 골라 쓸 수 있음
+- `Mob.ApplyStatData(EntityStatData)` 추가 → statData 교체 후 `InitStatus()`로 런타임 스탯 재생성. `InitStatus()`는 statData가 null이면 에러 대신 조용히 대기(주입 전 상태 허용)
+- `Monster.SpawnAsync(key, stat, position, parent)` 정적 헬퍼: 풀 스폰 → 위치 지정 → `ApplyStatData(stat)` 까지 한 번에. 프리팹은 모델/콜라이더/애니메이터만 갖추면 됨
+- 주입 전 첫 프레임 안전: `ChaseStep`/`PerformAttack`/`MinAttackPeriod`에 status null 가드(스폰 직후 동기 주입이라 실제로는 채워진 뒤 동작)
+
+**사용 예:**
+```csharp
+var so = Main.Resource.GetAssetNow<MonsterStatData>("Monster_Slime_Stat"); // 또는 LoadAssetAsync
+var monster = await Monster.SpawnAsync("Monster_Slime", so, spawnPos);
+```
+
+### 3. turnSpeed(회전 속도)를 MonsterStatData SO로 이동
+
+**파일(수정):** `MonsterStatData.cs`(`TurnSpeed` 필드 추가, 기본 540), `Monster.cs`(직렬화 필드 제거 → `TurnSpeed` 프로퍼티가 SO 값 사용)
+
+- 회전 속도도 프리팹 공통값이 아니라 종류별 SO에서 조절. `RotateTowards`가 `MonsterData.TurnSpeed` 사용(MonsterData null이면 540 fallback)
+- 주의: 기존 `.asset` 9개는 필드 추가 전 저장이라 `TurnSpeed`가 0으로 들어갈 수 있음 → Inspector에서 540 등으로 채워야 회전함(0이면 방향 전환 불가)
+
+**남은 TODO/이슈:**
+- 몬스터 프리팹이 아직 없음 → Monster.cs + Collider + Animator 갖춘 프리팹 생성 후 Addressable 등록(스탯은 SpawnAsync로 주입하므로 프리팹에 statData 불필요)
+- `MonsterStatData*.asset` 9개가 전부 값 0 → CurHP=MaxHP, TurnSpeed(540 등) 등 채워야 함(CurHP 0이면 즉사, TurnSpeed 0이면 회전 불가)
+- 애니메이션 상태명(idle/move/attack/dead)은 Inspector에서 실제 컨트롤러 스테이트명으로 채워야 재생됨(비우면 무동작)
+- 테스트 씬에서 `GameScene.GameProcessing == Processing`이어야 OnGameUpdate가 돌아 몬스터가 동작함
+
+---
+
 ## 2026-06-03
 
 ### 1. 설정 팝업 — UI_Popup_SettingUI (볼륨 슬라이더 + 입력 차단)
