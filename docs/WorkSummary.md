@@ -2,6 +2,76 @@
 
 ---
 
+## 2026-07-02
+
+### 1. 방 입장 팝업 (UI_Popup_EnterRoom)
+
+**파일(신규):** `Assets/02_Scripts/01_UI/UI_Lobby/{UI_Popup_EnterRoom,UI_Button_Room}.cs`
+**파일(수정):** `Assets/02_Scripts/01_UI/UI_Lobby/UI_HUD_LobbyScene.cs`
+
+- **UI_Popup_EnterRoom**: 방 목록을 표시하고 선택한 방으로 입장하는 팝업. `UI_Popup_MakeRoom`과 동일한 "네트워크 미연동 단계 — 씬 전환만 수행" 패턴. 목록 갱신(Refresh)/입장(Enter)/닫기(Close) 버튼은 `SetDownUpButton + OnButtonUp` 방식. 방 목록은 `InventoryUI`처럼 `Instantiate`로 컨테이너에 채움. 입장 버튼은 선택된 방이 정원 미달일 때만 활성화(`SetActive`). 현재는 더미 방 3개 표시, `OnEnter`에서 `Extensions.ChangeScene("GameScene")`
+- **UI_Button_Room**: 방 목록 개별 항목 컴포넌트. 방 이름 + 인원("current/max") 텍스트 표시, 클릭 시 자기 자신을 전달하는 `OnClicked` 이벤트 제공, `SetSelected`로 선택 색 표시. `UI_Button_Room.prefab` 루트에 추가하고 Button/두 텍스트를 연결
+- **UI_HUD_LobbyScene.OnEnterRoom**: 비어 있던 핸들러 → `Extensions.ShowPopup<UI_Popup_EnterRoom>(clickGuard: true)` 연결
+- **네트워크 연동 TODO 명시**: 연동 시 `Main.Network.ConnectToLobbyAsync` + `OnSessionListUpdated`의 `SessionInfo` 목록으로 더미 교체, 입장은 `Main.Network.JoinRoomAsync(new RoomJoinArgs(roomName))`로 교체
+
+**변경 이유:** 로비의 "방 입장" 버튼 핸들러가 비어 있었음. 이미 만들어진 `UI_Button_Room.prefab`(방 이름 + 4/4 인원 표시)을 활용해 방 목록 UI를 구성.
+
+**남은 에디터 작업:** ① `UI_Button_Room.prefab` 루트에 `UI_Button_Room` 컴포넌트 추가 후 Button(루트 UI_Button)·RoomNameText·PlayerCountText 연결 ② `UI_Popup_EnterRoom.prefab` 생성(MakeRoom 팝업 복제 권장) 후 RoomButtonPrefab·RoomListContainer·Enter/Refresh/Close 버튼 연결, Addressable 키 `UI_Popup_EnterRoom` 등록.
+
+**검증:** Unity Editor 미연결로 `uloop compile` 미수행 — 에디터 실행 후 컴파일 확인 필요.
+
+### 2. 방 입장 팝업 "안 뜸" 버그 수정 + 컴포넌트 기반 자동 탐색으로 재작성
+
+**파일(수정):** `UI_Popup_EnterRoom.cs`, `UI_Button_Room.cs`, `UI_HUD_LobbyScene.cs`, `UI_Popup_EnterRoom.prefab`
+
+- **근본 원인:** `Main.UI.ShowPopup<T>`는 `LoadAssetAsync<UI_Popup_EnterRoom>(key)`로 **컴포넌트 타입**으로 프리팹을 로드하는데(UIManager.cs:251), `UI_Popup_EnterRoom.prefab` 루트에 `UI_Popup_EnterRoom` 스크립트가 안 붙어 있어 로드가 null → 팝업이 안 떴음. (`UI_Button_Room.prefab`도 동일하게 루트에 스크립트 미부착)
+- **프리팹 수리:** `UI_Popup_EnterRoom.prefab` 루트(평범한 GameObject)에 `UI_Popup_EnterRoom` MonoBehaviour를 YAML로 추가(m_Component 등록 + 블록 추가), `RoomListContainer`는 ScrollView의 Content에 연결. → 팝업 정상 표시
+- **컴포넌트 기반 재작성(사용자 요청 "키 말고 컴포명으로"):** Addressable 키/직렬화 프리팹 참조를 쓰지 않고, 프리팹 계층(ScrollView/Content)에 배치된 방 버튼 오브젝트를 **템플릿으로 캐싱**해 복제. 컨테이너(ScrollRect.content)·빈 안내 텍스트("Empty" 이름 포함)도 자동 탐색
+- **템플릿 캐싱 + 런타임 컴포넌트 부착(사용자 요청 "미리 캐싱해놓고 생성"):** 템플릿은 `GameObject`로 1회 캐싱(`_template`), 복제본에 `GetOrAddComponent<UI_Button_Room>()`로 런타임에 컴포넌트를 붙임 → **프리팹에 UI_Button_Room 컴포넌트를 미리 안 붙여도 동작**(에디터 수작업 제거). 템플릿 탐색은 컨테이너 안의 `UI_Button_Room`(있으면) → `UI_Button`(없으면) 순
+- **UI_Button_Room 자동 탐색화:** `Button`(루트)·이름/인원 `TMP_Text`(자식 텍스트 순서)를 미연결 시 자동 획득. 방 클릭 → 정원 미달이면 입장(씬 전환)
+- **HUD:** `ShowPopup<UI_Popup_EnterRoom>(clickGuard: true, clickClose: true)` — 닫기 버튼이 없어 배경 클릭으로 닫도록
+
+**검증:** Unity Editor 미연결로 컴파일 미수행.
+
+### 3. 방 만들기 팝업 — 인원 버튼 선택 표시(이미지 알파)
+
+**파일(수정):** `UI_Popup_MakeRoom.cs`
+
+- 인원 버튼(`UI_Button_1`~`4`) 배경 이미지가 프리팹에서 알파 0으로 저작돼 있음. 미선택 색 알파를 `0.4`→`0`으로 변경해, 선택 버튼만 이미지가 켜지고(알파 1) 다른 버튼 클릭 시 이전 버튼은 `RefreshMaxPlayerButtons`가 알파 0으로 되돌림.
+
+### 4. 방 입장 팝업 — 더미 제거하고 실제 방 목록 연동
+
+**파일(수정):** `UI_Popup_EnterRoom.cs`, `NetworkManager.cs`
+
+- 더미 방 3개를 제거하고 실제 Photon 세션 목록을 조회해 표시하도록 전환("왜 더미를 두냐, 방 있는지 확인하고 만들어라" 요청).
+- **NetworkManager에 Fusion-free 방 목록 API 추가:** UI가 `Fusion.SessionInfo`에 직접 의존하지 않도록 값형식 `RoomInfo`(Name/PlayerCount/MaxPlayers/IsJoinable) 신설. `OnSessionListUpdated` 콜백에서 `IsVisible` 세션만 `RoomInfo`로 변환해 `OnRoomListUpdated` 이벤트로 발행. UI 진입점 `BrowseRoomsAsync()`(로비 미접속 시 `ConnectToLobbyAsync`)·`JoinRoomByNameAsync()` 추가(모두 `#if PHOTON_FUSION` 내부 가드, 미정의 시 false 반환).
+- **UI 흐름:** 열릴 때 `OnRoomListUpdated` 구독 + `BrowseRoomsAsync()` 호출 → 목록 수신 시 `RebuildRooms`로 다시 그림 → 방 클릭 시 `JoinRoomByNameAsync` 성공하면 `Close()` + `GameScene` 전환. 방 없으면 "Empty" 텍스트 표시.
+- **이벤트 해제 위치:** `OnDisable` 금지 규칙 준수. 베이스 `UI_Popup.OnDestroy`(트윈 정리)를 덮어쓰지 않으려고, 서브클래스에서 `OnDestroy`를 재정의하는 대신 `OnDestroyEvent.AddListener(Unsubscribe)`로 파괴 시 해제.
+
+### 5. 멀티플레이 마일스톤1 — "서로 이동 보이기" 코드 배선
+
+**방향(사용자 확정):** 첫 목표=서로 이동 보이기 / 이동=NetworkTransform+소유자 이동 / 월드=시드 공유(각 클라 로컬 생성). 호스트-클라(GameMode.Host/Client) 토폴로지.
+
+**파일(수정):** `NetworkManager.cs`, `Player.cs`, `WorldGenManager.cs`, `UI_Popup_MakeRoom.cs`, `UI_Popup_EnterRoom.cs`
+**파일(신규):** `NetworkWorldConfig.cs`
+
+- **결정론 점검:** WorldGen 파이프라인은 전부 `new System.Random(WorldSeed+채널)` 기반 → 시드 고정 시 결정론적. 비결정 지점은 시드/브랜치 미지정 시 랜덤뿐 → 호스트가 명시 공유로 해결. (`BreakableResourceNode`의 런타임 드롭 랜덤은 월드젠 아님, 향후 동적 동기화 대상)
+- **Player 원격 가드:** `OnLoopUpdate`/`OnLoopGameUpdate`에서 `!IsLocalPlayerObject()`면 로컬 시뮬(motor/상태머신) 스킵 → NetworkTransform이 위치 복제. 단일 플레이어는 NetworkObject 없어 그대로 동작.
+- **NetworkManager 확장:** ①세션 int 속성 공유(`RoomCreateArgs.Properties`, `CreateRoomAsync`가 `StartGameArgs.SessionProperties`로 실음, `TryGetSessionInt`로 읽음) ②호스트 캐릭터 스폰(`_playerCharacterPrefab`="Player" 로드, `NotifyWorldReady(spawnPoint)`→접속 전원 `Runner.Spawn`(InputAuthority 부여), 늦은 참가자는 OnPlayerJoined에서, 퇴장 시 Despawn) ③UI/씬 진입점 래퍼 `HostRoomAsync`/`JoinRoomByNameAsync`/`NotifyWorldReady`/`IsInRoom`(모두 `#if PHOTON_FUSION` 가드+미정의 스텁).
+- **NetworkWorldConfig:** 월드 옵션↔세션 int 속성 변환. 호스트 `ToProperties`, 클라 `ApplyFromSession()`→`WorldGenRequest.Set`.
+- **WorldGen 스폰 분기:** `Main.Network.IsInRoom`면 로컬 Instantiate 대신 `NotifyWorldReady(spawnPos)` 호출 후 `WaitForLocalNetworkPlayerAsync`로 자신의 로컬 플레이어(복제본)를 청크 타깃 지정. 싱글은 기존 로컬 스폰 유지.
+- **UI 배선:** MakeRoom=호스트 방 생성+시드/옵션 공유+`WorldGenRequest.Set`+씬 진입. EnterRoom=참가 후 `ApplyFromSession()`+씬 진입.
+
+**남은 에디터 작업(필수, 코드로 불가):**
+1. `Player.prefab`에 **NetworkObject + NetworkTransform** 추가.
+2. Fusion **NetworkProjectConfig 프리팹 테이블에 Player 등록**(Runner.Spawn 대상).
+3. `PhotonAppSettings`에 유효한 **Fusion AppId** (로비/방 접속 전제).
+4. Scripting Define에 **PHOTON_FUSION** 확인.
+
+**미해결/주의:** ①씬 동기화는 각 클라가 독립적으로 ChangeScene(Fusion NetworkSceneManager 미사용) — 호스트가 방 만들고 씬 들어간 뒤 클라가 참가/진입하는 순서 의존. ②`BrowseRoomsAsync`(JoinSessionLobby) 후 `JoinRoomAsync`(StartGame) 연속 호출은 Fusion 러너 상태 충돌 소지(기존 구조 그대로, 테스트 필요). ③원격 플레이어 애니메이션 동기화는 후속(현재 위치만 복제). ④RTS `CommandManager`/`SimulationManager`/`MultiplayerExample`은 캐릭터 제어와 무관한 잔재 — 이번 경로 미사용.
+
+**검증:** Unity Editor 미연결로 `uloop compile` 미수행 — 에디터에서 컴파일+플레이 테스트 필요.
+
 ## 2026-06-30
 
 ### 1. 몬스터 AI — 인지·추적·공격 (Idle→Chase→Attack)

@@ -150,6 +150,12 @@ public class Player : MonoBehaviour, IDamageable
     {
         if (motor == null || machine == null) return;
 
+        // 원격 플레이어(입력 권한 없음)는 로컬 시뮬레이션을 돌리지 않는다.
+        // 위치/회전은 NetworkTransform이 복제하므로, 여기서 motor/상태머신을 돌리면 충돌한다.
+        // (단일 플레이어는 NetworkObject가 없어 IsLocalPlayerObject()==true → 그대로 동작)
+        if (!IsLocalPlayerObject())
+            return;
+
         // 액션 연출 중에는 카메라 외 모든 입력 차단
         if (IsLocalPlayerObject() && machine.CurrentState is PlayerActionState)
             inputData?.SuppressAllInputs();
@@ -180,6 +186,10 @@ public class Player : MonoBehaviour, IDamageable
 
     private void OnLoopGameUpdate(float deltaTime)
     {
+        // 원격 플레이어는 로컬 시뮬레이션을 돌리지 않는다(NetworkTransform이 위치 복제).
+        if (!IsLocalPlayerObject())
+            return;
+
         machine.OnGameUpdate(deltaTime);
     }
 

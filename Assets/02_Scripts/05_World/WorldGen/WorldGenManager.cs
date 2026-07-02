@@ -218,28 +218,54 @@ public class WorldGenManager : MonoBehaviour
             ReportProgress(0.85f, "플레이어 준비");
 
             // ==========================================================
-            // 5단계: 플레이어 탐색 및 StartRegion으로 
+            // 5단계: 플레이어 스폰
+            //   - 멀티: 호스트가 Runner.Spawn으로 네트워크 스폰(각 클라는 복제된 로컬 플레이어를 청크 타깃으로)
+            //   - 싱글: 기존 로컬 스폰
             // ==========================================================
-            if (_playerInstance == null)
-            {
-                Player player = await Extensions.Instantiate<Player>("Player");
-                if (player != null)
-                {
-                    _playerInstance = player.gameObject;
-                }
-            }
+            float spawnTileHeight = logicData.GetHeightAt(startingX, startingZ);
+            Vector3 spawnPos = new Vector3(startingX, spawnTileHeight + 20f, startingZ);
 
-            if (_playerInstance != null)
+            bool isMultiplayer = Main.Network != null && Main.Network.IsInRoom;
+            if (isMultiplayer)
             {
-                _playerInstance.SetActive(true);
-                 var spawnTileHeight = logicData.GetHeightAt(startingX, startingZ);
-                _playerInstance.transform.position = new Vector3(startingX, spawnTileHeight + 20f, startingZ);
-                _worldChunkDirector.isPlayerSpawned = true;
-                _worldChunkDirector.SetTarget(_playerInstance.transform);
+                // 캐릭터는 호스트가 네트워크로 스폰한다. 클라는 로컬 스폰하지 않는다.
+                Main.Network.NotifyWorldReady(spawnPos);
+
+                // 자신의 로컬 플레이어가 복제되어 등장하면 청크 스트리밍 타깃으로 지정
+                Player localPlayer = await WaitForLocalNetworkPlayerAsync(_cts.Token);
+                if (localPlayer != null)
+                {
+                    _playerInstance = localPlayer.gameObject;
+                    _worldChunkDirector.isPlayerSpawned = true;
+                    _worldChunkDirector.SetTarget(_playerInstance.transform);
+                }
+                else
+                {
+                    Debug.LogWarning("🚨 로컬 네트워크 플레이어를 찾지 못했습니다.");
+                }
             }
             else
             {
-                Debug.LogWarning("🚨 'Player' 오브젝트가 없습니다!");
+                if (_playerInstance == null)
+                {
+                    Player player = await Extensions.Instantiate<Player>("Player");
+                    if (player != null)
+                    {
+                        _playerInstance = player.gameObject;
+                    }
+                }
+
+                if (_playerInstance != null)
+                {
+                    _playerInstance.SetActive(true);
+                    _playerInstance.transform.position = spawnPos;
+                    _worldChunkDirector.isPlayerSpawned = true;
+                    _worldChunkDirector.SetTarget(_playerInstance.transform);
+                }
+                else
+                {
+                    Debug.LogWarning("🚨 'Player' 오브젝트가 없습니다!");
+                }
             }
 
             _simulationManager = Extensions.GetOrAddComponent<WorldSimulationManager>(this.gameObject);
@@ -251,6 +277,27 @@ public class WorldGenManager : MonoBehaviour
         {
             Debug.Log("맵 생성 취소됨");
         }
+    }
+
+    // 멀티: 자신의 로컬 플레이어 캐릭터가 네트워크로 복제되어 등장할 때까지 대기한다.
+    private async UniTask<Player> WaitForLocalNetworkPlayerAsync(CancellationToken token)
+    {
+        const float timeoutSec = 15f;
+        float elapsed = 0f;
+
+        while (elapsed < timeoutSec)
+        {
+            Player[] players = UnityEngine.Object.FindObjectsByType<Player>(FindObjectsSortMode.None);
+            foreach (Player p in players)
+            {
+                if (p != null && p.IsLocalPlayer) return p;
+            }
+
+            await UniTask.Delay(100, cancellationToken: token);
+            elapsed += 0.1f;
+        }
+
+        return null;
     }
 
 

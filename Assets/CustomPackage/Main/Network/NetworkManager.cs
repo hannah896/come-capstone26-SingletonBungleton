@@ -32,14 +32,29 @@ public class NetworkManager : CoreManager
     // 플레이어 데이터 프리팹 Addressable 키
     private const string PLAYER_DATA_PREFAB_KEY = "NetworkPlayerData";
 
+    // 플레이어 캐릭터(조작 대상) 프리팹 Addressable 키
+    private const string PLAYER_CHARACTER_PREFAB_KEY = "Player";
+
     // Fusion NetworkRunner 인스턴스
     private NetworkRunner _runner;
 
     // 플레이어 입장 시 스폰할 NetworkPlayerData 프리팹 (GameObject로 보관하여 IL Weaver 충돌 방지)
     private GameObject _playerDataPrefab;
 
+    // 플레이어 캐릭터 프리팹 (NetworkObject 포함)
+    private GameObject _playerCharacterPrefab;
+
     // 접속 중인 플레이어 데이터
     private readonly Dictionary<PlayerRef, NetworkPlayerData> _players = new();
+
+    // 이 클라가 스폰한 자신의 플레이어 캐릭터 (Shared 모드: 각자 자기 캐릭터 소유, 중복 스폰 방지)
+    private NetworkObject _localCharacter;
+
+    // 월드 생성 완료 여부 (호스트가 캐릭터 스폰 시점을 판단)
+    private bool _worldReady;
+
+    // 캐릭터 스폰 위치 (월드 생성 후 호스트가 확정)
+    private Vector3 _spawnPoint;
 
     // 최대 플레이어 수
     private int _maxPlayers = 4;
@@ -99,6 +114,9 @@ public class NetworkManager : CoreManager
     // 네트워크 상태 변경 시 발생
     public event Action<NetworkState> OnStateChanged;
 
+    // 방 목록 갱신 시 발생 (Fusion 타입에 의존하지 않는 RoomInfo로 전달)
+    public event Action<List<RoomInfo>> OnRoomListUpdated;
+
     #endregion
 
 #if PHOTON_FUSION
@@ -133,10 +151,17 @@ public class NetworkManager : CoreManager
         // Addressables에서 NetworkPlayerData 프리팹 로드
         _playerDataPrefab = await Main.Resource.LoadAssetAsync<GameObject>(PLAYER_DATA_PREFAB_KEY, AssetCacheType.Required);
 
+        // 플레이어 캐릭터 프리팹 로드 (NetworkObject 포함되어 있어야 Runner.Spawn 가능)
+        _playerCharacterPrefab = await Main.Resource.LoadAssetAsync<GameObject>(PLAYER_CHARACTER_PREFAB_KEY, AssetCacheType.Required);
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (_playerDataPrefab == null)
         {
             Debug.LogError($"[NetworkManager] Failed to load player data prefab: {PLAYER_DATA_PREFAB_KEY}");
+        }
+        if (_playerCharacterPrefab == null)
+        {
+            Debug.LogError($"[NetworkManager] Failed to load player character prefab: {PLAYER_CHARACTER_PREFAB_KEY}");
         }
 #endif
 #endif
@@ -201,11 +226,23 @@ public class NetworkManager : CoreManager
 
         SetState(NetworkState.Connecting);
 
+        // 방 생성자(호스트)가 정한 int 속성(월드 시드/옵션 등)을 세션에 실어 모든 참가자에게 공유
+        Dictionary<string, SessionProperty> sessionProps = null;
+        if (args.Properties != null && args.Properties.Count > 0)
+        {
+            sessionProps = new Dictionary<string, SessionProperty>(args.Properties.Count);
+            foreach (var kv in args.Properties)
+                sessionProps[kv.Key] = kv.Value; // int → SessionProperty 암시적 변환
+        }
+
         var startArgs = new StartGameArgs
         {
-            GameMode = GameMode.Host,
+            // Shared 모드: 각 클라가 자기 오브젝트의 StateAuthority를 가져 소유자 이동 + NetworkTransform 복제가 성립.
+            // (Host 모드에선 호스트만 StateAuthority라 클라의 로컬 이동이 복제되지 않음)
+            GameMode = GameMode.Shared,
             SessionName = args.RoomName,
             PlayerCount = args.MaxPlayers,
+            SessionProperties = sessionProps,
             ObjectProvider = _runner.GetComponent<FusionPoolProvider>()
         };
 
@@ -240,7 +277,8 @@ public class NetworkManager : CoreManager
 
         var startArgs = new StartGameArgs
         {
-            GameMode = GameMode.Client,
+            // Shared 모드로 같은 세션에 참가 (존재하면 참가, 없으면 생성)
+            GameMode = GameMode.Shared,
             SessionName = args.RoomName,
             ObjectProvider = _runner.GetComponent<FusionPoolProvider>()
         };
@@ -335,6 +373,33 @@ public class NetworkManager : CoreManager
 
     #endregion
 
+    #region 캐릭터 스폰 (Fusion)
+
+    // Shared 모드: 각 클라가 자기 플레이어를 스폰(스폰한 클라가 State/Input Authority 보유).
+    private void SpawnLocalPlayerCharacter()
+    {
+        if (!_worldReady || _runner == null || _localCharacter != null) return;
+
+        if (_playerCharacterPrefab == null) return;
+
+        var netObj = _playerCharacterPrefab.GetComponent<NetworkObject>();
+        if (netObj == null)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogError("[NetworkManager] Player 프리팹에 NetworkObject가 없습니다. Runner.Spawn 불가.");
+#endif
+            return;
+        }
+
+        _localCharacter = _runner.Spawn(netObj, _spawnPoint, Quaternion.identity);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[NetworkManager] Local player character spawned at {_spawnPoint}");
+#endif
+    }
+
+    #endregion
+
     #region INetworkRunnerCallbacks
 
     // 플레이어 입장 시 호스트가 NetworkPlayerData 스폰
@@ -361,19 +426,20 @@ public class NetworkManager : CoreManager
                 playerData.OwnerRef = player;
             }
         }
+        // 캐릭터는 각 클라가 자기 월드 생성 완료 시 NotifyWorldReady에서 스폰한다(Shared 모드).
     }
 
-    // 플레이어 퇴장 시 호스트가 Despawn 처리
+    // 플레이어 퇴장 처리 (자기 캐릭터는 Fusion이 소유자 이탈 시 정리)
     void INetworkRunnerCallbacks.OnPlayerLeft(NetworkRunner runner, PlayerRef player)
     {
         if (runner.IsServer && _players.TryGetValue(player, out var data))
         {
             runner.Despawn(data.Object);
+        }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            Debug.Log($"[NetworkManager] Player left, despawned: {player}");
+        Debug.Log($"[NetworkManager] Player left: {player}");
 #endif
-        }
     }
 
     // Fusion Input 수집 — CommandManager에서 입력 데이터를 가져옴
@@ -387,6 +453,16 @@ public class NetworkManager : CoreManager
     void INetworkRunnerCallbacks.OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList)
     {
         OnSessionListUpdated?.Invoke(sessionList);
+
+        // Fusion 타입에 의존하지 않는 RoomInfo로 변환해 UI에 전달
+        var rooms = new List<RoomInfo>(sessionList.Count);
+        foreach (var session in sessionList)
+        {
+            // 목록에 노출되고 참가 가능한 방만 (닫힌/숨김 세션 제외)
+            if (!session.IsVisible) continue;
+            rooms.Add(new RoomInfo(session.Name, session.PlayerCount, session.MaxPlayers));
+        }
+        OnRoomListUpdated?.Invoke(rooms);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[NetworkManager] Session list updated: {sessionList.Count} sessions");
@@ -468,11 +544,101 @@ public class NetworkManager : CoreManager
         }
 
         _players.Clear();
+        _localCharacter = null;
+        _worldReady = false;
     }
 
     #endregion
 
 #endif
+
+    #region 방 탐색 (UI 진입점)
+
+    /// <summary>
+    /// 방 목록 탐색을 시작합니다. 아직 로비에 없으면 로비에 접속합니다.
+    /// 접속 후 방 목록은 OnRoomListUpdated 이벤트로 전달됩니다.
+    /// </summary>
+    public async UniTask<bool> BrowseRoomsAsync(string lobbyName = "default")
+    {
+#if PHOTON_FUSION
+        if (State >= NetworkState.InLobby) return true;
+        return await ConnectToLobbyAsync(lobbyName);
+#else
+        await UniTask.CompletedTask;
+        return false;
+#endif
+    }
+
+    /// <summary>
+    /// 방 이름으로 참가합니다. (UI에서 방 클릭 시 호출)
+    /// </summary>
+    public async UniTask<bool> JoinRoomByNameAsync(string roomName)
+    {
+#if PHOTON_FUSION
+        return await JoinRoomAsync(new RoomJoinArgs(roomName));
+#else
+        await UniTask.CompletedTask;
+        return false;
+#endif
+    }
+
+    /// <summary>
+    /// 호스트로 방을 생성합니다. (UI에서 방 만들기 시 호출)
+    /// properties: 세션에 공유할 int 속성(월드 시드/옵션 등).
+    /// </summary>
+    public async UniTask<bool> HostRoomAsync(
+        string roomName, int maxPlayers, IReadOnlyDictionary<string, int> properties = null)
+    {
+#if PHOTON_FUSION
+        return await CreateRoomAsync(new RoomCreateArgs(roomName, maxPlayers, properties));
+#else
+        await UniTask.CompletedTask;
+        return false;
+#endif
+    }
+
+    #endregion
+
+    #region 월드/캐릭터 스폰 (GameScene 진입점)
+
+    // 현재 방(세션)에 참가한 멀티플레이 상태인지 여부
+    public bool IsInRoom => State >= NetworkState.InRoom;
+
+    /// <summary>
+    /// 세션에 공유된 int 속성을 읽습니다. (월드 시드/옵션 등)
+    /// </summary>
+    public bool TryGetSessionInt(string key, out int value)
+    {
+        value = 0;
+#if PHOTON_FUSION
+        SessionInfo info = _runner != null ? _runner.SessionInfo : null;
+        if (info != null && info.IsValid && info.Properties != null &&
+            info.Properties.TryGetValue(key, out var prop))
+        {
+            value = prop; // SessionProperty → int 암시적 변환
+            return true;
+        }
+#endif
+        return false;
+    }
+
+    /// <summary>
+    /// GameScene에서 월드 생성이 끝난 뒤 호출합니다.
+    /// 호스트면 스폰 위치를 확정하고 접속 중인 모든 플레이어의 캐릭터를 스폰합니다.
+    /// (클라이언트는 캐릭터가 네트워크로 복제되어 도착하므로 별도 처리 없음)
+    /// </summary>
+    public void NotifyWorldReady(Vector3 spawnPoint)
+    {
+#if PHOTON_FUSION
+        _spawnPoint = spawnPoint;
+        _worldReady = true;
+
+        // Shared 모드: 각 클라가 자기 캐릭터를 스폰한다(호스트가 전원 스폰하지 않음).
+        SpawnLocalPlayerCharacter();
+#endif
+    }
+
+    #endregion
 
     #region Internal Methods
 
@@ -496,11 +662,16 @@ public class NetworkManager : CoreManager
 #if PHOTON_FUSION
         CleanupRunner().Forget();
         _playerDataPrefab = null;
+        _playerCharacterPrefab = null;
+        _localCharacter = null;
+        _worldReady = false;
         Main.Resource?.Release(PLAYER_DATA_PREFAB_KEY);
+        Main.Resource?.Release(PLAYER_CHARACTER_PREFAB_KEY);
 #endif
 
         State = NetworkState.Disconnected;
         OnStateChanged = null;
+        OnRoomListUpdated = null;
 
 #if PHOTON_FUSION
         OnPlayerJoinedEvent = null;
@@ -535,10 +706,17 @@ public readonly struct RoomCreateArgs
     public readonly string RoomName;
     public readonly int MaxPlayers;
 
-    public RoomCreateArgs(string roomName, int maxPlayers = 4)
+    // 세션에 공유할 int 속성(월드 시드/브랜치/루프/사이즈 등). NetworkManager는 값을 해석하지 않고 전달만 한다.
+    public readonly System.Collections.Generic.IReadOnlyDictionary<string, int> Properties;
+
+    public RoomCreateArgs(
+        string roomName,
+        int maxPlayers = 4,
+        System.Collections.Generic.IReadOnlyDictionary<string, int> properties = null)
     {
         RoomName = roomName;
         MaxPlayers = maxPlayers;
+        Properties = properties;
     }
 }
 
@@ -552,6 +730,26 @@ public readonly struct RoomJoinArgs
     public RoomJoinArgs(string roomName)
     {
         RoomName = roomName;
+    }
+}
+
+/// <summary>
+/// 방 목록 표시용 정보 (Fusion SessionInfo를 UI에 노출하지 않기 위한 값형식)
+/// </summary>
+public readonly struct RoomInfo
+{
+    public readonly string Name;
+    public readonly int PlayerCount;
+    public readonly int MaxPlayers;
+
+    // 정원 미달이면 참가 가능
+    public bool IsJoinable => PlayerCount < MaxPlayers;
+
+    public RoomInfo(string name, int playerCount, int maxPlayers)
+    {
+        Name = name;
+        PlayerCount = playerCount;
+        MaxPlayers = maxPlayers;
     }
 }
 
