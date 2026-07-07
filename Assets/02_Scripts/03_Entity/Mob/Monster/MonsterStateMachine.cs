@@ -1,9 +1,10 @@
 /// <summary>
 /// Monster 전용 상태 머신. 상태 생성·전환 로직을 Monster 본체에서 분리해 이 클래스가 전담한다.
+/// 종류별 몬스터는 이 클래스를 상속해 To* 전환 메서드를 오버라이드하면 전용 상태로 교체할 수 있다.
 /// </summary>
 public class MonsterStateMachine : StateMachine<MobState<Monster>>
 {
-    private readonly Monster owner;
+    protected readonly Monster owner;
 
     public MonsterStateMachine(Monster owner)
     {
@@ -11,15 +12,15 @@ public class MonsterStateMachine : StateMachine<MobState<Monster>>
         Init(new MonsterIdleState(owner, this)); // 초기 상태
     }
 
-    public void ToIdle()
+    public virtual void ToIdle()
         => ChangeState(new MonsterIdleState(owner, this));
 
-    public void ToChase()
+    public virtual void ToChase()
         => ChangeState(new MonsterChaseState(owner, this));
 
-    public void ToAttack()
+    public virtual void ToAttack()
         => ChangeState(new MonsterAttackState(owner, this));
 
-    public void ToDead()
+    public virtual void ToDead()
         => ChangeState(new MobDeadState<Monster>(owner, this));
 }

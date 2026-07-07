@@ -129,7 +129,8 @@ public class Monster : Mob
 
     public void ClearTarget() => target = null;
 
-    private float PlanarDistanceToTarget()
+    /// <summary>타깃과의 수평(Y 무시) 거리. 파생 몬스터의 사거리 판정에 사용한다.</summary>
+    protected float PlanarDistanceToTarget()
     {
         Vector3 d = target.transform.position - transform.position;
         d.y = 0f;

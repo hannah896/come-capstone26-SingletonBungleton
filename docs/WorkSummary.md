@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-07-07
+
+### 1. Mischief 몬스터 구현 (슬래시 + 프로젝타일 하이브리드)
+
+**파일(신규):** `Assets/02_Scripts/03_Entity/Mob/Monster/Mischief/{Mischief,MischiefStateMachine,MischiefAttackState,MischiefStatData}.cs`, `Assets/02_Scripts/03_Entity/Mob/Monster/MonsterProjectile.cs`
+**파일(수정):** `Assets/02_Scripts/03_Entity/Mob/Monster/{Monster,MonsterStateMachine}.cs`
+
+- **공격 설계**: 베이스 `AttackRange`를 프로젝타일 사거리(공격 상태 진입 거리)로 재해석. `MischiefStatData`(MonsterStatData 상속)에 `SlashRange`(짧은 근접 사거리), `ProjectileCooldown`(긴 내부 쿨), `ProjectileKey/Speed/LifeTime/Damage`, `MuzzleHeight` 추가
+- **MischiefAttackState**: 거리 기반 공격 선택 — ① SlashRange 이내면 슬래시(내부 쿨 없음, `MinAttackPeriod` 주기만 적용, 진입 즉시 1타) ② 그 밖 ~ AttackRange 이내면 프로젝타일(쿨 준비 시) ③ 프로젝타일 쿨 대기 중엔 `ChaseStep`으로 슬래시 사거리까지 접근. AttackRange 이탈 → Chase, 타깃 소실 → Idle
+- **Mischief 본체**: `CreateStateMachine` 오버라이드로 전용 머신 사용. 프로젝타일 쿨타임은 `OnGameUpdate`에서 상태와 무관하게 항상 감소(상태 전환으로 쿨 리셋되는 문제 방지). `FireProjectile`이 풀 스폰(`Extensions.SpawnAsync`) 후 타깃 몸통 높이로 조준 발사, await 사이 타깃 소실 시 발사 취소
+- **MonsterProjectile**: 풀링(IPoolable) 직선 투사체. `Main.Loop.OnGameUpdate` 구독(해제는 OnDestroy)으로 이동, 매 프레임 `OverlapSphere`로 Player만 명중 판정(`DamageContext` 적용), 수명 초과 시 미명중 회수. `Init` 호출 전까지 비행하지 않음
+- **확장 포인트(기존 파일)**: `MonsterStateMachine.To*` 메서드를 `virtual`로, `owner`를 `protected`로 변경(종류별 몬스터가 특정 상태만 교체 가능). `Monster.PlanarDistanceToTarget()`을 `protected`로 공개
+
+**에디터 배선(uloop로 완료):**
+- `Imp Mischief.prefab` 루트 컴포넌트 `Monster` → `Mischief` 교체, `animator`(IMP_S 컨트롤러) 및 `statData` 필드 연결
+- 스탯 SO 신규: `Assets/05_Datas/SO/MonsterStatData/IMP_Mischief.asset` (DetectRange=10, AttackRange(프로젝타일)=6, SlashRange=1.5, ProjectileCooldown=5, MinAttackPeriod=2 등)
+- 투사체 프리팹 신규: `Assets/03_Prefabs/Monster/MischiefProjectile.prefab` (Sphere 0.3, MonsterProjectile 부착) → Addressable 주소 "MischiefProjectile"로 Common 그룹 등록
+
+**검증:** `uloop compile` 성공 (에러 0, 경고 16건은 모두 기존 것). 플레이 모드 실동작 테스트는 아직 안 함.
+
+**남은 TODO/이슈:** ① `Imp Mischief.prefab` 자체는 Addressable 미등록 — `Monster.SpawnAsync(key, …)`로 스폰하려면 등록 필요(스포너 작업 시 키 네이밍과 함께 결정) ② 투사체가 벽/지형에 막히지 않음(플레이어만 판정) — 필요 시 차단 레이어 추가 ③ 애니메이션 상태명(idle/move/attack/dead)이 프리팹에 비어 있음 — IMP_S 컨트롤러의 스테이트명 확인 후 세팅 ④ Devil/Demon 몬스터 미구현
+
+---
+
 ## 2026-07-06
 
 ### 1. NetworkManager Photon Fusion Host 모드 전면 리팩토링
