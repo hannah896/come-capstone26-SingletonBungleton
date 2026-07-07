@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-07-06
+
+### 1. NetworkManager Photon Fusion Host 모드 전면 리팩토링
+
+**파일(수정):** `Assets/CustomPackage/Main/Network/{NetworkManager,NetworkPlayerData,NetworkInputData}.cs`, `Assets/02_Scripts/@Scripts/99_Utils/Enums.cs`, `Assets/02_Scripts/03_Entity/Player/Player.cs`, `Assets/03_Prefabs/Player/Player_Femaie.prefab`
+**파일(신규):** `Assets/CustomPackage/Main/Network/NetworkPlayerSync.cs`
+
+- **참가 모드 수정**: `JoinRoomAsync`가 `GameMode.Host` → `GameMode.Client`로 변경. 기존 코드는 참가자도 Host로 시작해 같은 이름의 새 세션을 만들려다 실패하는 구조였음
+- **스폰 호스트 전담**: `OnPlayerJoined`에서 호스트만 `NetworkPlayerData`를 스폰(`inputAuthority: player` 부여). 기존의 "각 클라가 자기 오브젝트 스폰" 방식은 Shared 모드 잔재로 Host 모드에서는 클라 `Runner.Spawn` 자체가 불가
+- **캐릭터 스폰도 호스트 전담**: `NotifyWorldReady` 시 호스트가 접속 중인 전 플레이어의 캐릭터를 성별(`CharacterIndex`)에 맞는 프리팹으로 일괄 스폰. `_characters` 딕셔너리로 추적하고 퇴장 시 데이터/캐릭터 모두 호스트가 명시적 `Despawn` (Host 모드에서는 `DestroyWhenStateAuthorityLeaves` 자동 정리가 동작하지 않으므로)
+- **클라 상태 쓰기 → RPC화**: `NetworkPlayerData.SetName/SetCharacter`가 호스트는 직접 쓰기, 클라는 `Rpc(InputAuthority → StateAuthority)`로 요청. 클라는 스폰 직후 `Rpc_SetProfile`로 로컬 선택 이름/성별을 호스트에 등록
+- **방장 로직 단순화**: `IsMaster`는 스폰 시 호스트가 기록(호스트 = 방장 고정). `IsSharedModeMasterClient` 및 방장 승계 로직 제거. `IsHost => _runner.IsServer` 프로퍼티 추가
+- **이동 동기화 신규 구현(`NetworkPlayerSync`)**: 입력 권한 클라가 로컬 시뮬레이션(HFSM/PlayerMotor) 결과 위치/Yaw를 Fusion Input(`NetworkInputData.CharacterPosition/Yaw`)으로 호스트에 보고 → 호스트가 `FixedUpdateNetwork`에서 확정([Networked]) → 프록시는 `Render`에서 보간(스냅 거리 8m). 기존 HFSM/Motor/카메라 코드는 무수정 유지
+- **누락 타입 정의**: 참조만 되고 정의가 없던 `PlayerCharacter` enum(Enums.cs), `WaitingPlayerInfo` struct(NetworkManager.cs) 추가 — 이전 커밋 기준 컴파일 불가 상태였음
+- **러너 수명 관리**: `OnShutdown`에서 죽은 러너 GameObject 파괴 + 참조 해제(재접속 가능하도록), `Clear()`에 남자 프리팹 키 Release 누락 보완
+- **프리팹**: `Player_Femaie.prefab`(기본)에 `NetworkPlayerSync` 부착 — `Player_Male.prefab`은 변형이라 자동 상속
+
+**변경 이유:** Shared 모드 패턴(각 클라 스폰·소유자 StateAuthority 직접 쓰기·마스터클라 승계)이 Host 모드 세션(`GameMode.Host`)과 섞여 있어 참가/스폰/상태 쓰기가 전부 동작하지 않는 상태였음. Host 모드 권한 모델(호스트 = 전체 StateAuthority, 클라 = 자기 오브젝트 InputAuthority)로 일원화.
+
+**검증:** `uloop compile` 성공 (에러 0, 경고 16건은 모두 기존 것). 프리팹 컴포넌트 부착은 YAML로 확인.
+
+**남은 TODO/이슈:** ① 애니메이션 동기화 없음 — 원격 캐릭터는 위치만 복제되고 애니는 Idle 고정(다음 단계: 애니 파라미터를 input/[Networked]로 추가) ② 캐릭터 프리팹(Player/Player_Male)의 Fusion 스폰 등록(NetworkProjectConfig 베이킹)은 에디터에서 실스폰 테스트 필요 ③ 호스트 퇴장 시 세션 종료 → 클라를 로비로 되돌리는 UI 처리 미구현 (`OnShutdownEvent` 구독 필요)
+
+---
+
 ## 2026-07-02
 
 ### 1. 방 입장 팝업 (UI_Popup_EnterRoom)

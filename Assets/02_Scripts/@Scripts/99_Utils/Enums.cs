@@ -1,4 +1,13 @@
 /// <summary>
+/// 플레이어 캐릭터 성별 (대기방 선택 / 스폰 프리팹 분기용)
+/// </summary>
+public enum PlayerCharacter
+{
+    Female = 0,
+    Male = 1,
+}
+
+/// <summary>
 /// 플레이어가 상호작용 대상에 도달했을 때 수행할 액션 종류
 /// </summary>
 public enum ActionType

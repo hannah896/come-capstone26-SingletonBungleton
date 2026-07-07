@@ -14,8 +14,10 @@ GameObject:
   - component: {fileID: 3458799336253370163}
   - component: {fileID: 2209426419262318571}
   - component: {fileID: 5601182068425426865}
+  - component: {fileID: 9146008707785666234}
+  - component: {fileID: 338181743308742530}
   m_Layer: 31
-  m_Name: Player
+  m_Name: Player_Femaie
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -181,6 +183,39 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ddbbce5581b91654598a8c87aa7a4a0f, type: 2}
   - {fileID: 11400000, guid: 9e6704d5c5132834594962d2ac92fc07, type: 2}
   stackCounts: 
+--- !u!114 &9146008707785666234
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 291828927232711877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -1552182283, guid: e725a070cec140c4caffb81624c8c787, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  SortKey: 1507824649
+  ObjectInterest: 1
+  Flags: 262145
+  NestedObjects: []
+  NetworkedBehaviours:
+  - {fileID: 338181743308742530}
+  ForceRemoteRenderTimeframe: 0
+--- !u!114 &338181743308742530
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 291828927232711877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccbc565bcc26ccd408d4278a299148ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _lerpSpeed: 12
+  _snapDistance: 8
 --- !u!1 &783732110047109408
 GameObject:
   m_ObjectHideFlags: 0

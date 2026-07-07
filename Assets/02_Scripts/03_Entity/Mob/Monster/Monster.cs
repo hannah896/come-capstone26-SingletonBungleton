@@ -33,12 +33,15 @@ public class Monster : Mob
     [SerializeField] private string deadAnim = "";
     #endregion
 
-    private MonsterStateMachine stateMachine;
+    protected MonsterStateMachine stateMachine;
     private Player target;
 
     private MonsterStatData MonsterData => statData as MonsterStatData;
 
     #region Properties (상태 클래스에서 사용)
+    /// <summary>현재 추적 중인 타깃. 파생 몬스터/전용 상태에서 읽기 전용으로 사용한다.</summary>
+    public Player Target => target;
+
     public float DetectRange => MonsterData != null ? MonsterData.DetectRange : 0f;
     public float AttackRange => MonsterData != null ? MonsterData.AttackRange : 0f;
     public float FOV => MonsterData != null ? MonsterData.FOV : 360f;
@@ -54,7 +57,7 @@ public class Monster : Mob
     protected override void Awake()
     {
         base.Awake();
-        stateMachine = new MonsterStateMachine(this);
+        stateMachine = CreateStateMachine();
     }
 
     // 풀에서 재사용될 때: 스탯(base) + 타깃/상태머신을 초기 상태로 되돌린다.
@@ -62,8 +65,14 @@ public class Monster : Mob
     {
         base.OnSpawn();
         target = null;
-        stateMachine = new MonsterStateMachine(this);
+        stateMachine = CreateStateMachine();
     }
+
+    /// <summary>
+    /// 상태머신 생성 팩토리. 종류별 몬스터는 오버라이드해 전용 머신(상태 그래프)으로 교체한다.
+    /// </summary>
+    protected virtual MonsterStateMachine CreateStateMachine()
+        => new MonsterStateMachine(this);
 
     // 스탯 SO 주입 시 드롭테이블(MonsterStatData.DropTable)도 함께 세팅한다.
     public override void ApplyStatData(EntityStatData data)
