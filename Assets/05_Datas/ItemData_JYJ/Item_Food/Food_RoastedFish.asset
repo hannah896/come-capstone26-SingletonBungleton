@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
+  m_Name: Food_RoastedFish
+  m_EditorClassIdentifier:
+  itemID: RoastedFish
+  itemName: 구운생선
+  description: 음식_구운생선 입니다.
+  icon: {fileID: 0}
+  prefab: {fileID: 1732727999871099080, guid: 6d4b1defd79d42459a2537183780a044, type: 3}
+  itemType: 4
+  survivalToolType: 0
+  combatGearType: 0
+  resourceType: 0
+  bootyType: 0
+  foodType: 9
+  dishType: 0
+  specialType: 0
+  isStackable: 1
+  maxStack: 10
+  equipSlot: 0
+  hasDurability: 0
+  maxDurability: 0
+  costPerDurability: 1
+  attackDamage: 0
+  attackRange: 0
+  defense: 0
+  hungerRestore: 25
+  healthRestore: 8
+  egoRestore: 3
+  expirationTime: 7200
+  isPlaceable: 0
+  placementPrefab: {fileID: 0}
+  placementFootprint: {x: 1, y: 1}
+  placementPivotOffset: {x: 0, y: 0, z: 0}
+  placementSnapToGrid: 1
+  placementCheckHeight: 2
+  placementCheckCenterOffset: {x: 0, y: 0, z: 0}
