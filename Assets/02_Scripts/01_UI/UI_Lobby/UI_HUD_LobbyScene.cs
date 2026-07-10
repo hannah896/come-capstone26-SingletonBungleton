@@ -29,16 +29,14 @@ public class UI_HUD_LobbyScene : UI_Hud
 
     private void OnMakeRoom()
     {
-        // TODO: 나중엔 방 데이터 UI를 띄우는 흐름으로 교체.
-        // 지금은 바로 게임씬으로 전환 — ChangeScene이 UI_Screen_Transition(전환 오버레이)을
-        // 자동으로 띄워 로딩 화면 역할을 하고, GameScene EnterScene이 월드 생성을 끝낸 뒤 닫힌다.
-        // (WorldGenRequest가 없으면 GameScene이 기본 옵션으로 월드를 생성)
-        Extensions.ChangeScene("GameScene");
+        // 방 만들기 팝업을 띄운다. 방 이름/최대 인원 선택 후 팝업에서 게임씬으로 전환한다.
+        Extensions.ShowPopup<UI_Popup_MakeRoom>(clickGuard: true).Forget();
     }
 
-    private void OnEnterRoom() 
+    private void OnEnterRoom()
     {
-
+        // 방 입장 팝업을 띄운다. 방 목록에서 선택 후 팝업에서 게임씬으로 전환한다.
+        Extensions.ShowPopup<UI_Popup_EnterRoom>(clickGuard: true, clickClose: true).Forget();
     }
 
     private void OnSetting() 

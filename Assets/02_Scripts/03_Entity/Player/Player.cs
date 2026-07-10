@@ -2,7 +2,7 @@ using Cysharp.Threading.Tasks;
 using Fusion;
 using UnityEngine;
 
-public class Player : MonoBehaviour
+public class Player : MonoBehaviour, IDamageable
 {
     #region State
     [SerializeField] private PlayerRootStateMachine machine;
@@ -150,6 +150,12 @@ public class Player : MonoBehaviour
     {
         if (motor == null || machine == null) return;
 
+        // 원격 플레이어(입력 권한 없음)는 로컬 시뮬레이션을 돌리지 않는다.
+        // 위치/회전은 NetworkPlayerSync가 복제하므로, 여기서 motor/상태머신을 돌리면 충돌한다.
+        // (단일 플레이어는 NetworkObject가 없어 IsLocalPlayerObject()==true → 그대로 동작)
+        if (!IsLocalPlayerObject())
+            return;
+
         // 액션 연출 중에는 카메라 외 모든 입력 차단
         if (IsLocalPlayerObject() && machine.CurrentState is PlayerActionState)
             inputData?.SuppressAllInputs();
@@ -180,6 +186,10 @@ public class Player : MonoBehaviour
 
     private void OnLoopGameUpdate(float deltaTime)
     {
+        // 원격 플레이어는 로컬 시뮬레이션을 돌리지 않는다(NetworkPlayerSync가 위치 복제).
+        if (!IsLocalPlayerObject())
+            return;
+
         machine.OnGameUpdate(deltaTime);
     }
 
@@ -193,6 +203,19 @@ public class Player : MonoBehaviour
             action.OnActionEvent();
     }
 
+    #region IDamageable
+    // 몬스터 등 외부 공격 수신구. 자원 채집과 동일한 DamageContext 계약을 사용한다.
+    public bool CanDamage(DamageContext damageCtx)
+        => stat != null && !stat.IsDead && damageCtx.Amount > 0;
+
+    public void ApplyDamage(DamageContext damageCtx)
+    {
+        if (!CanDamage(damageCtx)) return;
+        // TakeDamage → OnDamaged → HandleDamaged 로 PlayerHurtState 전환까지 이어진다.
+        stat.TakeDamage(damageCtx.Amount);
+    }
+    #endregion
+
     private void HandleDamaged(float damage)
     {
         if (machine == null) return;
@@ -200,9 +223,19 @@ public class Player : MonoBehaviour
         machine.ChangeState(new PlayerHurtState(machine));
     }
 
+    private NetworkObject _networkObject;
+    private bool _networkObjectCached;
+
+    // Host 모드: 자기 캐릭터(InputAuthority 보유)만 로컬 시뮬레이션을 돌린다.
+    // 원격 캐릭터는 NetworkPlayerSync가 호스트 확정 값으로 transform을 복제한다.
+    // (싱글플레이는 NetworkObject가 없어 항상 true)
     private bool IsLocalPlayerObject()
     {
-        NetworkObject networkObject = GetComponent<NetworkObject>();
-        return networkObject == null || networkObject.HasInputAuthority;
+        if (!_networkObjectCached)
+        {
+            _networkObject = GetComponent<NetworkObject>();
+            _networkObjectCached = true;
+        }
+        return _networkObject == null || _networkObject.HasInputAuthority;
     }
 }

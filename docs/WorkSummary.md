@@ -2,6 +2,173 @@
 
 ---
 
+## 2026-07-07
+
+### 1. Mischief 몬스터 구현 (슬래시 + 프로젝타일 하이브리드)
+
+**파일(신규):** `Assets/02_Scripts/03_Entity/Mob/Monster/Mischief/{Mischief,MischiefStateMachine,MischiefAttackState,MischiefStatData}.cs`, `Assets/02_Scripts/03_Entity/Mob/Monster/MonsterProjectile.cs`
+**파일(수정):** `Assets/02_Scripts/03_Entity/Mob/Monster/{Monster,MonsterStateMachine}.cs`
+
+- **공격 설계**: 베이스 `AttackRange`를 프로젝타일 사거리(공격 상태 진입 거리)로 재해석. `MischiefStatData`(MonsterStatData 상속)에 `SlashRange`(짧은 근접 사거리), `ProjectileCooldown`(긴 내부 쿨), `ProjectileKey/Speed/LifeTime/Damage`, `MuzzleHeight` 추가
+- **MischiefAttackState**: 거리 기반 공격 선택 — ① SlashRange 이내면 슬래시(내부 쿨 없음, `MinAttackPeriod` 주기만 적용, 진입 즉시 1타) ② 그 밖 ~ AttackRange 이내면 프로젝타일(쿨 준비 시) ③ 프로젝타일 쿨 대기 중엔 `ChaseStep`으로 슬래시 사거리까지 접근. AttackRange 이탈 → Chase, 타깃 소실 → Idle
+- **Mischief 본체**: `CreateStateMachine` 오버라이드로 전용 머신 사용. 프로젝타일 쿨타임은 `OnGameUpdate`에서 상태와 무관하게 항상 감소(상태 전환으로 쿨 리셋되는 문제 방지). `FireProjectile`이 풀 스폰(`Extensions.SpawnAsync`) 후 타깃 몸통 높이로 조준 발사, await 사이 타깃 소실 시 발사 취소
+- **MonsterProjectile**: 풀링(IPoolable) 직선 투사체. `Main.Loop.OnGameUpdate` 구독(해제는 OnDestroy)으로 이동, 매 프레임 `OverlapSphere`로 Player만 명중 판정(`DamageContext` 적용), 수명 초과 시 미명중 회수. `Init` 호출 전까지 비행하지 않음
+- **확장 포인트(기존 파일)**: `MonsterStateMachine.To*` 메서드를 `virtual`로, `owner`를 `protected`로 변경(종류별 몬스터가 특정 상태만 교체 가능). `Monster.PlanarDistanceToTarget()`을 `protected`로 공개
+
+**에디터 배선(uloop로 완료):**
+- `Imp Mischief.prefab` 루트 컴포넌트 `Monster` → `Mischief` 교체, `animator`(IMP_S 컨트롤러) 및 `statData` 필드 연결
+- 스탯 SO 신규: `Assets/05_Datas/SO/MonsterStatData/IMP_Mischief.asset` (DetectRange=10, AttackRange(프로젝타일)=6, SlashRange=1.5, ProjectileCooldown=5, MinAttackPeriod=2 등)
+- 투사체 프리팹 신규: `Assets/03_Prefabs/Monster/MischiefProjectile.prefab` (Sphere 0.3, MonsterProjectile 부착) → Addressable 주소 "MischiefProjectile"로 Common 그룹 등록
+
+**검증:** `uloop compile` 성공 (에러 0, 경고 16건은 모두 기존 것). 플레이 모드 실동작 테스트는 아직 안 함.
+
+**남은 TODO/이슈:** ① `Imp Mischief.prefab` 자체는 Addressable 미등록 — `Monster.SpawnAsync(key, …)`로 스폰하려면 등록 필요(스포너 작업 시 키 네이밍과 함께 결정) ② 투사체가 벽/지형에 막히지 않음(플레이어만 판정) — 필요 시 차단 레이어 추가 ③ 애니메이션 상태명(idle/move/attack/dead)이 프리팹에 비어 있음 — IMP_S 컨트롤러의 스테이트명 확인 후 세팅 ④ Devil/Demon 몬스터 미구현
+
+---
+
+## 2026-07-06
+
+### 1. NetworkManager Photon Fusion Host 모드 전면 리팩토링
+
+**파일(수정):** `Assets/CustomPackage/Main/Network/{NetworkManager,NetworkPlayerData,NetworkInputData}.cs`, `Assets/02_Scripts/@Scripts/99_Utils/Enums.cs`, `Assets/02_Scripts/03_Entity/Player/Player.cs`, `Assets/03_Prefabs/Player/Player_Femaie.prefab`
+**파일(신규):** `Assets/CustomPackage/Main/Network/NetworkPlayerSync.cs`
+
+- **참가 모드 수정**: `JoinRoomAsync`가 `GameMode.Host` → `GameMode.Client`로 변경. 기존 코드는 참가자도 Host로 시작해 같은 이름의 새 세션을 만들려다 실패하는 구조였음
+- **스폰 호스트 전담**: `OnPlayerJoined`에서 호스트만 `NetworkPlayerData`를 스폰(`inputAuthority: player` 부여). 기존의 "각 클라가 자기 오브젝트 스폰" 방식은 Shared 모드 잔재로 Host 모드에서는 클라 `Runner.Spawn` 자체가 불가
+- **캐릭터 스폰도 호스트 전담**: `NotifyWorldReady` 시 호스트가 접속 중인 전 플레이어의 캐릭터를 성별(`CharacterIndex`)에 맞는 프리팹으로 일괄 스폰. `_characters` 딕셔너리로 추적하고 퇴장 시 데이터/캐릭터 모두 호스트가 명시적 `Despawn` (Host 모드에서는 `DestroyWhenStateAuthorityLeaves` 자동 정리가 동작하지 않으므로)
+- **클라 상태 쓰기 → RPC화**: `NetworkPlayerData.SetName/SetCharacter`가 호스트는 직접 쓰기, 클라는 `Rpc(InputAuthority → StateAuthority)`로 요청. 클라는 스폰 직후 `Rpc_SetProfile`로 로컬 선택 이름/성별을 호스트에 등록
+- **방장 로직 단순화**: `IsMaster`는 스폰 시 호스트가 기록(호스트 = 방장 고정). `IsSharedModeMasterClient` 및 방장 승계 로직 제거. `IsHost => _runner.IsServer` 프로퍼티 추가
+- **이동 동기화 신규 구현(`NetworkPlayerSync`)**: 입력 권한 클라가 로컬 시뮬레이션(HFSM/PlayerMotor) 결과 위치/Yaw를 Fusion Input(`NetworkInputData.CharacterPosition/Yaw`)으로 호스트에 보고 → 호스트가 `FixedUpdateNetwork`에서 확정([Networked]) → 프록시는 `Render`에서 보간(스냅 거리 8m). 기존 HFSM/Motor/카메라 코드는 무수정 유지
+- **누락 타입 정의**: 참조만 되고 정의가 없던 `PlayerCharacter` enum(Enums.cs), `WaitingPlayerInfo` struct(NetworkManager.cs) 추가 — 이전 커밋 기준 컴파일 불가 상태였음
+- **러너 수명 관리**: `OnShutdown`에서 죽은 러너 GameObject 파괴 + 참조 해제(재접속 가능하도록), `Clear()`에 남자 프리팹 키 Release 누락 보완
+- **프리팹**: `Player_Femaie.prefab`(기본)에 `NetworkPlayerSync` 부착 — `Player_Male.prefab`은 변형이라 자동 상속
+
+**변경 이유:** Shared 모드 패턴(각 클라 스폰·소유자 StateAuthority 직접 쓰기·마스터클라 승계)이 Host 모드 세션(`GameMode.Host`)과 섞여 있어 참가/스폰/상태 쓰기가 전부 동작하지 않는 상태였음. Host 모드 권한 모델(호스트 = 전체 StateAuthority, 클라 = 자기 오브젝트 InputAuthority)로 일원화.
+
+**검증:** `uloop compile` 성공 (에러 0, 경고 16건은 모두 기존 것). 프리팹 컴포넌트 부착은 YAML로 확인.
+
+**남은 TODO/이슈:** ① 애니메이션 동기화 없음 — 원격 캐릭터는 위치만 복제되고 애니는 Idle 고정(다음 단계: 애니 파라미터를 input/[Networked]로 추가) ② 캐릭터 프리팹(Player/Player_Male)의 Fusion 스폰 등록(NetworkProjectConfig 베이킹)은 에디터에서 실스폰 테스트 필요 ③ 호스트 퇴장 시 세션 종료 → 클라를 로비로 되돌리는 UI 처리 미구현 (`OnShutdownEvent` 구독 필요)
+
+---
+
+## 2026-07-02
+
+### 1. 방 입장 팝업 (UI_Popup_EnterRoom)
+
+**파일(신규):** `Assets/02_Scripts/01_UI/UI_Lobby/{UI_Popup_EnterRoom,UI_Button_Room}.cs`
+**파일(수정):** `Assets/02_Scripts/01_UI/UI_Lobby/UI_HUD_LobbyScene.cs`
+
+- **UI_Popup_EnterRoom**: 방 목록을 표시하고 선택한 방으로 입장하는 팝업. `UI_Popup_MakeRoom`과 동일한 "네트워크 미연동 단계 — 씬 전환만 수행" 패턴. 목록 갱신(Refresh)/입장(Enter)/닫기(Close) 버튼은 `SetDownUpButton + OnButtonUp` 방식. 방 목록은 `InventoryUI`처럼 `Instantiate`로 컨테이너에 채움. 입장 버튼은 선택된 방이 정원 미달일 때만 활성화(`SetActive`). 현재는 더미 방 3개 표시, `OnEnter`에서 `Extensions.ChangeScene("GameScene")`
+- **UI_Button_Room**: 방 목록 개별 항목 컴포넌트. 방 이름 + 인원("current/max") 텍스트 표시, 클릭 시 자기 자신을 전달하는 `OnClicked` 이벤트 제공, `SetSelected`로 선택 색 표시. `UI_Button_Room.prefab` 루트에 추가하고 Button/두 텍스트를 연결
+- **UI_HUD_LobbyScene.OnEnterRoom**: 비어 있던 핸들러 → `Extensions.ShowPopup<UI_Popup_EnterRoom>(clickGuard: true)` 연결
+- **네트워크 연동 TODO 명시**: 연동 시 `Main.Network.ConnectToLobbyAsync` + `OnSessionListUpdated`의 `SessionInfo` 목록으로 더미 교체, 입장은 `Main.Network.JoinRoomAsync(new RoomJoinArgs(roomName))`로 교체
+
+**변경 이유:** 로비의 "방 입장" 버튼 핸들러가 비어 있었음. 이미 만들어진 `UI_Button_Room.prefab`(방 이름 + 4/4 인원 표시)을 활용해 방 목록 UI를 구성.
+
+**남은 에디터 작업:** ① `UI_Button_Room.prefab` 루트에 `UI_Button_Room` 컴포넌트 추가 후 Button(루트 UI_Button)·RoomNameText·PlayerCountText 연결 ② `UI_Popup_EnterRoom.prefab` 생성(MakeRoom 팝업 복제 권장) 후 RoomButtonPrefab·RoomListContainer·Enter/Refresh/Close 버튼 연결, Addressable 키 `UI_Popup_EnterRoom` 등록.
+
+**검증:** Unity Editor 미연결로 `uloop compile` 미수행 — 에디터 실행 후 컴파일 확인 필요.
+
+### 2. 방 입장 팝업 "안 뜸" 버그 수정 + 컴포넌트 기반 자동 탐색으로 재작성
+
+**파일(수정):** `UI_Popup_EnterRoom.cs`, `UI_Button_Room.cs`, `UI_HUD_LobbyScene.cs`, `UI_Popup_EnterRoom.prefab`
+
+- **근본 원인:** `Main.UI.ShowPopup<T>`는 `LoadAssetAsync<UI_Popup_EnterRoom>(key)`로 **컴포넌트 타입**으로 프리팹을 로드하는데(UIManager.cs:251), `UI_Popup_EnterRoom.prefab` 루트에 `UI_Popup_EnterRoom` 스크립트가 안 붙어 있어 로드가 null → 팝업이 안 떴음. (`UI_Button_Room.prefab`도 동일하게 루트에 스크립트 미부착)
+- **프리팹 수리:** `UI_Popup_EnterRoom.prefab` 루트(평범한 GameObject)에 `UI_Popup_EnterRoom` MonoBehaviour를 YAML로 추가(m_Component 등록 + 블록 추가), `RoomListContainer`는 ScrollView의 Content에 연결. → 팝업 정상 표시
+- **컴포넌트 기반 재작성(사용자 요청 "키 말고 컴포명으로"):** Addressable 키/직렬화 프리팹 참조를 쓰지 않고, 프리팹 계층(ScrollView/Content)에 배치된 방 버튼 오브젝트를 **템플릿으로 캐싱**해 복제. 컨테이너(ScrollRect.content)·빈 안내 텍스트("Empty" 이름 포함)도 자동 탐색
+- **템플릿 캐싱 + 런타임 컴포넌트 부착(사용자 요청 "미리 캐싱해놓고 생성"):** 템플릿은 `GameObject`로 1회 캐싱(`_template`), 복제본에 `GetOrAddComponent<UI_Button_Room>()`로 런타임에 컴포넌트를 붙임 → **프리팹에 UI_Button_Room 컴포넌트를 미리 안 붙여도 동작**(에디터 수작업 제거). 템플릿 탐색은 컨테이너 안의 `UI_Button_Room`(있으면) → `UI_Button`(없으면) 순
+- **UI_Button_Room 자동 탐색화:** `Button`(루트)·이름/인원 `TMP_Text`(자식 텍스트 순서)를 미연결 시 자동 획득. 방 클릭 → 정원 미달이면 입장(씬 전환)
+- **HUD:** `ShowPopup<UI_Popup_EnterRoom>(clickGuard: true, clickClose: true)` — 닫기 버튼이 없어 배경 클릭으로 닫도록
+
+**검증:** Unity Editor 미연결로 컴파일 미수행.
+
+### 3. 방 만들기 팝업 — 인원 버튼 선택 표시(이미지 알파)
+
+**파일(수정):** `UI_Popup_MakeRoom.cs`
+
+- 인원 버튼(`UI_Button_1`~`4`) 배경 이미지가 프리팹에서 알파 0으로 저작돼 있음. 미선택 색 알파를 `0.4`→`0`으로 변경해, 선택 버튼만 이미지가 켜지고(알파 1) 다른 버튼 클릭 시 이전 버튼은 `RefreshMaxPlayerButtons`가 알파 0으로 되돌림.
+
+### 4. 방 입장 팝업 — 더미 제거하고 실제 방 목록 연동
+
+**파일(수정):** `UI_Popup_EnterRoom.cs`, `NetworkManager.cs`
+
+- 더미 방 3개를 제거하고 실제 Photon 세션 목록을 조회해 표시하도록 전환("왜 더미를 두냐, 방 있는지 확인하고 만들어라" 요청).
+- **NetworkManager에 Fusion-free 방 목록 API 추가:** UI가 `Fusion.SessionInfo`에 직접 의존하지 않도록 값형식 `RoomInfo`(Name/PlayerCount/MaxPlayers/IsJoinable) 신설. `OnSessionListUpdated` 콜백에서 `IsVisible` 세션만 `RoomInfo`로 변환해 `OnRoomListUpdated` 이벤트로 발행. UI 진입점 `BrowseRoomsAsync()`(로비 미접속 시 `ConnectToLobbyAsync`)·`JoinRoomByNameAsync()` 추가(모두 `#if PHOTON_FUSION` 내부 가드, 미정의 시 false 반환).
+- **UI 흐름:** 열릴 때 `OnRoomListUpdated` 구독 + `BrowseRoomsAsync()` 호출 → 목록 수신 시 `RebuildRooms`로 다시 그림 → 방 클릭 시 `JoinRoomByNameAsync` 성공하면 `Close()` + `GameScene` 전환. 방 없으면 "Empty" 텍스트 표시.
+- **이벤트 해제 위치:** `OnDisable` 금지 규칙 준수. 베이스 `UI_Popup.OnDestroy`(트윈 정리)를 덮어쓰지 않으려고, 서브클래스에서 `OnDestroy`를 재정의하는 대신 `OnDestroyEvent.AddListener(Unsubscribe)`로 파괴 시 해제.
+
+### 5. 멀티플레이 마일스톤1 — "서로 이동 보이기" 코드 배선
+
+**방향(사용자 확정):** 첫 목표=서로 이동 보이기 / 이동=NetworkTransform+소유자 이동 / 월드=시드 공유(각 클라 로컬 생성). 호스트-클라(GameMode.Host/Client) 토폴로지.
+
+**파일(수정):** `NetworkManager.cs`, `Player.cs`, `WorldGenManager.cs`, `UI_Popup_MakeRoom.cs`, `UI_Popup_EnterRoom.cs`
+**파일(신규):** `NetworkWorldConfig.cs`
+
+- **결정론 점검:** WorldGen 파이프라인은 전부 `new System.Random(WorldSeed+채널)` 기반 → 시드 고정 시 결정론적. 비결정 지점은 시드/브랜치 미지정 시 랜덤뿐 → 호스트가 명시 공유로 해결. (`BreakableResourceNode`의 런타임 드롭 랜덤은 월드젠 아님, 향후 동적 동기화 대상)
+- **Player 원격 가드:** `OnLoopUpdate`/`OnLoopGameUpdate`에서 `!IsLocalPlayerObject()`면 로컬 시뮬(motor/상태머신) 스킵 → NetworkTransform이 위치 복제. 단일 플레이어는 NetworkObject 없어 그대로 동작.
+- **NetworkManager 확장:** ①세션 int 속성 공유(`RoomCreateArgs.Properties`, `CreateRoomAsync`가 `StartGameArgs.SessionProperties`로 실음, `TryGetSessionInt`로 읽음) ②호스트 캐릭터 스폰(`_playerCharacterPrefab`="Player" 로드, `NotifyWorldReady(spawnPoint)`→접속 전원 `Runner.Spawn`(InputAuthority 부여), 늦은 참가자는 OnPlayerJoined에서, 퇴장 시 Despawn) ③UI/씬 진입점 래퍼 `HostRoomAsync`/`JoinRoomByNameAsync`/`NotifyWorldReady`/`IsInRoom`(모두 `#if PHOTON_FUSION` 가드+미정의 스텁).
+- **NetworkWorldConfig:** 월드 옵션↔세션 int 속성 변환. 호스트 `ToProperties`, 클라 `ApplyFromSession()`→`WorldGenRequest.Set`.
+- **WorldGen 스폰 분기:** `Main.Network.IsInRoom`면 로컬 Instantiate 대신 `NotifyWorldReady(spawnPos)` 호출 후 `WaitForLocalNetworkPlayerAsync`로 자신의 로컬 플레이어(복제본)를 청크 타깃 지정. 싱글은 기존 로컬 스폰 유지.
+- **UI 배선:** MakeRoom=호스트 방 생성+시드/옵션 공유+`WorldGenRequest.Set`+씬 진입. EnterRoom=참가 후 `ApplyFromSession()`+씬 진입.
+
+**남은 에디터 작업(필수, 코드로 불가):**
+1. `Player.prefab`에 **NetworkObject + NetworkTransform** 추가.
+2. Fusion **NetworkProjectConfig 프리팹 테이블에 Player 등록**(Runner.Spawn 대상).
+3. `PhotonAppSettings`에 유효한 **Fusion AppId** (로비/방 접속 전제).
+4. Scripting Define에 **PHOTON_FUSION** 확인.
+
+**미해결/주의:** ①씬 동기화는 각 클라가 독립적으로 ChangeScene(Fusion NetworkSceneManager 미사용) — 호스트가 방 만들고 씬 들어간 뒤 클라가 참가/진입하는 순서 의존. ②`BrowseRoomsAsync`(JoinSessionLobby) 후 `JoinRoomAsync`(StartGame) 연속 호출은 Fusion 러너 상태 충돌 소지(기존 구조 그대로, 테스트 필요). ③원격 플레이어 애니메이션 동기화는 후속(현재 위치만 복제). ④RTS `CommandManager`/`SimulationManager`/`MultiplayerExample`은 캐릭터 제어와 무관한 잔재 — 이번 경로 미사용.
+
+**검증:** Unity Editor 미연결로 `uloop compile` 미수행 — 에디터에서 컴파일+플레이 테스트 필요.
+
+## 2026-06-30
+
+### 1. 몬스터 AI — 인지·추적·공격 (Idle→Chase→Attack)
+
+**파일(신규):** `Assets/02_Scripts/03_Entity/Mob/Monster/MonsterState/{MonsterIdleState,MonsterChaseState,MonsterAttackState}.cs`
+**파일(수정):** `Monster.cs`, `MonsterStateMachine.cs`, `MonsterStatData.cs`, `Mob.cs`, `Player.cs`
+
+- **상태 머신 완성**: 기존 Idle/Dead 골격만 있던 것을 `MonsterIdleState`(탐색)→`MonsterChaseState`(추적)→`MonsterAttackState`(공격)로 확장. `MonsterStateMachine`에 `ToIdle/ToChase/ToAttack` 추가, 초기 상태를 `MonsterIdleState`로. 상태 클래스는 기존 `MobState<Monster>` 패턴 그대로 사용
+- **AI 메카닉은 Monster 본체에 집중**(상태 클래스는 전환 판단만): `AcquireTarget()`(Physics.OverlapSphere + Player 컴포넌트 필터 + FOV), `IsTargetValid()`(DetectRange·생존), `IsTargetInAttackRange()`, `ChaseStep()`(회전+MoveSpeed 전진), `FaceTargetStep()`, `PerformAttack()`(DamageContext→IDamageable), `PlayAnim()`(HasState 가드로 경고 없는 선택적 재생)
+- **타게팅 = OverlapSphere(가) 방식**: `targetMask`(LayerMask, 기본 Everything) + `GetComponentInParent<Player>()`로 가장 가까운 생존 플레이어 선택. 멀티플레이에서 최근접 플레이어 추적
+- **MonsterStatData 확장**: `AttackRange` 추가, `FOV`/`DetectRange`에 기본값·Tooltip 부여
+- **Player가 IDamageable 구현**(신규): 기존엔 자원 노드만 IDamageable이라 플레이어가 피해 수신 불가였음. `ApplyDamage`→`PlayerStatus.TakeDamage`→`OnDamaged`→`PlayerHurtState` 전환까지 연결
+- **풀링 리셋 버그 방지**: `Mob`이 `IPoolable` 구현 → `OnSpawn`에서 `InitStatus()`로 풀 HP 리셋(죽은 채 재사용 방지). `Monster.OnSpawn`은 추가로 타깃/상태머신을 Idle로 리셋
+
+**변경 이유:** MonsterStateMachine이 Idle→Dead만 있어 스폰해도 가만히 있다 죽기만 했고, Player에 IDamageable이 없어 몬스터가 때릴 수단 자체가 없었음. NavMesh 미사용 프로젝트라 이동은 transform 직접 스티어링으로 구현.
+
+**검증:** `uloop compile --wait-for-domain-reload true` → Success, ErrorCount 0, WarningCount 0.
+
+### 2. 몬스터 스탯 SO 주입 방식 (스폰 시 MonsterStatData 채움)
+
+**파일(수정):** `Mob.cs`, `Monster.cs`
+
+- 프리팹에 `statData`를 고정으로 박지 않고, **스폰 시점에 종류별 `MonsterStatData`(SO)를 주입**하는 흐름으로 전환. 만들어둔 `.asset` 9개를 골라 쓸 수 있음
+- `Mob.ApplyStatData(EntityStatData)` 추가 → statData 교체 후 `InitStatus()`로 런타임 스탯 재생성. `InitStatus()`는 statData가 null이면 에러 대신 조용히 대기(주입 전 상태 허용)
+- `Monster.SpawnAsync(key, stat, position, parent)` 정적 헬퍼: 풀 스폰 → 위치 지정 → `ApplyStatData(stat)` 까지 한 번에. 프리팹은 모델/콜라이더/애니메이터만 갖추면 됨
+- 주입 전 첫 프레임 안전: `ChaseStep`/`PerformAttack`/`MinAttackPeriod`에 status null 가드(스폰 직후 동기 주입이라 실제로는 채워진 뒤 동작)
+
+**사용 예:**
+```csharp
+var so = Main.Resource.GetAssetNow<MonsterStatData>("Monster_Slime_Stat"); // 또는 LoadAssetAsync
+var monster = await Monster.SpawnAsync("Monster_Slime", so, spawnPos);
+```
+
+### 3. turnSpeed(회전 속도)를 MonsterStatData SO로 이동
+
+**파일(수정):** `MonsterStatData.cs`(`TurnSpeed` 필드 추가, 기본 540), `Monster.cs`(직렬화 필드 제거 → `TurnSpeed` 프로퍼티가 SO 값 사용)
+
+- 회전 속도도 프리팹 공통값이 아니라 종류별 SO에서 조절. `RotateTowards`가 `MonsterData.TurnSpeed` 사용(MonsterData null이면 540 fallback)
+- 주의: 기존 `.asset` 9개는 필드 추가 전 저장이라 `TurnSpeed`가 0으로 들어갈 수 있음 → Inspector에서 540 등으로 채워야 회전함(0이면 방향 전환 불가)
+
+**남은 TODO/이슈:**
+- 몬스터 프리팹이 아직 없음 → Monster.cs + Collider + Animator 갖춘 프리팹 생성 후 Addressable 등록(스탯은 SpawnAsync로 주입하므로 프리팹에 statData 불필요)
+- `MonsterStatData*.asset` 9개가 전부 값 0 → CurHP=MaxHP, TurnSpeed(540 등) 등 채워야 함(CurHP 0이면 즉사, TurnSpeed 0이면 회전 불가)
+- 애니메이션 상태명(idle/move/attack/dead)은 Inspector에서 실제 컨트롤러 스테이트명으로 채워야 재생됨(비우면 무동작)
+- 테스트 씬에서 `GameScene.GameProcessing == Processing`이어야 OnGameUpdate가 돌아 몬스터가 동작함
+
+---
+
 ## 2026-06-03
 
 ### 1. 설정 팝업 — UI_Popup_SettingUI (볼륨 슬라이더 + 입력 차단)

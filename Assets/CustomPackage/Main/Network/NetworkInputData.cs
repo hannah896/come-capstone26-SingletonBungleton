@@ -27,6 +27,11 @@ public struct NetworkInputData : INetworkInput
     // 대상 ID들 (최대 8개, IL Weaver 호환을 위해 비제네릭 구조체 사용)
     public NetworkTargetIds TargetIds;
 
+    // 로컬 캐릭터 상태 보고 (Host 모드: 클라 로컬 시뮬레이션 결과를 호스트가 확정)
+    public Vector3 CharacterPosition;
+    public float CharacterYaw;
+    public NetworkBool HasCharacterState;
+
     // 유효한 명령이 포함되어 있는지 여부
     public bool HasCommand => CommandType != CommandType.None;
 }
