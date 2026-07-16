@@ -228,7 +228,6 @@ public class Player : MonoBehaviour, IDamageable
 
     // Host 모드: 자기 캐릭터(InputAuthority 보유)만 로컬 시뮬레이션을 돌린다.
     // 원격 캐릭터는 NetworkPlayerSync가 호스트 확정 값으로 transform을 복제한다.
-    // (싱글플레이는 NetworkObject가 없어 항상 true)
     private bool IsLocalPlayerObject()
     {
         if (!_networkObjectCached)
@@ -236,6 +235,13 @@ public class Player : MonoBehaviour, IDamageable
             _networkObject = GetComponent<NetworkObject>();
             _networkObjectCached = true;
         }
-        return _networkObject == null || _networkObject.HasInputAuthority;
+
+        // 프리팹에 NetworkObject가 붙어 있어도 Runner.Spawn을 거치지 않으면 러너에 등록되지 않아 IsValid가 false다.
+        // (싱글플레이는 WorldGenManager가 프리팹을 그대로 Instantiate한다)
+        // 이때는 네트워크에 참여하지 않는 로컬 캐릭터이므로 로컬로 취급한다.
+        if (_networkObject == null || !_networkObject.IsValid)
+            return true;
+
+        return _networkObject.HasInputAuthority;
     }
 }
