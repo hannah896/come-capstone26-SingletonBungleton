@@ -249,5 +249,7 @@ public enum WorldSeedChannel
     HeightBuilder = 501,
 
     ObjectDisposer = 601,
+
+    ItemDisposer = 701,
 }
 #endregion

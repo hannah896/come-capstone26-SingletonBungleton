@@ -8,6 +8,9 @@ public class BiomeData : ScriptableObject
     [SerializeField] public BiomeType BiomeType;
     [SerializeField] public Color DebugColor = Color.green; // 기즈모용 색상
 
+    [Header("Placement Rules")]
+    [SerializeField] public DisposeRuleSet BiomeDisposeRule;
+
     [Header("Assets")]
     // GameObject 직접 참조 대신 키값(string) 사용
     [SerializeField] public string TopKey;    // 예: "Forest_Top", "Desert_Top"
