@@ -48,6 +48,12 @@ public class ItemDataSO : ScriptableObject
     [Tooltip("음식일 경우 선택")]
     public FoodType foodType;
 
+    [Tooltip("요리일 경우 선택")]
+    public DishType dishType;
+
+    [Tooltip("특수 아이템일 경우 선택")]
+    public SpecialType specialType;
+
     [Tooltip("겹치기 가능 여부, 최대 개수")]
     public bool isStackable = true;
     [Range(1, 999)]
@@ -88,6 +94,9 @@ public class ItemDataSO : ScriptableObject
     [Tooltip("Ego 회복량")]
     [FormerlySerializedAs("sanityRestore")]
     public float egoRestore = 0f;
+
+    [Tooltip("소비기한 (분 단위, 0 = 부패 없음)")]
+    public float expirationTime = 0f;
 
 
     [Header("=== 아이템 태그 ===")]
