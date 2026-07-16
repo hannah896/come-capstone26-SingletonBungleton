@@ -12,9 +12,11 @@ public class MonsterAttackState : MobState<Monster>
         sm = machine;
     }
 
+    public override bool IsAttackState => true;
+
     public override void OnEnter()
     {
-        Owner.PlayAnim(Owner.AttackAnim);
+        Owner.PlayAnim(Owner.AttackBoolHash);
         Owner.PerformAttack();              // 진입 즉시 1타
         cooldown = Owner.MinAttackPeriod;
     }
@@ -40,7 +42,7 @@ public class MonsterAttackState : MobState<Monster>
         cooldown -= time;
         if (cooldown <= 0f)
         {
-            Owner.PlayAnim(Owner.AttackAnim);
+            Owner.PlayAnim(Owner.AttackBoolHash);
             Owner.PerformAttack();
             cooldown = Owner.MinAttackPeriod;
         }

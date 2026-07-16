@@ -9,8 +9,11 @@ public class MonsterStateMachine : StateMachine<MobState<Monster>>
     public MonsterStateMachine(Monster owner)
     {
         this.owner = owner;
-        Init(new MonsterIdleState(owner, this)); // 초기 상태
+        Init(new MonsterSpawnState(owner, this)); // 초기 상태: 등장 연출 → (Animation Event) → Idle
     }
+
+    public virtual void ToSpawn()
+        => ChangeState(new MonsterSpawnState(owner, this));
 
     public virtual void ToIdle()
         => ChangeState(new MonsterIdleState(owner, this));
@@ -20,6 +23,9 @@ public class MonsterStateMachine : StateMachine<MobState<Monster>>
 
     public virtual void ToAttack()
         => ChangeState(new MonsterAttackState(owner, this));
+
+    public virtual void ToHit()
+        => ChangeState(new MonsterHitState(owner, this));
 
     public virtual void ToDead()
         => ChangeState(new MobDeadState<Monster>(owner, this));

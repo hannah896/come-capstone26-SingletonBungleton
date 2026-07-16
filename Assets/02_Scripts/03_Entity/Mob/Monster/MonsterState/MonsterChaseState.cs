@@ -11,7 +11,7 @@ public class MonsterChaseState : MobState<Monster>
     }
 
     public override void OnEnter()
-        => Owner.PlayAnim(Owner.MoveAnim);
+        => Owner.PlayAnim(Owner.MoveBoolHash);
 
     public override void Update(float time = 1.0f)
     {

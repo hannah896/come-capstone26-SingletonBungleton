@@ -13,4 +13,8 @@ public class MischiefStateMachine : MonsterStateMachine
 
     public override void ToAttack()
         => ChangeState(new MischiefAttackState(mischief, this));
+
+    /// <summary>타깃을 향해 도약한다(스크립트 이동, 콜라이더 함께 상승).</summary>
+    public void ToLeap()
+        => ChangeState(new MischiefLeapState(mischief, this));
 }

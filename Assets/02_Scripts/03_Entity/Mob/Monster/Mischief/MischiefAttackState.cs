@@ -17,6 +17,8 @@ public class MischiefAttackState : MobState<Monster>
         sm = machine;
     }
 
+    public override bool IsAttackState => true;
+
     public override void OnEnter()
     {
         slashCooldown = 0f; // 슬래시 사거리 진입 시 즉시 1타
@@ -46,7 +48,7 @@ public class MischiefAttackState : MobState<Monster>
             mischief.FaceTargetStep(time);
             if (slashCooldown <= 0f)
             {
-                mischief.PlayAnim(mischief.AttackAnim);
+                mischief.PlayAnim(mischief.AttackBoolHash);
                 mischief.PerformAttack();
                 slashCooldown = mischief.MinAttackPeriod;
             }
@@ -59,8 +61,11 @@ public class MischiefAttackState : MobState<Monster>
         }
         else
         {
-            // 프로젝타일 쿨 대기 중에는 슬래시 사거리까지 접근
-            mischief.ChaseStep(time);
+            // 프로젝타일 쿨 대기 중: 도약이 준비됐으면 타깃으로 뛰어들고, 아니면 걸어서 접근
+            if (mischief.IsLeapReady)
+                sm.ToLeap();
+            else
+                mischief.ChaseStep(time);
         }
     }
 }

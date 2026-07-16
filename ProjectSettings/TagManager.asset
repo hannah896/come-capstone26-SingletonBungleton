@@ -35,7 +35,7 @@ TagManager:
   - 
   - 
   - 
-  - 
+  - Monster
   - Player
   m_SortingLayers:
   - name: Default

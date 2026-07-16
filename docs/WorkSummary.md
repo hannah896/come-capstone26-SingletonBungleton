@@ -1174,3 +1174,58 @@ var monster = await Monster.SpawnAsync("Monster_Slime", so, spawnPos);
 **검증:** `dotnet build .\Assembly-CSharp.csproj --no-restore` 실행 결과 이번 토치 조명 변경 관련 컴파일 오류는 없었고, 기존 `Firebase.Analytics` 네임스페이스 참조 오류 2건(`LockResolver.cs`, `AnalyticsSDK_Firebase.cs`)으로 최종 실패.
 
 **남은 TODO/이슈:** Unity PlayMode에서 토치를 장착한 뒤 Game View 기준으로 토치 메시와 주변 월드 조명이 보이는지 직접 확인 필요. 밝기가 과하면 `PlayerFirstPersonCameraController`의 토치 조명 직렬화 값을 조정하면 됨.
+
+### 17. Mob 사망 연출 Animation Event 연결 및 지연 디스폰
+
+**파일:** `Assets/02_Scripts/03_Entity/Mob/Mob.cs`, `Assets/02_Scripts/03_Entity/Mob/MobState/MobDeadState.cs`, `Assets/02_Scripts/03_Entity/Mob/Monster/Monster.cs`, `docs/WorkSummary.md`
+
+- `MobDeadState.OnEnter()`의 `// TODO: Dead 애니메이션 트리거`를 `Owner.PlayDeadAnim()` 호출로 채움
+- `Mob`에 `public virtual void PlayDeadAnim()` 훅을 추가하고, `Monster`가 `PlayAnim(deadAnimHash)`로 오버라이드하도록 연결 (`MobDeadState<TMob>`는 제네릭이라 Monster 전용 해시에 직접 접근할 수 없음)
+- `Mob.HandleDead()`가 더 이상 같은 프레임에 `Extensions.Despawn()`을 호출하지 않도록 변경. 사망 상태 전환·연출 재생까지만 하고 실제 드랍/디스폰은 미룸
+- 사망 애니메이션 끝의 Animation Event가 호출할 진입점으로 `public void OnDeathAnimEnd()`를 추가 (Animation Event는 Animator와 같은 GameObject의 컴포넌트만 호출할 수 있어 public 필수)
+- 실제 정리(드랍 스폰 + 디스폰)를 `FinishDeath()`로 분리하고, `isDying` 플래그로 중복 사망 알림을 방어
+- 이벤트가 오지 않을 때 시체가 영원히 남지 않도록 `deathFallbackTimeout`(기본 5초) 안전장치를 추가. `Main.Loop.OnGameUpdate`로 카운트다운하며, 0이면 연출 없이 즉시 정리
+- 사망 연출 중에는 `OnGameUpdate`(추적/공격 등)를 돌리지 않도록 `HandleGameUpdate`에서 차단
+- `Mob.OnSpawn()`에서 `isDying`/`deathTimer`를 리셋해 풀 재사용 시 죽은 상태가 이어지지 않도록 함
+
+**변경 이유:** `Mob.HandleDead()`가 `OnDeath()` 직후 곧바로 `Extensions.Despawn()`을 호출해서, `MobDeadState`에 사망 애니메이션 재생을 넣어도 같은 프레임에 오브젝트가 풀로 반환돼 연출이 보이지 않았다. 연출 종료 시점을 고정 시간으로 추측하는 대신 애니메이션 클립이 직접 알려주는 Animation Event 방식을 쓰기로 함.
+
+**검증:** `uloop compile` 통과 (에러 0, 경고 0).
+
+**남은 TODO/이슈:** Animation Event 연결은 작업자가 직접 진행 예정. Die 클립이 `00_Externals`의 외부 FBX(`Imp Mischief@Die.FBX`, `clipAnimations: []`)라 외부 에셋을 수정하지 않으려면 클립을 `04_Animations/Monster`로 복제해 이벤트를 심고 `IMP_S` 컨트롤러의 Die 상태가 복제본을 바라보게 해야 한다. 이벤트 함수명은 `OnDeathAnimEnd`(인자 없음). 연결 전까지는 `deathFallbackTimeout`(5초)로 디스폰된다. Monster 스폰 경로(`Monster.SpawnAsync` 호출부)와 `IMP_Mischief.asset`의 빈 DropTable, 프리팹 NetworkObject 미등록은 여전히 미해결.
+
+### 18. 몬스터 스폰 연출 상태 추가 (Spawn 애니메이션 → Animation Event → Idle)
+
+**파일:** `Assets/02_Scripts/03_Entity/Mob/Monster/MonsterState/MonsterSpawnState.cs`(신규), `Assets/02_Scripts/03_Entity/Mob/Monster/Monster.cs`, `Assets/02_Scripts/03_Entity/Mob/Monster/MonsterStateMachine.cs`, `Assets/03_Prefabs/Monster/Imp Mischief.prefab`, `docs/WorkSummary.md`
+
+- `MonsterSpawnState`를 신규 추가. 진입 시 등장 연출을 재생하고, 그동안 타깃 탐색/이동을 하지 않는다
+- `MonsterStateMachine`의 초기 상태를 `MonsterIdleState`에서 `MonsterSpawnState`로 변경하고 `ToSpawn()` 전환 메서드를 추가
+- `Monster`에 `spawnAnim` 상태명 필드와 `spawnAnimHash` 캐싱, `SpawnAnim`/`SpawnAnimHash` 프로퍼티를 추가
+- 스폰 클립 마지막 프레임의 Animation Event가 호출할 진입점으로 `public void OnSpawnAnimEnd()`를 추가. 현재 상태가 `MonsterSpawnState`일 때만 `ToIdle()`로 넘어가고, 다른 상태에서 들어온 호출은 무시
+- 이벤트가 오지 않을 때 몬스터가 Spawn 상태에 갇히지 않도록 `spawnFallbackTimeout`(기본 3초) 안전장치를 추가. `MonsterSpawnState.Update`에서 카운트다운
+- `spawnAnim`이 비어 있으면(등장 연출을 쓰지 않는 몬스터) `OnEnter`에서 즉시 `ToIdle()` 하여 기존 동작을 유지
+- `Imp Mischief.prefab`의 `spawnAnim`을 IMP_S 컨트롤러의 `Spawn` 상태명으로 채움
+
+**변경 이유:** `Monster.OnSpawn()`이 상태머신을 만들면서 곧바로 `MonsterIdleState`로 진입해 Idle을 CrossFade 재생했기 때문에, IMP_S 컨트롤러에 `Spawn` 상태와 등장 클립이 있어도 재생될 자리가 없었다. 등장 연출이 끝나는 시점을 고정 시간으로 추측하지 않고 클립이 직접 알려주도록 사망 처리(17번)와 같은 Animation Event 방식으로 맞춤.
+
+**검증:** `uloop compile` 통과 (에러 0). 경고 16건은 모두 이번 변경과 무관한 기존 파일(Firebase/TMP/Obsolete API 등).
+
+**남은 TODO/이슈:** Animation Event 연결은 작업자가 직접 진행 예정. 이벤트 함수명은 `OnSpawnAnimEnd`(인자 없음). Spawn 클립도 Die와 마찬가지로 `00_Externals`의 외부 FBX(`Imp Mischief@Spawn.FBX`, guid `970f088a...`)라 복제본에 이벤트를 심어야 한다. 주의: IMP_S의 `Spawn` 상태는 `m_ExitTime: 0.70`으로 Exit에 연결돼 있고 Entry 기본 상태가 다시 `Spawn`이라, 클립 맨 끝(1.0)에 이벤트를 심으면 그 전에 Exit → Entry → Spawn으로 재진입하면서 이벤트가 실행되지 않을 수 있다. 이벤트를 0.70 이전에 두거나 Spawn 상태의 Exit 트랜지션을 정리해야 한다. Die 상태도 동일하게 `m_ExitTime: 0.85` 문제가 있다.
+
+### 19. 몬스터 애니메이션을 컨트롤러의 Bool 파라미터 방식으로 전환
+
+**파일:** `Assets/02_Scripts/03_Entity/Mob/Monster/Monster.cs`, `Assets/02_Scripts/03_Entity/Mob/Monster/Mischief/Mischief.cs`, `Assets/02_Scripts/03_Entity/Mob/Monster/MonsterState/*.cs`, `Assets/02_Scripts/03_Entity/Mob/Monster/Mischief/MischiefAttackState.cs`, `Assets/02_Scripts/03_Entity/Mob/Monster/Mischief/MischiefLeapState.cs`, `Assets/03_Prefabs/Monster/Imp Mischief.prefab`, `docs/WorkSummary.md`
+
+- `Monster.PlayAnim()`을 `CrossFadeInFixedTime`(상태 직접 재생)에서 `Animator.SetBool` 방식으로 교체. 지정한 Bool 하나만 true로 켜고 나머지는 모두 false로 끈다
+- 직렬화 필드를 상태명에서 Bool 파라미터명으로 변경: `idleAnim`/`moveAnim`/`attackAnim`/`deadAnim`/`hitAnim` → `idleBool`/`moveBool`/`attackBool`/`deadBool`/`hitBool`, `Mischief`의 `rangeAttackAnim`/`jumpAnim` → `rangeAttackBool`/`jumpBool`. 해시/프로퍼티 이름도 `*BoolHash`로 통일
+- 컨트롤러에 실제로 존재하는 Bool 파라미터 해시를 `Awake`에서 캐싱(`CacheAnimBoolParams`)해, 없는 이름에 `SetBool`을 걸어 경고가 나는 것을 방지
+- 애니메이션 Bool을 모두 끄는 `ClearAnimBools()`를 추가하고 `MonsterSpawnState.OnEnter`에서 호출
+- `MonsterSpawnState`가 더 이상 스폰 애니메이션을 직접 재생하지 않는다. 스폰 클립이 IMP_S의 기본(Default) 상태라 Animator가 자동 재생하므로, 상태는 Bool만 끄고 연출이 끝날 때까지 대기만 한다
+- `Monster.spawnAnim`(상태명) 필드를 제거하고, 등장 연출 사용 여부만 정하는 `useSpawnAnim` bool로 대체. 끄면 스폰 즉시 Idle로 시작해 기존 동작을 유지
+- `Imp Mischief.prefab`의 값을 Bool 파라미터명으로 교체 (`Run Forward In Place` → `Run`, `Slash Attack` → `Attack`, `Take Damage` → `Hit`, `Projectile Attack` → `RangeAttack`) 하고 `useSpawnAnim: 1` 설정
+
+**변경 이유:** IMP_S 컨트롤러의 파라미터 `Idle`/`Run`/`Attack`/`RangeAttack`/`Die`/`Hit`는 모두 Bool(`m_Type: 4`)이고, Entry 트랜지션이 이 Bool 조건으로 상태를 고르며 각 상태는 자기 Bool이 false가 되어야(ConditionMode 2 = IfNot) 빠져나오는 구조다. 그런데 스크립트는 `CrossFadeInFixedTime`으로 상태를 직접 재생하기만 하고 Bool은 전혀 건드리지 않아, 컨트롤러가 의도한 분기가 동작하지 않고 Bool이 계속 꺼진 상태로 남았다. (`m_Type: 4`는 Trigger가 아니라 Bool. Unity의 AnimatorControllerParameterType은 Float=1, Int=3, Bool=4, Trigger=9)
+
+**검증:** `uloop compile` 통과 (에러 0). 경고 16건은 모두 이번 변경과 무관한 기존 파일.
+
+**남은 TODO/이슈:** "한 번에 Bool 하나만 true"를 `PlayAnim`이 보장하므로, 컨트롤러에 Bool 파라미터를 추가할 때는 이 규칙에 맞는지 확인 필요. Spawn/Die 클립의 Animation Event 연결은 작업자가 직접 진행 예정(함수명 `OnSpawnAnimEnd` / `OnDeathAnimEnd`, 둘 다 인자 없음). Die 상태는 Die Bool이 켜져 있는 동안 `m_ExitTime: 0.85`로 Exit → Entry → Die 재진입을 반복하므로 사망 애니메이션이 루프한다. `OnDeathAnimEnd`가 이를 끊는 구조라 이벤트를 0.85 이전에 심어야 안전하다. Spawn 상태도 `m_ExitTime: 0.70`으로 동일한 재진입 문제가 있다.

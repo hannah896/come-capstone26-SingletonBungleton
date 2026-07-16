@@ -13,6 +13,9 @@ public abstract class MobState<TMob> : StateBase where TMob : Mob
         Machine = machine;
     }
 
+    /// <summary>공격 중인 상태인지. true면 피격 시 Hit 상태로 전환하지 않는다(데미지만 적용).</summary>
+    public virtual bool IsAttackState => false;
+
     public override void OnEnter() { }
     public override void OnExit() { }
     public override void Update(float time = 1.0f) { }

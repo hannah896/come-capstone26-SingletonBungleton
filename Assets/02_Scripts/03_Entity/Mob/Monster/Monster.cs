@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -26,11 +27,24 @@ public class Monster : Mob
     [Tooltip("플레이어를 탐지할 레이어. 비워두면(Everything) Player 컴포넌트로만 필터링")]
     [SerializeField] private LayerMask targetMask = ~0;
 
-    [Header("애니메이션 상태명 (없으면 비워둠 - 비어 있으면 재생 안 함)")]
-    [SerializeField] private string idleAnim = "";
-    [SerializeField] private string moveAnim = "";
-    [SerializeField] private string attackAnim = "";
-    [SerializeField] private string deadAnim = "";
+    [Header("애니메이션 Bool 파라미터명 (컨트롤러가 Entry에서 이 Bool로 분기한다. 없으면 비워둠 - 비어 있으면 건드리지 않음)")]
+    [SerializeField] private string idleBool = "";
+    [SerializeField] private string moveBool = "";
+    [SerializeField] private string attackBool = "";
+    [SerializeField] private string deadBool = "";
+    [SerializeField] private string hitBool = "";
+
+    [Header("피격 리액션")]
+    [Tooltip("Hit 상태가 유지되는 시간(초). 공격 상태 중 피격 시에는 무시된다.")]
+    [SerializeField] private float hitDuration = 0.4f;
+
+    [Header("스폰 연출")]
+    [Tooltip("등장 연출을 쓰는 몬스터인지. 컨트롤러의 기본(Default) 상태가 스폰 애니메이션이라 재생은 자동으로 되고, " +
+             "여기서는 연출이 끝날 때까지 행동을 미룰지만 정한다. 끄면 스폰 즉시 Idle로 시작한다.")]
+    [SerializeField] private bool useSpawnAnim = false;
+    [Tooltip("스폰 애니메이션 끝에 심은 Animation Event가 OnSpawnAnimEnd()를 부르면 Idle로 넘어간다. " +
+             "이 값은 이벤트가 오지 않을 때(미연결 등) 몬스터가 Spawn 상태에 갇히지 않도록 하는 최대 대기 시간(초).")]
+    [SerializeField] private float spawnFallbackTimeout = 3f;
     #endregion
 
     protected MonsterStateMachine stateMachine;
@@ -48,16 +62,65 @@ public class Monster : Mob
     public float TurnSpeed => MonsterData != null ? MonsterData.TurnSpeed : 540f;
     public float MinAttackPeriod => status != null ? status.MinAttackPeriod : 1f;
 
-    public string IdleAnim => idleAnim;
-    public string MoveAnim => moveAnim;
-    public string AttackAnim => attackAnim;
-    public string DeadAnim => deadAnim;
+    public string IdleBool => idleBool;
+    public string MoveBool => moveBool;
+    public string AttackBool => attackBool;
+    public string DeadBool => deadBool;
+    public string HitBool => hitBool;
+    public float HitDuration => hitDuration;
+    /// <summary>등장 연출이 끝날 때까지 Spawn 상태에서 대기할지. false면 스폰 즉시 Idle로 시작한다.</summary>
+    public bool UseSpawnAnim => useSpawnAnim;
+    /// <summary>스폰 Animation Event가 오지 않을 때 Idle로 강제 전환하기까지의 대기 시간(초).</summary>
+    public float SpawnFallbackTimeout => spawnFallbackTimeout;
+    #endregion
+
+    #region Animation Bool Hash (Awake 시 1회 계산해 캐싱)
+    private int idleBoolHash;
+    private int moveBoolHash;
+    private int attackBoolHash;
+    private int deadBoolHash;
+    private int hitBoolHash;
+
+    public int IdleBoolHash => idleBoolHash;
+    public int MoveBoolHash => moveBoolHash;
+    public int AttackBoolHash => attackBoolHash;
+    public int DeadBoolHash => deadBoolHash;
+    public int HitBoolHash => hitBoolHash;
+
+    /// <summary>빈 문자열은 "건드리지 않음"을 뜻하는 0 해시로 고정한다.</summary>
+    protected static int ToAnimHash(string paramName)
+        => string.IsNullOrEmpty(paramName) ? 0 : Animator.StringToHash(paramName);
     #endregion
 
     protected override void Awake()
     {
         base.Awake();
+        idleBoolHash = ToAnimHash(idleBool);
+        moveBoolHash = ToAnimHash(moveBool);
+        attackBoolHash = ToAnimHash(attackBool);
+        deadBoolHash = ToAnimHash(deadBool);
+        hitBoolHash = ToAnimHash(hitBool);
+        CacheAnimBoolParams();
         stateMachine = CreateStateMachine();
+    }
+
+    /// <summary>status가 (재)생성될 때마다 OnDamaged를 구독해 피격 리액션을 건다.</summary>
+    protected override void OnStatusInitialized()
+    {
+        base.OnStatusInitialized();
+        if (status != null)
+            status.OnDamaged += HandleDamaged;
+    }
+
+    /// <summary>
+    /// 피격 시 호출. 공격 중이면(IsAttackState) 데미지만 받고 Hit 상태로는 넘어가지 않는다.
+    /// 공격 중이 아닐 때만 Hit 상태로 전환한다.
+    /// </summary>
+    private void HandleDamaged(float amount)
+    {
+        if (stateMachine == null || stateMachine.CurrentState == null) return;
+        if (stateMachine.CurrentState.IsAttackState) return;
+        stateMachine.ToHit();
     }
 
     // 풀에서 재사용될 때: 스탯(base) + 타깃/상태머신을 초기 상태로 되돌린다.
@@ -198,13 +261,58 @@ public class Monster : Mob
     #endregion
 
     #region Animation (선택)
-    /// <summary>상태명이 비어 있지 않고 컨트롤러에 해당 스테이트가 있을 때만 크로스페이드 재생(경고 없음).</summary>
-    public void PlayAnim(string stateName)
+    // 컨트롤러에 실제로 존재하는 Bool 파라미터 해시. 없는 이름에 SetBool을 걸면 경고가 나므로 미리 걸러낸다.
+    private readonly HashSet<int> animBoolHashes = new HashSet<int>();
+
+    private void CacheAnimBoolParams()
     {
-        if (animator == null || string.IsNullOrEmpty(stateName)) return;
-        int hash = Animator.StringToHash(stateName);
-        if (animator.HasState(0, hash))
-            animator.CrossFadeInFixedTime(hash, 0.1f);
+        animBoolHashes.Clear();
+        if (animator == null || animator.runtimeAnimatorController == null) return;
+
+        foreach (AnimatorControllerParameter param in animator.parameters)
+        {
+            if (param.type == AnimatorControllerParameterType.Bool)
+                animBoolHashes.Add(param.nameHash);
+        }
+    }
+
+    /// <summary>
+    /// 지금 재생할 애니메이션 Bool 하나만 켜고 나머지는 끈다.
+    /// 컨트롤러가 Entry에서 Bool로 분기하고 각 상태는 자기 Bool이 꺼져야 빠져나오는 구조라,
+    /// "한 번에 하나만 true"를 지켜야 상태가 엉키지 않는다.
+    /// 해시가 0(빈 이름)이거나 컨트롤러에 없는 파라미터면 아무것도 하지 않는다.
+    /// </summary>
+    public void PlayAnim(int boolHash)
+    {
+        if (animator == null || boolHash == 0) return;
+        if (!animBoolHashes.Contains(boolHash)) return;
+
+        foreach (int hash in animBoolHashes)
+            animator.SetBool(hash, hash == boolHash);
+    }
+
+    /// <summary>애니메이션 Bool을 모두 끈다. 스폰 시 기본(Default) 상태로 시작시키기 위해 사용한다.</summary>
+    public void ClearAnimBools()
+    {
+        if (animator == null) return;
+
+        foreach (int hash in animBoolHashes)
+            animator.SetBool(hash, false);
+    }
+
+    /// <summary>사망 연출: Dead Bool을 켠다.</summary>
+    public override void PlayDeadAnim()
+        => PlayAnim(deadBoolHash);
+
+    /// <summary>
+    /// 스폰(등장) 애니메이션 끝에 심은 Animation Event가 호출한다.
+    /// Animation Event는 Animator와 같은 GameObject의 컴포넌트만 부를 수 있으므로, 이 메서드는 public이어야 한다.
+    /// 스폰 연출 중이 아닐 때(다른 클립에 이벤트가 잘못 남은 경우) 들어온 호출은 무시한다.
+    /// </summary>
+    public void OnSpawnAnimEnd()
+    {
+        if (stateMachine == null || !(stateMachine.CurrentState is MonsterSpawnState)) return;
+        stateMachine.ToIdle();
     }
     #endregion
 }
