@@ -35,7 +35,8 @@ MonoBehaviour:
   defense: 0
   hungerRestore: 30
   healthRestore: 10
-  egoRestore: 5
+  egoRestore: 3
+  expirationTime: 8640
   isPlaceable: 0
   placementPrefab: {fileID: 0}
   placementFootprint: {x: 1, y: 1}

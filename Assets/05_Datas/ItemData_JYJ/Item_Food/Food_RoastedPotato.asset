@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
+  m_Name: Food_RoastedPotato
+  m_EditorClassIdentifier:
+  itemID: RoastedPotato
+  itemName: 구운감자
+  description: 음식_구운감자 입니다.
+  icon: {fileID: 0}
+  prefab: {fileID: 4241912786371572064, guid: 390454a113ed421da8081c8c084cd960, type: 3}
+  itemType: 4
+  survivalToolType: 0
+  combatGearType: 0
+  resourceType: 0
+  bootyType: 0
+  foodType: 8
+  dishType: 0
+  specialType: 0
+  isStackable: 1
+  maxStack: 10
+  equipSlot: 0
+  hasDurability: 0
+  maxDurability: 0
+  costPerDurability: 1
+  attackDamage: 0
+  attackRange: 0
+  defense: 0
+  hungerRestore: 25
+  healthRestore: 5
+  egoRestore: 0
+  expirationTime: 8640
+  isPlaceable: 0
+  placementPrefab: {fileID: 0}
+  placementFootprint: {x: 1, y: 1}
+  placementPivotOffset: {x: 0, y: 0, z: 0}
+  placementSnapToGrid: 1
+  placementCheckHeight: 2
+  placementCheckCenterOffset: {x: 0, y: 0, z: 0}

@@ -37,7 +37,6 @@ public class WorldGraphDirector : MonoBehaviour
             new ForceSimulator(),
             new TerritoryBuilder(),
             new HeightBuilder(),
-            new PointSampler(),
             new ObjectDisposer(),
             new ItemDisposer(),
             new ChunkSlicer(),

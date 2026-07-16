@@ -134,7 +134,6 @@ public class Node
     public List<Vector2Int> OwnedTiles = new();
 
     // 후보 타일 목록 (포아송 디스크 샘플링으로 생성된 점들)
-    public List<Vector2Int> CandidatePoints = new();
 }
 
 [System.Serializable]

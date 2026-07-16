@@ -6,7 +6,9 @@ public enum ItemType
     CombatGear,     // 전투도구
     Resource,       // 자원
     Booty,           // 전리품
-    Food            // 음식
+    Food,           // 음식
+    Dish,           // 요리
+    Special         // 특수 (부패물 등)
 }
 
 // 생존도구 세부 타입
@@ -61,7 +63,13 @@ public enum ResourceType
     Mineral_Iron,   // 철
     Mineral_Coal,   // 석탄
 
-    Plant_Grass     // 풀
+    Plant_Grass,    // 풀
+
+    Mushroom,   // 버섯
+    Carrot,     // 당근
+    Potato,     // 감자
+    Flower,     // 꽃
+    Ice         // 얼음
 }
 
 // 전리품 세부 타입
@@ -87,7 +95,32 @@ public enum FoodType
     CookedMeat2,
     CookedMeat3,
     CookedEgg,  //구운 알
-    RoastedBerry //구운베리
+    RoastedBerry, //구운베리
+    RoastedMushroom,    // 구운버섯
+    RoastedCarrot,      // 구운당근
+    RoastedPotato,      // 구운감자
+    RoastedFish         // 구운생선
+}
+
+// 요리
+public enum DishType
+{
+    None,
+    MeatStew,       // 고기 스튜
+    BerryJam,       // 베리잼
+    BerryPie,       // 베리 파이
+    MushroomSoup,   // 버섯 스프
+    Omelette,       // 오믈렛
+    Jerky,          // 육포
+    DriedFish,      // 어포
+    FlowerTea       // 꽃차
+}
+
+// 특수 아이템
+public enum SpecialType
+{
+    None,
+    Rot     // 부패물
 }
 
 //  장비 장착 위치

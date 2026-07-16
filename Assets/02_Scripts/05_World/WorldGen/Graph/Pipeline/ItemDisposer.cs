@@ -12,27 +12,15 @@ public class ItemDisposer : IGraphPipelineStage
     private WorldLogicData _logicData;
     private CancellationToken _ct;
 
-    private List<Node> _nodes;
-    private Node _currentNode;
-
     private System.Random _prng;
     private int _placementSequence;
-
-    private Dictionary<SpawnShape, IDisposePatternStrategy> _patternStrategies;
-
+    private System.Diagnostics.Stopwatch _stopwatch = new System.Diagnostics.Stopwatch();
     public void Initialize(WorldSettings settings)
     {
         _worldSettings = settings;
         _disposeSettings = _worldSettings.DisposeSettings;
-        _prng = new System.Random(_worldSettings.WorldSeed + (int)WorldSeedChannel.ObjectDisposer);
+        _prng = new System.Random(_worldSettings.WorldSeed + (int)WorldSeedChannel.ItemDisposer);
 
-        _patternStrategies = new Dictionary<SpawnShape, IDisposePatternStrategy>
-        {
-            { SpawnShape.Default, new DefaultPatternStrategy() },
-            { SpawnShape.Line, new LinePatternStrategy() },
-            { SpawnShape.Curve, new CurvePatternStrategy() },
-            { SpawnShape.Branching, new BranchingPatternStrategy() }
-        };
     }
 
     public async UniTask ExecuteAsync(WorldGenContext ctx, CancellationToken ct)
@@ -40,185 +28,71 @@ public class ItemDisposer : IGraphPipelineStage
         _disposeData = ctx.DisposeData;
         _logicData = ctx.LogicData;
         _ct = ct;
-        _nodes = ctx.GraphData?.Nodes;
+        List<Node> nodes = ctx.GraphData?.Nodes;
 
         _placementSequence = ctx.DisposeData.DisposeDatas.Count;
 
-        if (_nodes == null) return;
+        if (nodes == null) return;
 
-        foreach (Node node in _nodes)
+        _stopwatch.Restart();
+
+        foreach (Node node in nodes)
         {
             _ct.ThrowIfCancellationRequested();
 
-            _currentNode = node;
-            await PlaceItemsForNodeAsync();
+            await PlaceItemsForNodeAsync(node);
+
+            if (_stopwatch.ElapsedMilliseconds > 10)
+            {
+                await UniTask.Yield(_ct);
+                _stopwatch.Restart();
+            }
         }
     }
 
-    private async UniTask PlaceItemsForNodeAsync()
+    private async UniTask PlaceItemsForNodeAsync(Node node)
     {
-        PlacementRuleSet ruleSet = _currentNode.RegionData.RegionPlacementRule;
+        if (node == null || node.BiomeData == null || node.OwnedTiles == null || node.OwnedTiles.Count == 0)
+            return;
+
+        DisposeRuleSet ruleSet = node.BiomeData.BiomeDisposeRule;
         if (ruleSet == null || ruleSet.ItemRules == null || ruleSet.ItemRules.Count == 0)
             return;
 
-        List<Vector2Int> availablePositions = BuildAvailablePositions(_currentNode.CandidatePoints);
-        if (availablePositions.Count == 0) return;
-
-        foreach (ItemRule rule in ruleSet.ItemRules)
-        {
-            if (rule == null) continue;
-
-            string prefabKey = rule.prefabKey;
-            if (string.IsNullOrEmpty(prefabKey)) continue;
-
-            if (rule.usePiece)
-            {
-                await PlacePiecesAsync(rule, prefabKey, availablePositions);
-            }
-
-            if (rule.useCluster)
-            {
-                await PlaceClustersAsync(rule, prefabKey, availablePositions);
-            }
-        }
-    }
-
-    private async UniTask PlacePiecesAsync(ItemRule rule, string prefabKey, List<Vector2Int> availablePositions)
-    {
-        if (rule.pieceShapes == null || rule.pieceShapes.Count == 0) return;
-
-        foreach (SpawnShapeCount entry in rule.pieceShapes)
+        foreach (ItemDisposeRule rule in ruleSet.ItemRules)
         {
             _ct.ThrowIfCancellationRequested();
-            if (availablePositions.Count == 0) break;
 
-            int count = Mathf.Min(entry.maxCount, availablePositions.Count);
-            if (count <= 0) continue;
-
-            if (entry.shape == SpawnShape.Default)
-            {
-                for (int i = 0; i < count && availablePositions.Count > 0; i++)
-                {
-                    Vector2Int tile = TakeRandomPosition(availablePositions);
-                    PlaceAndOccupy(prefabKey, tile, availablePositions);
-                }
-
+            if (rule == null || string.IsNullOrEmpty(rule.prefabKey))
                 continue;
-            }
 
-            Vector2Int center = TakeRandomPosition(availablePositions);
-            List<Vector2Int> placements = new List<Vector2Int> { center };
+            int maxCount = Mathf.Max(0, rule.maxCount);
+            int minCount = Mathf.Clamp(rule.minCount, 0, maxCount);
+            int targetCount = maxCount > minCount ? _prng.Next(minCount, maxCount + 1) : maxCount;
+            if (targetCount == 0)
+                continue;
 
-            int extraCount = Mathf.Min(count - 1, availablePositions.Count);
-            if (extraCount > 0)
+            List<Vector2Int> poissonPoints = await PointSampler.GeneratePoissonPointsAsync(
+                node.OwnedTiles,
+                targetCount,
+                _disposeSettings.minObjectDistance,
+                _disposeSettings.maxSamplingAttempts,
+                _prng,
+                _ct);
+
+            for (int i = 0; i < poissonPoints.Count; i++)
             {
-                List<Vector2Int> extra = await TakePatternPositionsAsync(
-                    availablePositions,
-                    center,
-                    entry.shape,
-                    rule,
-                    rule.patternLength,
-                    extraCount
-                );
-                placements.AddRange(extra);
-            }
+                _ct.ThrowIfCancellationRequested();
 
-            for (int i = 0; i < placements.Count; i++)
-            {
-                PlaceAndOccupy(prefabKey, placements[i], availablePositions);
-            }
-        }
-    }
-
-    private async UniTask PlaceClustersAsync(ItemRule rule, string prefabKey, List<Vector2Int> availablePositions)
-    {
-        if (rule.clusterShapes == null || rule.clusterShapes.Count == 0) return;
-
-        float clusterPatternLength = GetClusterPatternLength(rule);
-
-        foreach (SpawnShapeCount entry in rule.clusterShapes)
-        {
-            _ct.ThrowIfCancellationRequested();
-            if (availablePositions.Count == 0) break;
-
-            int maxClusterCount = Mathf.Max(0, entry.maxCount);
-            if (maxClusterCount <= 0) continue;
-
-            int clusterCount = _prng.Next(1, maxClusterCount + 1);
-            clusterCount = Mathf.Min(clusterCount, availablePositions.Count);
-
-            List<Vector2Int> clusterCenters = new List<Vector2Int>();
-            if (clusterCount <= 0) continue;
-
-            if (entry.shape == SpawnShape.Default)
-            {
-                for (int i = 0; i < clusterCount && availablePositions.Count > 0; i++)
+                Vector2Int tile = poissonPoints[i];
+                if (!IsOccupied(tile))
                 {
-                    clusterCenters.Add(TakeRandomPosition(availablePositions));
-                }
-            }
-            else
-            {
-                Vector2Int center = TakeRandomPosition(availablePositions);
-                clusterCenters.Add(center);
-
-                int extraCount = Mathf.Min(clusterCount - 1, availablePositions.Count);
-                if (extraCount > 0)
-                {
-                    List<Vector2Int> extraCenters = await TakePatternPositionsAsync(
-                        availablePositions,
-                        center,
-                        entry.shape,
-                        rule,
-                        clusterPatternLength,
-                        extraCount
-                    );
-                    clusterCenters.AddRange(extraCenters);
-                }
-            }
-
-            for (int i = 0; i < clusterCenters.Count && availablePositions.Count > 0; i++)
-            {
-                Vector2Int center = clusterCenters[i];
-
-                int spawnCount = GetSpawnCount(rule);
-                spawnCount = Mathf.Min(spawnCount, availablePositions.Count + 1);
-
-                PlaceAndOccupy(prefabKey, center, availablePositions);
-
-                if (spawnCount <= 1 || rule.clusterRadius <= 0f) continue;
-
-                List<Vector2Int> extra = await TakeClusterPositionsAsync(
-                    availablePositions,
-                    center,
-                    rule.clusterRadius,
-                    spawnCount - 1
-                );
-
-                for (int j = 0; j < extra.Count; j++)
-                {
-                    PlaceAndOccupy(prefabKey, extra[j], availablePositions);
+                    PlaceAndOccupy(rule.prefabKey, tile);
                 }
             }
         }
     }
 
-    private List<Vector2Int> BuildAvailablePositions(List<Vector2Int> candidatePoints)
-    {
-        List<Vector2Int> result = new List<Vector2Int>();
-        if (candidatePoints == null || candidatePoints.Count == 0) return result;
-
-        for (int i = 0; i < candidatePoints.Count; i++)
-        {
-            Vector2Int pos = candidatePoints[i];
-            if (!IsOccupied(pos))
-            {
-                result.Add(pos);
-            }
-        }
-
-        return result;
-    }
 
     private bool IsOccupied(Vector2Int pos)
     {
@@ -229,13 +103,12 @@ public class ItemDisposer : IGraphPipelineStage
         return _logicData.OccupiedWorld[pos.x, pos.y];
     }
 
-    private void PlaceAndOccupy(string prefabKey, Vector2Int tile, List<Vector2Int> availablePositions)
+    private void PlaceAndOccupy(string prefabKey, Vector2Int tile)
     {
         AddPlacement(prefabKey, tile);
 
         float radius = Mathf.Max(0f, _disposeSettings.minObjectDistance);
         MarkOccupied(tile, radius);
-        RemoveOccupiedCandidates(availablePositions, tile, radius);
     }
 
     private void MarkOccupied(Vector2Int center, float radius)
@@ -264,76 +137,6 @@ public class ItemDisposer : IGraphPipelineStage
         }
     }
 
-    private void RemoveOccupiedCandidates(List<Vector2Int> availablePositions, Vector2Int center, float radius)
-    {
-        if (availablePositions == null || availablePositions.Count == 0) return;
-
-        float sqrRadius = radius * radius;
-
-        for (int i = availablePositions.Count - 1; i >= 0; i--)
-        {
-            Vector2Int pos = availablePositions[i];
-            float dx = pos.x - center.x;
-            float dy = pos.y - center.y;
-            if ((dx * dx) + (dy * dy) <= sqrRadius)
-            {
-                availablePositions.RemoveAt(i);
-            }
-        }
-    }
-
-    private float GetClusterPatternLength(ItemRule rule)
-    {
-        float length = rule.patternLength + (rule.clusterRadius * 2f);
-        return Mathf.Max(1f, length);
-    }
-
-    private int GetSpawnCount(ItemRule rule)
-    {
-        int minCount = Mathf.Max(1, rule.itemMinCount);
-        int maxCount = Mathf.Max(minCount, rule.itemMaxCount);
-        return _prng.Next(minCount, maxCount + 1);
-    }
-
-    private async UniTask<List<Vector2Int>> TakePatternPositionsAsync(
-        List<Vector2Int> remainingPositions,
-        Vector2Int center,
-        SpawnShape shape,
-        ItemRule rule,
-        float patternLength,
-        int extraCount)
-    {
-        if (extraCount <= 0) return new List<Vector2Int>();
-
-        if (_patternStrategies == null || !_patternStrategies.TryGetValue(shape, out IDisposePatternStrategy strategy) || strategy == null)
-            return new List<Vector2Int>();
-
-        ObjectRule patternRule = CreatePatternRule(rule, patternLength);
-        ObjPatternContext context = new ObjPatternContext(_prng, _ct);
-        return await strategy.TakePositionsAsync(context, remainingPositions, center, patternRule, extraCount);
-    }
-
-    private ObjectRule CreatePatternRule(ItemRule rule, float patternLength)
-    {
-        ObjectRule patternRule = new ObjectRule
-        {
-            patternLength = patternLength,
-            curveAngle = rule.curveAngle,
-            clusterRadius = rule.clusterRadius
-        };
-
-        return patternRule;
-    }
-
-    private UniTask<List<Vector2Int>> TakeClusterPositionsAsync(
-        List<Vector2Int> remainingPositions,
-        Vector2Int center,
-        float radius,
-        int maxCount)
-    {
-        return DisposePatternUtils.TakeClusterPositions(_prng, remainingPositions, center, radius, maxCount);
-    }
-
     private void AddPlacement(string prefabKey, Vector2Int tile)
     {
         int instanceId = CreatePlacementId(prefabKey, tile);
@@ -349,15 +152,6 @@ public class ItemDisposer : IGraphPipelineStage
 
         _disposeData.DisposeDatas.Add(placement);
         _disposeData.ItemDisposes.Add(placement);
-    }
-
-    private Vector2Int TakeRandomPosition(List<Vector2Int> positions)
-    {
-        int index = _prng.Next(0, positions.Count);
-        Vector2Int pos = positions[index];
-        positions[index] = positions[positions.Count - 1];
-        positions.RemoveAt(positions.Count - 1);
-        return pos;
     }
 
     private int CreatePlacementId(string prefabKey, Vector2Int tile)
