@@ -20,7 +20,19 @@ MonoBehaviour:
     prefabKey: ResourceNode_Rock
     density: 0.06
   ItemRules:
-  - ruleName: Stone
-    prefabKey: Resource_Mineral_Stone
+  - ruleName: Flint
+    prefabKey: Resource_Mineral_Flint
     minCount: 20
     maxCount: 30
+  - ruleName: Stone
+    prefabKey: Resource_Mineral_Stone
+    minCount: 10
+    maxCount: 20
+  - ruleName: Iron
+    prefabKey: Resource_Mineral_Iron
+    minCount: 0
+    maxCount: 1
+  - ruleName: Iron
+    prefabKey: Resource_Mineral_Iron
+    minCount: 0
+    maxCount: 1
