@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -78,6 +79,10 @@ public class CraftingManager : MonoBehaviour
         return true;
     }
 
+    /// <summary>
+    /// 제작을 시작한다. 재료는 즉시 소모되고, recipe.craftTime(초)이 지나면 결과물이 지급된다.
+    /// 반환값은 "제작이 시작됐는지" 여부이며, craftTime이 있는 레시피는 실제 지급 성공 여부와 무관하다.
+    /// </summary>
     public bool Craft(RecipeDataSO recipe)
     {
         if (!CanCraft(recipe)) return false;
@@ -85,6 +90,22 @@ public class CraftingManager : MonoBehaviour
         foreach (var ingredient in recipe.ingredients)
             inventory.RemoveItem(ingredient.itemData, ingredient.amount);
 
+        if (recipe.craftTime > 0f)
+            StartCoroutine(FinishCraftAfterDelay(recipe));
+        else
+            FinishCraft(recipe);
+
+        return true;
+    }
+
+    private IEnumerator FinishCraftAfterDelay(RecipeDataSO recipe)
+    {
+        yield return new WaitForSeconds(recipe.craftTime);
+        FinishCraft(recipe);
+    }
+
+    private void FinishCraft(RecipeDataSO recipe)
+    {
         bool success = inventory.AddItem(recipe.resultItem, recipe.resultAmount);
 
         if (!success)
@@ -108,7 +129,6 @@ public class CraftingManager : MonoBehaviour
         }
 
         OnCraftingChanged?.Invoke();
-        return success;
     }
 
     // ── 레시피 조회 ──────────────────────────────────────────────

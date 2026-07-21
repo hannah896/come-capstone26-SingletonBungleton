@@ -170,6 +170,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   slotCount: 20
   quickSlotCount: 20
+  rotItemSO: {fileID: 11400000, guid: eac0dd7b1fa44b0392f6ef6602d8b18b, type: 2}
   pickupRadius: 2
   pickupLayer:
     serializedVersion: 2

@@ -1,22 +1,21 @@
 using UnityEngine;
 
 /// <summary>
-/// 음식 런타임 데이터 클래스.
+/// 요리(Dish) 런타임 데이터 클래스.
 /// hungerRestore / healthRestore / egoRestore 는 SO에서 읽는다.
-/// 소비기한(부패)은 PlayerInventory가 SO의 expirationTime을 기준으로 관리한다.
 /// </summary>
 [System.Serializable]
-public class ItemData_Food : ItemData, IStackable
+public class ItemData_Dish : ItemData, IStackable
 {
-    public FoodType id;
+    public DishType id;
 
     public int stackCount { get; set; } = 1;
     public int stackMax => data.maxStack;
     public bool CanStackWith(ItemDataSO otherSO) => stackCount < stackMax && otherSO == data;
 
-    public ItemData_Food(ItemDataSO data, int count = 1) : base(data)
+    public ItemData_Dish(ItemDataSO data, int count = 1) : base(data)
     {
-        id = data.foodType;
+        id = data.dishType;
         stackCount = Mathf.Max(1, count);
     }
 }

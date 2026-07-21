@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 7198387136087832506}
   - component: {fileID: 5790741581415684275}
   - component: {fileID: 6611223344556677889}
+  - component: {fileID: 28056033273355699}
   m_Layer: 20
   m_Name: Tool_Bonfire
   m_TagString: Untagged
@@ -128,6 +129,31 @@ MonoBehaviour:
   - rawItem: {fileID: 11400000, guid: aabab6fae27303b44a9620eb5a5d7311, type: 2}
     cookedItem: {fileID: 11400000, guid: 51398ce38de24ab4ab42a2e259565ff2, type: 2}
     cookedPrefabKey: Food_RoastedBerry
+  - rawItem: {fileID: 11400000, guid: b31cbed3d4a14b1eb22f49f28a0cca37, type: 2}
+    cookedItem: {fileID: 11400000, guid: 2222ccaf2ef047009f3d448e1325c164, type: 2}
+    cookedPrefabKey: Food_RoastedMushroom
+  - rawItem: {fileID: 11400000, guid: d377b7894fe04055b023ea4a791a3c46, type: 2}
+    cookedItem: {fileID: 11400000, guid: e96f35c3603a4c2d9b985b4e187bfb10, type: 2}
+    cookedPrefabKey: Food_RoastedCarrot
+  - rawItem: {fileID: 11400000, guid: fdcf508a29394c09bb29f52b02d8d4ae, type: 2}
+    cookedItem: {fileID: 11400000, guid: e6b44a8b65e44625a88a11d5389763e8, type: 2}
+    cookedPrefabKey: Food_RoastedPotato
+  - rawItem: {fileID: 11400000, guid: 427f95e41199a5b46a4b5593752fcda1, type: 2}
+    cookedItem: {fileID: 11400000, guid: 990bbff0ddbe4a1a8516336a48e34079, type: 2}
+    cookedPrefabKey: Food_RoastedFish
+--- !u!114 &28056033273355699
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3590119427674651755}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb65cd0bdefc6414ab7928f152006473, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  stationType: 3
 --- !u!1001 &3572971002091680667
 PrefabInstance:
   m_ObjectHideFlags: 0

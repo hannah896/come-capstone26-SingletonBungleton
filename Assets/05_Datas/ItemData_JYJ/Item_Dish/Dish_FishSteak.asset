@@ -10,33 +10,35 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
-  m_Name: Tool_Bonfire
-  m_EditorClassIdentifier: 
-  itemID: Bonefire
-  itemName: "\uBAA8\uB2E5\uBD88"
-  description: "\uBAA8\uB2E5\uBD88. \uC74C\uC2DD \uAD6C\uC6B8\uC218\uC788\uC74C"
-  icon: {fileID: 21300000, guid: d02e50950306d6d4e8407332965c8ab0, type: 3}
-  prefab: {fileID: 3590119427674651755, guid: 9dbefc22cc191c9439f079d99d9b2354, type: 3}
-  itemType: 0
-  survivalToolType: 15
-  harvestableResources: 
+  m_Name: Dish_FishSteak
+  m_EditorClassIdentifier:
+  itemID: FishSteak
+  itemName: 생선 스테이크
+  description: 요리_생선 스테이크 입니다.
+  icon: {fileID: 0}
+  prefab: {fileID: 65229197991942186, guid: d5975a5aea84fd43915b4e14e1bbab7e, type: 3}
+  itemType: 5
+  survivalToolType: 0
   combatGearType: 0
   resourceType: 0
   bootyType: 0
   foodType: 0
+  dishType: 9
+  specialType: 0
   isStackable: 1
-  maxStack: 99
+  maxStack: 10
   equipSlot: 0
-  hasDurability: 1
-  maxDurability: 100
+  hasDurability: 0
+  maxDurability: 0
   costPerDurability: 1
   attackDamage: 0
   attackRange: 0
   defense: 0
-  hungerRestore: 0
-  healthRestore: 0
+  hungerRestore: 25
+  healthRestore: 5
   egoRestore: 0
-  isPlaceable: 1
+  expirationTime: 21600
+  isPlaceable: 0
   placementPrefab: {fileID: 0}
   placementFootprint: {x: 1, y: 1}
   placementPivotOffset: {x: 0, y: 0, z: 0}

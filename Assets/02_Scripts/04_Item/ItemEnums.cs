@@ -34,7 +34,8 @@ public enum SurvivalToolType
 
     FishingRod,     // 낚싯대
 
-    Torch       // 횃불
+    Torch,      // 횃불
+    Bonfire     // 모닥불
 }
 
 // 전투도구 세부 타입
@@ -113,7 +114,8 @@ public enum DishType
     Omelette,       // 오믈렛
     Jerky,          // 육포
     DriedFish,      // 어포
-    FlowerTea       // 꽃차
+    FlowerTea,      // 꽃차
+    FishSteak       // 생선스테이크
 }
 
 // 특수 아이템
