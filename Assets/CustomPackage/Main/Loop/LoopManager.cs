@@ -63,7 +63,7 @@ public class LoopManager : CoreManager
     /// </summary>
     public void GameUpdate(float deltaTime)
     {
-        if (GameScene.GameProcessing != GameProcessing.Processing) return;
+        if (!GameScene.IsGameUpdating) return;
         OnGameUpdate?.Invoke(deltaTime * GameSpeed);
     }
 

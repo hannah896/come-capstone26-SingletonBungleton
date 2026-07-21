@@ -2,6 +2,25 @@
 
 ---
 
+## 2026-07-21
+
+### 1. GameProcessing.Testing 상태 추가 (테스트 씬에서 게임 로직 구동)
+
+**파일(수정):** `Assets/02_Scripts/@Scripts/Scenes/GameScene.cs`, `Assets/CustomPackage/Main/Loop/LoopManager.cs`, `Assets/02_Scripts/@Scripts/Scenes/Test/PHN_TestScene.cs`
+
+**배경:** 테스트 씬은 로비→월드 생성 흐름을 거치지 않아 `GameProcessing`이 기본값 `None`으로 머문다. `LoopManager.GameUpdate`가 `GameProcessing == Processing`일 때만 `OnGameUpdate`를 발행하므로, 테스트 씬에서는 몬스터 AI·이동 등 `OnGameUpdate` 구독 로직이 전혀 돌지 않았다(예: Imp Mischief가 플레이어를 추적하지 않음).
+
+**변경 내용:**
+- `GameProcessing` enum에 `Testing = 1 << 2` 추가.
+- `GameScene.IsGameUpdating` 헬퍼 프로퍼티 신설 — `Processing` 또는 `Testing`일 때 true. `LoopManager.GameUpdate`의 게이트를 `!= Processing` 직접 비교 대신 `!IsGameUpdating`으로 교체(재사용성·가독성).
+- `PHN_TestScene.EnterScene`에서 `GameProcessing = Testing`으로 진입, `ExitScene`에서 `None`으로 복원(다른 씬 상태 오염 방지).
+
+**영향 검토:** `Player.cs` 허기 로직은 `!= Stopping` 기준이라 Testing에서도 정상 소모(주석에 테스트 씬 포함 명시). `PauseController`는 현재 상태를 캐시·복원하므로 Testing 중 일시정지/재개도 정상.
+
+**검증:** `uloop compile` 통과(에러 0, 경고 0). 런타임 추적 동작은 PlayMode 미검증.
+
+---
+
 ## 2026-07-07
 
 ### 1. Mischief 몬스터 구현 (슬래시 + 프로젝타일 하이브리드)
