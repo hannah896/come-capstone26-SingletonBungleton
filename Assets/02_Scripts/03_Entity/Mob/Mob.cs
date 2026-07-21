@@ -155,9 +155,18 @@ public abstract class Mob : MonoBehaviour, IDamageable, IPoolable
     private void FinishDeath()
     {
         isDying = false;
-        dropTable?.Spawn(transform.position).Forget();
+
+        if (CanSpawnDrops)
+            dropTable?.Spawn(transform.position).Forget();
+
         Extensions.Despawn(gameObject);
     }
+
+    /// <summary>
+    /// 드랍을 스폰해도 되는 피어인지. 멀티플레이에서 클라까지 드랍을 만들면 아이템이 중복된다.
+    /// 기본은 true이고, 네트워크로 복제되는 Mob(Monster)이 호스트 전용으로 좁힌다.
+    /// </summary>
+    protected virtual bool CanSpawnDrops => true;
 
     /// <summary>사망 순간 자식 처리(예: 사망 상태 전환). 기본 구현은 비어 있다.</summary>
     protected virtual void OnDeath() { }

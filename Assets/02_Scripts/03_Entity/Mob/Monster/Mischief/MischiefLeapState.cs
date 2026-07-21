@@ -36,7 +36,7 @@ public class MischiefLeapState : MobState<Monster>
         if (dir.sqrMagnitude > 0.0001f)
             mischief.transform.rotation = Quaternion.LookRotation(dir);
 
-        mischief.PlayAnim(mischief.JumpBoolHash); // 비어 있으면 no-op
+        mischief.PlayAnim(MonsterAnimId.Jump); // 매핑된 Bool이 비어 있으면 애니는 생략된다
         mischief.StartLeapCooldown();
         progress = 0f;
     }

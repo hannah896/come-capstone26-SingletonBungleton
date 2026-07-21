@@ -50,6 +50,9 @@ public class NetworkManager : CoreManager
     // 남자 캐릭터 프리팹 Addressable 키
     private const string PLAYER_CHARACTER_MALE_PREFAB_KEY = "Player_Male";
 
+    // 몬스터 복제 디렉터 프리팹 Addressable 키 (세션당 1개, 호스트가 스폰)
+    private const string MONSTER_DIRECTOR_PREFAB_KEY = "NetworkMonsterDirector";
+
     // Fusion NetworkRunner 인스턴스
     private NetworkRunner _runner;
 
@@ -61,6 +64,12 @@ public class NetworkManager : CoreManager
 
     // 남자 캐릭터 프리팹 (NetworkObject 포함)
     private GameObject _playerCharacterMalePrefab;
+
+    // 몬스터 복제 디렉터 프리팹 (NetworkObject 포함)
+    private GameObject _monsterDirectorPrefab;
+
+    // 호스트가 스폰한 몬스터 디렉터 (세션당 1개)
+    private NetworkObject _monsterDirector;
 
     // 게임 시작 처리 중 여부 (Rpc_StartGame 중복 수신 가드)
     private bool _gameStarting;
@@ -191,6 +200,9 @@ public class NetworkManager : CoreManager
         // 남자 캐릭터 프리팹 로드 (대기방에서 남자 선택 시 스폰)
         _playerCharacterMalePrefab = await Main.Resource.LoadAssetAsync<GameObject>(PLAYER_CHARACTER_MALE_PREFAB_KEY, AssetCacheType.Required);
 
+        // 몬스터 복제 디렉터 프리팹 로드 (호스트가 월드 준비 후 1개 스폰)
+        _monsterDirectorPrefab = await Main.Resource.LoadAssetAsync<GameObject>(MONSTER_DIRECTOR_PREFAB_KEY, AssetCacheType.Required);
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (_playerDataPrefab == null)
         {
@@ -203,6 +215,10 @@ public class NetworkManager : CoreManager
         if (_playerCharacterMalePrefab == null)
         {
             Debug.LogError($"[NetworkManager] Failed to load player character prefab: {PLAYER_CHARACTER_MALE_PREFAB_KEY}");
+        }
+        if (_monsterDirectorPrefab == null)
+        {
+            Debug.LogError($"[NetworkManager] Failed to load monster director prefab: {MONSTER_DIRECTOR_PREFAB_KEY}");
         }
 #endif
 #endif
@@ -471,6 +487,29 @@ public class NetworkManager : CoreManager
 #endif
     }
 
+    // 호스트가 몬스터 복제 디렉터를 세션당 1개 스폰한다.
+    // 몬스터 프리팹에는 NetworkObject를 붙이지 않고, 이 디렉터 하나가 전체 몬스터 상태를 복제한다.
+    private void SpawnMonsterDirector()
+    {
+        if (_runner == null || !_runner.IsServer) return;
+        if (_monsterDirector != null) return;
+        if (_monsterDirectorPrefab == null) return;
+
+        if (!_monsterDirectorPrefab.TryGetComponent<NetworkObject>(out var netObj))
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogError("[NetworkManager] MonsterDirector 프리팹에 NetworkObject가 없습니다. Runner.Spawn 불가.");
+#endif
+            return;
+        }
+
+        _monsterDirector = _runner.Spawn(netObj);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log("[NetworkManager] MonsterDirector spawned");
+#endif
+    }
+
     // 호스트가 접속 중인 모든 플레이어의 캐릭터를 스폰한다.
     private void SpawnAllCharacters()
     {
@@ -604,6 +643,7 @@ public class NetworkManager : CoreManager
         _players.Clear();
         _characters.Clear();
         _localCharacter = null;
+        _monsterDirector = null;
         _worldReady = false;
         _gameStarting = false;
 
@@ -677,6 +717,7 @@ public class NetworkManager : CoreManager
         _players.Clear();
         _characters.Clear();
         _localCharacter = null;
+        _monsterDirector = null;
         _worldReady = false;
     }
 
@@ -869,6 +910,9 @@ public class NetworkManager : CoreManager
 #if PHOTON_FUSION
         _spawnPoint = spawnPoint;
         _worldReady = true;
+
+        // 몬스터 복제 디렉터를 먼저 띄운다 (스포너가 등록할 대상이 있어야 한다)
+        SpawnMonsterDirector();
 
         // Host 모드: 호스트가 전원 캐릭터를 스폰한다 (InputAuthority만 각 플레이어에게 부여)
         SpawnAllCharacters();
