@@ -16,7 +16,4 @@ MonoBehaviour:
   - ruleName: Tree
     prefabKey: ResourceNode_Fir
     density: 0.01
-  - ruleName: Rock
-    prefabKey: ResourceNode_Rock
-    density: 0.06
   ItemRules: []

@@ -12,16 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5bdf5b2023db67d4aa58ca30033de479, type: 3}
   m_Name: PlainsRule
   m_EditorClassIdentifier: 
-  Rules:
-  - prefabKey: 
-    isWeighted: 0
-    weight: 0
-    fixedCount: 0
-  - prefabKey: 
-    isWeighted: 0
-    weight: 0
-    fixedCount: 0
-  - prefabKey: 
-    isWeighted: 0
-    weight: 0
-    fixedCount: 0
+  ObjectRules:
+  - ruleName: Tree
+    prefabKey: ResourceNode_Fir
+    density: 0.1
+  ItemRules: []

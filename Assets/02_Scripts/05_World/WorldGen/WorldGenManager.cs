@@ -30,6 +30,7 @@ public class WorldGenManager : MonoBehaviour
     [SerializeField] private WorldSettings _worldSettings;
 
     [SerializeField] private WorldSimulationManager _simulationManager;
+    [SerializeField] private WorldMiniMap _worldMiniMap;
 
     private const string PLAYER_ADDRESSKEY = "Player";
     private const string GROUND_LAYER_NAME = "Ground";
@@ -67,6 +68,8 @@ public class WorldGenManager : MonoBehaviour
             _worldRenderDirector = Extensions.GetOrAddComponent<WorldRenderDirector>(this.gameObject);
         if (_worldChunkDirector == null)
             _worldChunkDirector = Extensions.GetOrAddComponent<WorldChunkDirector>(this.gameObject);
+        if (_worldMiniMap == null)
+            _worldMiniMap = WorldMiniMap.Instance ?? Extensions.GetOrAddComponent<WorldMiniMap>(this.gameObject);
 
         await LoadWorldSettingsAsync(_cts.Token);
         
@@ -172,6 +175,10 @@ public class WorldGenManager : MonoBehaviour
 
             var graphData = _worldGraphDirector.GetWorldGraphData();
             var logicData = _worldGraphDirector.GetWorldLogicData();
+
+            if (_worldMiniMap == null)
+                _worldMiniMap = WorldMiniMap.Instance ?? Extensions.GetOrAddComponent<WorldMiniMap>(this.gameObject);
+            await _worldMiniMap.BuildAsync(logicData, graphData, _worldSettings, ct: _cts.Token);
 
             ReportProgress(0.35f, "렌더 초기화");
 
