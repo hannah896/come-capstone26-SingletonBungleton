@@ -48,7 +48,7 @@ public class MischiefAttackState : MobState<Monster>
             mischief.FaceTargetStep(time);
             if (slashCooldown <= 0f)
             {
-                mischief.PlayAnim(mischief.AttackBoolHash);
+                mischief.PlayAnim(MonsterAnimId.Attack);
                 mischief.PerformAttack();
                 slashCooldown = mischief.MinAttackPeriod;
             }

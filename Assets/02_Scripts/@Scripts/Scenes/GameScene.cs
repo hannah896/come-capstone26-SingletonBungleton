@@ -43,6 +43,13 @@ public class GameScene : SceneBase
 
     public static GameProcessing GameProcessing { get; set; }
 
+    /// <summary>
+    /// OnGameUpdate(게임 로직)를 돌려야 하는 상태인지.
+    /// 정식 진행(Processing) 또는 테스트 씬(Testing)일 때 true.
+    /// </summary>
+    public static bool IsGameUpdating =>
+        GameProcessing == GameProcessing.Processing || GameProcessing == GameProcessing.Testing;
+
     // 인게임 HUD (플레이어 소환 후 표시 예정)
     public UI_Hud_Game UIHud { get; private set; }
 
@@ -171,4 +178,5 @@ public enum GameProcessing
     None = 0,
     Processing = 1 << 0,
     Stopping = 1 << 1,
+    Testing = 1 << 2,   // 테스트 씬 전용 — 로비/월드 생성 없이도 게임 로직(OnGameUpdate)을 돌린다
 }

@@ -36,13 +36,6 @@ public class Mischief : Monster
     public float SlashRange => MischiefData != null ? MischiefData.SlashRange : 1.5f;
     /// <summary>프로젝타일 내부 쿨타임이 끝나 발사 가능한지.</summary>
     public bool IsProjectileReady => projectileCooldown <= 0f;
-    /// <summary>프로젝타일(원거리) 공격 애니메이션 Bool 파라미터명.</summary>
-    public string RangeAttackBool => rangeAttackBool;
-    /// <summary>프로젝타일(원거리) 공격 Bool 해시 (Awake 시 1회 계산).</summary>
-    public int RangeAttackBoolHash => rangeAttackBoolHash;
-
-    /// <summary>도약 애니메이션 Bool 해시 (Awake 시 1회 계산). 비어 있으면 0.</summary>
-    public int JumpBoolHash => jumpBoolHash;
     public float JumpHeight => jumpHeight;
     public float JumpDistance => jumpDistance;
     public float JumpDuration => jumpDuration;
@@ -68,6 +61,14 @@ public class Mischief : Monster
     // 공격 상태를 MischiefAttackState로 교체한 전용 머신 사용
     protected override MonsterStateMachine CreateStateMachine()
         => new MischiefStateMachine(this);
+
+    // 미스치프 전용 애니(원거리 공격/도약)를 매핑에 더한다.
+    protected override int AnimBoolHash(MonsterAnimId animId) => animId switch
+    {
+        MonsterAnimId.RangeAttack => rangeAttackBoolHash,
+        MonsterAnimId.Jump        => jumpBoolHash,
+        _ => base.AnimBoolHash(animId),
+    };
 
     // 프로젝타일/도약 쿨타임은 상태와 무관하게 항상 돈다.
     protected override void OnGameUpdate(float deltaTime)
@@ -105,7 +106,7 @@ public class Mischief : Monster
         if (Target == null || !IsProjectileReady || MischiefData == null) return;
 
         projectileCooldown = MischiefData.ProjectileCooldown;
-        PlayAnim(RangeAttackBoolHash);
+        PlayAnim(MonsterAnimId.RangeAttack);
         FireProjectileAsync(Target).Forget();
     }
 

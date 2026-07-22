@@ -2,6 +2,25 @@
 
 ---
 
+## 2026-07-21
+
+### 1. GameProcessing.Testing 상태 추가 (테스트 씬에서 게임 로직 구동)
+
+**파일(수정):** `Assets/02_Scripts/@Scripts/Scenes/GameScene.cs`, `Assets/CustomPackage/Main/Loop/LoopManager.cs`, `Assets/02_Scripts/@Scripts/Scenes/Test/PHN_TestScene.cs`
+
+**배경:** 테스트 씬은 로비→월드 생성 흐름을 거치지 않아 `GameProcessing`이 기본값 `None`으로 머문다. `LoopManager.GameUpdate`가 `GameProcessing == Processing`일 때만 `OnGameUpdate`를 발행하므로, 테스트 씬에서는 몬스터 AI·이동 등 `OnGameUpdate` 구독 로직이 전혀 돌지 않았다(예: Imp Mischief가 플레이어를 추적하지 않음).
+
+**변경 내용:**
+- `GameProcessing` enum에 `Testing = 1 << 2` 추가.
+- `GameScene.IsGameUpdating` 헬퍼 프로퍼티 신설 — `Processing` 또는 `Testing`일 때 true. `LoopManager.GameUpdate`의 게이트를 `!= Processing` 직접 비교 대신 `!IsGameUpdating`으로 교체(재사용성·가독성).
+- `PHN_TestScene.EnterScene`에서 `GameProcessing = Testing`으로 진입, `ExitScene`에서 `None`으로 복원(다른 씬 상태 오염 방지).
+
+**영향 검토:** `Player.cs` 허기 로직은 `!= Stopping` 기준이라 Testing에서도 정상 소모(주석에 테스트 씬 포함 명시). `PauseController`는 현재 상태를 캐시·복원하므로 Testing 중 일시정지/재개도 정상.
+
+**검증:** `uloop compile` 통과(에러 0, 경고 0). 런타임 추적 동작은 PlayMode 미검증.
+
+---
+
 ## 2026-07-07
 
 ### 1. Mischief 몬스터 구현 (슬래시 + 프로젝타일 하이브리드)
@@ -1229,3 +1248,57 @@ var monster = await Monster.SpawnAsync("Monster_Slime", so, spawnPos);
 **검증:** `uloop compile` 통과 (에러 0). 경고 16건은 모두 이번 변경과 무관한 기존 파일.
 
 **남은 TODO/이슈:** "한 번에 Bool 하나만 true"를 `PlayAnim`이 보장하므로, 컨트롤러에 Bool 파라미터를 추가할 때는 이 규칙에 맞는지 확인 필요. Spawn/Die 클립의 Animation Event 연결은 작업자가 직접 진행 예정(함수명 `OnSpawnAnimEnd` / `OnDeathAnimEnd`, 둘 다 인자 없음). Die 상태는 Die Bool이 켜져 있는 동안 `m_ExitTime: 0.85`로 Exit → Entry → Die 재진입을 반복하므로 사망 애니메이션이 루프한다. `OnDeathAnimEnd`가 이를 끊는 구조라 이벤트를 0.85 이전에 심어야 안전하다. Spawn 상태도 `m_ExitTime: 0.70`으로 동일한 재진입 문제가 있다.
+
+### 20. 싱글플레이에서 플레이어가 원격으로 오판돼 이동/카메라가 죽던 문제 수정
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/Player.cs`, `docs/WorkSummary.md`
+
+- `Player.IsLocalPlayerObject()`가 `_networkObject == null || _networkObject.HasInputAuthority`로만 판정하던 것을, 스폰되지 않은(러너 미등록) NetworkObject도 로컬로 취급하도록 `!_networkObject.IsValid` 조건을 추가
+- "싱글플레이는 NetworkObject가 없어 항상 true"라는 낡은 전제를 적은 주석을 실제 동작에 맞게 교체
+
+**증상:** 플레이어가 전혀 움직이지 않고 카메라 시야가 비정상. 두 증상 모두 같은 원인.
+
+**원인:** `Player_Femaie.prefab`에 멀티플레이용 `NetworkObject`/`NetworkPlayerSync`를 부착한 뒤 발생. 싱글 경로(`WorldGenManager` 5단계)는 `Extensions.Instantiate<Player>("Player")`로 프리팹을 그대로 Instantiate할 뿐 `Runner.Spawn`을 거치지 않는다. 그래서 NetworkObject가 러너에 등록되지 못해 `IsValid=false`, `HasInputAuthority=false`가 된다. 기존 판정식은 "NetworkObject가 null이 아닌데 InputAuthority가 없다 = 남의 캐릭터"로 해석해 `Player.Start()`가 원격 분기(Player.cs:91-98)로 빠졌고, 그 결과 InputHandler 바인딩(105-107)과 `fpCameraController.InitCameraAsync()`(113)가 통째로 스킵됐다. `Player.OnLoopUpdate`도 `IsLocalPlayerObject()` false에서 early return하므로 `motor.Tick()`이 아예 돌지 않았다.
+
+**진단 근거:** 실행 중인 에디터에서 `uloop execute-dynamic-code`로 실측 — `IsLocalPlayer: False`, `Main.Input.ActiveActionCount: 0`(입력 액션 미연결), `Camera.main: MainCameraObject(Clone)`(1인칭 카메라 아님), `NetworkObject.IsValid: False`, `Main.Network._runner: NULL`. 콘솔에 `[Player] Initialized`는 있으나 `[Player] Started`가 없는 것도 원격 분기 진입의 증거.
+
+**주의(삽질 기록):** Fusion의 `NetworkObject`는 MonoBehaviour라 prefab YAML에 타입 이름이 아니라 스크립트 GUID로만 직렬화된다. `grep "NetworkObject" *.prefab`은 항상 0건이 나오므로 부착 여부 판단에 쓰면 안 된다. 런타임 `GetComponent`나 에디터 인스펙터로 확인할 것.
+
+**검증:** `uloop compile` 통과(에러 0). 작업자가 PlayMode에서 이동/카메라 정상 동작 확인 완료.
+
+**남은 TODO/이슈:** `Player.Start()`는 1회만 실행되므로 멀티에서 `Runner.Spawn` 직후 Start 시점에 `IsValid`가 아직 false면 내 캐릭터가 로컬로 오판될 여지가 있다(현재 Runner.Spawn이 동기라 실무상 안전). 멀티에서 "가끔 내 캐릭터가 안 움직인다"가 나오면 판정을 Start가 아니라 `NetworkPlayerSync.Spawned()`에서 Player에 통보하는 구조로 옮길 것. 근본적으로는 싱글도 Fusion Single 모드 러너로 `Runner.Spawn` 경로를 통일하는 방안이 있으나 이번엔 채택하지 않음.
+
+### 21. 몬스터 호스트 권위 복제 (디렉터 브로드캐스트 방식)
+
+**신규 파일:** `Assets/02_Scripts/03_Entity/Mob/Monster/MonsterAnimId.cs`, `Assets/02_Scripts/03_Entity/Mob/Monster/MonsterCatalog.cs`, `Assets/02_Scripts/03_Entity/Mob/Monster/MonsterSpawner.cs`, `Assets/CustomPackage/Main/Network/MonsterNetState.cs`, `Assets/CustomPackage/Main/Network/NetworkMonsterDirector.cs`
+
+**수정:** `Monster.cs`, `Mischief.cs`, `Mob.cs`, `MonsterIdleState/ChaseState/AttackState/HitState.cs`, `MischiefAttackState.cs`, `MischiefLeapState.cs`, `PlayerInventory.cs`, `NetworkManager.cs`
+
+**채택한 방식:** 몬스터 프리팹에 NetworkObject를 붙이지 않는다. 세션당 1개인 `NetworkMonsterDirector`(NetworkObject 보유)가 살아있는 몬스터 전체 상태를 고정 슬롯 배열로 복제하고, 클라는 그걸 읽어 로컬 몬스터를 풀에서 만들어 재현한다.
+
+**이 방식을 고른 이유:**
+- 몬스터마다 NetworkObject를 붙이면 `Runner.Spawn`을 써야 하는데, `FusionPoolProvider.AcquirePrefabInstance`가 `Object.Instantiate`를 쓰므로 `IPoolable.OnSpawn()`이 호출되지 않는다. `Mob.OnSpawn()`의 HP 리셋과 `Monster.OnSpawn()`의 타깃/상태머신 리셋이 죽어 풀 재사용이 깨진다.
+- 월드가 이미 시드 공유(복제 아님)이고 `NetworkPlayerSync`도 NetworkTransform 대신 수작업 복제를 쓰는 등, 수작업 복제가 이 프로젝트의 기존 방식과 일치한다.
+- 기존 풀링 + 스탯 SO 주입(`Monster.SpawnAsync`) 설계를 그대로 유지할 수 있다.
+
+**핵심 설계:**
+- `MonsterNetState`(INetworkStruct): `Id`(0=빈 슬롯), `CatalogId`, `AnimId`, `Position`, `Yaw`
+- `NetworkArray<MonsterNetState>` Capacity 128. Fusion이 변경된 슬롯만 델타 전송하므로 빈 슬롯은 대역폭을 먹지 않는다. **슬롯을 앞으로 당겨 채우지 않는다** — 한 마리가 죽어도 그 칸만 비워 델타를 최소화
+- 호스트: `FixedUpdateNetwork`에서 살아있는 몬스터 상태 기록 / 클라: `Render`에서 슬롯 diff로 생성·갱신·제거
+- `Monster.IsSimulatedPeer` = 싱글(방 미참가) 또는 호스트일 때만 true. 클라는 `OnGameUpdate`에서 상태머신을 돌리지 않고 `NetInterpolateStep`으로 보간만 한다
+- 클라 데미지는 `NetworkMonsterDirector.ReportDamage` → RPC로 호스트 보고 → 호스트가 판정·확정. 클라는 절대 로컬로 HP를 깎지 않는다
+- 드랍은 `Mob.CanSpawnDrops`(Monster가 `IsSimulatedPeer`로 오버라이드)로 호스트에서만 스폰 — 클라까지 만들면 아이템이 인원수만큼 중복된다
+
+**stateId 대신 animId를 복제한 이유:** `MischiefAttackState`가 거리에 따라 슬래시/프로젝타일을 한 상태 안에서 고른다. 상태만 복제하면 클라에서 원거리 공격이 슬래시 모션으로 나온다. "지금 켠 애니"를 보내면 원거리·도약까지 정확히 재현되고, 상태 클래스마다 ID를 다는 것보다 변경도 작다. 클라 몬스터는 어차피 위치 + 애니가 전부다.
+
+**부수 리팩터링:** `Monster.PlayAnim(int boolHash)` → `PlayAnim(MonsterAnimId)`로 변경. Bool 해시 매핑은 `Monster.AnimBoolHash`(가상)가 담당하고 `Mischief`가 RangeAttack/Jump를 더한다. 이에 따라 `IdleBoolHash` 등 해시 프로퍼티와 `RangeAttackBool`/`JumpBoolHash` 공개 프로퍼티는 제거됨.
+
+**검증:** `uloop compile` 통과 (에러 0). **런타임 멀티 검증은 안 됨** — 2클라 테스트 필요.
+
+**남은 TODO/이슈 (에디터 작업 필요):**
+1. `NetworkMonsterDirector` 프리팹 생성 → NetworkObject 부착 → Addressable 키 `NetworkMonsterDirector`로 등록 → Fusion 프리팹 베이킹. 없으면 `NetworkManager`가 로드 실패 에러를 낸다.
+2. `Resources/ConfigData/MonsterCatalog.asset` 생성 후 Imp Mischief 등록(addressableKey + statData). 스포너가 카탈로그에 없는 키를 쓰면 에러.
+3. `MonsterSpawner`를 GameScene에 배치하고 monsterKey 설정. (기존 미해결 항목 3번이 이걸로 해소됨)
+4. `Rpc_ReportDamage`에 `RpcSources.All`을 썼다. 이 프로젝트의 기존 RPC는 전부 `RpcSources.InputAuthority`(클라가 자기 NetworkPlayerData에서 호출)라 검증된 경로가 아니다. 클라 공격이 호스트에 안 닿으면 이걸 의심하고, 안 되면 `NetworkPlayerData`에 데미지 보고 RPC를 옮길 것.
+5. AOI 없음. 128마리 전부 모든 클라에 보낸다. 몬스터가 많아지고 대역폭이 문제되면 플레이어 주변만 보내는 컬링을 직접 넣어야 한다.
+6. `Animal`은 아직 복제 대상이 아니다. 멀티에서 동물이 필요해지면 같은 디렉터 방식으로 확장할 것.

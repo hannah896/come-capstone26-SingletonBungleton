@@ -705,11 +705,29 @@ public class PlayerInventory : MonoBehaviour
         if (monster != null)
         {
             if (!monster.CanDamage(ctx)) return false;
-            if (apply) monster.ApplyDamage(ctx);
+            if (apply) DamageMonster(monster, ctx, handItem, actionType);
             return true;
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// 몬스터에 데미지를 넣는다. 멀티플레이에서는 클라가 직접 깎지 않고 호스트에 보고한다.
+    /// (몬스터의 HP/사망 확정은 호스트 전담 — NetworkMonsterDirector 참고)
+    /// </summary>
+    private void DamageMonster(Monster monster, DamageContext ctx, ItemDataSO handItem, ActionType actionType)
+    {
+#if PHOTON_FUSION
+        var director = NetworkMonsterDirector.Instance;
+        if (director != null)
+        {
+            director.ReportDamage(monster, ctx.Amount, handItem.itemID, actionType);
+            return;
+        }
+#endif
+        // 싱글플레이: 디렉터가 없으므로 그대로 로컬 적용
+        monster.ApplyDamage(ctx);
     }
 
     private bool TryRaycastToolTarget(float range, out RaycastHit hit)

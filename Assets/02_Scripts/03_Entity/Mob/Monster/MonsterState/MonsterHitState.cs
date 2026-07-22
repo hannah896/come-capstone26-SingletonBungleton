@@ -14,7 +14,7 @@ public class MonsterHitState : MobState<Monster>
 
     public override void OnEnter()
     {
-        Owner.PlayAnim(Owner.HitBoolHash);
+        Owner.PlayAnim(MonsterAnimId.Hit);
         remaining = Owner.HitDuration;
     }
 
