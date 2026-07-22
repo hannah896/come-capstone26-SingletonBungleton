@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 64f7e092734e07b468c75b5208bc1759, type: 3}
+  m_Name: Recipe_MeatStew
+  m_EditorClassIdentifier:
+  recipeName: 고기 스튜
+  category: 8
+  requiredStation: 3
+  ingredients:
+  - itemData: {fileID: 11400000, guid: 2dfc70791e0c5204388942da7d3fe05f, type: 2}
+    amount: 3
+  - itemData: {fileID: 11400000, guid: aabab6fae27303b44a9620eb5a5d7311, type: 2}
+    amount: 1
+  resultItem: {fileID: 11400000, guid: 278e4c8b8e2c47d5b5985cbbd7a636dc, type: 2}
+  resultAmount: 1
+  craftTime: 20

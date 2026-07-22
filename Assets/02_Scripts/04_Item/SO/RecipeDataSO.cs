@@ -19,6 +19,10 @@ public class RecipeDataSO : ScriptableObject
     [Header("=== 제작 결과 ===")]
     public ItemDataSO resultItem;
     public int resultAmount = 1;
+
+    [Header("=== 제작 시간 ===")]
+    [Tooltip("제작(조리)에 걸리는 시간 (초)")]
+    public float craftTime = 0f;
 }
 
 [System.Serializable]
@@ -38,6 +42,7 @@ public enum RecipeCategory
     Structures = 5,  // 구조물
     Medicine   = 6,  // 치료제
     All        = 7,  // 모두
+    Cooking    = 8,  // 요리
 }
 
 // 작업대 티어 (높은 티어는 낮은 티어 레시피도 제작 가능)
@@ -46,4 +51,5 @@ public enum CraftStation
     None      = 0,  // 맨손 제작
     Workbench = 1,  // 작업대
     Forge     = 2,  // 용광로
+    CookPot   = 3,  // 냄비
 }

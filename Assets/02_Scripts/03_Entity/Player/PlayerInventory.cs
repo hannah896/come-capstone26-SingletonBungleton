@@ -24,6 +24,11 @@ public class PlayerInventory : MonoBehaviour
 
     [SerializeField] private List<ItemDataSO> slots = new();
     [SerializeField] private List<int> stackCounts = new();
+    [SerializeField] private List<float> expirationTimestamps = new();
+
+    [Header("부패 설정")]
+    [Tooltip("expirationTime이 지난 스택이 전환될 아이템 (SpecialType.Rot)")]
+    [SerializeField] private ItemDataSO rotItemSO;
 
     private readonly Dictionary<EquipSlot, IEquipable> equippedItemInstances = new();
     private readonly Collider[] pickupBuffer = new Collider[16];
@@ -68,6 +73,8 @@ public class PlayerInventory : MonoBehaviour
 
     public void Tick()
     {
+        CheckExpirations();
+
         if (inputData == null) return;
 
         if (inputData.QuickSlotIndex >= 0)
@@ -356,12 +363,18 @@ public class PlayerInventory : MonoBehaviour
         while (stackCounts.Count < slotCount)
             stackCounts.Add(0);
 
+        while (expirationTimestamps.Count < slotCount)
+            expirationTimestamps.Add(0f);
+
         // 초과 슬롯은 뒤에서 제거
         while (slots.Count > slotCount)
             slots.RemoveAt(slots.Count - 1);
 
         while (stackCounts.Count > slotCount)
             stackCounts.RemoveAt(stackCounts.Count - 1);
+
+        while (expirationTimestamps.Count > slotCount)
+            expirationTimestamps.RemoveAt(expirationTimestamps.Count - 1);
 
         // 기존 데이터 보존: stackCount가 0이면 maxStack 기준으로 복원
         for (int i = 0; i < slotCount; i++)
@@ -405,6 +418,14 @@ public class PlayerInventory : MonoBehaviour
             int addAmount = Mathf.Min(space, remainingAmount);
             stackCounts[i] += addAmount;
             remainingAmount -= addAmount;
+
+            if (itemData.expirationTime > 0f)
+            {
+                float newDeadline = Time.time + itemData.expirationTime * 60f;
+                expirationTimestamps[i] = expirationTimestamps[i] > 0f
+                    ? Mathf.Min(expirationTimestamps[i], newDeadline)
+                    : newDeadline;
+            }
         }
     }
 
@@ -428,6 +449,9 @@ public class PlayerInventory : MonoBehaviour
 
             slots[emptyIndex] = itemData;
             stackCounts[emptyIndex] = stackSize;
+            expirationTimestamps[emptyIndex] = itemData.expirationTime > 0f
+                ? Time.time + itemData.expirationTime * 60f
+                : 0f;
             remainingAmount -= stackSize;
         }
 
@@ -461,6 +485,28 @@ public class PlayerInventory : MonoBehaviour
     {
         slots[index] = null;
         stackCounts[index] = 0;
+        expirationTimestamps[index] = 0f;
+    }
+
+    /// <summary>소비기한이 지난 스택을 rotItemSO로 전환한다.</summary>
+    private void CheckExpirations()
+    {
+        if (rotItemSO == null) return;
+
+        bool anyExpired = false;
+        for (int i = 0; i < slots.Count; i++)
+        {
+            if (slots[i] == null || stackCounts[i] <= 0) continue;
+            if (expirationTimestamps[i] <= 0f || Time.time < expirationTimestamps[i]) continue;
+
+            int rotAmount = stackCounts[i];
+            ClearSlot(i);
+            TryAddItemToSlots(rotItemSO, rotAmount, out _);
+            anyExpired = true;
+        }
+
+        if (anyExpired)
+            OnInventoryChanged?.Invoke();
     }
 
     private void SetEquippedItem(EquipSlot equipSlot, ItemDataSO itemData)

@@ -27,6 +27,8 @@ public abstract class ItemData
             ItemType.SurvivalTool => new Item_SurvivalTool(so),
             ItemType.Booty        => new Item_Booty(so, count),
             ItemType.Food         => new ItemData_Food(so, count),
+            ItemType.Dish         => new ItemData_Dish(so, count),
+            ItemType.Special      => new Item_Special(so, count),
             _                     => LogUnknownType(so)
         };
     }
