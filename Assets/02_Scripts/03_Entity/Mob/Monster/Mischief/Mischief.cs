@@ -9,7 +9,25 @@ using UnityEngine;
 /// </summary>
 public class Mischief : Monster
 {
+    [Header("애니메이션 Bool 파라미터명 (IMP_S 컨트롤러 기준, 없으면 비워둠)")]
+    [SerializeField] private string rangeAttackBool = "";
+    [Tooltip("도약 애니메이션 Bool 파라미터명. IMP_S에 도약용 파라미터가 없으면 비워둔다(연출은 생략, 이동은 정상)")]
+    [SerializeField] private string jumpBool = "";
+
+    [Header("도약(Leap) - 루트 모션 OFF, 스크립트로 실제 이동")]
+    [Tooltip("도약 정점 높이(m). 루트가 이만큼 떠오르므로 콜라이더도 함께 올라간다")]
+    [SerializeField] private float jumpHeight = 1.5f;
+    [Tooltip("한 번 도약으로 타깃 쪽으로 이동하는 수평 거리(m)")]
+    [SerializeField] private float jumpDistance = 3f;
+    [Tooltip("도약 한 번에 걸리는 시간(초)")]
+    [SerializeField] private float jumpDuration = 0.6f;
+    [Tooltip("도약 사이의 재사용 대기시간(초)")]
+    [SerializeField] private float jumpCooldown = 3f;
+
+    private int rangeAttackBoolHash;
+    private int jumpBoolHash;
     private float projectileCooldown;
+    private float leapCooldown;
 
     private MischiefStatData MischiefData => statData as MischiefStatData;
 
@@ -18,24 +36,47 @@ public class Mischief : Monster
     public float SlashRange => MischiefData != null ? MischiefData.SlashRange : 1.5f;
     /// <summary>프로젝타일 내부 쿨타임이 끝나 발사 가능한지.</summary>
     public bool IsProjectileReady => projectileCooldown <= 0f;
+    public float JumpHeight => jumpHeight;
+    public float JumpDistance => jumpDistance;
+    public float JumpDuration => jumpDuration;
+    /// <summary>도약 재사용 대기가 끝나 다시 도약 가능한지.</summary>
+    public bool IsLeapReady => leapCooldown <= 0f;
     #endregion
 
-    // 풀에서 재사용될 때 프로젝타일 쿨타임도 초기화한다.
+    protected override void Awake()
+    {
+        base.Awake();
+        rangeAttackBoolHash = ToAnimHash(rangeAttackBool);
+        jumpBoolHash = ToAnimHash(jumpBool);
+    }
+
+    // 풀에서 재사용될 때 프로젝타일/도약 쿨타임도 초기화한다.
     public override void OnSpawn()
     {
         base.OnSpawn();
         projectileCooldown = 0f;
+        leapCooldown = 0f;
     }
 
     // 공격 상태를 MischiefAttackState로 교체한 전용 머신 사용
     protected override MonsterStateMachine CreateStateMachine()
         => new MischiefStateMachine(this);
 
-    // 프로젝타일 내부 쿨타임은 상태와 무관하게 항상 돈다.
+    // 미스치프 전용 애니(원거리 공격/도약)를 매핑에 더한다.
+    protected override int AnimBoolHash(MonsterAnimId animId) => animId switch
+    {
+        MonsterAnimId.RangeAttack => rangeAttackBoolHash,
+        MonsterAnimId.Jump        => jumpBoolHash,
+        _ => base.AnimBoolHash(animId),
+    };
+
+    // 프로젝타일/도약 쿨타임은 상태와 무관하게 항상 돈다.
     protected override void OnGameUpdate(float deltaTime)
     {
         if (projectileCooldown > 0f)
             projectileCooldown -= deltaTime;
+        if (leapCooldown > 0f)
+            leapCooldown -= deltaTime;
 
         base.OnGameUpdate(deltaTime);
     }
@@ -43,6 +84,18 @@ public class Mischief : Monster
     /// <summary>타깃이 슬래시 사거리 안에 있는지.</summary>
     public bool IsTargetInSlashRange()
         => Target != null && PlanarDistanceToTarget() <= SlashRange;
+
+    /// <summary>도약을 시작하며 재사용 대기시간을 건다.</summary>
+    public void StartLeapCooldown() => leapCooldown = jumpCooldown;
+
+    /// <summary>도약이 향할 수평 방향(단위 벡터). 타깃이 없으면 현재 전방.</summary>
+    public Vector3 LeapDirection()
+    {
+        if (Target == null) return transform.forward;
+        Vector3 d = Target.transform.position - transform.position;
+        d.y = 0f;
+        return d.sqrMagnitude < 0.0001f ? transform.forward : d.normalized;
+    }
 
     /// <summary>
     /// 현재 타깃을 향해 프로젝타일을 발사하고 내부 쿨타임을 시작한다.
@@ -53,7 +106,7 @@ public class Mischief : Monster
         if (Target == null || !IsProjectileReady || MischiefData == null) return;
 
         projectileCooldown = MischiefData.ProjectileCooldown;
-        PlayAnim(AttackAnim);
+        PlayAnim(MonsterAnimId.RangeAttack);
         FireProjectileAsync(Target).Forget();
     }
 

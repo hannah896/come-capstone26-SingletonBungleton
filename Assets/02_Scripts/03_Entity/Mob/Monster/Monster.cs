@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -26,17 +27,56 @@ public class Monster : Mob
     [Tooltip("플레이어를 탐지할 레이어. 비워두면(Everything) Player 컴포넌트로만 필터링")]
     [SerializeField] private LayerMask targetMask = ~0;
 
-    [Header("애니메이션 상태명 (없으면 비워둠 - 비어 있으면 재생 안 함)")]
-    [SerializeField] private string idleAnim = "";
-    [SerializeField] private string moveAnim = "";
-    [SerializeField] private string attackAnim = "";
-    [SerializeField] private string deadAnim = "";
+    [Header("애니메이션 Bool 파라미터명 (컨트롤러가 Entry에서 이 Bool로 분기한다. 없으면 비워둠 - 비어 있으면 건드리지 않음)")]
+    [SerializeField] private string idleBool = "";
+    [SerializeField] private string moveBool = "";
+    [SerializeField] private string attackBool = "";
+    [SerializeField] private string deadBool = "";
+    [SerializeField] private string hitBool = "";
+
+    [Header("피격 리액션")]
+    [Tooltip("Hit 상태가 유지되는 시간(초). 공격 상태 중 피격 시에는 무시된다.")]
+    [SerializeField] private float hitDuration = 0.4f;
+
+    [Header("스폰 연출")]
+    [Tooltip("등장 연출을 쓰는 몬스터인지. 컨트롤러의 기본(Default) 상태가 스폰 애니메이션이라 재생은 자동으로 되고, " +
+             "여기서는 연출이 끝날 때까지 행동을 미룰지만 정한다. 끄면 스폰 즉시 Idle로 시작한다.")]
+    [SerializeField] private bool useSpawnAnim = false;
+    [Tooltip("스폰 애니메이션 끝에 심은 Animation Event가 OnSpawnAnimEnd()를 부르면 Idle로 넘어간다. " +
+             "이 값은 이벤트가 오지 않을 때(미연결 등) 몬스터가 Spawn 상태에 갇히지 않도록 하는 최대 대기 시간(초).")]
+    [SerializeField] private float spawnFallbackTimeout = 3f;
     #endregion
 
     protected MonsterStateMachine stateMachine;
     private Player target;
 
     private MonsterStatData MonsterData => statData as MonsterStatData;
+
+    #region Network (호스트 권위 복제)
+    /// <summary>
+    /// 이 피어가 이 몬스터의 AI를 직접 돌려야 하는지.
+    /// 싱글플레이(방 미참가)이거나 호스트일 때만 true. 클라이언트는 호스트가 보낸 상태만 재현한다.
+    /// </summary>
+    public static bool IsSimulatedPeer
+        => Main.Network == null || !Main.Network.IsInRoom || Main.Network.IsHost;
+
+    /// <summary>NetworkMonsterDirector가 부여한 슬롯 번호. 미등록이면 -1.</summary>
+    public int NetSlot { get; set; } = -1;
+
+    /// <summary>현재 재생 중인 애니 ID. 호스트가 이 값을 복제하고 클라는 이걸 받아 재현한다.</summary>
+    public MonsterAnimId CurrentAnimId { get; private set; } = MonsterAnimId.None;
+
+    // 클라 전용: 호스트가 보낸 목표 위치/각도 (Render 보간 대상)
+    private Vector3 netTargetPos;
+    private float netTargetYaw;
+    private bool hasNetTarget;
+
+    [Header("클라이언트 보간")]
+    [Tooltip("호스트가 보낸 위치로 따라붙는 속도. 클수록 빠르게 스냅한다.")]
+    [SerializeField] private float netLerpSpeed = 12f;
+    [Tooltip("이 거리 이상 벌어지면 보간 없이 스냅한다(스폰 직후/도약 대비).")]
+    [SerializeField] private float netSnapDistance = 6f;
+    #endregion
 
     #region Properties (상태 클래스에서 사용)
     /// <summary>현재 추적 중인 타깃. 파생 몬스터/전용 상태에서 읽기 전용으로 사용한다.</summary>
@@ -48,16 +88,68 @@ public class Monster : Mob
     public float TurnSpeed => MonsterData != null ? MonsterData.TurnSpeed : 540f;
     public float MinAttackPeriod => status != null ? status.MinAttackPeriod : 1f;
 
-    public string IdleAnim => idleAnim;
-    public string MoveAnim => moveAnim;
-    public string AttackAnim => attackAnim;
-    public string DeadAnim => deadAnim;
+    public float HitDuration => hitDuration;
+    /// <summary>등장 연출이 끝날 때까지 Spawn 상태에서 대기할지. false면 스폰 즉시 Idle로 시작한다.</summary>
+    public bool UseSpawnAnim => useSpawnAnim;
+    /// <summary>스폰 Animation Event가 오지 않을 때 Idle로 강제 전환하기까지의 대기 시간(초).</summary>
+    public float SpawnFallbackTimeout => spawnFallbackTimeout;
+    #endregion
+
+    #region Animation Bool Hash (Awake 시 1회 계산해 캐싱)
+    private int idleBoolHash;
+    private int moveBoolHash;
+    private int attackBoolHash;
+    private int deadBoolHash;
+    private int hitBoolHash;
+
+    /// <summary>빈 문자열은 "건드리지 않음"을 뜻하는 0 해시로 고정한다.</summary>
+    protected static int ToAnimHash(string paramName)
+        => string.IsNullOrEmpty(paramName) ? 0 : Animator.StringToHash(paramName);
+
+    /// <summary>
+    /// 애니 ID를 이 몬스터의 Bool 파라미터 해시로 매핑한다.
+    /// 종류별 몬스터는 오버라이드해 전용 애니(RangeAttack/Jump 등)를 더한다.
+    /// </summary>
+    protected virtual int AnimBoolHash(MonsterAnimId animId) => animId switch
+    {
+        MonsterAnimId.Idle   => idleBoolHash,
+        MonsterAnimId.Move   => moveBoolHash,
+        MonsterAnimId.Attack => attackBoolHash,
+        MonsterAnimId.Hit    => hitBoolHash,
+        MonsterAnimId.Dead   => deadBoolHash,
+        _ => 0,
+    };
     #endregion
 
     protected override void Awake()
     {
         base.Awake();
+        idleBoolHash = ToAnimHash(idleBool);
+        moveBoolHash = ToAnimHash(moveBool);
+        attackBoolHash = ToAnimHash(attackBool);
+        deadBoolHash = ToAnimHash(deadBool);
+        hitBoolHash = ToAnimHash(hitBool);
+        CacheAnimBoolParams();
         stateMachine = CreateStateMachine();
+    }
+
+    /// <summary>status가 (재)생성될 때마다 OnDamaged를 구독해 피격 리액션을 건다.</summary>
+    protected override void OnStatusInitialized()
+    {
+        base.OnStatusInitialized();
+        if (status != null)
+            status.OnDamaged += HandleDamaged;
+    }
+
+    /// <summary>
+    /// 피격 시 호출. 공격 중이면(IsAttackState) 데미지만 받고 Hit 상태로는 넘어가지 않는다.
+    /// 공격 중이 아닐 때만 Hit 상태로 전환한다.
+    /// </summary>
+    private void HandleDamaged(float amount)
+    {
+        if (stateMachine == null || stateMachine.CurrentState == null) return;
+        if (stateMachine.CurrentState.IsAttackState) return;
+        stateMachine.ToHit();
     }
 
     // 풀에서 재사용될 때: 스탯(base) + 타깃/상태머신을 초기 상태로 되돌린다.
@@ -65,6 +157,9 @@ public class Monster : Mob
     {
         base.OnSpawn();
         target = null;
+        NetSlot = -1;
+        hasNetTarget = false;
+        CurrentAnimId = MonsterAnimId.None;
         stateMachine = CreateStateMachine();
     }
 
@@ -83,10 +178,60 @@ public class Monster : Mob
     }
 
     protected override void OnGameUpdate(float deltaTime)
-        => stateMachine.OnUpdate(deltaTime);
+    {
+        // 클라이언트는 AI를 돌리지 않는다. 돌리면 호스트가 보낸 위치/애니와 서로 싸운다.
+        if (!IsSimulatedPeer)
+        {
+            NetInterpolateStep(deltaTime);
+            return;
+        }
+
+        stateMachine.OnUpdate(deltaTime);
+    }
+
+    /// <summary>
+    /// 호스트가 보낸 이 몬스터의 최신 상태를 반영한다(클라이언트 전용).
+    /// NetworkMonsterDirector가 매 프레임 호출한다.
+    /// </summary>
+    public void ApplyNetState(Vector3 position, float yaw, MonsterAnimId animId)
+    {
+        netTargetPos = position;
+        netTargetYaw = yaw;
+
+        // 첫 수신은 보간 없이 그 자리에서 시작
+        if (!hasNetTarget)
+        {
+            hasNetTarget = true;
+            transform.SetPositionAndRotation(position, Quaternion.Euler(0f, yaw, 0f));
+        }
+
+        if (animId != CurrentAnimId)
+            PlayAnim(animId);
+    }
+
+    // 호스트가 보낸 목표로 부드럽게 따라붙는다. 너무 벌어지면 스냅.
+    private void NetInterpolateStep(float deltaTime)
+    {
+        if (!hasNetTarget) return;
+
+        Quaternion targetRot = Quaternion.Euler(0f, netTargetYaw, 0f);
+
+        if ((transform.position - netTargetPos).sqrMagnitude > netSnapDistance * netSnapDistance)
+        {
+            transform.SetPositionAndRotation(netTargetPos, targetRot);
+            return;
+        }
+
+        float t = 1f - Mathf.Exp(-netLerpSpeed * deltaTime);
+        transform.position = Vector3.Lerp(transform.position, netTargetPos, t);
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, t);
+    }
 
     protected override void OnDeath()
         => stateMachine.ToDead();
+
+    // 드랍은 호스트만 스폰한다. 클라가 같이 만들면 아이템이 인원수만큼 중복된다.
+    protected override bool CanSpawnDrops => IsSimulatedPeer;
 
     #region Targeting
     /// <summary>DetectRange 내에서 FOV를 만족하는 가장 가까운 플레이어를 탐색해 타깃으로 잡는다. 성공 시 true.</summary>
@@ -198,13 +343,63 @@ public class Monster : Mob
     #endregion
 
     #region Animation (선택)
-    /// <summary>상태명이 비어 있지 않고 컨트롤러에 해당 스테이트가 있을 때만 크로스페이드 재생(경고 없음).</summary>
-    public void PlayAnim(string stateName)
+    // 컨트롤러에 실제로 존재하는 Bool 파라미터 해시. 없는 이름에 SetBool을 걸면 경고가 나므로 미리 걸러낸다.
+    private readonly HashSet<int> animBoolHashes = new HashSet<int>();
+
+    private void CacheAnimBoolParams()
     {
-        if (animator == null || string.IsNullOrEmpty(stateName)) return;
-        int hash = Animator.StringToHash(stateName);
-        if (animator.HasState(0, hash))
-            animator.CrossFadeInFixedTime(hash, 0.1f);
+        animBoolHashes.Clear();
+        if (animator == null || animator.runtimeAnimatorController == null) return;
+
+        foreach (AnimatorControllerParameter param in animator.parameters)
+        {
+            if (param.type == AnimatorControllerParameterType.Bool)
+                animBoolHashes.Add(param.nameHash);
+        }
+    }
+
+    /// <summary>
+    /// 지금 재생할 애니메이션 Bool 하나만 켜고 나머지는 끈다.
+    /// 컨트롤러가 Entry에서 Bool로 분기하고 각 상태는 자기 Bool이 꺼져야 빠져나오는 구조라,
+    /// "한 번에 하나만 true"를 지켜야 상태가 엉키지 않는다.
+    /// 매핑된 해시가 0(빈 이름)이거나 컨트롤러에 없는 파라미터면 Bool은 건드리지 않지만,
+    /// CurrentAnimId는 갱신해 클라이언트가 같은 판단을 하도록 한다.
+    /// </summary>
+    public void PlayAnim(MonsterAnimId animId)
+    {
+        CurrentAnimId = animId;
+
+        int boolHash = AnimBoolHash(animId);
+        if (animator == null || boolHash == 0) return;
+        if (!animBoolHashes.Contains(boolHash)) return;
+
+        foreach (int hash in animBoolHashes)
+            animator.SetBool(hash, hash == boolHash);
+    }
+
+    /// <summary>애니메이션 Bool을 모두 끈다. 스폰 시 기본(Default) 상태로 시작시키기 위해 사용한다.</summary>
+    public void ClearAnimBools()
+    {
+        CurrentAnimId = MonsterAnimId.None;
+        if (animator == null) return;
+
+        foreach (int hash in animBoolHashes)
+            animator.SetBool(hash, false);
+    }
+
+    /// <summary>사망 연출: Dead Bool을 켠다.</summary>
+    public override void PlayDeadAnim()
+        => PlayAnim(MonsterAnimId.Dead);
+
+    /// <summary>
+    /// 스폰(등장) 애니메이션 끝에 심은 Animation Event가 호출한다.
+    /// Animation Event는 Animator와 같은 GameObject의 컴포넌트만 부를 수 있으므로, 이 메서드는 public이어야 한다.
+    /// 스폰 연출 중이 아닐 때(다른 클립에 이벤트가 잘못 남은 경우) 들어온 호출은 무시한다.
+    /// </summary>
+    public void OnSpawnAnimEnd()
+    {
+        if (stateMachine == null || !(stateMachine.CurrentState is MonsterSpawnState)) return;
+        stateMachine.ToIdle();
     }
     #endregion
 }

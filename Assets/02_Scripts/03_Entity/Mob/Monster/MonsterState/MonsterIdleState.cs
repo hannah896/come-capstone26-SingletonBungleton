@@ -11,7 +11,7 @@ public class MonsterIdleState : MobState<Monster>
     }
 
     public override void OnEnter()
-        => Owner.PlayAnim(Owner.IdleAnim);
+        => Owner.PlayAnim(MonsterAnimId.Idle);
 
     public override void Update(float time = 1.0f)
     {

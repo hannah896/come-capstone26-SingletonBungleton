@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5bdf5b2023db67d4aa58ca30033de479, type: 3}
+  m_Name: StartRule
+  m_EditorClassIdentifier: 
+  ObjectRules:
+  - ruleName: Tree
+    prefabKey: ResourceNode_Fir
+    density: 0.1
+  - ruleName: Rock
+    prefabKey: ResourceNode_Rock
+    density: 0.06
+  ItemRules:
+  - ruleName: Flint
+    prefabKey: Resource_Mineral_Flint
+    minCount: 20
+    maxCount: 30
+  - ruleName: Stone
+    prefabKey: Resource_Mineral_Stone
+    minCount: 10
+    maxCount: 20
+  - ruleName: Iron
+    prefabKey: Resource_Mineral_Iron
+    minCount: 0
+    maxCount: 1
+  - ruleName: Iron
+    prefabKey: Resource_Mineral_Iron
+    minCount: 0
+    maxCount: 1

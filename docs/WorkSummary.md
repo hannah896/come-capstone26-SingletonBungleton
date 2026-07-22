@@ -2,6 +2,25 @@
 
 ---
 
+## 2026-07-21
+
+### 1. GameProcessing.Testing 상태 추가 (테스트 씬에서 게임 로직 구동)
+
+**파일(수정):** `Assets/02_Scripts/@Scripts/Scenes/GameScene.cs`, `Assets/CustomPackage/Main/Loop/LoopManager.cs`, `Assets/02_Scripts/@Scripts/Scenes/Test/PHN_TestScene.cs`
+
+**배경:** 테스트 씬은 로비→월드 생성 흐름을 거치지 않아 `GameProcessing`이 기본값 `None`으로 머문다. `LoopManager.GameUpdate`가 `GameProcessing == Processing`일 때만 `OnGameUpdate`를 발행하므로, 테스트 씬에서는 몬스터 AI·이동 등 `OnGameUpdate` 구독 로직이 전혀 돌지 않았다(예: Imp Mischief가 플레이어를 추적하지 않음).
+
+**변경 내용:**
+- `GameProcessing` enum에 `Testing = 1 << 2` 추가.
+- `GameScene.IsGameUpdating` 헬퍼 프로퍼티 신설 — `Processing` 또는 `Testing`일 때 true. `LoopManager.GameUpdate`의 게이트를 `!= Processing` 직접 비교 대신 `!IsGameUpdating`으로 교체(재사용성·가독성).
+- `PHN_TestScene.EnterScene`에서 `GameProcessing = Testing`으로 진입, `ExitScene`에서 `None`으로 복원(다른 씬 상태 오염 방지).
+
+**영향 검토:** `Player.cs` 허기 로직은 `!= Stopping` 기준이라 Testing에서도 정상 소모(주석에 테스트 씬 포함 명시). `PauseController`는 현재 상태를 캐시·복원하므로 Testing 중 일시정지/재개도 정상.
+
+**검증:** `uloop compile` 통과(에러 0, 경고 0). 런타임 추적 동작은 PlayMode 미검증.
+
+---
+
 ## 2026-07-07
 
 ### 1. Mischief 몬스터 구현 (슬래시 + 프로젝타일 하이브리드)
@@ -1174,3 +1193,112 @@ var monster = await Monster.SpawnAsync("Monster_Slime", so, spawnPos);
 **검증:** `dotnet build .\Assembly-CSharp.csproj --no-restore` 실행 결과 이번 토치 조명 변경 관련 컴파일 오류는 없었고, 기존 `Firebase.Analytics` 네임스페이스 참조 오류 2건(`LockResolver.cs`, `AnalyticsSDK_Firebase.cs`)으로 최종 실패.
 
 **남은 TODO/이슈:** Unity PlayMode에서 토치를 장착한 뒤 Game View 기준으로 토치 메시와 주변 월드 조명이 보이는지 직접 확인 필요. 밝기가 과하면 `PlayerFirstPersonCameraController`의 토치 조명 직렬화 값을 조정하면 됨.
+
+### 17. Mob 사망 연출 Animation Event 연결 및 지연 디스폰
+
+**파일:** `Assets/02_Scripts/03_Entity/Mob/Mob.cs`, `Assets/02_Scripts/03_Entity/Mob/MobState/MobDeadState.cs`, `Assets/02_Scripts/03_Entity/Mob/Monster/Monster.cs`, `docs/WorkSummary.md`
+
+- `MobDeadState.OnEnter()`의 `// TODO: Dead 애니메이션 트리거`를 `Owner.PlayDeadAnim()` 호출로 채움
+- `Mob`에 `public virtual void PlayDeadAnim()` 훅을 추가하고, `Monster`가 `PlayAnim(deadAnimHash)`로 오버라이드하도록 연결 (`MobDeadState<TMob>`는 제네릭이라 Monster 전용 해시에 직접 접근할 수 없음)
+- `Mob.HandleDead()`가 더 이상 같은 프레임에 `Extensions.Despawn()`을 호출하지 않도록 변경. 사망 상태 전환·연출 재생까지만 하고 실제 드랍/디스폰은 미룸
+- 사망 애니메이션 끝의 Animation Event가 호출할 진입점으로 `public void OnDeathAnimEnd()`를 추가 (Animation Event는 Animator와 같은 GameObject의 컴포넌트만 호출할 수 있어 public 필수)
+- 실제 정리(드랍 스폰 + 디스폰)를 `FinishDeath()`로 분리하고, `isDying` 플래그로 중복 사망 알림을 방어
+- 이벤트가 오지 않을 때 시체가 영원히 남지 않도록 `deathFallbackTimeout`(기본 5초) 안전장치를 추가. `Main.Loop.OnGameUpdate`로 카운트다운하며, 0이면 연출 없이 즉시 정리
+- 사망 연출 중에는 `OnGameUpdate`(추적/공격 등)를 돌리지 않도록 `HandleGameUpdate`에서 차단
+- `Mob.OnSpawn()`에서 `isDying`/`deathTimer`를 리셋해 풀 재사용 시 죽은 상태가 이어지지 않도록 함
+
+**변경 이유:** `Mob.HandleDead()`가 `OnDeath()` 직후 곧바로 `Extensions.Despawn()`을 호출해서, `MobDeadState`에 사망 애니메이션 재생을 넣어도 같은 프레임에 오브젝트가 풀로 반환돼 연출이 보이지 않았다. 연출 종료 시점을 고정 시간으로 추측하는 대신 애니메이션 클립이 직접 알려주는 Animation Event 방식을 쓰기로 함.
+
+**검증:** `uloop compile` 통과 (에러 0, 경고 0).
+
+**남은 TODO/이슈:** Animation Event 연결은 작업자가 직접 진행 예정. Die 클립이 `00_Externals`의 외부 FBX(`Imp Mischief@Die.FBX`, `clipAnimations: []`)라 외부 에셋을 수정하지 않으려면 클립을 `04_Animations/Monster`로 복제해 이벤트를 심고 `IMP_S` 컨트롤러의 Die 상태가 복제본을 바라보게 해야 한다. 이벤트 함수명은 `OnDeathAnimEnd`(인자 없음). 연결 전까지는 `deathFallbackTimeout`(5초)로 디스폰된다. Monster 스폰 경로(`Monster.SpawnAsync` 호출부)와 `IMP_Mischief.asset`의 빈 DropTable, 프리팹 NetworkObject 미등록은 여전히 미해결.
+
+### 18. 몬스터 스폰 연출 상태 추가 (Spawn 애니메이션 → Animation Event → Idle)
+
+**파일:** `Assets/02_Scripts/03_Entity/Mob/Monster/MonsterState/MonsterSpawnState.cs`(신규), `Assets/02_Scripts/03_Entity/Mob/Monster/Monster.cs`, `Assets/02_Scripts/03_Entity/Mob/Monster/MonsterStateMachine.cs`, `Assets/03_Prefabs/Monster/Imp Mischief.prefab`, `docs/WorkSummary.md`
+
+- `MonsterSpawnState`를 신규 추가. 진입 시 등장 연출을 재생하고, 그동안 타깃 탐색/이동을 하지 않는다
+- `MonsterStateMachine`의 초기 상태를 `MonsterIdleState`에서 `MonsterSpawnState`로 변경하고 `ToSpawn()` 전환 메서드를 추가
+- `Monster`에 `spawnAnim` 상태명 필드와 `spawnAnimHash` 캐싱, `SpawnAnim`/`SpawnAnimHash` 프로퍼티를 추가
+- 스폰 클립 마지막 프레임의 Animation Event가 호출할 진입점으로 `public void OnSpawnAnimEnd()`를 추가. 현재 상태가 `MonsterSpawnState`일 때만 `ToIdle()`로 넘어가고, 다른 상태에서 들어온 호출은 무시
+- 이벤트가 오지 않을 때 몬스터가 Spawn 상태에 갇히지 않도록 `spawnFallbackTimeout`(기본 3초) 안전장치를 추가. `MonsterSpawnState.Update`에서 카운트다운
+- `spawnAnim`이 비어 있으면(등장 연출을 쓰지 않는 몬스터) `OnEnter`에서 즉시 `ToIdle()` 하여 기존 동작을 유지
+- `Imp Mischief.prefab`의 `spawnAnim`을 IMP_S 컨트롤러의 `Spawn` 상태명으로 채움
+
+**변경 이유:** `Monster.OnSpawn()`이 상태머신을 만들면서 곧바로 `MonsterIdleState`로 진입해 Idle을 CrossFade 재생했기 때문에, IMP_S 컨트롤러에 `Spawn` 상태와 등장 클립이 있어도 재생될 자리가 없었다. 등장 연출이 끝나는 시점을 고정 시간으로 추측하지 않고 클립이 직접 알려주도록 사망 처리(17번)와 같은 Animation Event 방식으로 맞춤.
+
+**검증:** `uloop compile` 통과 (에러 0). 경고 16건은 모두 이번 변경과 무관한 기존 파일(Firebase/TMP/Obsolete API 등).
+
+**남은 TODO/이슈:** Animation Event 연결은 작업자가 직접 진행 예정. 이벤트 함수명은 `OnSpawnAnimEnd`(인자 없음). Spawn 클립도 Die와 마찬가지로 `00_Externals`의 외부 FBX(`Imp Mischief@Spawn.FBX`, guid `970f088a...`)라 복제본에 이벤트를 심어야 한다. 주의: IMP_S의 `Spawn` 상태는 `m_ExitTime: 0.70`으로 Exit에 연결돼 있고 Entry 기본 상태가 다시 `Spawn`이라, 클립 맨 끝(1.0)에 이벤트를 심으면 그 전에 Exit → Entry → Spawn으로 재진입하면서 이벤트가 실행되지 않을 수 있다. 이벤트를 0.70 이전에 두거나 Spawn 상태의 Exit 트랜지션을 정리해야 한다. Die 상태도 동일하게 `m_ExitTime: 0.85` 문제가 있다.
+
+### 19. 몬스터 애니메이션을 컨트롤러의 Bool 파라미터 방식으로 전환
+
+**파일:** `Assets/02_Scripts/03_Entity/Mob/Monster/Monster.cs`, `Assets/02_Scripts/03_Entity/Mob/Monster/Mischief/Mischief.cs`, `Assets/02_Scripts/03_Entity/Mob/Monster/MonsterState/*.cs`, `Assets/02_Scripts/03_Entity/Mob/Monster/Mischief/MischiefAttackState.cs`, `Assets/02_Scripts/03_Entity/Mob/Monster/Mischief/MischiefLeapState.cs`, `Assets/03_Prefabs/Monster/Imp Mischief.prefab`, `docs/WorkSummary.md`
+
+- `Monster.PlayAnim()`을 `CrossFadeInFixedTime`(상태 직접 재생)에서 `Animator.SetBool` 방식으로 교체. 지정한 Bool 하나만 true로 켜고 나머지는 모두 false로 끈다
+- 직렬화 필드를 상태명에서 Bool 파라미터명으로 변경: `idleAnim`/`moveAnim`/`attackAnim`/`deadAnim`/`hitAnim` → `idleBool`/`moveBool`/`attackBool`/`deadBool`/`hitBool`, `Mischief`의 `rangeAttackAnim`/`jumpAnim` → `rangeAttackBool`/`jumpBool`. 해시/프로퍼티 이름도 `*BoolHash`로 통일
+- 컨트롤러에 실제로 존재하는 Bool 파라미터 해시를 `Awake`에서 캐싱(`CacheAnimBoolParams`)해, 없는 이름에 `SetBool`을 걸어 경고가 나는 것을 방지
+- 애니메이션 Bool을 모두 끄는 `ClearAnimBools()`를 추가하고 `MonsterSpawnState.OnEnter`에서 호출
+- `MonsterSpawnState`가 더 이상 스폰 애니메이션을 직접 재생하지 않는다. 스폰 클립이 IMP_S의 기본(Default) 상태라 Animator가 자동 재생하므로, 상태는 Bool만 끄고 연출이 끝날 때까지 대기만 한다
+- `Monster.spawnAnim`(상태명) 필드를 제거하고, 등장 연출 사용 여부만 정하는 `useSpawnAnim` bool로 대체. 끄면 스폰 즉시 Idle로 시작해 기존 동작을 유지
+- `Imp Mischief.prefab`의 값을 Bool 파라미터명으로 교체 (`Run Forward In Place` → `Run`, `Slash Attack` → `Attack`, `Take Damage` → `Hit`, `Projectile Attack` → `RangeAttack`) 하고 `useSpawnAnim: 1` 설정
+
+**변경 이유:** IMP_S 컨트롤러의 파라미터 `Idle`/`Run`/`Attack`/`RangeAttack`/`Die`/`Hit`는 모두 Bool(`m_Type: 4`)이고, Entry 트랜지션이 이 Bool 조건으로 상태를 고르며 각 상태는 자기 Bool이 false가 되어야(ConditionMode 2 = IfNot) 빠져나오는 구조다. 그런데 스크립트는 `CrossFadeInFixedTime`으로 상태를 직접 재생하기만 하고 Bool은 전혀 건드리지 않아, 컨트롤러가 의도한 분기가 동작하지 않고 Bool이 계속 꺼진 상태로 남았다. (`m_Type: 4`는 Trigger가 아니라 Bool. Unity의 AnimatorControllerParameterType은 Float=1, Int=3, Bool=4, Trigger=9)
+
+**검증:** `uloop compile` 통과 (에러 0). 경고 16건은 모두 이번 변경과 무관한 기존 파일.
+
+**남은 TODO/이슈:** "한 번에 Bool 하나만 true"를 `PlayAnim`이 보장하므로, 컨트롤러에 Bool 파라미터를 추가할 때는 이 규칙에 맞는지 확인 필요. Spawn/Die 클립의 Animation Event 연결은 작업자가 직접 진행 예정(함수명 `OnSpawnAnimEnd` / `OnDeathAnimEnd`, 둘 다 인자 없음). Die 상태는 Die Bool이 켜져 있는 동안 `m_ExitTime: 0.85`로 Exit → Entry → Die 재진입을 반복하므로 사망 애니메이션이 루프한다. `OnDeathAnimEnd`가 이를 끊는 구조라 이벤트를 0.85 이전에 심어야 안전하다. Spawn 상태도 `m_ExitTime: 0.70`으로 동일한 재진입 문제가 있다.
+
+### 20. 싱글플레이에서 플레이어가 원격으로 오판돼 이동/카메라가 죽던 문제 수정
+
+**파일:** `Assets/02_Scripts/03_Entity/Player/Player.cs`, `docs/WorkSummary.md`
+
+- `Player.IsLocalPlayerObject()`가 `_networkObject == null || _networkObject.HasInputAuthority`로만 판정하던 것을, 스폰되지 않은(러너 미등록) NetworkObject도 로컬로 취급하도록 `!_networkObject.IsValid` 조건을 추가
+- "싱글플레이는 NetworkObject가 없어 항상 true"라는 낡은 전제를 적은 주석을 실제 동작에 맞게 교체
+
+**증상:** 플레이어가 전혀 움직이지 않고 카메라 시야가 비정상. 두 증상 모두 같은 원인.
+
+**원인:** `Player_Femaie.prefab`에 멀티플레이용 `NetworkObject`/`NetworkPlayerSync`를 부착한 뒤 발생. 싱글 경로(`WorldGenManager` 5단계)는 `Extensions.Instantiate<Player>("Player")`로 프리팹을 그대로 Instantiate할 뿐 `Runner.Spawn`을 거치지 않는다. 그래서 NetworkObject가 러너에 등록되지 못해 `IsValid=false`, `HasInputAuthority=false`가 된다. 기존 판정식은 "NetworkObject가 null이 아닌데 InputAuthority가 없다 = 남의 캐릭터"로 해석해 `Player.Start()`가 원격 분기(Player.cs:91-98)로 빠졌고, 그 결과 InputHandler 바인딩(105-107)과 `fpCameraController.InitCameraAsync()`(113)가 통째로 스킵됐다. `Player.OnLoopUpdate`도 `IsLocalPlayerObject()` false에서 early return하므로 `motor.Tick()`이 아예 돌지 않았다.
+
+**진단 근거:** 실행 중인 에디터에서 `uloop execute-dynamic-code`로 실측 — `IsLocalPlayer: False`, `Main.Input.ActiveActionCount: 0`(입력 액션 미연결), `Camera.main: MainCameraObject(Clone)`(1인칭 카메라 아님), `NetworkObject.IsValid: False`, `Main.Network._runner: NULL`. 콘솔에 `[Player] Initialized`는 있으나 `[Player] Started`가 없는 것도 원격 분기 진입의 증거.
+
+**주의(삽질 기록):** Fusion의 `NetworkObject`는 MonoBehaviour라 prefab YAML에 타입 이름이 아니라 스크립트 GUID로만 직렬화된다. `grep "NetworkObject" *.prefab`은 항상 0건이 나오므로 부착 여부 판단에 쓰면 안 된다. 런타임 `GetComponent`나 에디터 인스펙터로 확인할 것.
+
+**검증:** `uloop compile` 통과(에러 0). 작업자가 PlayMode에서 이동/카메라 정상 동작 확인 완료.
+
+**남은 TODO/이슈:** `Player.Start()`는 1회만 실행되므로 멀티에서 `Runner.Spawn` 직후 Start 시점에 `IsValid`가 아직 false면 내 캐릭터가 로컬로 오판될 여지가 있다(현재 Runner.Spawn이 동기라 실무상 안전). 멀티에서 "가끔 내 캐릭터가 안 움직인다"가 나오면 판정을 Start가 아니라 `NetworkPlayerSync.Spawned()`에서 Player에 통보하는 구조로 옮길 것. 근본적으로는 싱글도 Fusion Single 모드 러너로 `Runner.Spawn` 경로를 통일하는 방안이 있으나 이번엔 채택하지 않음.
+
+### 21. 몬스터 호스트 권위 복제 (디렉터 브로드캐스트 방식)
+
+**신규 파일:** `Assets/02_Scripts/03_Entity/Mob/Monster/MonsterAnimId.cs`, `Assets/02_Scripts/03_Entity/Mob/Monster/MonsterCatalog.cs`, `Assets/02_Scripts/03_Entity/Mob/Monster/MonsterSpawner.cs`, `Assets/CustomPackage/Main/Network/MonsterNetState.cs`, `Assets/CustomPackage/Main/Network/NetworkMonsterDirector.cs`
+
+**수정:** `Monster.cs`, `Mischief.cs`, `Mob.cs`, `MonsterIdleState/ChaseState/AttackState/HitState.cs`, `MischiefAttackState.cs`, `MischiefLeapState.cs`, `PlayerInventory.cs`, `NetworkManager.cs`
+
+**채택한 방식:** 몬스터 프리팹에 NetworkObject를 붙이지 않는다. 세션당 1개인 `NetworkMonsterDirector`(NetworkObject 보유)가 살아있는 몬스터 전체 상태를 고정 슬롯 배열로 복제하고, 클라는 그걸 읽어 로컬 몬스터를 풀에서 만들어 재현한다.
+
+**이 방식을 고른 이유:**
+- 몬스터마다 NetworkObject를 붙이면 `Runner.Spawn`을 써야 하는데, `FusionPoolProvider.AcquirePrefabInstance`가 `Object.Instantiate`를 쓰므로 `IPoolable.OnSpawn()`이 호출되지 않는다. `Mob.OnSpawn()`의 HP 리셋과 `Monster.OnSpawn()`의 타깃/상태머신 리셋이 죽어 풀 재사용이 깨진다.
+- 월드가 이미 시드 공유(복제 아님)이고 `NetworkPlayerSync`도 NetworkTransform 대신 수작업 복제를 쓰는 등, 수작업 복제가 이 프로젝트의 기존 방식과 일치한다.
+- 기존 풀링 + 스탯 SO 주입(`Monster.SpawnAsync`) 설계를 그대로 유지할 수 있다.
+
+**핵심 설계:**
+- `MonsterNetState`(INetworkStruct): `Id`(0=빈 슬롯), `CatalogId`, `AnimId`, `Position`, `Yaw`
+- `NetworkArray<MonsterNetState>` Capacity 128. Fusion이 변경된 슬롯만 델타 전송하므로 빈 슬롯은 대역폭을 먹지 않는다. **슬롯을 앞으로 당겨 채우지 않는다** — 한 마리가 죽어도 그 칸만 비워 델타를 최소화
+- 호스트: `FixedUpdateNetwork`에서 살아있는 몬스터 상태 기록 / 클라: `Render`에서 슬롯 diff로 생성·갱신·제거
+- `Monster.IsSimulatedPeer` = 싱글(방 미참가) 또는 호스트일 때만 true. 클라는 `OnGameUpdate`에서 상태머신을 돌리지 않고 `NetInterpolateStep`으로 보간만 한다
+- 클라 데미지는 `NetworkMonsterDirector.ReportDamage` → RPC로 호스트 보고 → 호스트가 판정·확정. 클라는 절대 로컬로 HP를 깎지 않는다
+- 드랍은 `Mob.CanSpawnDrops`(Monster가 `IsSimulatedPeer`로 오버라이드)로 호스트에서만 스폰 — 클라까지 만들면 아이템이 인원수만큼 중복된다
+
+**stateId 대신 animId를 복제한 이유:** `MischiefAttackState`가 거리에 따라 슬래시/프로젝타일을 한 상태 안에서 고른다. 상태만 복제하면 클라에서 원거리 공격이 슬래시 모션으로 나온다. "지금 켠 애니"를 보내면 원거리·도약까지 정확히 재현되고, 상태 클래스마다 ID를 다는 것보다 변경도 작다. 클라 몬스터는 어차피 위치 + 애니가 전부다.
+
+**부수 리팩터링:** `Monster.PlayAnim(int boolHash)` → `PlayAnim(MonsterAnimId)`로 변경. Bool 해시 매핑은 `Monster.AnimBoolHash`(가상)가 담당하고 `Mischief`가 RangeAttack/Jump를 더한다. 이에 따라 `IdleBoolHash` 등 해시 프로퍼티와 `RangeAttackBool`/`JumpBoolHash` 공개 프로퍼티는 제거됨.
+
+**검증:** `uloop compile` 통과 (에러 0). **런타임 멀티 검증은 안 됨** — 2클라 테스트 필요.
+
+**남은 TODO/이슈 (에디터 작업 필요):**
+1. `NetworkMonsterDirector` 프리팹 생성 → NetworkObject 부착 → Addressable 키 `NetworkMonsterDirector`로 등록 → Fusion 프리팹 베이킹. 없으면 `NetworkManager`가 로드 실패 에러를 낸다.
+2. `Resources/ConfigData/MonsterCatalog.asset` 생성 후 Imp Mischief 등록(addressableKey + statData). 스포너가 카탈로그에 없는 키를 쓰면 에러.
+3. `MonsterSpawner`를 GameScene에 배치하고 monsterKey 설정. (기존 미해결 항목 3번이 이걸로 해소됨)
+4. `Rpc_ReportDamage`에 `RpcSources.All`을 썼다. 이 프로젝트의 기존 RPC는 전부 `RpcSources.InputAuthority`(클라가 자기 NetworkPlayerData에서 호출)라 검증된 경로가 아니다. 클라 공격이 호스트에 안 닿으면 이걸 의심하고, 안 되면 `NetworkPlayerData`에 데미지 보고 RPC를 옮길 것.
+5. AOI 없음. 128마리 전부 모든 클라에 보낸다. 몬스터가 많아지고 대역폭이 문제되면 플레이어 주변만 보내는 컬링을 직접 넣어야 한다.
+6. `Animal`은 아직 복제 대상이 아니다. 멀티에서 동물이 필요해지면 같은 디렉터 방식으로 확장할 것.

@@ -13,12 +13,7 @@ public class RegionData : ScriptableObject
     [Tooltip("이 구역이 맵에서 차지하는 물리적 영토의 크기 배율 (1.0 = 표준, 2.0 = 두 배 넓음)")]
     [Range(0.1f, 10f)]
     public float TerritoryScale = 1.0f;
-    [Tooltip("이 방의 밀도 (1.0 = 100% 꽉 채움, 0.1 = 10%만 채움)")]
-    public float Density = 0.6f; // 밀도 (해당 지역의 어느정도의 밀도로 오브젝트를 배치할지)
-
-    [Header("1. Placement Rules")]
-    [SerializeField] public PlacementRuleSet RegionPlacementRule; // 예: 보스, 웜홀, 금광맥 (개수 보장)
-    [Header("2. POI (Point of Interest) - 특별 이벤트 지점 후보들")]
+    [Header("POI (Point of Interest) - 특별 이벤트 지점 후보들")]
     [SerializeField] public List<POIData> POICandidates; // 특별 이벤트 후보들
 
 

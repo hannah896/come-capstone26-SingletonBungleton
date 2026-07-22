@@ -683,13 +683,7 @@ public class PlayerInventory : MonoBehaviour
         if (!TryRaycastToolTarget(range, out RaycastHit hit))
             return false;
 
-        ResourceNode node = hit.collider.GetComponentInParent<ResourceNode>();
-        if (node == null)
-            return false;
-
-        int damage = Mathf.Max(1, Mathf.RoundToInt(handItem.attackDamage));
-        var ctx = new DamageContext(gameObject, hit.point, damage, handItem.itemID, actionType, handItem.harvestableNodeTypes);
-        return node.CanDamage(ctx);
+        return TryDamageHitTarget(hit, handItem, actionType, apply: false);
     }
 
     public void UseEquippedHandTool()
@@ -729,18 +723,57 @@ public class PlayerInventory : MonoBehaviour
         if (!TryRaycastToolTarget(range, out RaycastHit hit))
             return;
 
-        ResourceNode node = hit.collider.GetComponentInParent<ResourceNode>();
-        if (node == null)
-            return;
-
-        int damage = Mathf.Max(1, Mathf.RoundToInt(handItem.attackDamage));
         ActionType actionType = GetActionTypeForTool(handItem.survivalToolType);
-        var damageContext = new DamageContext(gameObject, hit.point, damage, handItem.itemID, actionType, handItem.harvestableNodeTypes);
-        if (!node.CanDamage(damageContext))
+        if (!TryDamageHitTarget(hit, handItem, actionType, apply: true))
             return;
 
-        node.ApplyDamage(damageContext);
         handTool?.UseDurability();
+    }
+
+    /// <summary>
+    /// 레이캐스트 히트를 데미지 가능한 대상(자원 채집 노드 또는 몬스터)으로 해석한다.
+    /// apply가 true면 실제로 데미지를 적용하고, false면 가능 여부만 확인한다(UI 판정용).
+    /// </summary>
+    private bool TryDamageHitTarget(RaycastHit hit, ItemDataSO handItem, ActionType actionType, bool apply)
+    {
+        int damage = Mathf.Max(1, Mathf.RoundToInt(handItem.attackDamage));
+        var ctx = new DamageContext(gameObject, hit.point, damage, handItem.itemID, actionType, handItem.harvestableNodeTypes);
+
+        ResourceNode node = hit.collider.GetComponentInParent<ResourceNode>();
+        if (node != null)
+        {
+            if (!node.CanDamage(ctx)) return false;
+            if (apply) node.ApplyDamage(ctx);
+            return true;
+        }
+
+        Monster monster = hit.collider.GetComponentInParent<Monster>();
+        if (monster != null)
+        {
+            if (!monster.CanDamage(ctx)) return false;
+            if (apply) DamageMonster(monster, ctx, handItem, actionType);
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 몬스터에 데미지를 넣는다. 멀티플레이에서는 클라가 직접 깎지 않고 호스트에 보고한다.
+    /// (몬스터의 HP/사망 확정은 호스트 전담 — NetworkMonsterDirector 참고)
+    /// </summary>
+    private void DamageMonster(Monster monster, DamageContext ctx, ItemDataSO handItem, ActionType actionType)
+    {
+#if PHOTON_FUSION
+        var director = NetworkMonsterDirector.Instance;
+        if (director != null)
+        {
+            director.ReportDamage(monster, ctx.Amount, handItem.itemID, actionType);
+            return;
+        }
+#endif
+        // 싱글플레이: 디렉터가 없으므로 그대로 로컬 적용
+        monster.ApplyDamage(ctx);
     }
 
     private bool TryRaycastToolTarget(float range, out RaycastHit hit)

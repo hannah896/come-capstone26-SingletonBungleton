@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MaxHP: 150
   CurHP: 150
-  MoveSpeed: 3
+  MoveSpeed: 5
   AttackDamage: 5
   Defense: 5
   MinAttackPeriod: 1
