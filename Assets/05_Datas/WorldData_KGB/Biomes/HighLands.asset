@@ -12,12 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b29b41b2b0ac1442925d390d0edbb35, type: 3}
   m_Name: Highlands
   m_EditorClassIdentifier: 
-  BiomeDisposeRule: {fileID: 11400000, guid: dd9ccb6ae78edbf40921d65a95f0c951, type: 2}
   BiomeType: 7
   DebugColor: {r: 1, g: 0.472049, b: 0, a: 1}
+  BiomeDisposeRule: {fileID: 11400000, guid: dd9ccb6ae78edbf40921d65a95f0c951, type: 2}
   TopKey: Highlands_Top
   AltKey: Highlands_Alt
   CliffKey: Highlands_Cliff
   DetailKeys:
-  - Detail_
+  - Detail_Grass_1
   DecoKeys: []

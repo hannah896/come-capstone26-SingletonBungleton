@@ -77,5 +77,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5c8248aefc786f42867b9bcb7ede0f2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _resourceNodeData: {fileID: 0}
+  _resourceNodeData: {fileID: 11400000, guid: 3de65829b5158324a8087a06e8f53fdd, type: 2}
   _despawnOnDestroyed: 1

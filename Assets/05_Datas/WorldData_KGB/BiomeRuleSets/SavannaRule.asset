@@ -13,7 +13,10 @@ MonoBehaviour:
   m_Name: SavannaRule
   m_EditorClassIdentifier: 
   ObjectRules:
-  - ruleName: Tree
+  - ruleName: Fir
     prefabKey: ResourceNode_Fir
+    density: 0.01
+  - ruleName: Grass
+    prefabKey: ResourceNode_Grass
     density: 0.01
   ItemRules: []

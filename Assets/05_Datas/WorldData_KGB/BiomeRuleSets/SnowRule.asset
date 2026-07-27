@@ -13,34 +13,10 @@ MonoBehaviour:
   m_Name: SnowRule
   m_EditorClassIdentifier: 
   ObjectRules:
-  - ruleName: Tree
+  - ruleName: Fir
     prefabKey: ResourceNode_Fir
     density: 0.1
-    usePiece: 1
-    pieceShapes:
-    - shape: 0
-      density: 0.1
-    useCluster: 1
-    clusterShapes:
-    - shape: 0
-      density: 0.3
-    clusterDensity: 0.8
-    clusterRadius: 6
-    patternLength: 6
-    curveAngle: 30
   - ruleName: Rock
     prefabKey: ResourceNode_Rock
     density: 0.06
-    usePiece: 1
-    pieceShapes:
-    - shape: 2
-      density: 0.06
-    useCluster: 1
-    clusterShapes:
-    - shape: 0
-      density: 0.15
-    clusterDensity: 0.511
-    clusterRadius: 6
-    patternLength: 6
-    curveAngle: 30
   ItemRules: []

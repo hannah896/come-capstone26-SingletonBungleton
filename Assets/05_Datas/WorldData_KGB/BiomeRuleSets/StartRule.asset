@@ -13,11 +13,20 @@ MonoBehaviour:
   m_Name: StartRule
   m_EditorClassIdentifier: 
   ObjectRules:
-  - ruleName: Tree
+  - ruleName: Fir
     prefabKey: ResourceNode_Fir
     density: 0.1
   - ruleName: Rock
     prefabKey: ResourceNode_Rock
+    density: 0.023
+  - ruleName: Branch
+    prefabKey: ResourceNode_Branch
+    density: 0.023
+  - ruleName: Grass
+    prefabKey: ResourceNode_Grass
+    density: 0.023
+  - ruleName: Bush
+    prefabKey: ResourceNode_Bush
     density: 0.023
   ItemRules:
   - ruleName: Flint

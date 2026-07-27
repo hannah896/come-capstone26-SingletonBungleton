@@ -19,6 +19,7 @@ public class UI_Hud_WorldMiniMap : UI_Hud
     
     private WorldMiniMap _worldMiniMap;
     private WorldMiniMapData _mapData;
+
     private Transform _target;
 
     #endregion

@@ -13,7 +13,16 @@ MonoBehaviour:
   m_Name: PlainsRule
   m_EditorClassIdentifier: 
   ObjectRules:
-  - ruleName: Tree
+  - ruleName: Fir
     prefabKey: ResourceNode_Fir
+    density: 0.1
+  - ruleName: Grass
+    prefabKey: ResourceNode_Grass
+    density: 0.1
+  - ruleName: Branch
+    prefabKey: ResourceNode_Branch
+    density: 0.1
+  - ruleName: Bush
+    prefabKey: ResourceNode_Bush
     density: 0.1
   ItemRules: []
