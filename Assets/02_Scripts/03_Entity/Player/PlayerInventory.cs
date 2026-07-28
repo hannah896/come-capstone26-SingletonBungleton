@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using static UnityEditor.Timeline.Actions.MenuPriority;
 
 /// <summary>
 /// 플레이어가 직접 들고 있는 인벤토리입니다.
@@ -74,6 +73,7 @@ public class PlayerInventory : MonoBehaviour
     public void Tick()
     {
         CheckExpirations();
+        TickEquippedTorchDurability();
 
         if (inputData == null) return;
 
@@ -507,6 +507,15 @@ public class PlayerInventory : MonoBehaviour
 
         if (anyExpired)
             OnInventoryChanged?.Invoke();
+    }
+
+    /// <summary>손에 든 횃불이 켜져있는 동안 시간 경과에 따라 내구도를 소모시킨다.</summary>
+    private void TickEquippedTorchDurability()
+    {
+        if (EquippedHand == null || EquippedHand.survivalToolType != SurvivalToolType.Torch) return;
+
+        IEquipable torch = GetEquippedItemInstance(EquipSlot.Hand);
+        torch?.DrainDurabilityOverTime(Time.deltaTime);
     }
 
     private void SetEquippedItem(EquipSlot equipSlot, ItemDataSO itemData)

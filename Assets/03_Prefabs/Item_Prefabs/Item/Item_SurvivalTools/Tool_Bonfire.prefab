@@ -138,9 +138,6 @@ MonoBehaviour:
   - rawItem: {fileID: 11400000, guid: fdcf508a29394c09bb29f52b02d8d4ae, type: 2}
     cookedItem: {fileID: 11400000, guid: e6b44a8b65e44625a88a11d5389763e8, type: 2}
     cookedPrefabKey: Food_RoastedPotato
-  - rawItem: {fileID: 11400000, guid: 427f95e41199a5b46a4b5593752fcda1, type: 2}
-    cookedItem: {fileID: 11400000, guid: 990bbff0ddbe4a1a8516336a48e34079, type: 2}
-    cookedPrefabKey: Food_RoastedFish
 --- !u!114 &28056033273355699
 MonoBehaviour:
   m_ObjectHideFlags: 0

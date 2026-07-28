@@ -942,11 +942,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 46d7785fe5ba63b4ebf7e438c27c0634, type: 2}
   - {fileID: 11400000, guid: eb350f57025cf5147bb6344af02c7be7, type: 2}
   - {fileID: 11400000, guid: 7e4e0dc283039fa498ca72163f73d4ff, type: 2}
-  - {fileID: 11400000, guid: 24fcbaaca20dd4c4ab24f5699265e388, type: 2}
-  - {fileID: 11400000, guid: 66ff1122aa33bb44cc55dd66ee77ff88, type: 2}
-  - {fileID: 11400000, guid: 77ff2233bb44cc55dd66ee77ff881122, type: 2}
-  - {fileID: 11400000, guid: 88ff3344cc55dd66ee77ff8899001122, type: 2}
-  - {fileID: 11400000, guid: bed7a9fc254de0c4cbd82a0c8fbdd5f1, type: 2}
   - {fileID: 11400000, guid: 99ff4455dd66ee77ff8899001122aabb, type: 2}
   - {fileID: 11400000, guid: bf0a5c7d5c1e99c45a1d87fc71b1ac0f, type: 2}
   - {fileID: 11400000, guid: 2f9ab330944f0284297b20ed81b728fc, type: 2}
@@ -2035,7 +2030,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4757323681808609312, guid: 47525b05d0712b4448dba24350cc3dd3, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 21.312166
+      value: 16.6
       objectReference: {fileID: 0}
     - target: {fileID: 4757323681808609312, guid: 47525b05d0712b4448dba24350cc3dd3, type: 3}
       propertyPath: m_LocalPosition.y
@@ -2846,7 +2841,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4757323681808609312, guid: 47525b05d0712b4448dba24350cc3dd3, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 21.312166
+      value: 30.86
       objectReference: {fileID: 0}
     - target: {fileID: 4757323681808609312, guid: 47525b05d0712b4448dba24350cc3dd3, type: 3}
       propertyPath: m_LocalPosition.y
@@ -4227,7 +4222,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4757323681808609312, guid: 47525b05d0712b4448dba24350cc3dd3, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 21.312166
+      value: 25.63
       objectReference: {fileID: 0}
     - target: {fileID: 4757323681808609312, guid: 47525b05d0712b4448dba24350cc3dd3, type: 3}
       propertyPath: m_LocalPosition.y
