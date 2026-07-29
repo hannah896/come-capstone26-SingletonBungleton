@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66b426d8593248718abaffc8ae83e977, type: 3}
+  m_Name: IMP_Demon
+  m_EditorClassIdentifier:
+  MaxHP: 80
+  CurHP: 80
+  MoveSpeed: 2.5
+  AttackDamage: 8
+  Defense: 2
+  MinAttackPeriod: 2
+  FOV: 360
+  DetectRange: 12
+  AttackRange: 6
+  TurnSpeed: 540
+  DropTable: {fileID: 0}
+  SlashRange: 2
+  MeteorKey: Meteor
+  MeteorCooldown: 7
+  MeteorCount: 6
+  MeteorRadius: 5
+  MeteorSpawnHeight: 12
+  MeteorFallSpeed: 18
+  MeteorWarningTime: 0.8
+  MeteorSpawnStagger: 0.12
+  MeteorImpactRadius: 1.5
+  MeteorDamage: 0
