@@ -2,8 +2,9 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// 입력과 시각화를 관리하여 플레이어가 아이템을 배치할 수 있도록 하는 컨트롤러입니다.
-///// </summary>
+/// Manages the local player's structure-placement mode.
+/// Attach this component to the Player prefab; required player references are resolved automatically.
+/// </summary>
 public class PlacementController : MonoBehaviour
 {
     [Header("References")]
@@ -20,110 +21,206 @@ public class PlacementController : MonoBehaviour
 
     [Header("Layers")]
     [SerializeField] private LayerMask groundLayerMask = ~0;
+    [SerializeField] private LayerMask blockingLayerMask;
 
     public bool IsActive { get; private set; }
 
     private IPlacementValidator placementValidator;
     private IPreviewVisualizer previewVisualizer;
-
+    private Player owner;
+    private PlayerInventory boundInventory;
+    private CraftingManager boundCraftingManager;
     private ItemDataSO activeItemData;
-
     private Vector3 currentPosition;
     private Quaternion currentRotation = Quaternion.identity;
     private bool currentPlacementValid;
 
+    private void Reset()
+    {
+        ConfigureDefaultLayerMasks();
+    }
+
     private void Awake()
     {
-        if (placementCamera == null)
-            placementCamera = Camera.main;
-
-        placementValidator = placementValidatorBehaviour as IPlacementValidator;
-        previewVisualizer = previewVisualizerBehaviour as IPreviewVisualizer;
+        owner = GetComponent<Player>();
+        ResolveReferences();
     }
 
     private void OnEnable()
     {
+        ResolveReferences();
         BindEvents();
     }
 
     private void OnDisable()
     {
+        if (IsActive)
+            CancelPlacement();
+
         UnbindEvents();
     }
 
     private void Update()
     {
+        ResolveReferences();
+        BindEvents();
+
+        if (!IsLocalPlayer())
+        {
+            if (IsActive)
+                CancelPlacement();
+            return;
+        }
+
         if (!IsActive)
             return;
 
         UpdatePlacement();
     }
 
-    private void BindEvents()
+    // 레퍼런스들을 자동으로 찾아서 할당. 필요한 경우, 플레이어의 컴포넌트나 씬에서 관련 컴포넌트를 검색.
+    private void ResolveReferences()
     {
+        owner ??= GetComponent<Player>();
+
         if (playerInventory == null)
-            playerInventory = FindFirstObjectByType<PlayerInventory>();
+            playerInventory = owner?.Inventory ?? GetComponent<PlayerInventory>() ?? GetComponentInChildren<PlayerInventory>(true);
+
+        if (placementCamera == null)
+            placementCamera = GetComponentInChildren<Camera>(true) ?? Camera.main;
+
         if (craftingManager == null)
             craftingManager = CraftingManager.Instance ?? FindFirstObjectByType<CraftingManager>();
 
-        if (playerInventory != null)
+        if (previewVisualizer == null && IsLocalPlayer())
+        {
+            previewVisualizer = previewVisualizerBehaviour as IPreviewVisualizer;
+            if (previewVisualizer == null)
+            {
+                PreviewVisualizer visualizer = GetComponentInChildren<PreviewVisualizer>(true);
+                if (visualizer == null)
+                    visualizer = gameObject.AddComponent<PreviewVisualizer>();
+
+                previewVisualizerBehaviour = visualizer;
+                previewVisualizer = visualizer;
+            }
+        }
+
+        if (placementValidator == null && IsLocalPlayer())
+        {
+            placementValidator = placementValidatorBehaviour as IPlacementValidator;
+            if (placementValidator == null)
+            {
+                ConfigureDefaultLayerMasks();
+                placementValidator = new PhysicsBoxValidator(blockingLayerMask);
+            }
+        }
+    }
+
+    // 레이어 마스크를 기본값으로 설정. "Ground" 레이어가 존재하면 groundLayerMask를 해당 레이어로 설정하고, blockingLayerMask는 groundLayerMask의 반대로 설정.
+    private void ConfigureDefaultLayerMasks()
+    {
+        if (groundLayerMask == ~0)
+        {
+            int groundLayer = LayerMask.NameToLayer("Ground");
+            if (groundLayer >= 0)
+                groundLayerMask = 1 << groundLayer;
+        }
+
+        if (blockingLayerMask == 0)
+            blockingLayerMask = ~groundLayerMask;
+    }
+
+    // 플레이어 인벤토리와 제작 매니저의 이벤트를 바인딩. 로컬 플레이어가 아닌 경우에는 이벤트를 바인딩하지 않음.
+    private void BindEvents()
+    {
+        if (!IsLocalPlayer())
+            return;
+
+        if (playerInventory != null && boundInventory != playerInventory)
+        {
+            if (boundInventory != null)
+                boundInventory.OnSelectedSlotChanged -= HandleSelectedSlotChanged;
+
             playerInventory.OnSelectedSlotChanged += HandleSelectedSlotChanged;
-        if (craftingManager != null)
-            craftingManager.OnCrafted += HandleCrafted; //TODO: CraftingManager에 OnCrafted 이벤트 추가 필요
-        //                                                //      OnClickedPlaceButton 이벤트로 변경하여 UI에서 배치 모드 진입하도록 변경하는 것도 
+            boundInventory = playerInventory;
+            TryBeginPlacementFromSelectedSlot();
+        }
+
+        if (craftingManager != null && boundCraftingManager != craftingManager)
+        {
+            if (boundCraftingManager != null)
+                boundCraftingManager.OnCrafted -= HandleCrafted;
+
+            craftingManager.OnCrafted += HandleCrafted;
+            boundCraftingManager = craftingManager;
+        }
     }
 
     private void UnbindEvents()
     {
-        if (playerInventory != null)
-            playerInventory.OnSelectedSlotChanged -= HandleSelectedSlotChanged;
-        if (craftingManager != null)
-            craftingManager.OnCrafted -= HandleCrafted;
+        if (boundInventory != null)
+            boundInventory.OnSelectedSlotChanged -= HandleSelectedSlotChanged;
+        if (boundCraftingManager != null)
+            boundCraftingManager.OnCrafted -= HandleCrafted;
+
+        boundInventory = null;
+        boundCraftingManager = null;
     }
-    // 슬롯 변경 시 해당 슬롯의 아이템이 배치 가능한지 체크하여 배치 모드로 진입
+
+    private bool IsLocalPlayer()
+    {
+        return owner == null || owner.IsLocalPlayer;
+    }
+
     private void HandleSelectedSlotChanged(int slotIndex)
     {
         if (IsActive || playerInventory == null)
             return;
 
+        TryBeginPlacementFromSlot(slotIndex);
+    }
+
+    private void TryBeginPlacementFromSelectedSlot()
+    {
+        if (playerInventory == null)
+            return;
+
+        TryBeginPlacementFromSlot(playerInventory.SelectedSlotIndex);
+    }
+
+    private void TryBeginPlacementFromSlot(int slotIndex)
+    {
         if (slotIndex < 0 || slotIndex >= playerInventory.Slots.Count)
             return;
 
         ItemDataSO itemData = playerInventory.Slots[slotIndex];
-        if (itemData == null || playerInventory.StackCounts[slotIndex] <= 0)
-            return;
-
-        if (!IsPlaceableItem(itemData))
+        if (itemData == null || playerInventory.StackCounts[slotIndex] <= 0 || !IsPlaceableItem(itemData))
             return;
 
         BeginPlacement(itemData);
     }
-    // 제작 완료 시 결과 아이템이 배치 가능한지 체크하여 배치 모드로 진입
 
     private void HandleCrafted(RecipeDataSO recipe, ItemDataSO itemData, int amount)
     {
-        if (itemData == null || amount <= 0)
-            return;
-
-        if (!IsPlaceableItem(itemData))
+        if (itemData == null || amount <= 0 || !IsPlaceableItem(itemData))
             return;
 
         BeginPlacement(itemData);
     }
-    private bool IsPlaceableItem(ItemDataSO itemData)
-    {
-        return itemData.isPlaceable && itemData.placementPrefab != null;
-    }
 
+    private static bool IsPlaceableItem(ItemDataSO itemData)
+    {
+        return itemData != null && itemData.isPlaceable && itemData.placementPrefab != null;
+    }
 
     private void BeginPlacement(ItemDataSO itemData)
     {
-        if (itemData == null)
+        if (!IsLocalPlayer() || !IsPlaceableItem(itemData) || playerInventory == null || !playerInventory.HasItem(itemData))
             return;
 
         activeItemData = itemData;
         IsActive = true;
-
         previewVisualizer?.Show(itemData);
     }
 
@@ -134,12 +231,17 @@ public class PlacementController : MonoBehaviour
 
         IsActive = false;
         previewVisualizer?.Hide();
-
         ClearActiveData();
     }
 
     private void UpdatePlacement()
     {
+        if (activeItemData == null)
+        {
+            CancelPlacement();
+            return;
+        }
+
         if (!TryGetMouseWorldPosition(out Vector3 worldPosition))
         {
             previewVisualizer?.SetVisible(false);
@@ -149,7 +251,7 @@ public class PlacementController : MonoBehaviour
         previewVisualizer?.SetVisible(true);
 
         Vector3 snappedPosition = GetSnappedPosition(worldPosition);
-        currentPosition = snappedPosition + activeItemData.placementPivotOffset;    //TODO: ItemDataSO에 placementPivotOffset 추가 필요
+        currentPosition = snappedPosition + activeItemData.placementPivotOffset;
 
         HandleRotationInput();
 
@@ -175,13 +277,22 @@ public class PlacementController : MonoBehaviour
 
     private void ConfirmPlacement()
     {
-        if (activeItemData == null || activeItemData.placementPrefab == null)         
+        if (!IsPlaceableItem(activeItemData) || playerInventory == null)
+        {
+            CancelPlacement();
             return;
+        }
+
+        if (!playerInventory.RemoveItem(activeItemData, 1))
+        {
+            CancelPlacement();
+            return;
+        }
 
         Instantiate(activeItemData.placementPrefab, currentPosition, currentRotation);
 
-        if (playerInventory != null && activeItemData != null)
-            playerInventory.RemoveItem(activeItemData, 1);
+        if (!playerInventory.HasItem(activeItemData))
+            CancelPlacement();
     }
 
     private void HandleRotationInput()
@@ -217,7 +328,7 @@ public class PlacementController : MonoBehaviour
 
     private Vector3 GetSnappedPosition(Vector3 worldPosition)
     {
-        if (activeItemData == null || !activeItemData.placementSnapToGrid)                  //TODO: ItemDataSO에 placementSnapToGrid 추가 필요
+        if (activeItemData == null || !activeItemData.placementSnapToGrid)
             return worldPosition;
 
         float x = Mathf.Round(worldPosition.x / gridSize) * gridSize;
@@ -225,8 +336,6 @@ public class PlacementController : MonoBehaviour
 
         return new Vector3(x, worldPosition.y, z);
     }
-
-   
 
     private void ClearActiveData()
     {

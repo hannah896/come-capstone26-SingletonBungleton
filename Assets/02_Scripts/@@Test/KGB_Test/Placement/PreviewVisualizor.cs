@@ -101,7 +101,7 @@ public class PreviewVisualizer : MonoBehaviour, IPreviewVisualizer
 
     private void CreateGhostInstance()
     {
-        Hide();
+        DestroyGhost();
         if (activeItemData == null || activeItemData.placementPrefab == null) return;
 
         ghostInstance = Instantiate(activeItemData.placementPrefab);

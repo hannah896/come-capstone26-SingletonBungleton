@@ -3,12 +3,9 @@ using UnityEngine;
 public class PhysicsBoxValidator : IPlacementValidator
 {
     private readonly LayerMask blockingMask;
-    private readonly float gridSize;
-
-    public PhysicsBoxValidator(LayerMask blockingMask, float gridSize)
+    public PhysicsBoxValidator(LayerMask blockingMask)
     {
         this.blockingMask = blockingMask;
-        this.gridSize = gridSize;
     }
 
     public bool IsPlacementValid(ItemDataSO item, Vector3 position, Quaternion rotation, float gridSize)
@@ -25,12 +22,12 @@ public class PhysicsBoxValidator : IPlacementValidator
             fz * gridSize * 0.5f);
 
         Vector3 center = position + item.placementCheckCenterOffset;
-        return !Physics.CheckBox(center, half, rotation, blockingMask);
+        return !Physics.CheckBox(center, half, rotation, blockingMask, QueryTriggerInteraction.Ignore);
     }
 
     public bool IsCellValid(Vector3 cellPosition, float cellSize)
     {
         Vector3 half = new(cellSize * 0.5f, 0.5f, cellSize * 0.5f);
-        return !Physics.CheckBox(cellPosition, half, Quaternion.identity, blockingMask);
+        return !Physics.CheckBox(cellPosition, half, Quaternion.identity, blockingMask, QueryTriggerInteraction.Ignore);
     }
 }

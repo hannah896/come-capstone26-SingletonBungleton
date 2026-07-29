@@ -12,8 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5bdf5b2023db67d4aa58ca30033de479, type: 3}
   m_Name: DesertRule
   m_EditorClassIdentifier: 
-  ObjectRules:
-  - ruleName: Rock
-    prefabKey: ResourceNode_Rock
-    density: 0.45
+  ObjectRules: []
   ItemRules: []
