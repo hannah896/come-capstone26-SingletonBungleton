@@ -50,6 +50,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 209dc28566c24c6eac26551c122a7266
+    m_Address: Meteor
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e24ef0f7a1a9c21498e652acf7681e1c
     m_Address: Canvas_Popup
     m_ReadOnly: 0

@@ -9,11 +9,6 @@ public class PHN_TestScene : SceneBase
     {
         // 테스트 씬에서도 게임 로직(OnGameUpdate)이 돌도록 Testing 상태로 진입한다.
         GameScene.GameProcessing = GameProcessing.Testing;
-
-        await Extensions.Instantiate<AudioManager>("AudioManager");
-
-        // 플레이어 생성 — FP_CinemachineCamera는 Player.Start() 내부에서 자동 생성됨
-        // Main Camera(CinemachineBrain 포함)는 ScreenManager가 MainCameraObject로 생성
         await Extensions.Instantiate<Player>("Player");
     }
 

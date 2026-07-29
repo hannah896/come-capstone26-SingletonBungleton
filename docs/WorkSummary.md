@@ -2,6 +2,44 @@
 
 ---
 
+## 2026-07-28
+
+### 1. Demon 몬스터 추가 (Mischief 구조 + 운석 세례 광역 원거리 공격)
+
+**파일(신규):**
+- `Assets/02_Scripts/03_Entity/Mob/Monster/Demon/Demon.cs`
+- `Assets/02_Scripts/03_Entity/Mob/Monster/Demon/DemonStatData.cs`
+- `Assets/02_Scripts/03_Entity/Mob/Monster/Demon/DemonStateMachine.cs`
+- `Assets/02_Scripts/03_Entity/Mob/Monster/Demon/DemonAttackState.cs`
+- `Assets/02_Scripts/03_Entity/Mob/Monster/Demon/DemonLeapState.cs`
+- `Assets/02_Scripts/03_Entity/Mob/Monster/Demon/Meteor.cs`
+- `Assets/05_Datas/SO/MonsterStatData/IMP_Demon.asset`
+- `Assets/03_Prefabs/Monster/Meteor.prefab`
+
+**파일(수정):**
+- `Assets/03_Prefabs/Monster/Imp Demon.prefab` — 루트에 `Demon` 컴포넌트 + `CapsuleCollider` 배선
+- `Assets/AddressableAssetsData/AssetGroups/Common.asset` — `Meteor` 프리팹 Addressable 등록(key: `Meteor`)
+
+**설계:** Mischief를 그대로 복제한 근접+원거리 하이브리드(슬래시 + 도약 + 원거리). Mischief와 유일하게 다른 점은 원거리 공격이 단일 투사체가 아니라 **운석 세례(Meteor Storm)** 라는 것.
+- `Demon.CastMeteorStorm()`: 시전 시점 데몬 위치를 중심으로 반경 `MeteorRadius`(r) 원 안 `MeteorCount`(k)개 지점에 운석을 떨군다. "적당히 분포"는 k개 각도 섹터에 하나씩 배치(섹터 내 각도 지터) + 반지름을 `r·√u` 로 뽑아 원 전체 균등 분포로 구현. 내부 쿨타임 `MeteorCooldown`.
+- `Meteor.cs`: 풀링 오브젝트(IPoolable). 착탄 지점 상공에서 `MeteorWarningTime` 예고 후 수직 낙하 → 지면 도달 시 `MeteorImpactRadius` 광역 판정(플레이어 중복 피격은 HashSet으로 차단) → 데미지 후 Despawn. 운석마다 예고 시간을 `MeteorSpawnStagger`씩 늘려 순차 착탄. `Main.Loop.OnGameUpdate` 구독(게임 시간 기준), 해제는 `OnDestroy`에서만.
+- 상태 그래프는 Mischief와 동형: `DemonAttackState`가 SlashRange 이내→슬래시, 그 밖 AttackRange 이내→운석 세례(쿨 중이면 도약/추격), `DemonLeapState`는 포물선 스크립트 이동. `AnimBoolHash`에 RangeAttack/Jump 매핑.
+
+**애니메이터:** `Imp Demon` 프리팹은 `IMP_M.controller` 사용. 이 컨트롤러에는 IMP_S(Mischief)와 동일한 6개 Bool 파라미터(`Idle`/`Run`/`Attack`/`RangeAttack`/`Hit`/`Die`)가 배선돼 있고, 전이도 "bool 하나만 true" 구조라 `Monster.PlayAnim`(한 번에 하나만 SetBool)과 정확히 맞는다. 프리팹 bool 필드를 각각 idleBool=Idle / moveBool=Run / attackBool=Attack / deadBool=Die / hitBool=Hit / rangeAttackBool=RangeAttack로 채움. `jumpBool`은 컨트롤러에 Jump 파라미터가 없어 비워둠(도약은 스크립트 이동만, 연출 없음 — Mischief와 동일). `useSpawnAnim: 1`(Spawn 상태 연출 후 Idle; 스폰 이벤트 미연결 시 `spawnFallbackTimeout` 3s로 복구).
+
+**스탯(IMP_Demon.asset):** HP80 / MoveSpeed2.5 / Atk8 / Def2 / Detect12 / AttackRange6 / SlashRange2 / Meteor(k=6, r=5, 쿨7s, 낙하높이12, 낙하속도18, 예고0.8s, 스태거0.12s, 착탄반경1.5). AttackRange(6)를 MeteorRadius(5)+착탄반경 근처로 잡아 플레이어가 세례 범위 안에 있을 때만 시전하도록 함.
+
+**검증:** `uloop compile` 통과(에러 0, 경고 0). 신규 프리팹/SO 임포트 에러 없음. **PlayMode 런타임 미검증** — 실제 스폰·운석 낙하·피격은 미확인.
+
+**남은 TODO (에디터 작업 필요):**
+1. 스폰하려면 `Resources/ConfigData/MonsterCatalog.asset`에 Demon 등록(addressableKey + `IMP_Demon` statData) 필요. 단, `Imp Demon` 프리팹 자체는 아직 Addressable 미등록(Mischief 프리팹도 이 브랜치에선 미등록 상태) — 카탈로그 스폰 경로를 쓰려면 프리팹도 Addressable 키 부여 필요.
+2. 운석/예고 표식 비주얼은 임시(구체 프리팹, MischiefProjectile 머티리얼 재사용). 전용 운석 메시/경고 데칼로 교체 권장.
+3. `Meteor` 착탄 지면 Y는 데몬 발치 높이로 간주(평지 가정). 경사/다층 지형이면 착탄 지점에서 아래로 Raycast해 실제 지면을 잡도록 개선 필요.
+
+(초기 작성 시 IMP_M 컨트롤러 파라미터가 비어 있어 bool 필드를 비워뒀으나, 이후 컨트롤러에 6개 Bool이 배선된 것을 확인하고 프리팹 bool 필드를 Mischief와 동일하게 채움.)
+
+---
+
 ## 2026-07-21
 
 ### 1. GameProcessing.Testing 상태 추가 (테스트 씬에서 게임 로직 구동)
