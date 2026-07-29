@@ -99,8 +99,7 @@ public enum FoodType
     RoastedBerry, //구운베리
     RoastedMushroom,    // 구운버섯
     RoastedCarrot,      // 구운당근
-    RoastedPotato,      // 구운감자
-    RoastedFish         // 구운생선
+    RoastedPotato       // 구운감자
 }
 
 // 요리
@@ -113,7 +112,6 @@ public enum DishType
     MushroomSoup,   // 버섯 스프
     Omelette,       // 오믈렛
     Jerky,          // 육포
-    DriedFish,      // 어포
     FlowerTea,      // 꽃차
     FishSteak       // 생선스테이크
 }

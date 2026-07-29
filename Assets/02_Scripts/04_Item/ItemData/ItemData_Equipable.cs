@@ -43,6 +43,17 @@ public abstract class ItemData_Equipable : ItemData, IEquipable
         }
     }
 
+    public void DrainDurabilityOverTime(float deltaTime)
+    {
+        if (!data.hasDurability || !IsUsable) return;
+        _currentDurability = Mathf.Max(0f, _currentDurability - data.costPerDurability * deltaTime);
+        if (_currentDurability <= 0f)
+        {
+            Debug.Log($"[장비] {data.itemName}이(가) 다 닳았습니다!");
+            IsUsable = false;
+        }
+    }
+
     public float GetDurabilityPercent()
     {
         if (!data.hasDurability) return 1f;

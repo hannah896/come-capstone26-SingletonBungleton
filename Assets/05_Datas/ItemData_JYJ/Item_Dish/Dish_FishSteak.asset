@@ -23,7 +23,7 @@ MonoBehaviour:
   resourceType: 0
   bootyType: 0
   foodType: 0
-  dishType: 9
+  dishType: 8
   specialType: 0
   isStackable: 1
   maxStack: 10
@@ -34,10 +34,10 @@ MonoBehaviour:
   attackDamage: 0
   attackRange: 0
   defense: 0
-  hungerRestore: 25
-  healthRestore: 5
-  egoRestore: 0
-  expirationTime: 21600
+  hungerRestore: 50
+  healthRestore: 8
+  egoRestore: 5
+  expirationTime: 5760
   isPlaceable: 0
   placementPrefab: {fileID: 0}
   placementFootprint: {x: 1, y: 1}

@@ -23,7 +23,7 @@ MonoBehaviour:
   resourceType: 0
   bootyType: 0
   foodType: 0
-  dishType: 8
+  dishType: 7
   specialType: 0
   isStackable: 1
   maxStack: 10
