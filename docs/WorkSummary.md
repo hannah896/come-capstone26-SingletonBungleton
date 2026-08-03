@@ -2,6 +2,68 @@
 
 ---
 
+## 2026-08-03
+
+### 1. Vefects VFX 마젠타 원인 규명 (수정 안 함 — 사용 계획 없음으로 보류)
+
+`Assets/00_Externals/PremiumAssets/Effects/Vefects` 4개 팩(Anime Stylized / Stylized AoE / Smoke Bombs / Stylized VFX)의 이펙트가 전부 마젠타로 나오는 문제.
+
+**원인:** 프로젝트는 URP인데 Vefects 셰이더 65개가 전부 Built-in RP 전용 Surface Shader(`#pragma surface` + `Fallback "Diffuse"`, Amplify Shader Editor 생성). URP는 Surface Shader를 컴파일하지 못해 에러 셰이더(마젠타)로 대체한다. URP 태그(`RenderPipeline"="UniversalPipeline"`)를 가진 셰이더는 0개.
+
+**중요:** Asset Store 캐시의 원본 번들(`Stylized VFX Bundle.unitypackage`, 에셋 1683개)을 전수 확인한 결과 **URP/HDRP 버전 셰이더가 들어있지 않다.** 재다운로드로는 해결되지 않는다. 유일한 SRP 대응은 `Stylized VFX/Shader Graph/`의 Shader Graph 19개(이미 임포트됨)뿐이고, 나머지 3개 팩은 URP 대응이 없다. 왜곡 계열 6개 셰이더는 `GrabPass`를 써서 URP에서 아예 동작 불가(`_CameraOpaqueTexture` 기반 재작성 필요).
+
+**결론:** Vefects를 쓰려면 Shader Graph로 재작성하거나 Amplify Shader Editor(미설치, 유료)로 URP 템플릿 변환이 필요하다. 아래 2번에서 실제로 쓸 이펙트는 UNI VFX로 확정했으므로 Vefects는 손대지 않았다.
+
+### 2. 몬스터 공격 비주얼을 UNI VFX로 교체 + Demon 원거리를 바닥 폭발형 장판기로 변경
+
+`Meteor.prefab`, `MischiefProjectile.prefab` 둘 다 캡슐 메시 플레이스홀더 상태였던 것을 실제 이펙트로 교체.
+
+- `Meteor.prefab` ← `Onslaught Fiery`
+- `MischiefProjectile.prefab` ← `Mark of Death Crimson`
+
+**UNI VFX를 쓴 이유:** VFX Graph(`.vfx`) 기반 + `Common/Shaders/UNI-Masked.shadergraph`라 URP에서 정상 동작한다. Vefects(1번 항목)와 달리 마젠타 문제가 없다.
+
+**가장 중요한 함정 — UNI VFX는 자동 재생되지 않는다.** 10개 `.vfx` 전부 `m_InitialEventName`이 비어 있어서, 프리팹만 붙여두면 **아무것도 안 나온다.** `VisualEffect.SendEvent()`로 커스텀 이벤트를 직접 보내야 한다. `Reinit()`만으로는 재생되지 않는다.
+
+이벤트 구성(팩 공통): `create`(생성) → `loop`(지속) → `hit`(폭발) → `stop`(정지). 단 **`UNI_Onslaught`만 예외**로 `buildup` / `hit` / `stop`이고 `create`/`loop`가 없다. `Lightning_Spear`/`Orb`는 `buildup`이 추가로 있고, `Sweeping_Wave`는 `end`가 더 있다.
+
+**Demon 원거리 공격 연출 변경 (낙하 → 바닥 폭발):** 원래 `Meteor`는 상공 12m에서 스폰되어 수직 낙하 후 착탄하는 구조였는데, 실제 의도한 연출은 "바닥에 장판이 깔렸다가 그 자리에서 펑 터지는" 장판기라서 낙하 단계를 들어냈다.
+
+- `Meteor.cs` Phase: `Idle → Warning → Falling → Impact` ⇒ **`Idle → Warning → Exploding`**
+- `Init()` 시그니처에서 `spawnHeight`, `fallSpeed`를 빼고 `lingerTime`을 받는다. 스폰 즉시 `impactPos`(바닥)에 자리잡고 `warningEvent`를 보낸 뒤, 예고 시간이 끝나면 제자리에서 `explodeEvent` + 광역 데미지.
+- 폭발 직후 바로 `Despawn`하면 폭발 이펙트가 잘리므로, `lingerTime`만큼 기다렸다가 회수한다.
+- `DemonStatData`: `MeteorSpawnHeight`/`MeteorFallSpeed` 제거, `MeteorLingerTime`(기본 1.5초) 추가.
+
+**이벤트 이름은 `[SerializeField]`로 뺐다.** (`Meteor`의 `warningEvent`/`explodeEvent`/`stopEvent`, `MonsterProjectile`의 `spawnEvent`/`loopEvent`/`hitEvent`/`stopEvent`) 다른 VFX로 교체해도 인스펙터에서 이벤트명만 바꾸면 되도록. `Meteor`는 Onslaught에 맞춰 기본값이 `buildup`이고, `MonsterProjectile`은 `create`/`loop`다.
+
+**`MonsterProjectile` 명중 연출:** 기존엔 명중 즉시 `Despawn`이라 `hit` 폭발이 보일 틈이 없었다. `BeginHit()`을 추가해 비행/판정을 멈추고 `hit` 이벤트를 보낸 뒤 `hitLingerTime`(기본 1초) 후 회수한다.
+
+**작업 방식:** 캡슐 `MeshFilter`/`MeshRenderer` 제거, 루트 스케일(0.5 / 0.3 → 1) 원복, UNI VFX 프리팹을 **중첩 프리팹 인스턴스**로 자식 추가. `00_Externals` 원본은 수정하지 않았다.
+
+**검증:** `uloop compile` 에러 0(수정 파일 경고 0). 프리팹 구성·직렬화 값은 에디터 API로 확인. **시각 확인은 안 됨** — 실제 플레이로 봐야 한다.
+
+**남은 조정 포인트:**
+- `Onslaught`의 `buildup`이 바닥 예고 장판으로 충분히 보이는지는 실제로 봐야 안다. 약하면 `BuildupCircleAlphaMinMax`/`CircleAlpha`를 올리거나, `create`+`loop`가 있는 `Crushing Pull`·`Outburst` 계열로 바꾸는 편이 낫다.
+- `MeteorLingerTime`/`hitLingerTime`은 이펙트 실제 길이에 맞춰 조정 필요.
+- `UNI_Mark_of_Death`는 원래 "타겟에 표식을 찍고 히트 시 폭발"용이라 직선 투사체로는 어색할 수 있다. 어색하면 `Strafe Red`, `Razor Missile`, `Comet` 계열이 투사체에 더 맞는다.
+- 색상은 두 VFX 모두 `ColorOverLife`(Gradient) + `SecondaryColor`로 조정 가능. Crimson은 이미 빨강~주황 계열(중간 지점 순수 빨강 HDR)이라 손대지 않았다.
+
+### 3. Demon / Mischief 원거리 공격 시전 중 제자리 고정
+
+**문제:** `DemonAttackState.Update`는 `CastMeteorStorm()`을 호출한 다음 프레임부터 `IsMeteorReady`가 false가 되므로 **곧바로 `else` 분기로 빠져 도약하거나 걸어서 접근했다.** 시전하자마자 자리를 떠버려서 캐스팅 연출이 성립하지 않았고, `RangeAttack` 애니 Bool이 켜진 채 이동해 시전 모션으로 걸어다니는 문제도 있었다. `MischiefAttackState`도 `FireProjectile()` 직후 똑같이 움직였다.
+
+**수정:**
+- `DemonAttackState`에 `castTimer` 추가. 시전 직후 `MeteorCastTime`을 걸고, `castTimer > 0`인 동안은 `Update` 맨 앞에서 바로 `return`한다. 이동·추적·도약은 물론 **사거리 이탈 판정과 타깃 유효성 검사도 건너뛴다** — 장판은 이미 깔렸으므로 타깃이 사라져도 모션을 끝까지 재생하고 나서 다음 판단을 하는 게 자연스럽다.
+- 이동은 `ChaseStep`의 `transform.position` 직접 조작이라 (NavMeshAgent가 아니라) 호출을 안 하는 것만으로 완전히 제자리에 고정된다.
+- `DemonStatData.MeteorCastTime`(기본 1.2초) 추가. 시전 모션 길이에 맞춰 조정할 것.
+- 쿨 대기 중 추적 분기에 `PlayAnim(MonsterAnimId.Move)` 추가 — 시전 모션 Bool이 켜진 채 걸어다니지 않도록.
+
+**Mischief도 동일 적용:** `MischiefAttackState`에 같은 `castTimer` 방식을 넣고 `MischiefStatData.ProjectileCastTime`(기본 1초)을 추가했다. 두 몬스터의 원거리 공격이 같은 규칙("쏘는 동안 제자리")으로 동작한다.
+
+**검증:** `uloop compile` 에러 0. 런타임 확인은 안 됨 — `MeteorCastTime` 1.2초 / `ProjectileCastTime` 1초가 실제 모션 길이와 맞는지는 돌려보고 조정해야 한다.
+
+---
+
 ## 2026-07-28
 
 ### 1. Demon 몬스터 추가 (Mischief 구조 + 운석 세례 광역 원거리 공격)

@@ -10,6 +10,7 @@ public class MischiefAttackState : MobState<Monster>
     private readonly MischiefStateMachine sm;
     private readonly Mischief mischief;
     private float slashCooldown;
+    private float castTimer;    // 발사 모션 남은 시간 (>0이면 제자리 고정)
 
     public MischiefAttackState(Mischief owner, MischiefStateMachine machine) : base(owner, machine)
     {
@@ -22,10 +23,19 @@ public class MischiefAttackState : MobState<Monster>
     public override void OnEnter()
     {
         slashCooldown = 0f; // 슬래시 사거리 진입 시 즉시 1타
+        castTimer = 0f;
     }
 
     public override void Update(float time = 1.0f)
     {
+        // 발사 중에는 제자리에 고정한다. 이동/추적/도약은 물론 사거리 이탈 판정도 하지 않는다.
+        // (투사체는 이미 나갔으므로 타깃이 사라져도 모션을 끝까지 재생하고 나서 다음 판단을 한다)
+        if (castTimer > 0f)
+        {
+            castTimer -= time;
+            return;
+        }
+
         if (!mischief.IsTargetValid())
         {
             mischief.ClearTarget();
@@ -56,16 +66,24 @@ public class MischiefAttackState : MobState<Monster>
         else if (mischief.IsProjectileReady)
         {
             // 원거리: 프로젝타일 발사 (내부 쿨타임 시작)
+            // 발사 직후 바로 움직이지 않도록 ProjectileCastTime 동안 제자리에 묶는다.
             mischief.FaceTargetStep(time);
             mischief.FireProjectile();
+            castTimer = mischief.ProjectileCastTime;
         }
         else
         {
             // 프로젝타일 쿨 대기 중: 도약이 준비됐으면 타깃으로 뛰어들고, 아니면 걸어서 접근
             if (mischief.IsLeapReady)
+            {
                 sm.ToLeap();
+            }
             else
+            {
+                // 발사 모션 Bool이 켜진 채로 걸어다니지 않도록 이동 애니로 되돌린다.
+                mischief.PlayAnim(MonsterAnimId.Move);
                 mischief.ChaseStep(time);
+            }
         }
     }
 }

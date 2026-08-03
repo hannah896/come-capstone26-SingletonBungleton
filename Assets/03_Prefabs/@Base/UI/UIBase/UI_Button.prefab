@@ -147,24 +147,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2203605bb4768418cac506123e6df91a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TweenBtn
-  _downTweenData:
-    TrSelects:
-    - {fileID: 6148482803329221284}
-    Ease: 1
-    EndValue: 0.9
-    Duration: 0.1
-    IsRelative: 0
-    IsSpeedBased: 0
-  _upTweenData:
-    TrSelects:
-    - {fileID: 6148482803329221284}
-    Ease: 1
-    EndValue: 1
-    Duration: 0.1
-    IsRelative: 0
-    IsSpeedBased: 0
-  isClickSound: 1
-  isHaptic: 1
+  _targets: []
+  _scaleMultiplier: 0.9
+  _duration: 0.1
+  _ease: 1
+  _useColor: 1
+  _targetColor: {r: 0.6, g: 0.6, b: 0.6, a: 1}
+  _useClickSound: 1
+  _audioLibrarySounds: 0
 --- !u!1001 &6591979699407209283
 PrefabInstance:
   m_ObjectHideFlags: 0

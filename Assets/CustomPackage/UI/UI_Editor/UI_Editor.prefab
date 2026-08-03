@@ -3015,6 +3015,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65b9f908649c451b8d0002b43a57c3b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_Editor
+  OnOpenEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  OnCloseEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &7600585051225388350
 GameObject:
   m_ObjectHideFlags: 0

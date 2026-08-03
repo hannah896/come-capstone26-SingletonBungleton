@@ -59,6 +59,7 @@ MonoBehaviour:
       m_Calls: []
   UI_PlayerStatus: {fileID: 1914462277123695500}
   UI_PlayerInventory: {fileID: 1117531878868438553}
+  UI_Image_Focus: {fileID: 1436253834525254800}
 --- !u!1001 &3527464696797220267
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -169,6 +170,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 4046088511748342531, guid: 72eebf429a19a4f529d5a03b40529448, type: 3}
   m_PrefabInstance: {fileID: 3527464696797220267}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1436253834525254800 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2529487193701869883, guid: 72eebf429a19a4f529d5a03b40529448, type: 3}
+  m_PrefabInstance: {fileID: 3527464696797220267}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3613e9f726bca481f830099d3b8f40fe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UI_Image
 --- !u!1001 &4707839984010559793
 PrefabInstance:
   m_ObjectHideFlags: 0

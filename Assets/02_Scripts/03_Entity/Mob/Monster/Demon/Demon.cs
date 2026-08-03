@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// 데몬. Mischief와 같은 근접+원거리 하이브리드 몬스터지만, 원거리 공격이 단일 투사체가 아니라
-/// "자기 주변 반경 r 원 안 k개 지점에 운석을 떨구는" 광역 운석 세례(Meteor Storm)다.
+/// "자기 주변 반경 r 원 안 k개 지점 바닥에 장판을 깔고 순차적으로 터뜨리는" 광역 장판기(Meteor Storm)다.
 /// - 운석 세례: 사거리(AttackRange)가 넓은 대신 내부 쿨타임(MeteorCooldown)이 길다.
 /// - 슬래시: 내부 쿨이 없는 대신 사정거리(SlashRange)가 짧다. MinAttackPeriod 주기로만 제한된다.
 /// 공격 선택은 DemonAttackState가, 시전/쿨타임 메카닉은 이 본체가 담당한다.
@@ -37,6 +37,8 @@ public class Demon : Monster
     public float SlashRange => DemonData != null ? DemonData.SlashRange : 2f;
     /// <summary>운석 세례 내부 쿨타임이 끝나 시전 가능한지.</summary>
     public bool IsMeteorReady => meteorCooldown <= 0f;
+    /// <summary>운석 세례 시전 모션 동안 제자리에 고정되는 시간.</summary>
+    public float MeteorCastTime => DemonData != null ? DemonData.MeteorCastTime : 1.2f;
     public float JumpHeight => jumpHeight;
     public float JumpDistance => jumpDistance;
     public float JumpDuration => jumpDuration;
@@ -99,7 +101,7 @@ public class Demon : Monster
     }
 
     /// <summary>
-    /// 자기 주변 반경 MeteorRadius 원 안 MeteorCount개 지점에 운석 세례를 시전하고 내부 쿨타임을 시작한다.
+    /// 자기 주변 반경 MeteorRadius 원 안 MeteorCount개 지점 바닥에 장판을 깔고 내부 쿨타임을 시작한다.
     /// 쿨타임 중이거나 데이터가 없으면 무시된다.
     /// </summary>
     public void CastMeteorStorm()
@@ -138,13 +140,13 @@ public class Demon : Monster
             Vector3 impact = center + new Vector3(Mathf.Cos(angleRad) * dist, 0f, Mathf.Sin(angleRad) * dist);
             impact.y = center.y; // 데몬 발치 높이를 지면으로 간주
 
-            // 운석마다 예고 시간을 늘려 순차적으로 착탄하게 한다(스태거 0이면 전부 동시).
+            // 장판마다 예고 시간을 늘려 순차적으로 터지게 한다(스태거 0이면 전부 동시).
             float warning = data.MeteorWarningTime + i * stagger;
 
             var meteor = await Extensions.SpawnAsync<Meteor>(data.MeteorKey);
             if (meteor == null) continue;
 
-            meteor.Init(gameObject, impact, data.MeteorSpawnHeight, data.MeteorFallSpeed, damage, data.MeteorImpactRadius, warning);
+            meteor.Init(gameObject, impact, damage, data.MeteorImpactRadius, warning, data.MeteorLingerTime);
         }
     }
 }

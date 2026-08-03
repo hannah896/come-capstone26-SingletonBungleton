@@ -19,6 +19,8 @@ public class MischiefStatData : MonsterStatData
     public string ProjectileKey = "MischiefProjectile";
     [Tooltip("프로젝타일 내부 쿨타임(초). 슬래시와 별개로 돈다")]
     public float ProjectileCooldown = 5f;
+    [Tooltip("발사 모션 동안 제자리에 고정되는 시간(초). 이 시간에는 이동/추적/도약을 하지 않는다")]
+    public float ProjectileCastTime = 1f;
     [Tooltip("투사체 이동 속도")]
     public float ProjectileSpeed = 10f;
     [Tooltip("투사체 생존 시간(초). 초과 시 미명중으로 회수")]

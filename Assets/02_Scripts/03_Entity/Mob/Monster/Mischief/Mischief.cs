@@ -36,6 +36,8 @@ public class Mischief : Monster
     public float SlashRange => MischiefData != null ? MischiefData.SlashRange : 1.5f;
     /// <summary>프로젝타일 내부 쿨타임이 끝나 발사 가능한지.</summary>
     public bool IsProjectileReady => projectileCooldown <= 0f;
+    /// <summary>프로젝타일 발사 모션 동안 제자리에 고정되는 시간.</summary>
+    public float ProjectileCastTime => MischiefData != null ? MischiefData.ProjectileCastTime : 1f;
     public float JumpHeight => jumpHeight;
     public float JumpDistance => jumpDistance;
     public float JumpDuration => jumpDuration;
