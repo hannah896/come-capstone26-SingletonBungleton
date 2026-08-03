@@ -11,14 +11,15 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
   m_Name: Dish_Jerky
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   itemID: Jerky
-  itemName: 육포
-  description: 요리_육포 입니다.
-  icon: {fileID: 0}
+  itemName: "\uC721\uD3EC"
+  description: "\uC694\uB9AC_\uC721\uD3EC \uC785\uB2C8\uB2E4."
+  icon: {fileID: 21300000, guid: d371c740a2ff1a245af30aa7a963cf46, type: 3}
   prefab: {fileID: 3358562640880508787, guid: 4290e3a1ffc44314a50b6f3850aec5ab, type: 3}
   itemType: 5
   survivalToolType: 0
+  harvestableNodeTypes: 
   combatGearType: 0
   resourceType: 0
   bootyType: 0
@@ -38,6 +39,7 @@ MonoBehaviour:
   healthRestore: 0
   egoRestore: 3
   expirationTime: 21600
+  tags: 0
   isPlaceable: 0
   placementPrefab: {fileID: 0}
   placementFootprint: {x: 1, y: 1}

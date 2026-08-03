@@ -16,7 +16,7 @@ public class CraftingRecipeSlotUI : MonoBehaviour, IPointerClickHandler
     private static readonly Color ColorSelected    = new Color32(202, 136,  18, 255);  // 호박색
     private static readonly Color ColorCraftable   = new Color32( 60,  44,  20, 255);  // 제작 가능 갈색
     private static readonly Color ColorUncraftable = new Color32( 38,  27,  15, 255);  // 제작 불가 어두운 갈색
-    private static readonly Color ColorLocked      = new Color32( 14,   9,   5, 255);  // 잠금 거의 검정
+    private static readonly Color ColorLocked      = new Color32( 34,  25,  16, 255);  // 잠금 (조금 밝게)
 
     public event Action<RecipeDataSO> OnSelected;
     private RecipeDataSO recipe;
@@ -32,7 +32,7 @@ public class CraftingRecipeSlotUI : MonoBehaviour, IPointerClickHandler
             iconImage.sprite  = recipe?.resultItem?.icon;
             iconImage.enabled = iconImage.sprite != null;
             // 잠금 시 반투명 회색 (lockOverlay가 추가로 어둡게 처리함)
-            iconImage.color   = isLocked ? new Color(0.3f, 0.3f, 0.3f, 0.6f) : Color.white;
+            iconImage.color   = isLocked ? new Color(0.45f, 0.45f, 0.45f, 0.7f) : Color.white;
         }
 
         if (nameText != null)

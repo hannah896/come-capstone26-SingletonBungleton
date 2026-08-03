@@ -32,7 +32,7 @@ Transform:
   m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1684639167854725188}
+  - {fileID: 5326465479938661447}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &3993796317264544454
@@ -54,8 +54,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.5, y: 0.5, z: 0.5}
-  m_Center: {x: 0, y: 0.25, z: 0}
+  m_Size: {x: 0.26471305, y: 0.10650286, z: 0.26876974}
+  m_Center: {x: 0.0040566847, y: 0.05325143, z: -0.002028346}
 --- !u!54 &4159474678404408663
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -93,8 +93,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9a48bdb136130994aaafe81874680ac8, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   _itemSO: {fileID: 11400000, guid: 47d83f86223b4d32bf110eb98cf8aca5, type: 2}
   stackCount: 1
   _torchLight: {fileID: 0}
@@ -159,7 +159,7 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 678cfa760d28de34aa1735d2dab7e785, type: 3}
---- !u!4 &1684639167854725188 stripped
+--- !u!4 &5326465479938661447 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6559327499346871822, guid: 678cfa760d28de34aa1735d2dab7e785, type: 3}
   m_PrefabInstance: {fileID: 1363466683483314761}

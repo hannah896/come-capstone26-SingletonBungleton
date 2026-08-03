@@ -11,14 +11,15 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
   m_Name: Resource_Flower
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   itemID: Flower
-  itemName: 꽃
-  description: 자원_꽃입니다.
-  icon: {fileID: 0}
+  itemName: "\uAF43"
+  description: "\uC790\uC6D0_\uAF43\uC785\uB2C8\uB2E4."
+  icon: {fileID: 21300000, guid: 9052e2c6b286d614596696be7b8d1a76, type: 3}
   prefab: {fileID: 3017164804809986915, guid: 0f6ae5c5e3864f4b9b8c58b1af3987e0, type: 3}
   itemType: 2
   survivalToolType: 0
+  harvestableNodeTypes: 
   combatGearType: 0
   resourceType: 14
   bootyType: 0
@@ -38,6 +39,7 @@ MonoBehaviour:
   healthRestore: 0
   egoRestore: 5
   expirationTime: 2880
+  tags: 0
   isPlaceable: 0
   placementPrefab: {fileID: 0}
   placementFootprint: {x: 1, y: 1}

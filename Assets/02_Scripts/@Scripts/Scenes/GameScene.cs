@@ -91,8 +91,15 @@ public class GameScene : SceneBase
         CancellationToken token = Main.Scene.CurrentToken;
 
         // #1. 크래프팅 시스템 선행 생성 (플레이어 Bind보다 먼저 존재해야 함)
+        // allRecipes는 Resources/CraftingManager 프리팹에 미리 구워둔 값을 쓴다 (AssetDatabase는 빌드에서 동작하지 않음).
         if (CraftingManager.Instance == null)
-            new GameObject(nameof(CraftingManager)).AddComponent<CraftingManager>();
+        {
+            GameObject prefab = Resources.Load<GameObject>(nameof(CraftingManager));
+            if (prefab != null)
+                UnityEngine.Object.Instantiate(prefab);
+            else
+                new GameObject(nameof(CraftingManager)).AddComponent<CraftingManager>();
+        }
 
         // CraftingUI를 UIManager HUD 캔버스에 로드 (시작 시 숨김)
         var craftingUI = await Main.UI.ShowHudOverlay<CraftingUI>("CraftingUI");

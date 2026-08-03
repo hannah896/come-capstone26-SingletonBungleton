@@ -50,7 +50,7 @@ public class Item : MonoBehaviour
         BindTorchLight();
     }
 
-    // 17=Resource, 18=Booty, 19=Food(Dish/Special 포함), 20=Equipment(SurvivalTool/CombatGear)
+    // 12=Structure, 17=Resource, 18=Booty, 19=Food(Dish/Special 포함), 20=Equipment(SurvivalTool/CombatGear)
     private static int ItemTypeToLayer(ItemType type) => type switch
     {
         ItemType.Resource     => 17,
@@ -60,6 +60,7 @@ public class Item : MonoBehaviour
         ItemType.Special      => 19,
         ItemType.SurvivalTool => 20,
         ItemType.CombatGear   => 20,
+        ItemType.Structure    => 12,
         _                     => 17
     };
 

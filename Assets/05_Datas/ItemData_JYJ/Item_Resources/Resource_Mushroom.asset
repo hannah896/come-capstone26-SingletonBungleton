@@ -11,14 +11,15 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
   m_Name: Resource_Mushroom
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   itemID: Mushroom
-  itemName: 버섯
-  description: 자원_버섯입니다.
-  icon: {fileID: 21300000, guid: 896291434334e00438e32532ad9f7e90, type: 3}
+  itemName: "\uBC84\uC12F"
+  description: "\uC790\uC6D0_\uBC84\uC12F\uC785\uB2C8\uB2E4."
+  icon: {fileID: 21300000, guid: cc7227bc13cc89b4eb66996165df4da5, type: 3}
   prefab: {fileID: 988704522028723821, guid: 6cddfdc27de14c48873d19f024cd3012, type: 3}
   itemType: 2
   survivalToolType: 0
+  harvestableNodeTypes: 
   combatGearType: 0
   resourceType: 11
   bootyType: 0
@@ -38,6 +39,7 @@ MonoBehaviour:
   healthRestore: 0
   egoRestore: -3
   expirationTime: 2880
+  tags: 0
   isPlaceable: 0
   placementPrefab: {fileID: 0}
   placementFootprint: {x: 1, y: 1}

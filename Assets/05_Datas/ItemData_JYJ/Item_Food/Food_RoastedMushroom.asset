@@ -11,14 +11,15 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
   m_Name: Food_RoastedMushroom
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   itemID: RoastedMushroom
-  itemName: 구운버섯
-  description: 음식_구운버섯 입니다.
-  icon: {fileID: 21300000, guid: 896291434334e00438e32532ad9f7e90, type: 3}
+  itemName: "\uAD6C\uC6B4\uBC84\uC12F"
+  description: "\uC74C\uC2DD_\uAD6C\uC6B4\uBC84\uC12F \uC785\uB2C8\uB2E4."
+  icon: {fileID: 21300000, guid: 3d76e1af478354d47a807bbbfef585eb, type: 3}
   prefab: {fileID: 6883365856678226034, guid: 4eeef261976541fd8da37487ddd4dcbb, type: 3}
   itemType: 4
   survivalToolType: 0
+  harvestableNodeTypes: 
   combatGearType: 0
   resourceType: 0
   bootyType: 0
@@ -38,6 +39,7 @@ MonoBehaviour:
   healthRestore: 3
   egoRestore: 5
   expirationTime: 5760
+  tags: 0
   isPlaceable: 0
   placementPrefab: {fileID: 0}
   placementFootprint: {x: 1, y: 1}

@@ -13,6 +13,9 @@ public class ItemIconGenerator : EditorWindow
     private Vector3 camOffset = new Vector3(0, 0.5f, -2f);
     private Vector3 lightDir = new Vector3(-30, 45, 0);
 
+    // 씬에 있는 바닥/다른 오브젝트가 같이 찍히지 않도록, 미리보기 전용 레이어만 렌더링한다.
+    private const int PreviewLayer = 6;
+
     private void OnGUI()
     {
         GUILayout.Label("아이템 아이콘 자동 생성", EditorStyles.boldLabel);
@@ -76,18 +79,22 @@ public class ItemIconGenerator : EditorWindow
         // 임시 씬에 프리팹 스폰
         var obj = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
         obj.hideFlags = HideFlags.HideAndDontSave;
+        SetLayerRecursively(obj, PreviewLayer);
 
         // 바운드 계산 → 카메라 자동 맞춤
         Bounds bounds = GetBounds(obj);
         Vector3 center = bounds.center;
 
-        // 카메라 생성
+        // 카메라 생성 — PreviewLayer만 비춰서 씬의 바닥/다른 오브젝트가 같이 찍히는 것을 막는다.
         var camGO = new GameObject("_IconCamera");
         var cam = camGO.AddComponent<Camera>();
         cam.backgroundColor = bgColor;
-        cam.clearFlags = bgColor.a < 0.01f ? CameraClearFlags.Depth : CameraClearFlags.SolidColor;
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.cullingMask = 1 << PreviewLayer;
         cam.orthographic = true;
-        cam.orthographicSize = bounds.extents.magnitude * 1.2f;
+        cam.orthographicSize = Mathf.Max(bounds.extents.magnitude, 0.01f) * 1.2f;
+        cam.nearClipPlane = 0.01f;
+        cam.farClipPlane = Mathf.Max(bounds.extents.magnitude * 10f, 100f);
         cam.targetTexture = rt;
         cam.transform.position = center + camOffset.normalized * bounds.extents.magnitude * 2f;
         cam.transform.LookAt(center);
@@ -132,6 +139,13 @@ public class ItemIconGenerator : EditorWindow
         }
 
         return AssetDatabase.LoadAssetAtPath<Sprite>(fileName);
+    }
+
+    private static void SetLayerRecursively(GameObject obj, int layer)
+    {
+        obj.layer = layer;
+        foreach (Transform child in obj.transform)
+            SetLayerRecursively(child.gameObject, layer);
     }
 
     private static Bounds GetBounds(GameObject obj)
