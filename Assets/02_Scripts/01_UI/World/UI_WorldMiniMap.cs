@@ -2,13 +2,11 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// WorldMiniMap 데이터를 표시하는 HUD View.
-/// 월드 데이터의 생성과 소유는 WorldMiniMap이 담당하고, 이 클래스는 구독·표시·해제만 담당한다.
+/// <see cref="WorldMiniMap"/>의 데이터를 표시하는 View다.
+/// 텍스처 생성과 소유는 WorldMiniMap이 담당하며, 이 클래스는 표시와 플레이어 마커만 담당한다.
 /// </summary>
-public class UI_Hud_WorldMiniMap : UI_Hud
+public class UI_WorldMiniMap : UI
 {
-    #region Fields
-
     [Header("UI References")]
     [SerializeField] private RawImage _mapImage;
     [SerializeField] private RectTransform _playerMarker;
@@ -16,43 +14,25 @@ public class UI_Hud_WorldMiniMap : UI_Hud
     [Header("Marker Settings")]
     [SerializeField] private bool _rotatePlayerMarker = true;
     [SerializeField] private bool _hideMarkerOutsideWorld = true;
-    
+
     private WorldMiniMap _worldMiniMap;
     private WorldMiniMapData _mapData;
-
     private Transform _target;
 
-    #endregion
-
-    #region Properties
-
-    public Transform Target
-    {
-        get => _target;
-        set
-        {
-            _target = value;
-            RefreshVisibility();
-            UpdatePlayerMarker();
-        }
-    }
-
-    #endregion
-
-    #region Initialize / Bind
+    public Transform Target => _target;
 
     public override bool Initialize()
     {
         if (!base.Initialize()) return false;
 
-        ResolveReferences();
+        _mapImage ??= GetComponentInChildren<RawImage>(true);
         return true;
     }
 
     private void OnEnable()
     {
         Initialize();
-        Bind(WorldMiniMap.Instance);
+        TryBind();
     }
 
     private void OnDisable()
@@ -60,7 +40,30 @@ public class UI_Hud_WorldMiniMap : UI_Hud
         Unbind();
     }
 
-    /// <summary>외부 생성 순서가 HUD보다 늦는 경우에 대비한 명시적 바인드 진입점.</summary>
+    private void OnDestroy()
+    {
+        Unbind();
+    }
+
+    private void LateUpdate()
+    {
+        if (_worldMiniMap == null)
+        {
+            TryBind();
+        }
+
+        UpdatePlayerMarker();
+    }
+
+    /// <summary>미니맵 마커가 추적할 대상을 지정한다.</summary>
+    public void SetTarget(Transform target)
+    {
+        _target = target;
+        RefreshVisibility();
+        UpdatePlayerMarker();
+    }
+
+    /// <summary>표시할 미니맵 서비스를 바인딩한다.</summary>
     public void Bind(WorldMiniMap worldMiniMap)
     {
         if (_worldMiniMap == worldMiniMap)
@@ -75,10 +78,10 @@ public class UI_Hud_WorldMiniMap : UI_Hud
         _worldMiniMap = worldMiniMap;
         _worldMiniMap.OnDataChanged += HandleDataChanged;
         _worldMiniMap.OnDataCleared += HandleDataCleared;
-
         RefreshFromModel();
     }
 
+    /// <summary>현재 바인딩을 해제한다.</summary>
     public void Unbind()
     {
         if (_worldMiniMap != null)
@@ -91,9 +94,25 @@ public class UI_Hud_WorldMiniMap : UI_Hud
         ClearView();
     }
 
-    #endregion
+    private void TryBind()
+    {
+        if (WorldMiniMap.Instance != null)
+        {
+            Bind(WorldMiniMap.Instance);
+        }
+    }
 
-    #region Event Handlers
+    private void RefreshFromModel()
+    {
+        if (_worldMiniMap?.CurrentData != null)
+        {
+            HandleDataChanged(_worldMiniMap.CurrentData);
+        }
+        else
+        {
+            ClearView();
+        }
+    }
 
     private void HandleDataChanged(WorldMiniMapData data)
     {
@@ -113,33 +132,6 @@ public class UI_Hud_WorldMiniMap : UI_Hud
         ClearView();
     }
 
-    #endregion
-
-    #region View Update
-
-    private void LateUpdate()
-    {
-        // HUD가 먼저 생성된 경우에도 월드 서비스가 준비되는 즉시 구독한다.
-        if (_worldMiniMap == null && WorldMiniMap.Instance != null)
-        {
-            Bind(WorldMiniMap.Instance);
-        }
-
-        UpdatePlayerMarker();
-    }
-
-    private void RefreshFromModel()
-    {
-        if (_worldMiniMap?.CurrentData != null)
-        {
-            HandleDataChanged(_worldMiniMap.CurrentData);
-        }
-        else
-        {
-            ClearView();
-        }
-    }
-
     private void ClearView()
     {
         _mapData = null;
@@ -150,17 +142,6 @@ public class UI_Hud_WorldMiniMap : UI_Hud
         }
 
         RefreshVisibility();
-    }
-
-    private void ResolveReferences()
-    {
-        _mapImage ??= GetComponentInChildren<RawImage>(true);
-
-        if (_playerMarker == null)
-        {
-            Transform marker = transform.Find("PlayerMarker");
-            _playerMarker = marker as RectTransform;
-        }
     }
 
     private void RefreshVisibility()
@@ -208,6 +189,4 @@ public class UI_Hud_WorldMiniMap : UI_Hud
             _playerMarker.localRotation = Quaternion.Euler(0f, 0f, -_target.eulerAngles.y);
         }
     }
-
-    #endregion
 }

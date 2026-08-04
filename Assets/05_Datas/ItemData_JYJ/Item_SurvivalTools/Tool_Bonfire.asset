@@ -19,11 +19,13 @@ MonoBehaviour:
   prefab: {fileID: 3590119427674651755, guid: 9dbefc22cc191c9439f079d99d9b2354, type: 3}
   itemType: 0
   survivalToolType: 15
-  harvestableResources: 
+  harvestableNodeTypes: 
   combatGearType: 0
   resourceType: 0
   bootyType: 0
   foodType: 0
+  dishType: 0
+  specialType: 0
   isStackable: 1
   maxStack: 99
   equipSlot: 0
@@ -36,8 +38,10 @@ MonoBehaviour:
   hungerRestore: 0
   healthRestore: 0
   egoRestore: 0
+  expirationTime: 0
+  tags: 0
   isPlaceable: 1
-  placementPrefab: {fileID: 0}
+  placementPrefab: {fileID: 6610414645582670054, guid: 37a5b198d8189914eaecc56ef4418063, type: 3}
   placementFootprint: {x: 1, y: 1}
   placementPivotOffset: {x: 0, y: 0, z: 0}
   placementSnapToGrid: 1
