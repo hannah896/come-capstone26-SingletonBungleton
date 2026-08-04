@@ -32,7 +32,7 @@ Transform:
   m_LocalScale: {x: 0.4, y: 0.4, z: 0.4}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 2653777985747054354}
+  - {fileID: 2}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &28651221165935915
@@ -54,8 +54,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.5, y: 0.5, z: 0.5}
-  m_Center: {x: 0, y: 0.25, z: 0}
+  m_Size: {x: 0.17029665, y: 0.024390109, z: 0.22441112}
+  m_Center: {x: -0.0058996677, y: 0.012195054, z: -0.0051546795}
 --- !u!54 &51728444172996733
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -93,8 +93,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9a48bdb136130994aaafe81874680ac8, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   _itemSO: {fileID: 11400000, guid: 1c8d8f9eeb5aee55d5b9c86b04282b51, type: 2}
   stackCount: 1
   _torchLight: {fileID: 0}
@@ -106,14 +106,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 21612610304728705}
     m_Modifications:
-    - target: {fileID: 3431687562845238699, guid: 2dac054d04f0e8c4280ff94ba835e51f, type: 3}
-      propertyPath: m_Name
-      value: Herring fish Cut
-      objectReference: {fileID: 0}
-    - target: {fileID: 3431687562845238699, guid: 2dac054d04f0e8c4280ff94ba835e51f, type: 3}
-      propertyPath: m_Layer
-      value: 19
-      objectReference: {fileID: 0}
     - target: {fileID: 2653777985747054353, guid: 2dac054d04f0e8c4280ff94ba835e51f, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -154,12 +146,20 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3431687562845238699, guid: 2dac054d04f0e8c4280ff94ba835e51f, type: 3}
+      propertyPath: m_Name
+      value: Herring fish Cut
+      objectReference: {fileID: 0}
+    - target: {fileID: 3431687562845238699, guid: 2dac054d04f0e8c4280ff94ba835e51f, type: 3}
+      propertyPath: m_Layer
+      value: 19
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2dac054d04f0e8c4280ff94ba835e51f, type: 3}
---- !u!4 &2653777985747054354 stripped
+--- !u!4 &2 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2653777985747054353, guid: 2dac054d04f0e8c4280ff94ba835e51f, type: 3}
   m_PrefabInstance: {fileID: 2653777985747054355}

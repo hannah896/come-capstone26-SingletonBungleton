@@ -11,14 +11,15 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
   m_Name: Dish_FishSteak
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   itemID: FishSteak
-  itemName: 생선 스테이크
-  description: 요리_생선 스테이크 입니다.
-  icon: {fileID: 0}
+  itemName: "\uC0DD\uC120 \uC2A4\uD14C\uC774\uD06C"
+  description: "\uC694\uB9AC_\uC0DD\uC120 \uC2A4\uD14C\uC774\uD06C \uC785\uB2C8\uB2E4."
+  icon: {fileID: 21300000, guid: 9a55369c2393eaf4a8097d05ad2bfee9, type: 3}
   prefab: {fileID: 65229197991942186, guid: d5975a5aea84fd43915b4e14e1bbab7e, type: 3}
   itemType: 5
   survivalToolType: 0
+  harvestableNodeTypes: 
   combatGearType: 0
   resourceType: 0
   bootyType: 0
@@ -38,6 +39,7 @@ MonoBehaviour:
   healthRestore: 8
   egoRestore: 5
   expirationTime: 5760
+  tags: 0
   isPlaceable: 0
   placementPrefab: {fileID: 0}
   placementFootprint: {x: 1, y: 1}

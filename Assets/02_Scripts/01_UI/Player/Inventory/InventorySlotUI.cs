@@ -81,7 +81,16 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        if (playerInventory == null || eventData.button != PointerEventData.InputButton.Left)
+        if (playerInventory == null) return;
+
+        if (eventData.button == PointerEventData.InputButton.Right)
+        {
+            if (!isEquipmentSlot)
+                playerInventory.EatFromSlot(slotIndex);
+            return;
+        }
+
+        if (eventData.button != PointerEventData.InputButton.Left)
             return;
 
         if (isEquipmentSlot)

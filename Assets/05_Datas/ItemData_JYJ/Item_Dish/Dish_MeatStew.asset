@@ -11,14 +11,15 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
   m_Name: Dish_MeatStew
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   itemID: MeatStew
-  itemName: 고기 스튜
-  description: 요리_고기 스튜 입니다.
-  icon: {fileID: 0}
+  itemName: "\uACE0\uAE30 \uC2A4\uD29C"
+  description: "\uC694\uB9AC_\uACE0\uAE30 \uC2A4\uD29C \uC785\uB2C8\uB2E4."
+  icon: {fileID: 21300000, guid: 157d539516881ca4782583dc588e2176, type: 3}
   prefab: {fileID: 1174594882528243463, guid: 41935a24714645659b3079086a37c116, type: 3}
   itemType: 5
   survivalToolType: 0
+  harvestableNodeTypes: 
   combatGearType: 0
   resourceType: 0
   bootyType: 0
@@ -38,6 +39,7 @@ MonoBehaviour:
   healthRestore: 10
   egoRestore: 5
   expirationTime: 5760
+  tags: 0
   isPlaceable: 0
   placementPrefab: {fileID: 0}
   placementFootprint: {x: 1, y: 1}

@@ -32,6 +32,7 @@ public class PlayerInventory : MonoBehaviour
     private readonly Dictionary<EquipSlot, IEquipable> equippedItemInstances = new();
     private readonly Collider[] pickupBuffer = new Collider[16];
     private PlayerInputData inputData;
+    private Player owner;
     private int selectedSlotIndex;
 
     private struct PickupCandidate
@@ -61,6 +62,7 @@ public class PlayerInventory : MonoBehaviour
 
     public void Bind(Player owner, PlayerInputData data)
     {
+        this.owner = owner;
         inputData = data;
         InitializeSlots();
     }
@@ -173,6 +175,23 @@ public class PlayerInventory : MonoBehaviour
                 count += stackCounts[i];
 
         return count;
+    }
+
+    /// <summary>슬롯의 Food/Dish 아이템을 1개 먹어서 허기/체력/Ego를 회복하고 소모한다.</summary>
+    public bool EatFromSlot(int slotIndex)
+    {
+        if (!IsValidSlot(slotIndex)) return false;
+
+        ItemDataSO itemData = slots[slotIndex];
+        if (itemData == null || stackCounts[slotIndex] <= 0) return false;
+        if (itemData.itemType != ItemType.Food && itemData.itemType != ItemType.Dish) return false;
+        if (owner == null || owner.Stat == null) return false;
+
+        owner.Stat.RestoreHunger(itemData.hungerRestore);
+        owner.Stat.RestoreHp(itemData.healthRestore);
+        owner.Stat.RestoreEgo(itemData.egoRestore);
+
+        return RemoveItem(itemData, 1);
     }
 
     public bool EquipFromSlot(int slotIndex)

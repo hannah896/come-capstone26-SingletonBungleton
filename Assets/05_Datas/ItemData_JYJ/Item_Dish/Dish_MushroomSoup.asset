@@ -11,14 +11,15 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
   m_Name: Dish_MushroomSoup
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   itemID: MushroomSoup
-  itemName: 버섯 스프
-  description: 요리_버섯 스프 입니다.
-  icon: {fileID: 0}
+  itemName: "\uBC84\uC12F \uC2A4\uD504"
+  description: "\uC694\uB9AC_\uBC84\uC12F \uC2A4\uD504 \uC785\uB2C8\uB2E4."
+  icon: {fileID: 21300000, guid: d57435fefa1f4804ea079d38180f0c11, type: 3}
   prefab: {fileID: 5027922747121709030, guid: 563ac3f697064ed0895999f712e2d3cd, type: 3}
   itemType: 5
   survivalToolType: 0
+  harvestableNodeTypes: 
   combatGearType: 0
   resourceType: 0
   bootyType: 0
@@ -38,6 +39,7 @@ MonoBehaviour:
   healthRestore: 5
   egoRestore: 20
   expirationTime: 4320
+  tags: 0
   isPlaceable: 0
   placementPrefab: {fileID: 0}
   placementFootprint: {x: 1, y: 1}

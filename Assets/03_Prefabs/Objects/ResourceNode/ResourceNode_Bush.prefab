@@ -692,6 +692,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: ResourceNode_Bush
       objectReference: {fileID: 0}
+    - target: {fileID: 6640396493665874293, guid: 0763e557dfa7dc54798bfd19e2fcb0e4, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7455301327454056853, guid: 0763e557dfa7dc54798bfd19e2fcb0e4, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8773884476145390783, guid: 0763e557dfa7dc54798bfd19e2fcb0e4, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:

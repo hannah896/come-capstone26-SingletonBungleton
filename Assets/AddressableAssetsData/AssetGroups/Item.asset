@@ -40,6 +40,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 390454a113ed421da8081c8c084cd960
+    m_Address: Food_RoastedPotato
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 39aba271fa16c5b4e9f3ce5a2e0db683
     m_Address: Tool_Hammer_Stone
     m_ReadOnly: 0
@@ -80,6 +85,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4eeef261976541fd8da37487ddd4dcbb
+    m_Address: Food_RoastedMushroom
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 51f24b103ebc56a4a8b2e3435d1f6e80
     m_Address: Food_CookedMeat1
     m_ReadOnly: 0
@@ -87,6 +97,16 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 521513dc01a27324796f1bd4371f3187
     m_Address: Tool_Axe_Stone
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 550896e55cf888149bf733be49197743
+    m_Address: DroppedItem_Base
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 61acb6983d8e45fcbfad83c0b9153eed
+    m_Address: Food_RoastedCarrot
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -127,6 +147,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 9415e2b532c743745889e8e76738a981
     m_Address: Booty_Meat1
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9dbefc22cc191c9439f079d99d9b2354
+    m_Address: Tool_Bonfire
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -227,51 +252,6 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: fc5e71b6dadcc5a45b0a1ec18a9a0ae8
     m_Address: Tool_Torch
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 550896e55cf888149bf733be49197743
-    m_Address: DroppedItem_Base
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: bf278275138ab274b8bb5185a33e519c
-    m_Address: Gold_Object
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: e72d358e838a0d544bc559132294f5f2
-    m_Address: Grass_Object
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 7e4a4a94890860245972ad5c07e4a26e
-    m_Address: Stone_Object
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: a9ac6438f9f9dec47bea0a8475fdebed
-    m_Address: Tree_Object
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 9dbefc22cc191c9439f079d99d9b2354
-    m_Address: Tool_Bonfire
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 4eeef261976541fd8da37487ddd4dcbb
-    m_Address: Food_RoastedMushroom
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 61acb6983d8e45fcbfad83c0b9153eed
-    m_Address: Food_RoastedCarrot
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 390454a113ed421da8081c8c084cd960
-    m_Address: Food_RoastedPotato
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

@@ -11,14 +11,15 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
   m_Name: Dish_Omelette
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   itemID: Omelette
-  itemName: 오믈렛
-  description: 요리_오믈렛 입니다.
-  icon: {fileID: 0}
+  itemName: "\uC624\uBBC8\uB81B"
+  description: "\uC694\uB9AC_\uC624\uBBC8\uB81B \uC785\uB2C8\uB2E4."
+  icon: {fileID: 21300000, guid: b51972e88350baf4db174f3195390a51, type: 3}
   prefab: {fileID: 2070494742001438627, guid: b908d74335fa48089afefefe0235aa16, type: 3}
   itemType: 5
   survivalToolType: 0
+  harvestableNodeTypes: 
   combatGearType: 0
   resourceType: 0
   bootyType: 0
@@ -38,6 +39,7 @@ MonoBehaviour:
   healthRestore: 8
   egoRestore: 5
   expirationTime: 4320
+  tags: 0
   isPlaceable: 0
   placementPrefab: {fileID: 0}
   placementFootprint: {x: 1, y: 1}

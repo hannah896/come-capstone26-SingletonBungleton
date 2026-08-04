@@ -8,13 +8,25 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1640139618756613748, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3283988516332825001, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
       propertyPath: m_Layer
       value: 11
       objectReference: {fileID: 0}
+    - target: {fileID: 3283988516332825001, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3685781054794927235, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
       propertyPath: m_Layer
       value: 11
+      objectReference: {fileID: 0}
+    - target: {fileID: 3685781054794927235, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4067566586819885771, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
       propertyPath: m_Layer
@@ -62,7 +74,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7341746303021280397, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
       propertyPath: m_Name
-      value: ResourceNode_Fir4
+      value: ResourceNode_Fir
       objectReference: {fileID: 0}
     - target: {fileID: 7341746303021280397, guid: 915b939ae6a252d4b8eb4d03c67c194f, type: 3}
       propertyPath: m_Layer

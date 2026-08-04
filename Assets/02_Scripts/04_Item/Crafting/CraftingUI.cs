@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public class CraftingUI : UI_Panel
 {
-    [Header("카테고리 탭 (순서: Tools, Light, Survival, Weapons, Structures, Moon)")]
+    [Header("카테고리 탭 (순서: Tools, Light, Weapons, Armor, Survival, Structures, Medicine, Cooking, All)")]
     [SerializeField] private Button[] categoryTabButtons;
 
     [Header("레시피 목록")]
@@ -40,7 +40,8 @@ public class CraftingUI : UI_Panel
         RecipeCategory.Survival,   // [4] 생존
         RecipeCategory.Structures, // [5] 구조물
         RecipeCategory.Medicine,   // [6] 치료제
-        RecipeCategory.All,        // [7] 전체
+        RecipeCategory.Cooking,    // [7] 요리
+        RecipeCategory.All,        // [8] 전체
     };
 
     private static readonly Color TabSelectedColor = new(1f, 0.8f, 0.2f, 1f);
@@ -377,7 +378,7 @@ public class CraftingUI : UI_Panel
                 CraftStation.Forge     => "용광로",
                 _                      => req.ToString(),
             };
-            stationHintText.text  = nearby ? $"★ {stationName} 근처에서 제작 시 해금" : $"⚠ {stationName} 필요";
+            stationHintText.text  = nearby ? string.Empty : $"⚠ {stationName} 필요";
             stationHintText.color = nearby ? Color.yellow : new Color(1f, 0.5f, 0.3f);
         }
     }

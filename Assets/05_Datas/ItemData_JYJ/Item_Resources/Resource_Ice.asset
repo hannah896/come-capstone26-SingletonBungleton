@@ -11,14 +11,15 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
   m_Name: Resource_Ice
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   itemID: Ice
-  itemName: 얼음
-  description: 자원_얼음입니다.
-  icon: {fileID: 0}
+  itemName: "\uC5BC\uC74C"
+  description: "\uC790\uC6D0_\uC5BC\uC74C\uC785\uB2C8\uB2E4."
+  icon: {fileID: 21300000, guid: 472de69ca4771fd4281bddf16f9da539, type: 3}
   prefab: {fileID: 499854725035888596, guid: 150e3bf97b844409a288d8c25dc29d1e, type: 3}
   itemType: 2
   survivalToolType: 0
+  harvestableNodeTypes: 
   combatGearType: 0
   resourceType: 15
   bootyType: 0
@@ -38,6 +39,7 @@ MonoBehaviour:
   healthRestore: 0
   egoRestore: 0
   expirationTime: 1440
+  tags: 0
   isPlaceable: 0
   placementPrefab: {fileID: 0}
   placementFootprint: {x: 1, y: 1}

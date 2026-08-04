@@ -11,14 +11,15 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
   m_Name: Resource_Potato
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   itemID: Potato
-  itemName: 감자
-  description: 자원_감자입니다.
-  icon: {fileID: 0}
+  itemName: "\uAC10\uC790"
+  description: "\uC790\uC6D0_\uAC10\uC790\uC785\uB2C8\uB2E4."
+  icon: {fileID: 21300000, guid: a8abac92ca2681545a16de0d174fbf55, type: 3}
   prefab: {fileID: 6446710396851586349, guid: af5dec69a4174df7b11069f3248aef7f, type: 3}
   itemType: 2
   survivalToolType: 0
+  harvestableNodeTypes: 
   combatGearType: 0
   resourceType: 13
   bootyType: 0
@@ -38,6 +39,7 @@ MonoBehaviour:
   healthRestore: 0
   egoRestore: 0
   expirationTime: 5760
+  tags: 0
   isPlaceable: 0
   placementPrefab: {fileID: 0}
   placementFootprint: {x: 1, y: 1}

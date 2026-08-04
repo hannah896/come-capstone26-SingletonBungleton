@@ -11,14 +11,15 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
   m_Name: Dish_BerryPie
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   itemID: BerryPie
-  itemName: 베리 파이
-  description: 요리_베리 파이 입니다.
-  icon: {fileID: 0}
+  itemName: "\uBCA0\uB9AC \uD30C\uC774"
+  description: "\uC694\uB9AC_\uBCA0\uB9AC \uD30C\uC774 \uC785\uB2C8\uB2E4."
+  icon: {fileID: 21300000, guid: 1a3299adc1129844ca0b1c94a3b91c0f, type: 3}
   prefab: {fileID: 2939189247040237297, guid: c5bfe8aeee1f461f8bd34fc090c5c011, type: 3}
   itemType: 5
   survivalToolType: 0
+  harvestableNodeTypes: 
   combatGearType: 0
   resourceType: 0
   bootyType: 0
@@ -38,6 +39,7 @@ MonoBehaviour:
   healthRestore: 5
   egoRestore: 10
   expirationTime: 5760
+  tags: 0
   isPlaceable: 0
   placementPrefab: {fileID: 0}
   placementFootprint: {x: 1, y: 1}

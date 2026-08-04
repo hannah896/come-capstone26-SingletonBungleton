@@ -29,6 +29,7 @@ public abstract class ItemData
             ItemType.Food         => new ItemData_Food(so, count),
             ItemType.Dish         => new ItemData_Dish(so, count),
             ItemType.Special      => new Item_Special(so, count),
+            ItemType.Structure    => new Item_Structure(so, count),
             _                     => LogUnknownType(so)
         };
     }

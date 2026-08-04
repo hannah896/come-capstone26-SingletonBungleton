@@ -11,14 +11,15 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
   m_Name: Dish_FlowerTea
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   itemID: FlowerTea
-  itemName: 꽃차
-  description: 요리_꽃차 입니다.
-  icon: {fileID: 21300000, guid: 1b913a9e747e9e0448f702ad62299a6a, type: 3}
+  itemName: "\uAF43\uCC28"
+  description: "\uC694\uB9AC_\uAF43\uCC28 \uC785\uB2C8\uB2E4."
+  icon: {fileID: 21300000, guid: 636544a3b906b39418897174431ea2fa, type: 3}
   prefab: {fileID: 2482418489066110650, guid: 2691251d3c8f4b219428cdb5f544abe5, type: 3}
   itemType: 5
   survivalToolType: 0
+  harvestableNodeTypes: 
   combatGearType: 0
   resourceType: 0
   bootyType: 0
@@ -38,6 +39,7 @@ MonoBehaviour:
   healthRestore: 0
   egoRestore: 20
   expirationTime: 2880
+  tags: 0
   isPlaceable: 0
   placementPrefab: {fileID: 0}
   placementFootprint: {x: 1, y: 1}

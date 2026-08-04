@@ -17,7 +17,7 @@ MonoBehaviour:
   description: "\uBAA8\uB2E5\uBD88. \uC74C\uC2DD \uAD6C\uC6B8\uC218\uC788\uC74C"
   icon: {fileID: 21300000, guid: d02e50950306d6d4e8407332965c8ab0, type: 3}
   prefab: {fileID: 3590119427674651755, guid: 9dbefc22cc191c9439f079d99d9b2354, type: 3}
-  itemType: 0
+  itemType: 7
   survivalToolType: 15
   harvestableResources: 
   combatGearType: 0
@@ -37,7 +37,7 @@ MonoBehaviour:
   healthRestore: 0
   egoRestore: 0
   isPlaceable: 1
-  placementPrefab: {fileID: 0}
+  placementPrefab: {fileID: 3590119427674651755, guid: 9dbefc22cc191c9439f079d99d9b2354, type: 3}
   placementFootprint: {x: 1, y: 1}
   placementPivotOffset: {x: 0, y: 0, z: 0}
   placementSnapToGrid: 1

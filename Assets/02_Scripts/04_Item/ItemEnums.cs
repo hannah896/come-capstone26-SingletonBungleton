@@ -8,7 +8,8 @@ public enum ItemType
     Booty,           // 전리품
     Food,           // 음식
     Dish,           // 요리
-    Special         // 특수 (부패물 등)
+    Special,        // 특수 (부패물 등)
+    Structure       // 구조물 (설치형)
 }
 
 // 생존도구 세부 타입
