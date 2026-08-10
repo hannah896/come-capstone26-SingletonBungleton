@@ -25,7 +25,7 @@ public class ObjectIconGenerator : EditorWindow
     {
         GUILayout.Label("3D 오브젝트 아이콘 생성기", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(
-            "Creates icons from selected prefabs. LOD prefabs are rendered with LOD0 only.",
+            "Creates icons from selected prefabs. LOD prefabs are rendered with LOD0 only. **비어있는 씬에서 진행할 것**",
             MessageType.Info);
 
         iconSize = Mathf.Max(1, EditorGUILayout.IntField("Icon Size (px)", iconSize));

@@ -19,13 +19,13 @@ public class MiniMapSpriteGenerator : EditorWindow
 
     private enum GenerationMode
     {
-        TerrainRenderCapture,
-        DiffuseCopy
+        DiffuseCopy,
+        TerrainRenderCapture
     }
 
     [SerializeField] private int _spriteSize = 128;
     [SerializeField] private string _saveFolder = DefaultSaveFolder;
-    [SerializeField] private GenerationMode _generationMode = GenerationMode.TerrainRenderCapture;
+    [SerializeField] private GenerationMode _generationMode = GenerationMode.DiffuseCopy;
     [SerializeField] private Color _tint = Color.white;
     [SerializeField] private FilterMode _filterMode = FilterMode.Bilinear;
     [SerializeField] private bool _overwriteExisting;
@@ -63,7 +63,7 @@ public class MiniMapSpriteGenerator : EditorWindow
             MessageType.Info);
 
         _spriteSize = Mathf.ClosestPowerOfTwo(Mathf.Clamp(
-            EditorGUILayout.IntField("Sprite Size (px)", _spriteSize), 16, 512));
+            EditorGUILayout.IntField("Sprite Size (px)", _spriteSize), 16, 1024));
         _saveFolder = EditorGUILayout.TextField("Save Folder", _saveFolder);
         _generationMode = (GenerationMode)EditorGUILayout.EnumPopup("Generation Mode", _generationMode);
         _tint = EditorGUILayout.ColorField("Tint", _tint);
@@ -216,7 +216,7 @@ public class MiniMapSpriteGenerator : EditorWindow
 
         Texture2D outputTexture = _generationMode == GenerationMode.TerrainRenderCapture
             ? CaptureTerrainLayer(terrainLayer)
-            : CopyDiffuseTexture(sourceTexture);
+            : CopyDiffuseTexture(terrainLayer);
 
         if (outputTexture == null) return null;
 
@@ -237,24 +237,84 @@ public class MiniMapSpriteGenerator : EditorWindow
         }
     }
 
-    private Texture2D CopyDiffuseTexture(Texture2D sourceTexture)
+    private Texture2D CopyDiffuseTexture(TerrainLayer terrainLayer)
     {
+        //RenderTexture renderTexture = null;
+        //RenderTexture previousRenderTexture = RenderTexture.active;
+
+        //try
+        //{
+        //    renderTexture = CreateRenderTexture();
+        //    Graphics.Blit(sourceTexture, renderTexture);
+        //    return ReadRenderTexture(renderTexture);
+        //}
+        //finally
+        //{
+        //    RenderTexture.active = previousRenderTexture;
+        //    if (renderTexture != null)
+        //    {
+        //        RenderTexture.ReleaseTemporary(renderTexture);
+        //    }
+        //}
+        Texture2D sourceTexture = terrainLayer.diffuseTexture;
+        Texture2D normalTexture = terrainLayer.normalMapTexture;
+
         RenderTexture renderTexture = null;
         RenderTexture previousRenderTexture = RenderTexture.active;
+        Material bakeMaterial = null;
 
         try
         {
             renderTexture = CreateRenderTexture();
-            Graphics.Blit(sourceTexture, renderTexture);
+
+            if (normalTexture != null)
+            {
+                Shader shader = Shader.Find("Hidden/MiniMapNormalBaker"); //Hidden/MiniMapNormalBaker //Raygeas/AZURE Nature/Surface 
+                if (shader != null)
+                {
+                    bakeMaterial = new Material(shader);
+                    bakeMaterial.SetTexture("_NormalMap", normalTexture);
+
+                    bakeMaterial.SetFloat("_BumpScale", 1.5f);
+
+                    // 주광 설정 (프리뷰 씬과 동일한 각도 적용)
+                    Quaternion lightRot = Quaternion.Euler(_previewLightEulerAngles);
+                    Vector3 worldLightDir = -(lightRot * Vector3.forward);
+
+                    Vector3 tangentLightDir = new Vector3(worldLightDir.x, worldLightDir.z, worldLightDir.y).normalized;
+                    bakeMaterial.SetVector("_LightDir", tangentLightDir);
+                    bakeMaterial.SetColor("_LightColor", _previewLightColor * _previewLightIntensity);
+
+                    // 보조광 설정 (주광의 반대편 180도)
+                    Quaternion fillRot = Quaternion.Euler(-_previewLightEulerAngles.x, _previewLightEulerAngles.y + 180f, 0f);
+                    Vector3 worldFillDir = -(fillRot * Vector3.forward);
+                    Vector3 tangentFillDir = new Vector3(worldFillDir.x, worldFillDir.z, worldFillDir.y).normalized;
+
+                    bakeMaterial.SetVector("_FillLightDir", tangentFillDir);
+                    bakeMaterial.SetColor("_FillLightColor", new Color(0.7f, 0.8f, 0.9f) * (_previewLightIntensity * 0.5f));
+
+                    // 노말 연산이 포함된 Material을 사용하여 복사
+                    Graphics.Blit(sourceTexture, renderTexture, bakeMaterial);
+                }
+                else
+                {
+                    Debug.LogWarning("[MiniMap Sprite Generator] 셰이더를 찾을 수 없어 기본 복사를 수행합니다.");
+                    Graphics.Blit(sourceTexture, renderTexture);
+                }
+            }
+            else
+            {
+                // 노말맵이 없으면 그냥 단순 복사
+                Graphics.Blit(sourceTexture, renderTexture);
+            }
+
             return ReadRenderTexture(renderTexture);
         }
         finally
         {
             RenderTexture.active = previousRenderTexture;
-            if (renderTexture != null)
-            {
-                RenderTexture.ReleaseTemporary(renderTexture);
-            }
+            if (renderTexture != null) RenderTexture.ReleaseTemporary(renderTexture);
+            if (bakeMaterial != null) DestroyImmediate(bakeMaterial);
         }
     }
 
@@ -317,7 +377,8 @@ public class MiniMapSpriteGenerator : EditorWindow
             SceneManager.MoveGameObjectToScene(cameraObject, previewScene);
 
             Camera previewCamera = cameraObject.AddComponent<Camera>();
-            previewCamera.cameraType = CameraType.Preview;
+            previewCamera.cameraType = CameraType.Game;
+            previewCamera.scene = previewScene;
             previewCamera.clearFlags = CameraClearFlags.SolidColor;
             previewCamera.backgroundColor = Color.black;
             previewCamera.orthographic = true;
@@ -377,7 +438,7 @@ public class MiniMapSpriteGenerator : EditorWindow
             _spriteSize,
             depthBufferBits,
             RenderTextureFormat.ARGB32,
-            RenderTextureReadWrite.sRGB);
+            RenderTextureReadWrite.Linear);
         renderTexture.filterMode = _filterMode;
         renderTexture.wrapMode = TextureWrapMode.Repeat;
         return renderTexture;
