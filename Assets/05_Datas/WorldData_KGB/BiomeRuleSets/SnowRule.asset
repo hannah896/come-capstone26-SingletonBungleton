@@ -19,4 +19,8 @@ MonoBehaviour:
   - ruleName: Rock
     prefabKey: ResourceNode_Rock
     density: 0.06
-  ItemRules: []
+  ItemRules:
+  - ruleName: Ice
+    prefabKey: Resource_Ice
+    minCount: 10
+    maxCount: 20

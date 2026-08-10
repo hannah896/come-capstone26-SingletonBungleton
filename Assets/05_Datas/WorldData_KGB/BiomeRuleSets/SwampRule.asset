@@ -13,4 +13,8 @@ MonoBehaviour:
   m_Name: SwampRule
   m_EditorClassIdentifier: 
   ObjectRules: []
-  ItemRules: []
+  ItemRules:
+  - ruleName: Mushroom
+    prefabKey: Resource_Mushroom
+    minCount: 10
+    maxCount: 20

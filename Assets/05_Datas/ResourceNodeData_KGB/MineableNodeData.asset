@@ -23,5 +23,21 @@ MonoBehaviour:
     MinDropCount: 1
     MaxDropCount: 2
     DropChance: 1
+  - DropPrefabKey: Resource_Mineral_Coal
+    MinDropCount: 1
+    MaxDropCount: 1
+    DropChance: 0.35
+  - DropPrefabKey: Resource_Mineral_Flint
+    MinDropCount: 1
+    MaxDropCount: 1
+    DropChance: 0.3
+  - DropPrefabKey: Resource_Mineral_Iron
+    MinDropCount: 1
+    MaxDropCount: 1
+    DropChance: 0.18
+  - DropPrefabKey: Resource_Mineral_Gold
+    MinDropCount: 1
+    MaxDropCount: 1
+    DropChance: 0.06
   DropRadius: 0.5
   DropFxPrefabKey: 

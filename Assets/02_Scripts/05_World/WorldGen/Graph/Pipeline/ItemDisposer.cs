@@ -71,16 +71,18 @@ public class ItemDisposer : IGraphPipelineStage
             int targetCount = maxCount > minCount ? _prng.Next(minCount, maxCount + 1) : maxCount;
             if (targetCount == 0)
                 continue;
-
+                
+            int oversampleCount = Mathf.Min(node.OwnedTiles.Count, targetCount * 5);
             List<Vector2Int> poissonPoints = await PointSampler.GeneratePoissonPointsAsync(
                 node.OwnedTiles,
-                targetCount,
+                oversampleCount,
                 _disposeSettings.minObjectDistance,
                 _disposeSettings.maxSamplingAttempts,
                 _prng,
                 _ct);
 
-            for (int i = 0; i < poissonPoints.Count; i++)
+            int placedCount = 0;
+            for (int i = 0; i < poissonPoints.Count && placedCount < targetCount; i++)
             {
                 _ct.ThrowIfCancellationRequested();
 
@@ -88,6 +90,7 @@ public class ItemDisposer : IGraphPipelineStage
                 if (!IsOccupied(tile))
                 {
                     PlaceAndOccupy(rule.prefabKey, tile);
+                    placedCount++;
                 }
             }
         }
