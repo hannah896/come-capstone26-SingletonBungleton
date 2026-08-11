@@ -14,7 +14,7 @@ public class UI_WorldMiniMap : UI
     [SerializeField] private RectTransform _playerMarker;
 
     [Header("Marker Settings")]
-    [SerializeField] private bool _rotatePlayerMarker = true;
+    [SerializeField] private bool _rotatePlayerMarker = false;
     [SerializeField] private bool _hideMarkerOutsideWorld = true;
 
     [Header("Viewport Settings")]

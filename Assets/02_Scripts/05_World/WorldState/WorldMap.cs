@@ -191,16 +191,16 @@ public class WorldMap : MonoBehaviour
         {
             ct.ThrowIfCancellationRequested();
             string address = MapSpriteAddressPrefix + topKey;
-            Sprite sprite = await Extensions.LoadAssetAsync<Sprite>(address, AssetCacheType.NonRequired, ct);
-            if (sprite == null)
+            Texture2D texture = await Extensions.LoadAssetAsync<Texture2D>(address, AssetCacheType.NonRequired, ct);
+            if (texture == null)
             {
-                Debug.LogWarning($"[WorldMap] Map sprite Addressable was not found: {address}");
+                Debug.LogWarning($"[WorldMap] Map texture Addressable was not found: {address}");
                 continue;
             }
 
-            if (!MapTileSource.TryCreate(sprite, out MapTileSource tileSource))
+            if (!MapTileSource.TryCreate(texture, out MapTileSource tileSource))
             {
-                Debug.LogWarning($"[WorldMap] Map sprite needs Read/Write Enabled: {address}", sprite);
+                Debug.LogWarning($"[WorldMap] Map texture needs Read/Write Enabled: {address}", texture);
                 continue;
             }
 
@@ -266,11 +266,14 @@ public class WorldMap : MonoBehaviour
             _height = Mathf.Max(1, Mathf.FloorToInt(textureRect.height));
         }
 
-        public static bool TryCreate(Sprite sprite, out MapTileSource tileSource)
+        public static bool TryCreate(Texture2D texture, out MapTileSource tileSource)
         {
             tileSource = null;
-            if (sprite == null || sprite.texture == null || !sprite.texture.isReadable) return false;
-            tileSource = new MapTileSource(sprite.texture.GetPixels32(), sprite.texture.width, sprite.textureRect);
+            if (texture == null || !texture.isReadable) return false;
+            tileSource = new MapTileSource(
+                texture.GetPixels32(),
+                texture.width,
+                new Rect(0f, 0f, texture.width, texture.height));
             return true;
         }
 

@@ -11,7 +11,7 @@ public class UI_Popup_WorldMap : UI_Popup
     [SerializeField] private RectTransform _playerMarker;
 
     [Header("Marker Settings")]
-    [SerializeField] private bool _rotatePlayerMarker = true;
+    [SerializeField] private bool _rotatePlayerMarker = false;
     [SerializeField] private bool _hideMarkerOutsideWorld = true;
 
     private WorldMap _worldMap;
