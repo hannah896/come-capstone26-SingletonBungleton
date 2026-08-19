@@ -280,6 +280,51 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 41935a24714645659b3079086a37c116
+    m_Address: Dish_MeatStew
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e9a63fcecb254af6baee73fa41a3bcbe
+    m_Address: Dish_BerryJam
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c5bfe8aeee1f461f8bd34fc090c5c011
+    m_Address: Dish_BerryPie
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d5975a5aea84fd43915b4e14e1bbab7e
+    m_Address: Dish_FishSteak
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 563ac3f697064ed0895999f712e2d3cd
+    m_Address: Dish_MushroomSoup
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b908d74335fa48089afefefe0235aa16
+    m_Address: Dish_Omelette
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4290e3a1ffc44314a50b6f3850aec5ab
+    m_Address: Dish_Jerky
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2691251d3c8f4b219428cdb5f544abe5
+    m_Address: Dish_FlowerTea
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bead81a75b6f44c194dc0264bc063847
+    m_Address: Special_Rot
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: d49714acbe7dc4846b65422625851c9a, type: 2}
   m_SchemaSet:

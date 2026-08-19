@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -34,6 +35,7 @@ public class PlayerInventory : MonoBehaviour
     private PlayerInputData inputData;
     private Player owner;
     private int selectedSlotIndex;
+    private CharacterController characterController;
 
     private struct PickupCandidate
     {
@@ -57,6 +59,7 @@ public class PlayerInventory : MonoBehaviour
 
     private void Awake()
     {
+        characterController = GetComponent<CharacterController>();
         InitializeSlots();
     }
 
@@ -192,6 +195,52 @@ public class PlayerInventory : MonoBehaviour
         owner.Stat.RestoreEgo(itemData.egoRestore);
 
         return RemoveItem(itemData, 1);
+    }
+
+    /// <summary>슬롯의 아이템 전체(스택 통째로)를 플레이어 앞 땅에 드롭한다.</summary>
+    public bool DropFromSlot(int slotIndex)
+    {
+        if (!IsValidSlot(slotIndex)) return false;
+
+        ItemDataSO itemData = slots[slotIndex];
+        int amount = stackCounts[slotIndex];
+        if (itemData == null || amount <= 0) return false;
+
+        ClearSlot(slotIndex);
+        OnInventoryChanged?.Invoke();
+
+        SpawnDroppedItemAsync(itemData, amount).Forget();
+        return true;
+    }
+
+    private async UniTaskVoid SpawnDroppedItemAsync(ItemDataSO itemData, int amount)
+    {
+        string address = itemData.name;
+        GameObject dropObj = await Extensions.SpawnAsync(address, null);
+        if (dropObj == null)
+        {
+            Debug.LogWarning($"[Drop] SpawnAsync 실패: 주소 '{address}'로 스폰된 오브젝트가 없습니다. Addressables에 등록됐는지 확인하세요.");
+            return;
+        }
+
+        Vector3 feetPosition = transform.position;
+        if (characterController != null)
+            feetPosition.y += characterController.center.y - characterController.height * 0.5f;
+
+        Vector3 pos = feetPosition + transform.forward * 1.5f;
+        dropObj.transform.position = pos;
+
+        Item item = dropObj.GetComponent<Item>();
+        if (item == null)
+        {
+            Debug.LogWarning($"[Drop] '{address}' 프리팹에 Item 컴포넌트가 없습니다.");
+            return;
+        }
+
+        item.Init(itemData);
+        item.ResetToWorldTransform();
+        if (item.itemData is IStackable stackable)
+            stackable.stackCount = Mathf.Max(1, amount);
     }
 
     public bool EquipFromSlot(int slotIndex)
@@ -759,11 +808,28 @@ public class PlayerInventory : MonoBehaviour
     }
 
     /// <summary>
-    /// 레이캐스트 히트를 데미지 가능한 대상(자원 채집 노드 또는 몬스터)으로 해석한다.
+    /// 레이캐스트 히트를 데미지 가능한 대상(자원 채집 노드, 몬스터, 망치로 부술 구조물)으로 해석한다.
     /// apply가 true면 실제로 데미지를 적용하고, false면 가능 여부만 확인한다(UI 판정용).
     /// </summary>
     private bool TryDamageHitTarget(RaycastHit hit, ItemDataSO handItem, ActionType actionType, bool apply)
     {
+        if (actionType == ActionType.Build)
+        {
+            Structure structure = hit.collider.GetComponentInParent<Structure>();
+            if (structure != null)
+            {
+                if (!structure.CanDemolish()) return false;
+                if (apply) structure.Demolish();
+                return true;
+            }
+            Item placedItem = hit.collider.GetComponentInParent<Item>();
+            if (placedItem != null && placedItem.ItemDataSO != null && placedItem.ItemDataSO.itemType == ItemType.Structure)
+            {
+                if (apply) Destroy(placedItem.gameObject);
+                return true;
+            }
+        }
+
         int damage = Mathf.Max(1, Mathf.RoundToInt(handItem.attackDamage));
         var ctx = new DamageContext(gameObject, hit.point, damage, handItem.itemID, actionType, handItem.harvestableNodeTypes);
 

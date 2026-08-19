@@ -25,9 +25,33 @@ public class Item : MonoBehaviour
     /// <summary>SO 참조. itemData가 있으면 거기서, 없으면 _itemSO 직접 반환.</summary>
     public ItemDataSO ItemDataSO => itemData?.data ?? _itemSO;
 
+    // 풀링된 오브젝트가 장착 뷰(손 위치 맞춤용 축소/회전)로 쓰인 뒤에도
+    // 로컬 스케일/회전이 남아있으므로, 최초 생성 시점의 값을 기억해뒀다가 월드 배치 시 복원한다.
+    [System.NonSerialized] private Vector3 _originalLocalScale = Vector3.one;
+    [System.NonSerialized] private Quaternion _originalLocalRotation = Quaternion.identity;
+    [System.NonSerialized] private bool _originalTransformCached;
+
     private void Awake()
     {
+        CacheOriginalLocalTransform();
         Init();
+    }
+
+    private void CacheOriginalLocalTransform()
+    {
+        if (_originalTransformCached) return;
+        _originalLocalScale = transform.localScale;
+        _originalLocalRotation = transform.localRotation;
+        _originalTransformCached = true;
+    }
+
+    /// <summary>장착 뷰 등으로 변형된 로컬 스케일/회전을 프리팹 원본 상태로 되돌린다.
+    /// 위치는 호출부에서 별도로 설정한다 (드롭/월드 배치 시 사용).</summary>
+    public void ResetToWorldTransform()
+    {
+        CacheOriginalLocalTransform();
+        transform.localScale = _originalLocalScale;
+        transform.localRotation = _originalLocalRotation;
     }
 
     protected virtual void Init()
@@ -41,13 +65,33 @@ public class Item : MonoBehaviour
         stackCount = Mathf.Max(1, stackCount);
         itemData = ItemData.CreateFromSO(_itemSO, stackCount);
 
-        gameObject.layer = ItemTypeToLayer(_itemSO.itemType);
-
-        // 줍기용 콜라이더를 트리거로 설정
-        Collider col = GetComponent<Collider>();
-        if (col != null) col.isTrigger = true;
+        ResetWorldViewState(_itemSO.itemType);
 
         BindTorchLight();
+    }
+
+    /// <summary>
+    /// 풀에서 재사용되는 오브젝트가 장착 뷰(ViewModel 레이어, 비활성 콜라이더) 상태로
+    /// 남아있을 수 있으므로, 월드에 놓일 때마다 레이어/콜라이더를 재귀적으로 원복한다.
+    /// </summary>
+    private void ResetWorldViewState(ItemType itemType)
+    {
+        int layer = ItemTypeToLayer(itemType);
+        SetLayerRecursively(transform, layer);
+
+        Collider[] colliders = GetComponentsInChildren<Collider>(true);
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            colliders[i].enabled = true;
+            colliders[i].isTrigger = true;
+        }
+    }
+
+    private static void SetLayerRecursively(Transform t, int layer)
+    {
+        t.gameObject.layer = layer;
+        for (int i = 0; i < t.childCount; i++)
+            SetLayerRecursively(t.GetChild(i), layer);
     }
 
     // 12=Structure, 17=Resource, 18=Booty, 19=Food(Dish/Special 포함), 20=Equipment(SurvivalTool/CombatGear)
@@ -101,10 +145,8 @@ public class Item : MonoBehaviour
         _itemSO = so;
         stackCount = 1;
         itemData = ItemData.CreateFromSO(so, stackCount);
-        gameObject.layer = ItemTypeToLayer(so.itemType);
 
-        Collider col = GetComponent<Collider>();
-        if (col != null) col.isTrigger = true;
+        ResetWorldViewState(so.itemType);
 
         BindTorchLight();
     }
