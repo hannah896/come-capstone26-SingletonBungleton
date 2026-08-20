@@ -1,5 +1,6 @@
 using Cysharp.Threading.Tasks;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 
@@ -34,7 +35,11 @@ public class WorldGenManager : MonoBehaviour
 
     private const string PLAYER_ADDRESSKEY = "Player";
     private const string GROUND_LAYER_NAME = "Ground";
+    private const string INVISIBLE_WALL_ADDRESSKEY = "InvisibleWall";
+    private const float COAST_WALL_THICKNESS = 2.0f;            //벽 두께
     private GameObject _playerInstance;
+    private GameObject _coastBoundaryRoot;
+    private readonly List<GameObject> _coastWalls = new();
 
     [SerializeField] private int _currentSeed = 0;            // 현재 유지 중인 시드값
 
@@ -54,6 +59,7 @@ public class WorldGenManager : MonoBehaviour
     {
         _cts?.Cancel();
         _cts?.Dispose();
+        ClearCoastBoundaries();
     }
 
     async void Start()
@@ -152,6 +158,8 @@ public class WorldGenManager : MonoBehaviour
             ? CancellationTokenSource.CreateLinkedTokenSource(external)
             : new CancellationTokenSource();
 
+        ClearCoastBoundaries();
+
         if (!_isWorldSettingsLoaded || _worldSettings == null)
         {
             Debug.LogWarning("WorldSettings가 아직 로드되지 않았습니다.");
@@ -175,6 +183,9 @@ public class WorldGenManager : MonoBehaviour
 
             var graphData = _worldGraphDirector.GetWorldGraphData();
             var logicData = _worldGraphDirector.GetWorldLogicData();
+
+            ReportProgress(0.3f, "해안 경계 생성");
+            await BuildCoastBoundariesAsync(logicData, _cts.Token);
 
             if (_worldMap == null)
                 _worldMap = WorldMap.Instance ?? Extensions.GetOrAddComponent<WorldMap>(this.gameObject);
@@ -283,6 +294,144 @@ public class WorldGenManager : MonoBehaviour
         catch (OperationCanceledException)
         {
             Debug.Log("맵 생성 취소됨");
+        }
+    }
+
+    /// <summary>
+    /// 논리 월드의 육지-바다 경계에 InvisibleWall을 생성합니다.
+    /// 같은 방향으로 이어진 타일 경계는 하나의 벽으로 병합합니다.
+    /// </summary>
+    private async UniTask BuildCoastBoundariesAsync(WorldLogicData logicData, CancellationToken ct)
+    {
+        if (logicData?.TerritoryWorld == null) return;
+
+        _coastBoundaryRoot = new GameObject("@WorldCoastBoundary");
+        _coastBoundaryRoot.transform.SetParent(transform, false);
+
+        int width = logicData.TerrainSize.x;
+        int height = logicData.TerrainSize.y;
+        float seaLevel = _worldSettings.GetHeight(HeightLevel.Ocean);
+
+        // 남쪽/북쪽 해안: X 방향으로 이어진 타일 경계를 하나의 벽으로 병합
+        for (int z = 0; z < height; z++)
+        {
+            await SpawnHorizontalCoastSegmentsAsync(logicData, z, -1, z, seaLevel, ct);
+            await SpawnHorizontalCoastSegmentsAsync(logicData, z, 1, z + 1, seaLevel, ct);
+        }
+
+        // 서쪽/동쪽 해안: Z 방향으로 이어진 타일 경계를 하나의 벽으로 병합
+        for (int x = 0; x < width; x++)
+        {
+            await SpawnVerticalCoastSegmentsAsync(logicData, x, -1, x, seaLevel, ct);
+            await SpawnVerticalCoastSegmentsAsync(logicData, x, 1, x + 1, seaLevel, ct);
+        }
+
+        Debug.Log($"[WorldGenManager] 해안 투명벽 {_coastWalls.Count}개 생성 완료");
+    }
+
+    private async UniTask SpawnHorizontalCoastSegmentsAsync(
+        WorldLogicData logicData,
+        int z,
+        int oceanDirectionZ,
+        float wallZ,
+        float seaLevel,
+        CancellationToken ct)
+    {
+        int width = logicData.TerrainSize.x;
+
+        for (int x = 0; x < width;)
+        {
+            if (!IsCoastEdge(logicData, x, z, 0, oceanDirectionZ))
+            {
+                x++;
+                continue;
+            }
+
+            int startX = x;
+            while (x < width && IsCoastEdge(logicData, x, z, 0, oceanDirectionZ))
+                x++;
+
+            float segmentLength = x - startX;
+            Vector3 position = new Vector3(startX + segmentLength * 0.5f, seaLevel, wallZ);
+            Vector3 scale = new Vector3(segmentLength, 1f, COAST_WALL_THICKNESS);
+            await SpawnCoastWallAsync(position, scale, ct);
+        }
+    }
+
+    private async UniTask SpawnVerticalCoastSegmentsAsync(
+        WorldLogicData logicData,
+        int x,
+        int oceanDirectionX,
+        float wallX,
+        float seaLevel,
+        CancellationToken ct)
+    {
+        int height = logicData.TerrainSize.y;
+
+        for (int z = 0; z < height;)
+        {
+            if (!IsCoastEdge(logicData, x, z, oceanDirectionX, 0))
+            {
+                z++;
+                continue;
+            }
+
+            int startZ = z;
+            while (z < height && IsCoastEdge(logicData, x, z, oceanDirectionX, 0))
+                z++;
+
+            float segmentLength = z - startZ;
+            Vector3 position = new Vector3(wallX, seaLevel, startZ + segmentLength * 0.5f);
+            Vector3 scale = new Vector3(COAST_WALL_THICKNESS, 1f, segmentLength);
+            await SpawnCoastWallAsync(position, scale, ct);
+        }
+    }
+
+    private static bool IsCoastEdge(WorldLogicData logicData, int x, int z, int neighborOffsetX, int neighborOffsetZ)
+    {
+        if (logicData.TerritoryWorld[x, z] < 0) return false;
+
+        // Influence Map 생성 단계에서 바다와 직접 맞닿은 육지는 거리 1로 기록된다.
+        if (logicData.DistanceToOceanWorld != null && logicData.DistanceToOceanWorld[x, z] != 1)
+            return false;
+
+        int neighborX = x + neighborOffsetX;
+        int neighborZ = z + neighborOffsetZ;
+        bool isOutsideWorld = neighborX < 0 || neighborX >= logicData.TerrainSize.x ||
+                              neighborZ < 0 || neighborZ >= logicData.TerrainSize.y;
+
+        return isOutsideWorld || logicData.TerritoryWorld[neighborX, neighborZ] < 0;
+    }
+
+    private async UniTask SpawnCoastWallAsync(Vector3 position, Vector3 scale, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        GameObject wall = await Extensions.SpawnAsync(
+            INVISIBLE_WALL_ADDRESSKEY,
+            _coastBoundaryRoot.transform,
+            ct);
+
+        if (wall == null) return;
+
+        wall.transform.SetPositionAndRotation(position, Quaternion.identity);
+        wall.transform.localScale = scale;
+        _coastWalls.Add(wall);
+    }
+
+    private void ClearCoastBoundaries()
+    {
+        foreach (GameObject wall in _coastWalls)
+        {
+            if (wall != null)
+                Extensions.Despawn(wall);
+        }
+        _coastWalls.Clear();
+
+        if (_coastBoundaryRoot != null)
+        {
+            Destroy(_coastBoundaryRoot);
+            _coastBoundaryRoot = null;
         }
     }
 

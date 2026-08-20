@@ -50,6 +50,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c9e0045390b23aa46ac610f3c34427a8
+    m_Address: InvisibleWall
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: da9da4afc993f8b44a6b9bd966acf87b
     m_Address: MischiefProjectile
     m_ReadOnly: 0
