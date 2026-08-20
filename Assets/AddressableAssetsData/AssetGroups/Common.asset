@@ -20,6 +20,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 209dc28566c24c6eac26551c122a7266
+    m_Address: Meteor
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 2c50d873c029ef243a017465c51035ba
     m_Address: Canvas_View
     m_ReadOnly: 0
@@ -47,11 +52,6 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: da9da4afc993f8b44a6b9bd966acf87b
     m_Address: MischiefProjectile
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 209dc28566c24c6eac26551c122a7266
-    m_Address: Meteor
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

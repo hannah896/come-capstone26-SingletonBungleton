@@ -24,6 +24,10 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3473216237549268998, guid: bc5c481d3a398cb4e8fec578a74e4039, type: 3}
+      propertyPath: m_ScaleInLightmap
+      value: 0.6037292
+      objectReference: {fileID: 0}
     - target: {fileID: 6041328239126204732, guid: bc5c481d3a398cb4e8fec578a74e4039, type: 3}
       propertyPath: m_Name
       value: ResourceNode_Branch
@@ -72,6 +76,10 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 9032151823108704122, guid: bc5c481d3a398cb4e8fec578a74e4039, type: 3}
+      propertyPath: m_ScaleInLightmap
+      value: 0.6035529
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -92,7 +100,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 143484242401853473}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f5c8248aefc786f42867b9bcb7ede0f2, type: 3}
   m_Name: 
