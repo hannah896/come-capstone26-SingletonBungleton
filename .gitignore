@@ -79,4 +79,5 @@ crashlytics-build.properties
 /.codex
 /.gemini
 /.claude
-/docs
+/docs/*
+!/docs/기획_상위작업대_레시피.md
