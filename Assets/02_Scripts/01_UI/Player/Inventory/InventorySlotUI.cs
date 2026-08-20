@@ -85,8 +85,9 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler
 
         if (eventData.button == PointerEventData.InputButton.Right)
         {
-            if (!isEquipmentSlot)
-                playerInventory.EatFromSlot(slotIndex);
+            // 음식/요리면 먹기, 아니면 바닥에 드롭
+            if (!isEquipmentSlot && !playerInventory.EatFromSlot(slotIndex))
+                playerInventory.DropFromSlot(slotIndex);
             return;
         }
 

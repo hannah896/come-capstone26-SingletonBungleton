@@ -22,4 +22,12 @@ MonoBehaviour:
   - ruleName: Branch
     prefabKey: ResourceNode_Branch
     density: 0.1
-  ItemRules: []
+  ItemRules:
+  - ruleName: Grass
+    prefabKey: Resource_Plant_Grass
+    minCount: 10
+    maxCount: 20
+  - ruleName: Flower
+    prefabKey: Resource_Flower
+    minCount: 10
+    maxCount: 20

@@ -28,12 +28,4 @@ MonoBehaviour:
   - ruleName: Bush
     prefabKey: ResourceNode_Bush
     density: 0.023
-  ItemRules:
-  - ruleName: Flint
-    prefabKey: Resource_Mineral_Flint
-    minCount: 20
-    maxCount: 30
-  - ruleName: Stone
-    prefabKey: Resource_Mineral_Stone
-    minCount: 10
-    maxCount: 20
+  ItemRules: []

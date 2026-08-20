@@ -37,6 +37,16 @@ public abstract class StorageStation : StationBase
         OnInteract(context);
     }
 
+    /// <summary>보관함은 비어있을 때만 부술 수 있다.</summary>
+    public override bool CanDemolish()
+    {
+        for (int i = 0; i < slots.Count; i++)
+            if (slots[i] != null && stackCounts[i] > 0)
+                return false;
+
+        return true;
+    }
+
     protected virtual void OnInteract(InteractionContext context) { }
 
     // 상자에 아이템을 추가하는 메서드, 남은 개수 반환, 성공 여부 반환

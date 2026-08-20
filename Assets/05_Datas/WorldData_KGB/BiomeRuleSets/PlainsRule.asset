@@ -25,4 +25,12 @@ MonoBehaviour:
   - ruleName: Bush
     prefabKey: ResourceNode_Bush
     density: 0.1
-  ItemRules: []
+  ItemRules:
+  - ruleName: Flower
+    prefabKey: Resource_Flower
+    minCount: 10
+    maxCount: 20
+  - ruleName: Grass
+    prefabKey: Resource_Plant_Grass
+    minCount: 10
+    maxCount: 20
