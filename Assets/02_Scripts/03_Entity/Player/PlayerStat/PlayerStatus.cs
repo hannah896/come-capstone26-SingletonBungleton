@@ -124,13 +124,13 @@ public class PlayerStatus
     }
 
     public void RestoreHunger(float amount)
-        => CurrentHunger = Mathf.Min(CurrentHunger + amount, MaxHunger);
+        => CurrentHunger = Mathf.Clamp(CurrentHunger + amount, 0f, MaxHunger);
 
     public void RestoreHp(float amount)
-        => CurrentHp = Mathf.Min(CurrentHp + amount, MaxHp);
+        => CurrentHp = Mathf.Clamp(CurrentHp + amount, 0f, MaxHp);
 
     public void RestoreEgo(float amount)
-        => CurrentEgo = Mathf.Min(CurrentEgo + amount, MaxEgo);
+        => CurrentEgo = Mathf.Clamp(CurrentEgo + amount, 0f, MaxEgo);
 
     public bool IsDead => !Invincible && CurrentHp <= 0f;
 }
