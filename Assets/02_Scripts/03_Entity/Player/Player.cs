@@ -105,6 +105,7 @@ public class Player : MonoBehaviour, IDamageable
         var handler = Main.Input.GetOrCreateAction<InputActions_PlayerInputHandler>();
         handler.Bind(this, inputData);
         Main.Input.AddInput<InputActions_PlayerInputHandler>();
+        Main.Input.AddInput<UIMapInputHandler>();       // UI 핸들러 추가함.
 
         // 1인칭 카메라 컨트롤러 바인딩 및 카메라 동적 생성
         fpCameraController?.Bind(inputData, transform);
@@ -143,7 +144,10 @@ public class Player : MonoBehaviour, IDamageable
         Main.Loop.OnGameUpdate -= OnLoopGameUpdate;
         Main.Loop.OnUpdate -= OnLoopUpdate;
         if (IsLocalPlayerObject() && Main.Input != null)
+        {
             Main.Input.RemoveInput<InputActions_PlayerInputHandler>();
+            Main.Input.RemoveInput<UIMapInputHandler>();                // UI 핸들러 
+        }
     }
 
     private void OnLoopUpdate(float deltaTime)

@@ -4,7 +4,7 @@ using UnityEngine;
 /// <see cref="WorldClock"/>의 상태를 화면에 표시하는 View다.
 /// 시간 계산과 저장은 WorldClock이 담당하며 이 클래스는 이벤트를 구독해 표시만 갱신한다.
 /// </summary>
-public class UI_WorldClock : UI
+public class UI_Panel_WorldClock : UI_Panel
 {
     [Header("Texts")]
     [SerializeField] private UI_Text _dayText;

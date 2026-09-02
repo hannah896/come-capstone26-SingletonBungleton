@@ -4,7 +4,7 @@ using UnityEngine;
 /// <see cref="WorldMap"/>의 데이터를 표시하는 HUD View다.
 /// 텍스처 생성과 소유는 WorldMap이 담당하며, 이 클래스는 표시와 플레이어 마커만 담당한다.
 /// </summary>
-public class UI_WorldMiniMap : UI
+public class UI_Panel_WorldMiniMap : UI_Panel
 {
     [Header("UI References")]
     [Tooltip("런타임 미니맵 Sprite를 표시할 UI_Image입니다. 프레임 이미지는 별도 오브젝트로 두세요.")]

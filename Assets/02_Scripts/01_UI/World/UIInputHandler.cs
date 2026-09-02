@@ -4,14 +4,14 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// UI/OpenMap 입력으로 전체 지도 팝업을 열고 닫는다.
-/// InputManager에 등록될 때만 UI Action을 구독한다.
+/// UI 입력 콜백을 받는다.
 /// </summary>
 public sealed class UIMapInputHandler : InputActions
 {
     private UI_Popup_WorldMap _worldMapPopup;
     private bool _isConnected;
     private bool _isToggling;
+
 
     public UIMapInputHandler(InputManager manager) : base(manager)
     {

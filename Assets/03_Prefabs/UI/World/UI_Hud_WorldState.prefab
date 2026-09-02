@@ -139,8 +139,9 @@ GameObject:
   - component: {fileID: 2367524838131564681}
   - component: {fileID: 2316745604204088351}
   - component: {fileID: 9043542375867864514}
+  - component: {fileID: 823330604607873201}
   m_Layer: 5
-  m_Name: UI_WorldState
+  m_Name: UI_Hud_WorldState
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -207,6 +208,27 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &823330604607873201
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7848696186374094305}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2b22d8949dbf92479dbc6146a0b8ad8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  OnOpenEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  OnCloseEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  _worldClockView: {fileID: 0}
+  _worldMiniMapView: {fileID: 0}
+  _target: {fileID: 0}
 --- !u!1001 &822099407372688277
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -466,6 +488,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1487a0391b0c4a4a894814e60fbce7a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  OnOpenEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  OnCloseEvent:
+    m_PersistentCalls:
+      m_Calls: []
   _mapImage: {fileID: 0}
   _mapViewport: {fileID: 0}
   _playerMarker: {fileID: 3696952947482990742}
@@ -602,6 +630,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1c277719b94f2a24d96c7fe961e08fe0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  OnOpenEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  OnCloseEvent:
+    m_PersistentCalls:
+      m_Calls: []
   _dayText: {fileID: 0}
   _timeText: {fileID: 0}
   _phaseText: {fileID: 0}

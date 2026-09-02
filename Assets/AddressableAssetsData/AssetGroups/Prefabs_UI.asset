@@ -30,6 +30,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2f3f09661c91a894b83543e325211ba1
+    m_Address: UI_Popup_WorldMap
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 37905398519c0a049b888e714dd5c1d7
     m_Address: UI_Screen_StartLoading
     m_ReadOnly: 0
