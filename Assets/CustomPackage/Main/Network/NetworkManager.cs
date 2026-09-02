@@ -35,6 +35,10 @@ public class NetworkManager : CoreManager
     // 로컬 플레이어 이름
     private string _playerName = "Player";
 
+    // 방 탐색/생성이 공유하는 커스텀 로비 이름.
+    // 호스트가 같은 로비에 세션을 만들어야 탐색 목록에 보인다.
+    private const string DEFAULT_LOBBY = "default";
+
     #endregion
 
 #if PHOTON_FUSION
@@ -238,7 +242,7 @@ public class NetworkManager : CoreManager
     /// Fusion 로비에 접속합니다.
     /// 접속 후 세션 목록을 탐색할 수 있습니다.
     /// </summary>
-    public async UniTask<bool> ConnectToLobbyAsync(string lobbyName = "default")
+    public async UniTask<bool> ConnectToLobbyAsync(string lobbyName = DEFAULT_LOBBY)
     {
         if (State != NetworkState.Disconnected)
         {
@@ -279,6 +283,8 @@ public class NetworkManager : CoreManager
     {
         _maxPlayers = args.MaxPlayers;
 
+        // 로비 탐색 등에 이미 쓴 러너는 StartGame에 재사용할 수 없다 → 항상 새 러너로 시작한다.
+        await CleanupRunner();
         EnsureRunner();
 
         SetState(NetworkState.Connecting);
@@ -298,6 +304,7 @@ public class NetworkManager : CoreManager
             SessionName = args.RoomName,
             PlayerCount = args.MaxPlayers,
             SessionProperties = sessionProps,
+            CustomLobbyName = DEFAULT_LOBBY,
             ObjectProvider = _runner.GetComponent<FusionPoolProvider>()
         };
 
@@ -327,6 +334,8 @@ public class NetworkManager : CoreManager
     /// </summary>
     public async UniTask<bool> JoinRoomAsync(RoomJoinArgs args)
     {
+        // 로비 탐색에 쓴 러너를 그대로 StartGame에 넘기면 "NetworkRunner should not be reused"가 발생한다.
+        await CleanupRunner();
         EnsureRunner();
 
         SetState(NetworkState.Connecting);
@@ -336,6 +345,7 @@ public class NetworkManager : CoreManager
             // Host 모드 세션의 참가자는 Client로 접속한다 (Host로 시작하면 참가가 아니라 새 세션 생성 시도가 된다)
             GameMode = GameMode.Client,
             SessionName = args.RoomName,
+            CustomLobbyName = DEFAULT_LOBBY,
             ObjectProvider = _runner.GetComponent<FusionPoolProvider>()
         };
 
@@ -692,6 +702,10 @@ public class NetworkManager : CoreManager
         _runner = go.AddComponent<NetworkRunner>();
         _runner.ProvideInput = true;
 
+        // NetworkManager는 MonoBehaviour가 아니어서 러너 오브젝트에서 자동 탐색되지 않는다.
+        // 명시적으로 등록해야 OnSessionListUpdated/OnPlayerJoined/OnShutdown 등이 호출된다.
+        _runner.AddCallbacks(this);
+
         if (!go.TryGetComponent<FusionPoolProvider>(out _))
         {
             go.AddComponent<FusionPoolProvider>();
@@ -731,7 +745,7 @@ public class NetworkManager : CoreManager
     /// 방 목록 탐색을 시작합니다. 아직 로비에 없으면 로비에 접속합니다.
     /// 접속 후 방 목록은 OnRoomListUpdated 이벤트로 전달됩니다.
     /// </summary>
-    public async UniTask<bool> BrowseRoomsAsync(string lobbyName = "default")
+    public async UniTask<bool> BrowseRoomsAsync(string lobbyName = DEFAULT_LOBBY)
     {
 #if PHOTON_FUSION
         if (State >= NetworkState.InLobby) return true;

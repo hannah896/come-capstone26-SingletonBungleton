@@ -35,6 +35,7 @@ public class PlayerInventory : MonoBehaviour
     private PlayerInputData inputData;
     private Player owner;
     private int selectedSlotIndex;
+    private int hoveredSlotIndex = -1;
     private CharacterController characterController;
 
     private struct PickupCandidate
@@ -102,6 +103,22 @@ public class PlayerInventory : MonoBehaviour
             if (!TryCookAtBonfire())
                 TryUseEquippedHandTool();
         }
+
+        if (inputData.DropPressed && hoveredSlotIndex >= 0)
+            DropFromSlot(hoveredSlotIndex);
+    }
+
+    /// <summary>인벤토리 슬롯 UI가 마우스로 가리켜질 때 등록한다 (드롭 단축키 대상 지정용).</summary>
+    public void SetHoveredSlot(int slotIndex)
+    {
+        hoveredSlotIndex = slotIndex;
+    }
+
+    /// <summary>가리키던 슬롯에서 마우스가 벗어나면 해제한다. 다른 슬롯이 이미 등록됐다면 무시한다.</summary>
+    public void ClearHoveredSlot(int slotIndex)
+    {
+        if (hoveredSlotIndex == slotIndex)
+            hoveredSlotIndex = -1;
     }
 
     public void SetSlotCount(int count)
@@ -180,14 +197,15 @@ public class PlayerInventory : MonoBehaviour
         return count;
     }
 
-    /// <summary>슬롯의 Food/Dish 아이템을 1개 먹어서 허기/체력/Ego를 회복하고 소모한다.</summary>
+    /// <summary>슬롯의 Food/Dish 아이템, 또는 회복 수치가 설정된 생자원(열매 등)을
+    /// 1개 먹어서 허기/체력/Ego를 회복하고 소모한다.</summary>
     public bool EatFromSlot(int slotIndex)
     {
         if (!IsValidSlot(slotIndex)) return false;
 
         ItemDataSO itemData = slots[slotIndex];
         if (itemData == null || stackCounts[slotIndex] <= 0) return false;
-        if (itemData.itemType != ItemType.Food && itemData.itemType != ItemType.Dish) return false;
+        if (!IsEdible(itemData)) return false;
         if (owner == null || owner.Stat == null) return false;
 
         owner.Stat.RestoreHunger(itemData.hungerRestore);
@@ -195,6 +213,16 @@ public class PlayerInventory : MonoBehaviour
         owner.Stat.RestoreEgo(itemData.egoRestore);
 
         return RemoveItem(itemData, 1);
+    }
+
+    /// <summary>Food/Dish는 항상 먹을 수 있고, 자원(Resource)은 회복 수치가 하나라도 설정돼 있으면 생으로 먹을 수 있다.</summary>
+    private static bool IsEdible(ItemDataSO itemData)
+    {
+        if (itemData.itemType == ItemType.Food || itemData.itemType == ItemType.Dish)
+            return true;
+
+        return itemData.itemType == ItemType.Resource
+            && (itemData.hungerRestore != 0 || itemData.healthRestore != 0 || itemData.egoRestore != 0);
     }
 
     /// <summary>슬롯의 아이템 전체(스택 통째로)를 플레이어 앞 땅에 드롭한다.</summary>

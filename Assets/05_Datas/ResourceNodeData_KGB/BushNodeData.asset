@@ -17,11 +17,11 @@ MonoBehaviour:
   MaxHealth: 2
   GatherAmount: 1
   RespawnTime: 120
-  RequiredTool: 3
+  RequiredTool: 1
   Drops:
   - DropPrefabKey: Resource_Berry
-    MinDropCount: 1
-    MaxDropCount: 1
+    MinDropCount: 3
+    MaxDropCount: 3
     DropChance: 1
   DropRadius: 0.5
   DropFxPrefabKey: 

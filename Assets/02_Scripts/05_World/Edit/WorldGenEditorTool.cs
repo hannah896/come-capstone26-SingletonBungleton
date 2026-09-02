@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
@@ -170,3 +171,4 @@ public class WorldGenEditorTool : EditorWindow
         return isLoaded && hasSettings;
     }
 }
+#endif

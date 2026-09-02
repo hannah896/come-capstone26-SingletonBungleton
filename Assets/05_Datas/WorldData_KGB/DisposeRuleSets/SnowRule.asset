@@ -22,5 +22,5 @@ MonoBehaviour:
   ItemRules:
   - ruleName: Ice
     prefabKey: Resource_Ice
-    minCount: 10
-    maxCount: 20
+    minCount: 125
+    maxCount: 200

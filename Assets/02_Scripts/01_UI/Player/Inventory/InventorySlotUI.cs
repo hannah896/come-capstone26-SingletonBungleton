@@ -6,7 +6,7 @@ using UnityEngine.UI;
 using UnityEditor;
 #endif
 
-public class InventorySlotUI : MonoBehaviour, IPointerClickHandler
+public class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
     [Header("UI 연결")]
     [SerializeField] private Image iconImage;
@@ -85,9 +85,9 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler
 
         if (eventData.button == PointerEventData.InputButton.Right)
         {
-            // 음식/요리면 먹기, 아니면 바닥에 드롭
-            if (!isEquipmentSlot && !playerInventory.EatFromSlot(slotIndex))
-                playerInventory.DropFromSlot(slotIndex);
+            // 음식/요리면 우클릭으로 먹기.
+            if (!isEquipmentSlot)
+                playerInventory.EatFromSlot(slotIndex);
             return;
         }
 
@@ -101,6 +101,25 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler
         }
 
         playerInventory.EquipFromSlot(slotIndex);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (playerInventory == null || isEquipmentSlot) return;
+        playerInventory.SetHoveredSlot(slotIndex);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        if (playerInventory == null || isEquipmentSlot) return;
+        playerInventory.ClearHoveredSlot(slotIndex);
+    }
+
+    private void OnDisable()
+    {
+        // 인벤토리 패널이 닫히는 등 비활성화될 때는 OnPointerExit이 보장되지 않으므로 직접 해제한다.
+        if (playerInventory != null && !isEquipmentSlot)
+            playerInventory.ClearHoveredSlot(slotIndex);
     }
 
     private void RefreshItem(ItemDataSO itemData, int stack, bool showStackCount)

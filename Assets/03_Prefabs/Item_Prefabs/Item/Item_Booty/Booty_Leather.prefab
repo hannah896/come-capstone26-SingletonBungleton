@@ -29,10 +29,10 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -0.0012942031, y: -0.056878805, z: -0.0018348098}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 293931370998894212}
+  - {fileID: 6}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &2271463231403333722
@@ -54,8 +54,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 2.1617327, y: 0.141705, z: 1.8236163}
+  m_Center: {x: -0.008669615, y: 0.030343816, z: 0.021674037}
 --- !u!54 &5095994552672582182
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -106,14 +106,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 5541609746803961588}
     m_Modifications:
-    - target: {fileID: 3625143569556012176, guid: b05ce44a5642b8a479c537fe3f0b1245, type: 3}
-      propertyPath: m_Name
-      value: P_PROP_rug_interior_08
-      objectReference: {fileID: 0}
-    - target: {fileID: 3625143569556012176, guid: b05ce44a5642b8a479c537fe3f0b1245, type: 3}
-      propertyPath: m_Layer
-      value: 18
-      objectReference: {fileID: 0}
     - target: {fileID: 293931370998894211, guid: b05ce44a5642b8a479c537fe3f0b1245, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -154,12 +146,20 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3625143569556012176, guid: b05ce44a5642b8a479c537fe3f0b1245, type: 3}
+      propertyPath: m_Name
+      value: P_PROP_rug_interior_08
+      objectReference: {fileID: 0}
+    - target: {fileID: 3625143569556012176, guid: b05ce44a5642b8a479c537fe3f0b1245, type: 3}
+      propertyPath: m_Layer
+      value: 18
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b05ce44a5642b8a479c537fe3f0b1245, type: 3}
---- !u!4 &293931370998894212 stripped
+--- !u!4 &6 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 293931370998894211, guid: b05ce44a5642b8a479c537fe3f0b1245, type: 3}
   m_PrefabInstance: {fileID: 293931370998894213}
