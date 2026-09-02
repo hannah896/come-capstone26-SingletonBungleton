@@ -27,6 +27,9 @@ public class ResourceNodeData : ScriptableObject
 
     public float DropRadius = 0.5f;
     public string DropFxPrefabKey;
+
+    [Tooltip("체크하면 드롭 아이템을 땅에 흩뿌리지 않고 채집한 플레이어의 인벤토리에 바로 넣는다.")]
+    public bool GatherDirectlyToInventory = false;
     private void OnValidate()
     {
         Name = name;

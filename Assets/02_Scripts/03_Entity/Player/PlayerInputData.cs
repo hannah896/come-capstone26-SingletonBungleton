@@ -26,6 +26,7 @@ public class PlayerInputData
     public bool PickupPressed { get; set; }
     public bool EquipSelectedPressed { get; set; }
     public bool ToolUsePressed { get; set; }
+    public bool DropPressed { get; set; }
     public int QuickSlotIndex { get; set; } = -1;
     public int QuickSlotScrollDelta { get; set; }
 
@@ -51,6 +52,7 @@ public class PlayerInputData
         PickupPressed = false;
         EquipSelectedPressed = false;
         ToolUsePressed = false;
+        DropPressed = false;
         QuickSlotIndex = -1;
         QuickSlotScrollDelta = 0;
     }
@@ -70,6 +72,7 @@ public class PlayerInputData
         PickupPressed = false;
         EquipSelectedPressed = false;
         ToolUsePressed = false;
+        DropPressed = false;
         QuickSlotIndex = -1;
         QuickSlotScrollDelta = 0;
     }

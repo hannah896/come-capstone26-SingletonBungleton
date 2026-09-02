@@ -82,6 +82,7 @@ public class ItemDisposer : IGraphPipelineStage
                 _ct);
 
             int placedCount = 0;
+            int occupiedSkips = 0;
             for (int i = 0; i < poissonPoints.Count && placedCount < targetCount; i++)
             {
                 _ct.ThrowIfCancellationRequested();
@@ -92,7 +93,14 @@ public class ItemDisposer : IGraphPipelineStage
                     PlaceAndOccupy(rule.prefabKey, tile);
                     placedCount++;
                 }
+                else
+                {
+                    occupiedSkips++;
+                }
             }
+
+            Debug.Log($"🌿 [ItemDisposer] '{rule.prefabKey}' 목표={targetCount}, 배치={placedCount}, " +
+                      $"점유로스킵={occupiedSkips}, 푸아송점={poissonPoints.Count}, 노드타일={node.OwnedTiles.Count}");
         }
     }
 
