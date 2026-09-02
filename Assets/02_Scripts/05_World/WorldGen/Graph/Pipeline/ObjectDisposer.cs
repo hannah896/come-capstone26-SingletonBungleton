@@ -60,7 +60,7 @@ public class ObjectDisposer : IGraphPipelineStage
         if (ruleSet == null || ruleSet.ObjectRules == null || ruleSet.ObjectRules.Count == 0)
             return;
 
-        foreach (ObjectDisposeRule rule in ruleSet.ObjectRules)
+        foreach (DensityDisposeRule rule in ruleSet.ObjectRules)
         {
             _ct.ThrowIfCancellationRequested();
 

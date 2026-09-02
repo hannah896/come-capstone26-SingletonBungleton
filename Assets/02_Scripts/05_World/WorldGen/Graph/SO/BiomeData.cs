@@ -11,6 +11,10 @@ public class BiomeData : ScriptableObject
     [Header("Placement Rules")]
     [SerializeField] public DisposeRuleSet BiomeDisposeRule;
 
+    [Header("Spawn Rules")]
+    [SerializeField] public SpawnRuleSet BiomeSpawnRule;
+
+
     [Header("Assets")]
     // GameObject 직접 참조 대신 키값(string) 사용
     [SerializeField] public string TopKey;    // 예: "Forest_Top", "Desert_Top"
@@ -19,9 +23,11 @@ public class BiomeData : ScriptableObject
 
     // 터레인 위에 배치되는 디테일 오브젝트들 (예: 풀, 꽃)
     [SerializeField] public List<string> DetailKeys;    // 예: "Detail_Grass", "Detail_Flower"
-    [SerializeField] public List<string> DecoKeys;      // 예: "Deco_Rock", "Deco_Tree"
 
 }
+
+
+
 public enum BiomeType
 {
     Plains,

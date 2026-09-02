@@ -28,6 +28,7 @@ public class WorldGenManager : MonoBehaviour
     [SerializeField] private WorldGraphDirector _worldGraphDirector;
     [SerializeField] private WorldChunkDirector _worldChunkDirector;
     [SerializeField] private WorldRenderDirector _worldRenderDirector;
+    [SerializeField] private DynamicSpawnDirector _dynamicSpawnDirector;
     [SerializeField] private WorldSettings _worldSettings;
 
     [SerializeField] private WorldSimulationManager _simulationManager;
@@ -67,13 +68,15 @@ public class WorldGenManager : MonoBehaviour
         await UniTask.WaitUntil(() => Main.Instance != null);
         _cts = new CancellationTokenSource();
 
-        // 3개의 디렉터 모두 컴포넌트 유무 확인 및 부착
+        // 월드 관련 디렉터의 컴포넌트 유무 확인 및 부착
         if (_worldGraphDirector == null)
             _worldGraphDirector = Extensions.GetOrAddComponent<WorldGraphDirector>(this.gameObject);
         if (_worldRenderDirector == null)
             _worldRenderDirector = Extensions.GetOrAddComponent<WorldRenderDirector>(this.gameObject);
         if (_worldChunkDirector == null)
             _worldChunkDirector = Extensions.GetOrAddComponent<WorldChunkDirector>(this.gameObject);
+        if (_dynamicSpawnDirector == null)
+            _dynamicSpawnDirector = Extensions.GetOrAddComponent<DynamicSpawnDirector>(this.gameObject);
         if (_worldMap == null)
             _worldMap = WorldMap.Instance ?? Extensions.GetOrAddComponent<WorldMap>(this.gameObject);
 
@@ -152,6 +155,7 @@ public class WorldGenManager : MonoBehaviour
     private async UniTask GenerateWorldWithSettings(Action applySettings, CancellationToken external = default)
     {
         _isStartedWorldGeneration = true;
+        _dynamicSpawnDirector?.Shutdown();
         _cts?.Cancel();
         _cts?.Dispose();
         _cts = external.CanBeCanceled
@@ -288,6 +292,13 @@ public class WorldGenManager : MonoBehaviour
 
             _simulationManager = Extensions.GetOrAddComponent<WorldSimulationManager>(this.gameObject);
             _simulationManager.Initialize(_worldChunkDirector);
+
+            _dynamicSpawnDirector.Initialize(
+                logicData,
+                graphData,
+                _worldChunkDirector,
+                _worldSettings.DynamicSpawnSettings,
+                _cts.Token);
 
             ReportProgress(1f, "완료");
         }

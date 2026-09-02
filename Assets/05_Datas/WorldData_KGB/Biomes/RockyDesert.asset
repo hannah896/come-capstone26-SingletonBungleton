@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b29b41b2b0ac1442925d390d0edbb35, type: 3}
   m_Name: RockyDesert
   m_EditorClassIdentifier: 
-  BiomeDisposeRule: {fileID: 11400000, guid: 538c0732e7c123444a6c623666e70638, type: 2}
   BiomeType: 6
   DebugColor: {r: 0.5278817, g: 0.5698112, b: 0.5278817, a: 1}
+  BiomeDisposeRule: {fileID: 11400000, guid: 538c0732e7c123444a6c623666e70638, type: 2}
+  BiomeSpawnRule: {fileID: 0}
   TopKey: RockyDesert_Top
   AltKey: RockyDesert_Alt
   CliffKey: 
-  SedimentKey: 
   DetailKeys: []

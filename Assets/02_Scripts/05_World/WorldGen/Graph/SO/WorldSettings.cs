@@ -65,6 +65,7 @@ public class WorldSettings : ScriptableObject
     public ForceSimulatorSettings ForceSimulatorSettings = new ForceSimulatorSettings();
     public PartitionSettings PartitionSettings = new PartitionSettings();
     public DisposeSettings DisposeSettings = new DisposeSettings();
+    public DynamicSpawnSettings DynamicSpawnSettings = new DynamicSpawnSettings();
     #endregion
 
 
@@ -175,6 +176,32 @@ public class DisposeSettings
     public int maxSamplingAttempts = 30;     // 푸아송 샘플링 시도 횟수
 }
 #endregion
+#region Spawn Settings
+[System.Serializable]
+public class DynamicSpawnSettings
+{
+    [Header("Spawn Budget")]
+    [Tooltip("DynamicSpawnDirector가 동시에 유지할 수 있는 전체 스폰 슬롯입니다.")]
+    [Min(0)] public int MaxSpawnSlots = 30;
+
+    [Header("Runtime Tracking")]
+    [Tooltip("플레이어와 활성 청크 목록을 다시 찾는 간격입니다.")]
+    [Min(0.1f)] public float TargetRefreshInterval = 1f;
+    [Tooltip("모든 플레이어로부터 이 거리 이상 벗어나면 체류 시간 계산을 시작합니다.")]
+    [Min(0f)] public float DespawnDistanceFromPlayers = 60f;
+
+    [Header("Position Sampling")]
+    [Tooltip("스폰 한 마리당 유효 위치를 찾기 위해 시도할 최대 횟수입니다.")]
+    [Min(1)] public int MaxPositionAttempts = 12;
+    [Tooltip("스폰 위치에서 동적 장애물을 검사할 반경입니다.")]
+    [Min(0f)] public float CollisionCheckRadius = 0.5f;
+    [Tooltip("스폰을 막을 레이어입니다. Nothing이면 물리 중첩 검사를 생략합니다.")]
+    public LayerMask SpawnBlockingMask;
+    [Tooltip("논리 지형 높이에 더할 Y 오프셋입니다.")]
+    public float SpawnHeightOffset = 0.1f;
+}
+#endregion
+
 #region Height Noise Parameters
 [System.Serializable]
 public class NoiseParams
@@ -200,6 +227,7 @@ public class NoiseParams
 
 }
 #endregion
+
 
 #region Enums : WorldSize, WorldBranchSetting, WorldLoopSetting, HeightLevel, NoiseTier
 public enum WorldSize

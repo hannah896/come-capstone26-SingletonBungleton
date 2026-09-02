@@ -59,7 +59,7 @@ public class ItemDisposer : IGraphPipelineStage
         if (ruleSet == null || ruleSet.ItemRules == null || ruleSet.ItemRules.Count == 0)
             return;
 
-        foreach (ItemDisposeRule rule in ruleSet.ItemRules)
+        foreach (CountDisposeRule rule in ruleSet.ItemRules)
         {
             _ct.ThrowIfCancellationRequested();
 

@@ -7,9 +7,8 @@ public class StoryData : ScriptableObject
     [Header("Story Info")]
     public string StoryName;    // "default adventure" 등 스토리 이름
 
-    public List<string> FixedRegionIDs;       //TODO: 나중에 교체
-    public List<string> SideRegionIDs;
-    public string StartRegionID;
+    
+    //public string StartRegionID;
 
     [Header("--- Fixed Regions ---")]
     public List<RegionData> FixedRegions; // 고정 구역 (순서대로)

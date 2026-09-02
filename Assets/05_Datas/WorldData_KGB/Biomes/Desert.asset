@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b29b41b2b0ac1442925d390d0edbb35, type: 3}
   m_Name: Desert
   m_EditorClassIdentifier: 
-  BiomeDisposeRule: {fileID: 11400000, guid: 4c12655652537f847b4414146180f096, type: 2}
   BiomeType: 2
   DebugColor: {r: 1, g: 0.9583559, b: 0, a: 1}
+  BiomeDisposeRule: {fileID: 11400000, guid: 4c12655652537f847b4414146180f096, type: 2}
+  BiomeSpawnRule: {fileID: 0}
   TopKey: Desert_Top
   AltKey: Desert_Alt
   CliffKey: 
-  SedimentKey: 
   DetailKeys: []
