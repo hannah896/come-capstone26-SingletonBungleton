@@ -23,10 +23,6 @@ MonoBehaviour:
     prefabKey: ResourceNode_Branch
     density: 0.1
   ItemRules:
-  - ruleName: Grass
-    prefabKey: Resource_Plant_Grass
-    minCount: 125
-    maxCount: 200
   - ruleName: Flower
     prefabKey: Resource_Flower
     minCount: 125

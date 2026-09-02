@@ -28,16 +28,10 @@ MonoBehaviour:
   - ruleName: Bush
     prefabKey: ResourceNode_Bush
     density: 0.1
-  ItemRules:
   - ruleName: Carrot
-    prefabKey: Resource_Carrot
-    minCount: 125
-    maxCount: 200
+    prefabKey: ResourceNode_Carrot
+    density: 0.06
   - ruleName: Potato
-    prefabKey: Resource_Potato
-    minCount: 125
-    maxCount: 200
-  - ruleName: Grass
-    prefabKey: Resource_Plant_Grass
-    minCount: 125
-    maxCount: 200
+    prefabKey: ResourceNode_Potato
+    density: 0.06
+  ItemRules: []

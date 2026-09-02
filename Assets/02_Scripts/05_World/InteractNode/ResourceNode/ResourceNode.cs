@@ -97,7 +97,7 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
 
         if (_currentHealth <= 0)
         {
-            HandleDestroyed();
+            HandleDestroyed(context);
         }
     }
 
@@ -115,7 +115,7 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
 
         if (_remainingGather <= 0)
         {
-            HandleDestroyed();
+            HandleDestroyed(default);
         }
     }
 
@@ -123,12 +123,15 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
     protected virtual void OnInteracted(InteractionContext context) { }
     protected virtual void OnDamaged(DamageContext context) { }
     protected virtual void OnGathered(GatherContext context) { }
-    protected virtual void OnDestroyed()
+
+    /// <summary>노드가 파괴될 때 호출된다. context는 도구 공격으로 파괴된 경우에만 채워지고,
+    /// Gather로 소진된 경우엔 기본값(default)이 전달된다.</summary>
+    protected virtual void OnDestroyed(DamageContext context)
     {
         _deathPosition = transform.position;
     }
 
-    private void HandleDestroyed()
+    private void HandleDestroyed(DamageContext context)
     {
         if (_isDestroyed) return;
 
@@ -141,7 +144,7 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
             _chunk.MarkObjectDestroyed(_placement.instanceId, targetRespawnTime);
         }
 
-        OnDestroyed();
+        OnDestroyed(context);
 
         if (_despawnOnDestroyed)
         {

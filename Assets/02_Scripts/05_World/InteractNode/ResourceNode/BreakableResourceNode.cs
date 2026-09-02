@@ -10,11 +10,11 @@ public class BreakableResourceNode : ResourceNode
         Debug.Log($"{ResourceNodeData.Name} 데미지 입음! 사용 도구: {context.ToolId}, 피해량: {context.Amount}, 남은 체력: {CurrentHealth}");
     }
 
-    protected override void OnDestroyed()
+    protected override void OnDestroyed(DamageContext context)
     {
-        base.OnDestroyed();
+        base.OnDestroyed(context);
         SpawnDestroyFxAsync().Forget();
-        SpawnDropsAsync().Forget();
+        SpawnDropsAsync(context).Forget();
     }
 
     private async UniTask SpawnDestroyFxAsync()
@@ -27,10 +27,15 @@ public class BreakableResourceNode : ResourceNode
         fx.transform.position = DeathPosition;
     }
 
-    private async UniTask SpawnDropsAsync()
+    private async UniTask SpawnDropsAsync(DamageContext context)
     {
         // 배열이 비어있으면 종료
         if (ResourceNodeData.Drops == null || ResourceNodeData.Drops.Length == 0) return;
+
+        bool directToInventory = ResourceNodeData.GatherDirectlyToInventory;
+        PlayerInventory inventory = directToInventory && context.Instigator != null
+            ? context.Instigator.GetComponent<PlayerInventory>()
+            : null;
 
         // 배열에 등록된 모든 드롭 아이템(통나무, 나뭇가지, 사과 등)을 순회
         foreach (DropData dropData in ResourceNodeData.Drops)
@@ -38,12 +43,13 @@ public class BreakableResourceNode : ResourceNode
             if (string.IsNullOrEmpty(dropData.DropPrefabKey)) continue;
             // 1. 드롭 확률 체크 (예: 사과가 0.1(10%) 확률이라면)
             if (Random.value > dropData.DropChance)
-                continue; 
+                continue;
 
             // 2. 수량 결정
             int minCount = Mathf.Max(0, dropData.MinDropCount);
             int maxCount = Mathf.Max(minCount, dropData.MaxDropCount);
             int count = Random.Range(minCount, maxCount + 1);
+            if (count <= 0) continue;
 
             // 3. 결정된 수량만큼 스폰
             for (int i = 0; i < count; i++)
@@ -51,7 +57,18 @@ public class BreakableResourceNode : ResourceNode
                 GameObject dropObj = await Extensions.SpawnAsync(dropData.DropPrefabKey, null);
                 if (dropObj == null) continue;
 
-                // 바닥에 흩뿌리기
+                Item item = dropObj.GetComponent<Item>();
+                if (inventory != null && item != null && item.ItemDataSO != null)
+                {
+                    bool added = inventory.AddItem(item.ItemDataSO, 1, out int remaining);
+                    if (added || remaining <= 0)
+                    {
+                        Extensions.Despawn(dropObj);
+                        continue;
+                    }
+                }
+
+                // 인벤토리에 못 넣었거나(가득 참) direct 모드가 아니면 바닥에 흩뿌리기
                 Vector2 offset2D = Random.insideUnitCircle * ResourceNodeData.DropRadius;
                 Vector3 offset = new Vector3(offset2D.x, 0f, offset2D.y);
                 dropObj.transform.position = DeathPosition + offset;

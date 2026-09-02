@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: GrassNodeData
   ResourceNodeType: 3
-  MaxHealth: 2
+  MaxHealth: 1
   GatherAmount: 1
   RespawnTime: 120
   RequiredTool: 3
@@ -24,4 +24,5 @@ MonoBehaviour:
     MaxDropCount: 1
     DropChance: 1
   DropRadius: 0.5
-  DropFxPrefabKey: 
+  DropFxPrefabKey:
+  GatherDirectlyToInventory: 1

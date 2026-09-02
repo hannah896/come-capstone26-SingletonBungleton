@@ -30,7 +30,3 @@ MonoBehaviour:
     prefabKey: Resource_Flower
     minCount: 125
     maxCount: 200
-  - ruleName: Grass
-    prefabKey: Resource_Plant_Grass
-    minCount: 125
-    maxCount: 200
