@@ -56,6 +56,15 @@ public class WorldGenManager : MonoBehaviour
     /// <summary>WorldSettings 에셋 로드가 완료되어 월드 생성이 가능한 상태인지 여부.</summary>
     public bool IsWorldSettingsLoaded => _isWorldSettingsLoaded;
 
+    /// <summary>
+    /// 플레이어 최초 스폰에 사용한 StartRegion 좌표. 부활 지점으로도 사용된다.
+    /// 낙하 여유를 두고 지면보다 높게 잡혀 있으므로, 그대로 쓰면 공중에서 떨어진다.
+    /// </summary>
+    public Vector3 PlayerSpawnPosition { get; private set; }
+
+    /// <summary>스폰 좌표가 확정되었는지 여부 (월드 생성 완료 전에는 false).</summary>
+    public bool HasPlayerSpawnPosition { get; private set; }
+
     void OnDestroy()
     {
         _cts?.Cancel();
@@ -246,6 +255,10 @@ public class WorldGenManager : MonoBehaviour
             // ==========================================================
             float spawnTileHeight = logicData.GetHeightAt(startingX, startingZ);
             Vector3 spawnPos = new Vector3(startingX, spawnTileHeight + 20f, startingZ);
+
+            // 부활 지점으로 재사용한다 (Player.Revive)
+            PlayerSpawnPosition = spawnPos;
+            HasPlayerSpawnPosition = true;
 
             bool isMultiplayer = Main.Network != null && Main.Network.IsInRoom;
             if (isMultiplayer)

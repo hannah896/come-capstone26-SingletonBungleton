@@ -104,6 +104,39 @@ public class PlayerMotor : MonoBehaviour
         pendingRotationSpeed = rotSpeed;
     }
 
+    /// <summary>
+    /// 지정 위치로 즉시 이동시킨다. (부활·리스폰 등)
+    /// CharacterController는 자체 내부 좌표를 갖고 있어 transform만 옮기면 다음 Move에서 되돌려지므로,
+    /// 비활성화 → 위치 변경 → 재활성화 순서로 처리한다.
+    /// </summary>
+    public void Teleport(Vector3 position)
+    {
+        if (cc == null)
+        {
+            transform.position = position;
+            ResetVelocity();
+            return;
+        }
+
+        bool wasEnabled = cc.enabled;
+        cc.enabled = false;
+        transform.position = position;
+        cc.enabled = wasEnabled;
+
+        ResetVelocity();
+    }
+
+    /// <summary>
+    /// 누적된 이동·낙하 속도를 모두 초기화한다.
+    /// (남은 낙하 속도를 들고 순간이동하면 착지 순간 지면을 뚫거나 튕긴다)
+    /// </summary>
+    public void ResetVelocity()
+    {
+        moveVelocity = Vector3.zero;
+        airVelocity = Vector3.zero;
+        gravity?.SetVelocity(0f);
+    }
+
     #endregion
 
     /// <summary>

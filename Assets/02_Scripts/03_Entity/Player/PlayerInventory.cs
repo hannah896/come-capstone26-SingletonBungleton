@@ -30,6 +30,13 @@ public class PlayerInventory : MonoBehaviour
     [Tooltip("expirationTime이 지난 스택이 전환될 아이템 (SpecialType.Rot)")]
     [SerializeField] private ItemDataSO rotItemSO;
 
+    [Header("사망 드롭 설정")]
+    [Tooltip("사망 시 소지품을 흩뿌릴 반경 (발밑 기준)")]
+    [SerializeField] private float deathDropRadius = 1.5f;
+
+    // 장착 슬롯 드롭 순서 (손 → 몸통 → 머리)
+    private static readonly EquipSlot[] EquipDropOrder = { EquipSlot.Hand, EquipSlot.Chest, EquipSlot.Head };
+
     private readonly Dictionary<EquipSlot, IEquipable> equippedItemInstances = new();
     private readonly Collider[] pickupBuffer = new Collider[16];
     private PlayerInputData inputData;
@@ -43,6 +50,19 @@ public class PlayerInventory : MonoBehaviour
         public GameObject GameObject;
         public ItemDataSO ItemData;
         public int Amount;
+    }
+
+    // 슬롯을 비운 뒤 스폰을 기다리는 동안 들고 있을 드롭 정보
+    private readonly struct PendingDrop
+    {
+        public readonly ItemDataSO ItemData;
+        public readonly int Amount;
+
+        public PendingDrop(ItemDataSO itemData, int amount)
+        {
+            ItemData = itemData;
+            Amount = amount;
+        }
     }
 
     public event Action OnInventoryChanged;
@@ -234,14 +254,67 @@ public class PlayerInventory : MonoBehaviour
         int amount = stackCounts[slotIndex];
         if (itemData == null || amount <= 0) return false;
 
+        // 스폰 대기 중에 플레이어가 파괴될 수 있으므로 위치를 미리 계산해 둔다.
+        Vector3 dropPosition = GetDropOriginPosition() + transform.forward * 1.5f;
+
         ClearSlot(slotIndex);
         OnInventoryChanged?.Invoke();
 
-        SpawnDroppedItemAsync(itemData, amount).Forget();
+        SpawnDroppedItemAsync(itemData, amount, dropPosition).Forget();
         return true;
     }
 
-    private async UniTaskVoid SpawnDroppedItemAsync(ItemDataSO itemData, int amount)
+    /// <summary>
+    /// 인벤토리 슬롯과 장착 슬롯의 모든 아이템을 발밑에 흩뿌린다. (사망 시 호출)
+    /// </summary>
+    /// <returns>드롭된 스택 수</returns>
+    public int DropAll()
+    {
+        List<PendingDrop> pending = new();
+
+        // 장착 아이템은 슬롯으로 되돌리지 않고 곧바로 월드에 떨군다.
+        // (인벤토리를 비우는 중이라 되돌릴 공간을 따질 필요가 없다)
+        for (int i = 0; i < EquipDropOrder.Length; i++)
+        {
+            EquipSlot equipSlot = EquipDropOrder[i];
+            ItemDataSO equipped = GetEquippedItem(equipSlot);
+            if (equipped == null) continue;
+
+            if (ClearEquippedItem(equipSlot))
+                pending.Add(new PendingDrop(equipped, 1));
+        }
+
+        // 인벤토리 슬롯 전체
+        for (int i = 0; i < slots.Count; i++)
+        {
+            ItemDataSO itemData = slots[i];
+            int amount = stackCounts[i];
+            if (itemData == null || amount <= 0) continue;
+
+            ClearSlot(i);
+            pending.Add(new PendingDrop(itemData, amount));
+        }
+
+        if (pending.Count <= 0) return 0;
+
+        OnInventoryChanged?.Invoke();
+        ScatterDropsAsync(pending, GetDropOriginPosition()).Forget();
+        return pending.Count;
+    }
+
+    // 여러 스택을 한 점에 겹쳐 쌓지 않도록 발밑 반경 안에 흩뿌린다.
+    private async UniTaskVoid ScatterDropsAsync(List<PendingDrop> drops, Vector3 origin)
+    {
+        for (int i = 0; i < drops.Count; i++)
+        {
+            Vector2 offset = UnityEngine.Random.insideUnitCircle * deathDropRadius;
+            Vector3 position = origin + new Vector3(offset.x, 0f, offset.y);
+
+            await SpawnDroppedItemAsync(drops[i].ItemData, drops[i].Amount, position);
+        }
+    }
+
+    private async UniTask SpawnDroppedItemAsync(ItemDataSO itemData, int amount, Vector3 position)
     {
         string address = itemData.name;
         GameObject dropObj = await Extensions.SpawnAsync(address, null);
@@ -251,12 +324,7 @@ public class PlayerInventory : MonoBehaviour
             return;
         }
 
-        Vector3 feetPosition = transform.position;
-        if (characterController != null)
-            feetPosition.y += characterController.center.y - characterController.height * 0.5f;
-
-        Vector3 pos = feetPosition + transform.forward * 1.5f;
-        dropObj.transform.position = pos;
+        dropObj.transform.position = position;
 
         Item item = dropObj.GetComponent<Item>();
         if (item == null)
@@ -269,6 +337,16 @@ public class PlayerInventory : MonoBehaviour
         item.ResetToWorldTransform();
         if (item.itemData is IStackable stackable)
             stackable.stackCount = Mathf.Max(1, amount);
+    }
+
+    /// <summary>드롭 아이템이 놓일 기준 지점(플레이어 발밑).</summary>
+    private Vector3 GetDropOriginPosition()
+    {
+        Vector3 feetPosition = transform.position;
+        if (characterController != null)
+            feetPosition.y += characterController.center.y - characterController.height * 0.5f;
+
+        return feetPosition;
     }
 
     public bool EquipFromSlot(int slotIndex)
