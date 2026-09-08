@@ -72,6 +72,16 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b73fd6962dd069d4b937253970337a73
+    m_Address: UI_WorldState
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c310b787f758e3a4db55284145e55bc8
+    m_Address: ToastUI
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: dc40b564b6c58eb4c81b029d3d167c46
     m_Address: UI_HUD_LobbyScene
     m_ReadOnly: 0

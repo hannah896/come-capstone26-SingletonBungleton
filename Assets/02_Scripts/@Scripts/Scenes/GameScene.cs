@@ -156,6 +156,14 @@ public class GameScene : SceneBase
         GameProcessing = GameProcessing.Processing;
         GameState = GameState.Playing;
 
+        // 멀티 세션이면 다른 플레이어의 접속을 토스트로 알린다.
+        // (로딩 중에 토스트가 뜨지 않도록 게임 진행이 시작된 뒤에 만든다.
+        //  이미 들어와 있던 사람은 알리지 않고, 이후 새로 들어오는 사람만 알린다)
+        if (Main.Network != null && Main.Network.IsInRoom)
+        {
+            new GameObject(nameof(NetworkPlayerJoinNotice)).AddComponent<NetworkPlayerJoinNotice>();
+        }
+
         await Main.UI.ShowHudOverlay<UI_Hud_WorldState>("UI_WorldState");
 
         // TODO: 소환된 플레이어가 자신의 HUD(UI_Hud_Game)를 띄우는 단계 (다음 작업)

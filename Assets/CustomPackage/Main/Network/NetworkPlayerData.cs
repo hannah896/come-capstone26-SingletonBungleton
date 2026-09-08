@@ -131,6 +131,19 @@ public class NetworkPlayerData : NetworkBehaviour
     }
 
     /// <summary>
+    /// 클라이언트가 "내 월드 생성이 끝났다"고 호스트에 보고합니다.
+    ///
+    /// 각 피어는 같은 시드로 자기 월드를 따로 생성하므로, 호스트가 이 보고를 받기 전에 캐릭터를 스폰하면
+    /// 그 피어에는 아직 지형이 없어 캐릭터가 끝없이 아래로 떨어진다.
+    /// 호스트는 이 보고를 받은 뒤에 해당 플레이어의 캐릭터를 스폰한다.
+    /// </summary>
+    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+    public void Rpc_ReportWorldReady()
+    {
+        Main.Network?.HandleWorldReadyReported(OwnerRef);
+    }
+
+    /// <summary>
     /// 클라이언트가 이름 변경을 호스트에 요청합니다.
     /// </summary>
     [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]

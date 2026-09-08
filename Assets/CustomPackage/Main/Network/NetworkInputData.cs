@@ -32,6 +32,18 @@ public struct NetworkInputData : INetworkInput
     public float CharacterYaw;
     public NetworkBool HasCharacterState;
 
+    // 애니메이터 Bool 파라미터 비트마스크.
+    // 비트 순서 = 그 캐릭터 컨트롤러의 Bool 파라미터 순서(모든 피어가 같은 프리팹이라 동일하다).
+    public ushort AnimBools;
+
+    // 마지막으로 발동한 Trigger 파라미터 인덱스 + 1 (0 = 없음).
+    // Trigger는 값을 읽어낼 수 없어 발동 사실만 전달한다.
+    public byte AnimTriggerIndex;
+
+    // Trigger 발동마다 1씩 증가. 원격 피어는 이 값이 바뀔 때만 트리거를 재발동한다
+    // (같은 트리거가 연속으로 발동돼도 구분되고, 값이 그대로면 중복 발동하지 않는다).
+    public byte AnimTriggerSeq;
+
     // 유효한 명령이 포함되어 있는지 여부
     public bool HasCommand => CommandType != CommandType.None;
 }
