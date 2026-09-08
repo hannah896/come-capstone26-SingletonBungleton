@@ -1,7 +1,15 @@
+﻿using System;
 using UnityEngine;
 
 public class PlayerAnimData
 {
+    /// <summary>
+    /// Trigger 파라미터가 발동될 때 발생 (파라미터 해시 전달).
+    /// Trigger는 애니메이터에서 다시 읽어낼 수 없어 폴링이 불가능하므로,
+    /// 멀티플레이 동기화(NetworkPlayerSync)가 이 이벤트로 발동 사실을 잡아 원격 피어에 전달한다.
+    /// </summary>
+    public event Action<int> OnTriggerPlayed;
+
     private Animator animator;
     private PlayerAnimHashKey animHashKey = new();
 
@@ -87,6 +95,7 @@ public class PlayerAnimData
     {
         ResetLocomotionBools();
         animator.SetTrigger(animHash);
+        OnTriggerPlayed?.Invoke(animHash);
     }
 
     /// <summary>
@@ -117,6 +126,7 @@ public class PlayerAnimData
     public void SetHitTrigger()
     {
         animator.SetTrigger(animHashKey.Hit);
+        OnTriggerPlayed?.Invoke(animHashKey.Hit);
     }
 
     /// <summary>

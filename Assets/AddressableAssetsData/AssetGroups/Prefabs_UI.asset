@@ -73,7 +73,12 @@ MonoBehaviour:
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: b73fd6962dd069d4b937253970337a73
-    m_Address: UI_Hud_WorldState
+    m_Address: UI_WorldState
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c310b787f758e3a4db55284145e55bc8
+    m_Address: ToastUI
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -100,6 +105,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: f52294187ea9e9a40a7d2ab69925173f
     m_Address: UI_Popup_SettingUI
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f81581c365ee3044faa66050f3e18ac3
+    m_Address: UI_Popup_PlayerDie
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

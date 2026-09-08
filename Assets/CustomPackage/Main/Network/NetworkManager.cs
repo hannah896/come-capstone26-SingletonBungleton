@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -38,6 +38,15 @@ public class NetworkManager : CoreManager
     // 방 탐색/생성이 공유하는 커스텀 로비 이름.
     // 호스트가 같은 로비에 세션을 만들어야 탐색 목록에 보인다.
     private const string DEFAULT_LOBBY = "default";
+
+    // 마지막으로 받아둔 방 목록.
+    // Photon 로비는 "목록에 변화가 생겼을 때"만 갱신을 밀어주기 때문에, 이미 로비에 들어와 있는 상태에서
+    // 방 목록 UI를 새로 열면 이벤트가 한 번도 오지 않아 빈 화면이 된다. 그래서 마지막 목록을 들고 있다가
+    // 새 구독자에게 즉시 다시 흘려준다.
+    private readonly List<RoomInfo> _cachedRooms = new();
+
+    // 강제 갱신(RefreshRoomsAsync) 진행 중 여부 — 중복 실행 방지
+    private bool _refreshing;
 
     #endregion
 
@@ -87,8 +96,16 @@ public class NetworkManager : CoreManager
     // 이 클라의 조작 대상 캐릭터 (OnInput에서 transform을 읽어 호스트로 보고)
     private NetworkObject _localCharacter;
 
-    // 월드 생성 완료 여부 (호스트가 캐릭터 스폰 시점을 판단)
+    // 위 캐릭터의 동기화 컴포넌트 (OnInput에서 애니메이터 파라미터를 읽을 때 사용)
+    private NetworkPlayerSync _localCharacterSync;
+
+    // 이 피어 자신의 월드 생성 완료 여부
     private bool _worldReady;
+
+    // 호스트 전용 — 자기 월드 생성이 끝났다고 보고해 온 플레이어들.
+    // 각 피어는 같은 시드로 자기 월드를 따로 생성하므로, 아직 지형이 없는 피어에게 캐릭터를 스폰하면
+    // 그 피어에서 CharacterController가 허공에 놓여 끝없이 낙하한다(그리고 그 좌표가 호스트로 보고돼 확정된다).
+    private readonly HashSet<PlayerRef> _worldReadyPlayers = new();
 
     // 캐릭터 스폰 위치 (월드 생성 후 호스트가 확정)
     private Vector3 _spawnPoint;
@@ -127,6 +144,12 @@ public class NetworkManager : CoreManager
 
     // 현재 방(세션)에 참가한 멀티플레이 상태인지 여부
     public bool IsInRoom => State >= NetworkState.InRoom;
+
+    // 마지막으로 받아둔 방 목록. 방 목록 UI가 열리자마자 그릴 초기값으로 사용한다.
+    public IReadOnlyList<RoomInfo> CachedRooms => _cachedRooms;
+
+    // 방 목록을 강제 갱신하는 중인지 여부 (UI가 새로고침 버튼을 잠글 때 참조)
+    public bool IsRefreshingRooms => _refreshing;
 
     // 로컬에서 선택한 캐릭터 성별 (PlayerCharacter 값)
     public int LocalCharacterIndex => _localCharacterIndex;
@@ -385,10 +408,7 @@ public class NetworkManager : CoreManager
     /// </summary>
     public async UniTask LeaveRoomAsync()
     {
-        await CleanupRunner();
-
-        _gameStarting = false;
-        SetState(NetworkState.Disconnected);
+        await ShutdownSession();
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[NetworkManager] Left room");
@@ -419,6 +439,14 @@ public class NetworkManager : CoreManager
     public void RegisterPlayerData(PlayerRef player, NetworkPlayerData data)
     {
         _players[player] = data;
+
+        // 자기 월드가 이미 준비된 뒤에 PlayerData가 도착했다면(= NotifyWorldReady 시점에 보낼 수단이 없었음)
+        // 지금 보고한다. 그러지 않으면 호스트가 캐릭터를 영원히 스폰하지 않는다.
+        if (_worldReady && data != null && data.IsLocal && _runner != null && !_runner.IsServer)
+        {
+            ReportWorldReadyToHost();
+        }
+
         OnPlayerJoinedEvent?.Invoke(player, data);
         OnWaitingPlayersChanged?.Invoke();
 
@@ -449,13 +477,16 @@ public class NetworkManager : CoreManager
     public void RegisterLocalCharacter(NetworkObject character)
     {
         _localCharacter = character;
+        _localCharacterSync = character != null ? character.GetComponent<NetworkPlayerSync>() : null;
     }
 
     // NetworkPlayerSync.Despawned()에서 호출
     public void UnregisterLocalCharacter(NetworkObject character)
     {
-        if (_localCharacter == character)
-            _localCharacter = null;
+        if (_localCharacter != character) return;
+
+        _localCharacter = null;
+        _localCharacterSync = null;
     }
 
     #endregion
@@ -467,6 +498,16 @@ public class NetworkManager : CoreManager
     {
         if (!_worldReady || _runner == null || !_runner.IsServer) return;
         if (_characters.ContainsKey(player)) return;
+
+        // 그 플레이어의 월드가 준비되기 전에 스폰하면 지형이 없어 캐릭터가 계속 떨어진다.
+        // 아직이면 여기서 멈추고, 나중에 HandleWorldReadyReported()에서 다시 시도한다.
+        if (!_worldReadyPlayers.Contains(player))
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"[NetworkManager] Spawn deferred — world not ready on {player}");
+#endif
+            return;
+        }
 
         // 대기방에서 각 플레이어가 고른 성별로 프리팹 분기 (남자 프리팹 로드 실패 시 여자로 폴백)
         int characterIndex = GetPlayerData(player)?.CharacterIndex ?? (int)PlayerCharacter.Female;
@@ -490,7 +531,7 @@ public class NetworkManager : CoreManager
 
         // 호스트 자신의 캐릭터는 입력 수집 대상으로도 등록
         if (player == _runner.LocalPlayer)
-            _localCharacter = character;
+            RegisterLocalCharacter(character);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[NetworkManager] Character spawned for {player} at {_spawnPoint}");
@@ -518,6 +559,36 @@ public class NetworkManager : CoreManager
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[NetworkManager] MonsterDirector spawned");
 #endif
+    }
+
+    // 클라이언트가 자기 월드 생성 완료를 호스트에 보고한다.
+    // 자기 PlayerData가 아직 복제되지 않았다면 보낼 수단이 없으므로,
+    // 도착 시점(RegisterPlayerData)에서 다시 시도한다.
+    private void ReportWorldReadyToHost()
+    {
+        NetworkPlayerData data = LocalPlayerData;
+        if (data == null) return;
+
+        data.Rpc_ReportWorldReady();
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log("[NetworkManager] Reported world ready to host");
+#endif
+    }
+
+    // NetworkPlayerData.Rpc_ReportWorldReady()에서 호출 (호스트에서만 실행).
+    // 그 플레이어의 지형이 준비됐으므로 이제 캐릭터를 스폰해도 안전하다.
+    public void HandleWorldReadyReported(PlayerRef player)
+    {
+        if (_runner == null || !_runner.IsServer) return;
+
+        _worldReadyPlayers.Add(player);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[NetworkManager] World ready reported by {player}");
+#endif
+
+        SpawnCharacterForPlayer(player);
     }
 
     // 호스트가 접속 중인 모든 플레이어의 캐릭터를 스폰한다.
@@ -588,6 +659,8 @@ public class NetworkManager : CoreManager
                 if (character != null)
                     runner.Despawn(character);
             }
+
+            _worldReadyPlayers.Remove(player);
         }
 
         OnWaitingPlayersChanged?.Invoke();
@@ -602,13 +675,16 @@ public class NetworkManager : CoreManager
     {
         var inputData = Main.Command?.CollectInput() ?? default;
 
-        // 로컬 시뮬레이션 결과(위치/Yaw)를 호스트로 보고 → 호스트가 확정 후 전 클라에 복제
+        // 로컬 시뮬레이션 결과(위치/Yaw/애니메이션)를 호스트로 보고 → 호스트가 확정 후 전 클라에 복제
         if (_localCharacter != null)
         {
             Transform t = _localCharacter.transform;
             inputData.CharacterPosition = t.position;
             inputData.CharacterYaw = t.eulerAngles.y;
             inputData.HasCharacterState = true;
+
+            // 원격 피어는 상태 머신이 돌지 않아 애니메이터를 아무도 구동하지 않는다 → 파라미터를 그대로 실어 보낸다
+            _localCharacterSync?.WriteAnimState(ref inputData);
         }
 
         input.Set(inputData);
@@ -627,6 +703,11 @@ public class NetworkManager : CoreManager
             if (!session.IsVisible) continue;
             rooms.Add(new RoomInfo(session.Name, session.PlayerCount, session.MaxPlayers));
         }
+
+        // 나중에 열리는 UI가 즉시 그릴 수 있도록 보관해둔다
+        _cachedRooms.Clear();
+        _cachedRooms.AddRange(rooms);
+
         OnRoomListUpdated?.Invoke(rooms);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -639,7 +720,9 @@ public class NetworkManager : CoreManager
     {
         _players.Clear();
         _characters.Clear();
+        _worldReadyPlayers.Clear();
         _localCharacter = null;
+        _localCharacterSync = null;
         SetState(NetworkState.Disconnected);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -652,7 +735,9 @@ public class NetworkManager : CoreManager
     {
         _players.Clear();
         _characters.Clear();
+        _worldReadyPlayers.Clear();
         _localCharacter = null;
+        _localCharacterSync = null;
         _monsterDirector = null;
         _worldReady = false;
         _gameStarting = false;
@@ -730,7 +815,9 @@ public class NetworkManager : CoreManager
 
         _players.Clear();
         _characters.Clear();
+        _worldReadyPlayers.Clear();
         _localCharacter = null;
+        _localCharacterSync = null;
         _monsterDirector = null;
         _worldReady = false;
     }
@@ -748,12 +835,62 @@ public class NetworkManager : CoreManager
     public async UniTask<bool> BrowseRoomsAsync(string lobbyName = DEFAULT_LOBBY)
     {
 #if PHOTON_FUSION
-        if (State >= NetworkState.InLobby) return true;
+        if (State >= NetworkState.InLobby)
+        {
+            // 이미 로비에 있으면 Fusion은 "목록에 변화가 생겼을 때"만 갱신을 보내준다.
+            // 방금 열린 UI가 빈 목록으로 남지 않도록 마지막으로 받아둔 목록을 즉시 다시 전달한다.
+            EmitCachedRooms();
+            return true;
+        }
         return await ConnectToLobbyAsync(lobbyName);
 #else
         await UniTask.CompletedTask;
         return false;
 #endif
+    }
+
+    /// <summary>
+    /// 방 목록을 강제로 다시 받아옵니다. (방 목록 UI의 새로고침 버튼)
+    ///
+    /// Photon 로비 목록은 변화가 있을 때만 서버가 밀어주므로, 로비에 머무른 채로는 아무리 기다려도
+    /// 새 목록이 오지 않는다. 그래서 로비 러너를 내렸다가 다시 접속해 전체 목록을 새로 받는다.
+    /// 재접속에는 시간이 걸리므로 호출 즉시 직전 목록을 한 번 흘려보내 화면이 비지 않게 한다.
+    ///
+    /// 방에 들어간 뒤(InRoom 이상)에는 그 러너가 곧 세션 러너라서 내리면 접속이 끊긴다 → 아무것도 하지 않는다.
+    /// </summary>
+    public async UniTask<bool> RefreshRoomsAsync(string lobbyName = DEFAULT_LOBBY)
+    {
+#if PHOTON_FUSION
+        if (State >= NetworkState.InRoom || _refreshing) return false;
+
+        _refreshing = true;
+        try
+        {
+            // 재접속하는 동안 UI가 빈 목록이 되지 않도록 직전 목록을 먼저 보여준다
+            EmitCachedRooms();
+
+            await CleanupRunner();
+
+            // 러너가 없던 경우엔 OnShutdown 콜백이 오지 않으므로 여기서 상태를 확실히 맞춘다
+            // (ConnectToLobbyAsync는 Disconnected에서만 진행한다)
+            SetState(NetworkState.Disconnected);
+
+            return await ConnectToLobbyAsync(lobbyName);
+        }
+        finally
+        {
+            _refreshing = false;
+        }
+#else
+        await UniTask.CompletedTask;
+        return false;
+#endif
+    }
+
+    // 마지막으로 받아둔 방 목록을 구독자에게 다시 전달한다 (복사본을 넘겨 외부 수정으로부터 캐시를 보호)
+    private void EmitCachedRooms()
+    {
+        OnRoomListUpdated?.Invoke(new List<RoomInfo>(_cachedRooms));
     }
 
     /// <summary>
@@ -915,9 +1052,14 @@ public class NetworkManager : CoreManager
     }
 
     /// <summary>
-    /// GameScene에서 월드 생성이 끝난 뒤 호출합니다.
-    /// 호스트면 스폰 위치를 확정하고 접속 중인 모든 플레이어의 캐릭터를 스폰합니다.
-    /// (클라이언트는 캐릭터가 네트워크로 복제되어 도착하므로 별도 처리 없음)
+    /// GameScene에서 이 피어의 월드 생성이 끝난 뒤 호출합니다.
+    ///
+    /// 각 피어는 같은 시드로 자기 월드를 따로 생성하므로, 캐릭터는 "그 피어의 지형이 준비된 뒤"에만
+    /// 스폰돼야 한다. 지형이 없는 상태로 스폰하면 CharacterController가 허공에서 계속 떨어지고,
+    /// 그 좌표가 Fusion Input으로 호스트에 보고되어 낙하가 그대로 확정된다.
+    ///
+    /// - 호스트: 스폰 위치를 확정하고, 준비 완료를 보고한 플레이어들의 캐릭터를 스폰한다
+    /// - 클라이언트: 호스트에 준비 완료를 보고한다. 캐릭터는 호스트가 스폰해 복제로 도착한다
     /// </summary>
     public void NotifyWorldReady(Vector3 spawnPoint)
     {
@@ -925,11 +1067,21 @@ public class NetworkManager : CoreManager
         _spawnPoint = spawnPoint;
         _worldReady = true;
 
-        // 몬스터 복제 디렉터를 먼저 띄운다 (스포너가 등록할 대상이 있어야 한다)
-        SpawnMonsterDirector();
+        if (_runner != null && _runner.IsServer)
+        {
+            // 호스트 자신은 지금 막 월드 생성을 마쳤다
+            _worldReadyPlayers.Add(_runner.LocalPlayer);
 
-        // Host 모드: 호스트가 전원 캐릭터를 스폰한다 (InputAuthority만 각 플레이어에게 부여)
-        SpawnAllCharacters();
+            // 몬스터 복제 디렉터를 먼저 띄운다 (스포너가 등록할 대상이 있어야 한다)
+            SpawnMonsterDirector();
+
+            // Host 모드: 호스트가 전원 캐릭터를 스폰한다 (InputAuthority만 각 플레이어에게 부여)
+            SpawnAllCharacters();
+        }
+        else
+        {
+            ReportWorldReadyToHost();
+        }
 #endif
     }
 
@@ -950,21 +1102,48 @@ public class NetworkManager : CoreManager
 
     #region Cleanup
 
+    /// <summary>
+    /// 씬 전환마다 <see cref="Main.Clear"/>를 통해 호출된다.
+    ///
+    /// 세션(러너 · 프리팹 · State)은 절대 건드리지 않는다.
+    /// 로비에서 방을 만든 뒤 GameScene으로 넘어가는 정상 흐름에서도 이 메서드가 불리기 때문에,
+    /// 여기서 러너를 내리면 방을 만들자마자 세션이 끊기고 뒤늦게 들어온 플레이어의 스폰이 실패한다.
+    /// 실제 세션 종료는 <see cref="ShutdownSession"/>이 담당한다.
+    ///
+    /// 여기서는 파괴될 UI가 남긴 구독만 끊는다.
+    /// </summary>
     public override void Clear()
     {
         base.Clear();
+        ClearSubscribers();
+    }
 
+    /// <summary>
+    /// 세션을 실제로 종료한다. 러너를 셧다운·파괴하고 상태를 Disconnected로 되돌린다.
+    /// 방 퇴장(<see cref="LeaveRoomAsync"/>)과 앱 종료 경로에서만 호출한다. 씬 전환에서는 호출하지 않는다.
+    ///
+    /// ※ 프리팹(AssetCacheType.Required)은 해제하지 않는다.
+    ///   로드는 OnInitializeAsync에서 앱 시작 시 1회만 이뤄지므로, 한 번 해제하면
+    ///   다음 세션에서 다시 로드되지 않아 캐릭터·PlayerData 스폰이 영구히 실패한다.
+    /// </summary>
+    public async UniTask ShutdownSession()
+    {
 #if PHOTON_FUSION
-        CleanupRunner().Forget();
-        _playerDataPrefab = null;
-        _playerCharacterPrefab = null;
-        _playerCharacterMalePrefab = null;
-        Main.Resource?.Release(PLAYER_DATA_PREFAB_KEY);
-        Main.Resource?.Release(PLAYER_CHARACTER_PREFAB_KEY);
-        Main.Resource?.Release(PLAYER_CHARACTER_MALE_PREFAB_KEY);
+        await CleanupRunner();
+#else
+        await UniTask.CompletedTask;
 #endif
+        _gameStarting = false;
+        _refreshing = false;
+        _cachedRooms.Clear();
 
-        State = NetworkState.Disconnected;
+        SetState(NetworkState.Disconnected);
+        ClearSubscribers();
+    }
+
+    /// <summary>UI 등 외부 구독을 모두 끊는다. 파괴된 오브젝트로 이벤트가 날아가는 것을 막는다.</summary>
+    private void ClearSubscribers()
+    {
         OnStateChanged = null;
         OnRoomListUpdated = null;
         OnWaitingPlayersChanged = null;

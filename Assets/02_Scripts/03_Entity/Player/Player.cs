@@ -207,6 +207,76 @@ public class Player : MonoBehaviour, IDamageable
             action.OnActionEvent();
     }
 
+    #region Revive
+
+    // 부활 지점의 지면을 찾을 때 사용하는 레이캐스트 파라미터
+    private const string GroundLayerName = "Ground";
+    private const float RespawnRayHeight = 50f;      // 스폰 좌표 위쪽 이 높이에서 아래로 쏜다
+    private const float RespawnGroundClearance = 0.5f; // 지면에서 띄울 높이 (콜라이더 겹침 방지)
+
+    /// <summary>
+    /// 사망 상태에서 부활한다.
+    /// 생존 지표를 최대치로 회복하고 리스폰 지점으로 이동시킨 뒤 Locomotion 상태로 되돌린다.
+    /// 게임 진행 상태(GameProcessing) 복구와 사망 팝업 닫기는 PlayerDeadState.OnExit이 담당한다.
+    /// </summary>
+    /// <returns>부활했으면 true. 이미 사망 상태가 아니면 false.</returns>
+    public bool Revive()
+    {
+        if (stat == null || machine == null) return false;
+        if (machine.CurrentState is not PlayerDeadState) return false;
+
+        // 허기가 0인 채로 부활하면 즉시 다시 체력이 깎이므로 함께 회복한다.
+        stat.RestoreHp(stat.MaxHp);
+        stat.RestoreHunger(stat.MaxHunger);
+        stat.RestoreEgo(stat.MaxEgo);
+
+        // 리스폰 지점으로 이동. 지점을 못 구하면(테스트 씬 등) 제자리에서 부활한다.
+        if (TryGetRespawnPosition(out Vector3 respawnPosition))
+            motor?.Teleport(respawnPosition);
+        else
+            motor?.ResetVelocity();
+
+        // 사망 직전 입력이 남아 부활 첫 프레임에 이동·공격이 나가는 것을 막는다.
+        inputData?.SuppressAllInputs();
+
+        machine.ChangeState(new PlayerLocomotionState(machine));
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[Player] Revived at {transform.position}");
+#endif
+        return true;
+    }
+
+    /// <summary>
+    /// 월드 생성 시 확정된 StartRegion 스폰 좌표를 기준으로 부활 위치를 구한다.
+    /// 스폰 좌표는 낙하 여유를 두고 공중에 잡혀 있으므로, 지면을 찾아 그 위에 세운다.
+    /// </summary>
+    private bool TryGetRespawnPosition(out Vector3 position)
+    {
+        position = transform.position;
+
+        WorldGenManager world = WorldGenManager.Instance;
+        if (world == null || !world.HasPlayerSpawnPosition)
+            return false;
+
+        Vector3 spawn = world.PlayerSpawnPosition;
+        Vector3 rayOrigin = new Vector3(spawn.x, spawn.y + RespawnRayHeight, spawn.z);
+        int groundMask = LayerMask.GetMask(GroundLayerName);
+
+        if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit hit,
+                            RespawnRayHeight * 4f, groundMask, QueryTriggerInteraction.Ignore))
+        {
+            position = hit.point + Vector3.up * RespawnGroundClearance;
+            return true;
+        }
+
+        // 지면을 찾지 못하면 최초 스폰과 동일하게 공중에서 낙하시킨다.
+        position = spawn;
+        return true;
+    }
+
+    #endregion
+
     #region IDamageable
     // 몬스터 등 외부 공격 수신구. 자원 채집과 동일한 DamageContext 계약을 사용한다.
     public bool CanDamage(DamageContext damageCtx)

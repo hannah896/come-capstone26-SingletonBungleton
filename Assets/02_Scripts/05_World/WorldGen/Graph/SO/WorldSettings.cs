@@ -45,9 +45,17 @@ public class WorldSettings : ScriptableObject
     private WorldLoopSetting _worldLoop = WorldLoopSetting.Default;
     public WorldLoopSetting WorldLoop { get => _worldLoop; set => _worldLoop = value; }
 
+    [Header("Terrain Material")]
+    [Tooltip("런타임 생성 Terrain에 적용할 머티리얼. " +
+             "URP는 빌드에서 defaultTerrainMaterial이 null이라(에디터 전용) " +
+             "지정하지 않으면 빌드에서만 지형이 마젠타로 보인다.")]
+    [SerializeField] private Material terrainMaterial;
+
+    public Material TerrainMaterial { get => terrainMaterial; }
+
     [Header("Terrain Height Settings")]
     [Tooltip("기반 높이 설정")]
-    [SerializeField] private float Height_Ocean;    
+    [SerializeField] private float Height_Ocean;
     [SerializeField] private float Height_Plains;
     [SerializeField] private float Height_Mesa;
     [SerializeField] private float Height_Highlands;

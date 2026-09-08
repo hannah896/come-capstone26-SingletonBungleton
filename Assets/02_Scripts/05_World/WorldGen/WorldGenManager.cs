@@ -56,6 +56,15 @@ public class WorldGenManager : MonoBehaviour
     /// <summary>WorldSettings 에셋 로드가 완료되어 월드 생성이 가능한 상태인지 여부.</summary>
     public bool IsWorldSettingsLoaded => _isWorldSettingsLoaded;
 
+    /// <summary>
+    /// 플레이어 최초 스폰에 사용한 StartRegion 좌표. 부활 지점으로도 사용된다.
+    /// 낙하 여유를 두고 지면보다 높게 잡혀 있으므로, 그대로 쓰면 공중에서 떨어진다.
+    /// </summary>
+    public Vector3 PlayerSpawnPosition { get; private set; }
+
+    /// <summary>스폰 좌표가 확정되었는지 여부 (월드 생성 완료 전에는 false).</summary>
+    public bool HasPlayerSpawnPosition { get; private set; }
+
     void OnDestroy()
     {
         _cts?.Cancel();
@@ -240,12 +249,26 @@ public class WorldGenManager : MonoBehaviour
             ReportProgress(0.85f, "플레이어 준비");
 
             // ==========================================================
+            // 4.5단계: 스폰 대기
+            //   맵이 완전히 생성된 뒤 일정 시간을 두고 캐릭터를 소환한다.
+            //   지형·콜라이더가 자리를 잡기 전에 캐릭터가 놓이면 허공에서 떨어지기 때문.
+            //   멀티에서는 각 피어가 자기 월드 생성 후 이 대기를 거친 뒤에야
+            //   NotifyWorldReady로 준비 완료를 알리므로, 호스트가 스폰하는
+            //   "상대방 캐릭터"에도 동일하게 적용된다.
+            // ==========================================================
+            await WaitBeforeSpawnAsync(_cts.Token);
+
+            // ==========================================================
             // 5단계: 플레이어 스폰
             //   - 멀티: 호스트가 Runner.Spawn으로 네트워크 스폰(각 클라는 복제된 로컬 플레이어를 청크 타깃으로)
             //   - 싱글: 기존 로컬 스폰
             // ==========================================================
             float spawnTileHeight = logicData.GetHeightAt(startingX, startingZ);
             Vector3 spawnPos = new Vector3(startingX, spawnTileHeight + 20f, startingZ);
+
+            // 부활 지점으로 재사용한다 (Player.Revive)
+            PlayerSpawnPosition = spawnPos;
+            HasPlayerSpawnPosition = true;
 
             bool isMultiplayer = Main.Network != null && Main.Network.IsInRoom;
             if (isMultiplayer)
@@ -443,6 +466,30 @@ public class WorldGenManager : MonoBehaviour
         {
             Destroy(_coastBoundaryRoot);
             _coastBoundaryRoot = null;
+        }
+    }
+
+    /// <summary>
+    /// 맵 생성이 끝난 뒤 캐릭터를 소환하기까지 두는 대기 시간(초).
+    /// (WorldGenManager는 동적 생성돼 인스펙터 주입 경로가 없으므로 상수로 둔다)
+    /// </summary>
+    private const float SpawnDelaySeconds = 5f;
+
+    // 스폰 전 대기. 로딩 게이지가 멈춘 것처럼 보이지 않도록 진행률을 함께 올린다.
+    private async UniTask WaitBeforeSpawnAsync(CancellationToken token)
+    {
+        const float startProgress = 0.85f;
+        const float endProgress = 0.95f;
+
+        float elapsed = 0f;
+        while (elapsed < SpawnDelaySeconds)
+        {
+            // 게임 속도(timeScale) 조작에 영향받지 않도록 unscaled 기준으로 센다
+            await UniTask.Yield(PlayerLoopTiming.Update, token);
+            elapsed += Time.unscaledDeltaTime;
+
+            float t = Mathf.Clamp01(elapsed / SpawnDelaySeconds);
+            ReportProgress(Mathf.Lerp(startProgress, endProgress, t), "플레이어 준비");
         }
     }
 

@@ -28,6 +28,11 @@ public class PlayerMotor : MonoBehaviour
     // 공중에서 누적되는 수평 속도 (관성)
     private Vector3 airVelocity;
 
+    // 외부 충격(넉백). 상태 이동과 별개로 합산되며 시간에 따라 감쇠한다.
+    private Vector3 knockbackVelocity;
+    private float knockbackDuration;
+    private float knockbackRemaining;
+
     // 회전 관련
     private Vector3 pendingRotationDir;
     private float pendingRotationSpeed;
@@ -104,6 +109,55 @@ public class PlayerMotor : MonoBehaviour
         pendingRotationSpeed = rotSpeed;
     }
 
+    /// <summary>
+    /// 지정 위치로 즉시 이동시킨다. (부활·리스폰 등)
+    /// CharacterController는 자체 내부 좌표를 갖고 있어 transform만 옮기면 다음 Move에서 되돌려지므로,
+    /// 비활성화 → 위치 변경 → 재활성화 순서로 처리한다.
+    /// </summary>
+    public void Teleport(Vector3 position)
+    {
+        if (cc == null)
+        {
+            transform.position = position;
+            ResetVelocity();
+            return;
+        }
+
+        bool wasEnabled = cc.enabled;
+        cc.enabled = false;
+        transform.position = position;
+        cc.enabled = wasEnabled;
+
+        ResetVelocity();
+    }
+
+    /// <summary>
+    /// 누적된 이동·낙하 속도를 모두 초기화한다.
+    /// (남은 낙하 속도를 들고 순간이동하면 착지 순간 지면을 뚫거나 튕긴다)
+    /// </summary>
+    public void ResetVelocity()
+    {
+        moveVelocity = Vector3.zero;
+        airVelocity = Vector3.zero;
+        knockbackVelocity = Vector3.zero;
+        knockbackRemaining = 0f;
+        gravity?.SetVelocity(0f);
+    }
+
+    /// <summary>
+    /// 외부 충격(넉백)을 가한다. 상태가 설정하는 이동 속도와 별개로 합산되며 duration 동안 선형 감쇠한다.
+    /// (moveVelocity는 매 Tick 끝에서 초기화되므로 여기에 섞으면 한 프레임만 밀린다)
+    /// </summary>
+    public void AddKnockback(Vector3 worldDir, float force, float duration = 0.25f)
+    {
+        worldDir.y = 0f;
+        if (worldDir.sqrMagnitude < 0.0001f || force <= 0f || duration <= 0f) return;
+
+        knockbackVelocity = worldDir.normalized * force;
+        knockbackDuration = duration;
+        knockbackRemaining = duration;
+    }
+
     #endregion
 
     /// <summary>
@@ -156,6 +210,17 @@ public class PlayerMotor : MonoBehaviour
             float dot = Vector3.Dot(moveVelocity, Vector3.ProjectOnPlane(Vector3.up, groundDetector.GroundNormal));
             if (dot > 0f)
                 finalVelocity = Vector3.ProjectOnPlane(finalVelocity, groundDetector.GroundNormal);
+        }
+
+        // 5-1. 넉백 합산 (남은 시간에 비례해 선형 감쇠)
+        if (knockbackRemaining > 0f)
+        {
+            knockbackRemaining -= deltaTime;
+            float t = Mathf.Clamp01(knockbackRemaining / Mathf.Max(knockbackDuration, 0.0001f));
+            finalVelocity += knockbackVelocity * t;
+
+            if (knockbackRemaining <= 0f)
+                knockbackVelocity = Vector3.zero;
         }
 
         // 6. 수직 속도 합산
