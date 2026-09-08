@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c6e4086a59dbb64bb546fcd8d9dd495, type: 3}
+  m_Name: IMP_Devil
+  m_EditorClassIdentifier: 
+  MaxHP: 60
+  CurHP: 60
+  MoveSpeed: 3
+  AttackDamage: 6
+  Defense: 1
+  MinAttackPeriod: 1.5
+  FOV: 360
+  DetectRange: 14
+  AttackRange: 10
+  TurnSpeed: 540
+  DropTable: {fileID: 0}
+  SlashRange: 2
+  ProjectileKey: MischiefProjectile
+  FireballCooldown: 3
+  FireballCastTime: 0.8
+  ProjectileSpeed: 10
+  ProjectileLifeTime: 3
+  ProjectileDamage: 0
+  MuzzleHeight: 1
+  HitsToTakeOff: 3
+  NearContactRange: 2
+  NearContactTime: 2
+  Phase2HpRatio: 0.7
+  TakeOffCooldown: 8
+  FlyDuration: 12
+  FlyHeight: 3.5
+  TakeOffDuration: 0.8
+  LandDuration: 0.5
+  FlyMoveSpeedMultiplier: 1.2
+  DiveCooldown: 5
+  DiveRange: 6
+  DiveDuration: 0.5
+  DiveImpactRadius: 2
+  DiveDamage: 0
+  TailCooldown: 4
+  TailRange: 3
+  TailCastTime: 0.6
+  TailKnockback: 8
+  TailKnockbackDuration: 0.3
+  TailDamage: 0
+  FlyProjectileCooldown: 2
+  FlyProjectileBurst: 3
+  FlyProjectileInterval: 0.15
+  FlyProjectileCastTime: 0.8
+  MeteorKey: Meteor
+  HellRainCooldown: 10
+  HellRainCastTime: 1.2
+  MeteorCount: 6
+  MeteorRadius: 5
+  MeteorWarningTime: 0.8
+  MeteorSpawnStagger: 0.12
+  MeteorImpactRadius: 1.5
+  MeteorLingerTime: 1.5
+  MeteorDamage: 0

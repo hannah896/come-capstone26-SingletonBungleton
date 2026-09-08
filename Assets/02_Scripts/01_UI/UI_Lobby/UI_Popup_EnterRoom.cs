@@ -22,6 +22,8 @@ public class UI_Popup_EnterRoom : UI_Popup
     [SerializeField] private GameObject RoomButtonTemplate; // 목록 항목 템플릿(방 버튼 오브젝트)
     [SerializeField] private Transform RoomListContainer;   // 비우면 ScrollRect.content 자동
     [SerializeField] private GameObject EmptyText;          // 비우면 이름에 "Empty" 포함된 오브젝트 자동
+    [SerializeField] private UI_Button RefreshButton;       // 비우면 이름에 "Refresh" 포함된 버튼 자동
+    [SerializeField] private UI_Button CloseButton;         // 비우면 이름에 "Close" 포함된 버튼 자동
 
     // 실제 사용하는 템플릿 (RoomButtonTemplate 연결 시 그것을, 아니면 자동 탐색 결과를 캐싱)
     private GameObject _template;
@@ -30,6 +32,9 @@ public class UI_Popup_EnterRoom : UI_Popup
     private readonly List<UI_Button_Room> _roomButtons = new();
 
     private bool _cached;
+
+    // 새로고침 진행 중 여부 (중복 클릭 방지)
+    private bool _refreshing;
     #endregion
 
     protected override void Start()
@@ -37,6 +42,7 @@ public class UI_Popup_EnterRoom : UI_Popup
         base.Start();
 
         CacheReferences();
+        BindButtons();
 
         // 방 목록 갱신 구독. 해제는 파괴 시점(OnDestroyEvent)에 수행해
         // 베이스 UI_Popup.OnDestroy(트윈 정리 등)를 덮어쓰지 않는다.
@@ -46,9 +52,59 @@ public class UI_Popup_EnterRoom : UI_Popup
             OnDestroyEvent.AddListener(Unsubscribe);
         }
 
-        // 처음엔 목록이 비어있는 상태로 표시하고, 로비 접속을 시작한다.
-        RebuildRooms(null);
+        // 마지막으로 받아둔 목록을 먼저 그린다.
+        // (이미 로비에 접속된 상태로 팝업을 다시 열면 Fusion이 새 갱신을 보내주지 않아 빈 화면이 된다)
+        RebuildRooms(Main.Network?.CachedRooms);
         Main.Network?.BrowseRoomsAsync().Forget();
+    }
+
+    // 새로고침 / 닫기 버튼 연결
+    private void BindButtons()
+    {
+        // OnButtonUp은 SetDownUpButton()으로 PointerUp EventTrigger를 등록해야 발생한다.
+        if (RefreshButton != null)
+        {
+            RefreshButton.SetDownUpButton();
+            RefreshButton.OnButtonUp += OnRefresh;
+        }
+
+        if (CloseButton != null)
+        {
+            CloseButton.SetDownUpButton();
+            CloseButton.OnButtonUp += OnCloseButton;
+        }
+    }
+
+    // 새로고침 — 로비에 재접속해 방 목록 전체를 다시 받아온다
+    private void OnRefresh()
+    {
+        RefreshAsync().Forget();
+    }
+
+    private async UniTaskVoid RefreshAsync()
+    {
+        if (_refreshing || Main.Network == null) return;
+
+        _refreshing = true;
+        RefreshButton?.SetActive(false); // 갱신 중 중복 클릭 차단 (버튼 흐리게)
+
+        try
+        {
+            await Main.Network.RefreshRoomsAsync();
+        }
+        finally
+        {
+            _refreshing = false;
+
+            // 갱신 도중 팝업이 닫혀 파괴됐을 수 있다
+            if (this != null && RefreshButton != null) RefreshButton.SetActive(true);
+        }
+    }
+
+    // 닫기 버튼
+    private void OnCloseButton()
+    {
+        Close();
     }
 
     // 방 목록 이벤트 해제
@@ -97,6 +153,22 @@ public class UI_Popup_EnterRoom : UI_Popup
             RoomListContainer = _template.transform.parent;
 
         if (EmptyText == null) EmptyText = FindEmptyText();
+
+        if (RefreshButton == null) RefreshButton = FindButton("Refresh");
+        if (CloseButton == null) CloseButton = FindButton("Close");
+    }
+
+    // 이름에 키워드가 포함된 UI_Button을 찾는다.
+    // 방 목록 컨테이너 안쪽(= 방 항목 템플릿과 그 복제본)은 제외한다.
+    private UI_Button FindButton(string keyword)
+    {
+        foreach (UI_Button button in GetComponentsInChildren<UI_Button>(true))
+        {
+            if (button.name.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) < 0) continue;
+            if (RoomListContainer != null && button.transform.IsChildOf(RoomListContainer)) continue;
+            return button;
+        }
+        return null;
     }
 
     // 방 목록 수신 → 갱신

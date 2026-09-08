@@ -39,6 +39,15 @@ public class NetworkManager : CoreManager
     // 호스트가 같은 로비에 세션을 만들어야 탐색 목록에 보인다.
     private const string DEFAULT_LOBBY = "default";
 
+    // 마지막으로 받아둔 방 목록.
+    // Photon 로비는 "목록에 변화가 생겼을 때"만 갱신을 밀어주기 때문에, 이미 로비에 들어와 있는 상태에서
+    // 방 목록 UI를 새로 열면 이벤트가 한 번도 오지 않아 빈 화면이 된다. 그래서 마지막 목록을 들고 있다가
+    // 새 구독자에게 즉시 다시 흘려준다.
+    private readonly List<RoomInfo> _cachedRooms = new();
+
+    // 강제 갱신(RefreshRoomsAsync) 진행 중 여부 — 중복 실행 방지
+    private bool _refreshing;
+
     #endregion
 
 #if PHOTON_FUSION
@@ -127,6 +136,12 @@ public class NetworkManager : CoreManager
 
     // 현재 방(세션)에 참가한 멀티플레이 상태인지 여부
     public bool IsInRoom => State >= NetworkState.InRoom;
+
+    // 마지막으로 받아둔 방 목록. 방 목록 UI가 열리자마자 그릴 초기값으로 사용한다.
+    public IReadOnlyList<RoomInfo> CachedRooms => _cachedRooms;
+
+    // 방 목록을 강제 갱신하는 중인지 여부 (UI가 새로고침 버튼을 잠글 때 참조)
+    public bool IsRefreshingRooms => _refreshing;
 
     // 로컬에서 선택한 캐릭터 성별 (PlayerCharacter 값)
     public int LocalCharacterIndex => _localCharacterIndex;
@@ -385,10 +400,7 @@ public class NetworkManager : CoreManager
     /// </summary>
     public async UniTask LeaveRoomAsync()
     {
-        await CleanupRunner();
-
-        _gameStarting = false;
-        SetState(NetworkState.Disconnected);
+        await ShutdownSession();
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[NetworkManager] Left room");
@@ -627,6 +639,11 @@ public class NetworkManager : CoreManager
             if (!session.IsVisible) continue;
             rooms.Add(new RoomInfo(session.Name, session.PlayerCount, session.MaxPlayers));
         }
+
+        // 나중에 열리는 UI가 즉시 그릴 수 있도록 보관해둔다
+        _cachedRooms.Clear();
+        _cachedRooms.AddRange(rooms);
+
         OnRoomListUpdated?.Invoke(rooms);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -748,12 +765,62 @@ public class NetworkManager : CoreManager
     public async UniTask<bool> BrowseRoomsAsync(string lobbyName = DEFAULT_LOBBY)
     {
 #if PHOTON_FUSION
-        if (State >= NetworkState.InLobby) return true;
+        if (State >= NetworkState.InLobby)
+        {
+            // 이미 로비에 있으면 Fusion은 "목록에 변화가 생겼을 때"만 갱신을 보내준다.
+            // 방금 열린 UI가 빈 목록으로 남지 않도록 마지막으로 받아둔 목록을 즉시 다시 전달한다.
+            EmitCachedRooms();
+            return true;
+        }
         return await ConnectToLobbyAsync(lobbyName);
 #else
         await UniTask.CompletedTask;
         return false;
 #endif
+    }
+
+    /// <summary>
+    /// 방 목록을 강제로 다시 받아옵니다. (방 목록 UI의 새로고침 버튼)
+    ///
+    /// Photon 로비 목록은 변화가 있을 때만 서버가 밀어주므로, 로비에 머무른 채로는 아무리 기다려도
+    /// 새 목록이 오지 않는다. 그래서 로비 러너를 내렸다가 다시 접속해 전체 목록을 새로 받는다.
+    /// 재접속에는 시간이 걸리므로 호출 즉시 직전 목록을 한 번 흘려보내 화면이 비지 않게 한다.
+    ///
+    /// 방에 들어간 뒤(InRoom 이상)에는 그 러너가 곧 세션 러너라서 내리면 접속이 끊긴다 → 아무것도 하지 않는다.
+    /// </summary>
+    public async UniTask<bool> RefreshRoomsAsync(string lobbyName = DEFAULT_LOBBY)
+    {
+#if PHOTON_FUSION
+        if (State >= NetworkState.InRoom || _refreshing) return false;
+
+        _refreshing = true;
+        try
+        {
+            // 재접속하는 동안 UI가 빈 목록이 되지 않도록 직전 목록을 먼저 보여준다
+            EmitCachedRooms();
+
+            await CleanupRunner();
+
+            // 러너가 없던 경우엔 OnShutdown 콜백이 오지 않으므로 여기서 상태를 확실히 맞춘다
+            // (ConnectToLobbyAsync는 Disconnected에서만 진행한다)
+            SetState(NetworkState.Disconnected);
+
+            return await ConnectToLobbyAsync(lobbyName);
+        }
+        finally
+        {
+            _refreshing = false;
+        }
+#else
+        await UniTask.CompletedTask;
+        return false;
+#endif
+    }
+
+    // 마지막으로 받아둔 방 목록을 구독자에게 다시 전달한다 (복사본을 넘겨 외부 수정으로부터 캐시를 보호)
+    private void EmitCachedRooms()
+    {
+        OnRoomListUpdated?.Invoke(new List<RoomInfo>(_cachedRooms));
     }
 
     /// <summary>
@@ -950,21 +1017,48 @@ public class NetworkManager : CoreManager
 
     #region Cleanup
 
+    /// <summary>
+    /// 씬 전환마다 <see cref="Main.Clear"/>를 통해 호출된다.
+    ///
+    /// 세션(러너 · 프리팹 · State)은 절대 건드리지 않는다.
+    /// 로비에서 방을 만든 뒤 GameScene으로 넘어가는 정상 흐름에서도 이 메서드가 불리기 때문에,
+    /// 여기서 러너를 내리면 방을 만들자마자 세션이 끊기고 뒤늦게 들어온 플레이어의 스폰이 실패한다.
+    /// 실제 세션 종료는 <see cref="ShutdownSession"/>이 담당한다.
+    ///
+    /// 여기서는 파괴될 UI가 남긴 구독만 끊는다.
+    /// </summary>
     public override void Clear()
     {
         base.Clear();
+        ClearSubscribers();
+    }
 
+    /// <summary>
+    /// 세션을 실제로 종료한다. 러너를 셧다운·파괴하고 상태를 Disconnected로 되돌린다.
+    /// 방 퇴장(<see cref="LeaveRoomAsync"/>)과 앱 종료 경로에서만 호출한다. 씬 전환에서는 호출하지 않는다.
+    ///
+    /// ※ 프리팹(AssetCacheType.Required)은 해제하지 않는다.
+    ///   로드는 OnInitializeAsync에서 앱 시작 시 1회만 이뤄지므로, 한 번 해제하면
+    ///   다음 세션에서 다시 로드되지 않아 캐릭터·PlayerData 스폰이 영구히 실패한다.
+    /// </summary>
+    public async UniTask ShutdownSession()
+    {
 #if PHOTON_FUSION
-        CleanupRunner().Forget();
-        _playerDataPrefab = null;
-        _playerCharacterPrefab = null;
-        _playerCharacterMalePrefab = null;
-        Main.Resource?.Release(PLAYER_DATA_PREFAB_KEY);
-        Main.Resource?.Release(PLAYER_CHARACTER_PREFAB_KEY);
-        Main.Resource?.Release(PLAYER_CHARACTER_MALE_PREFAB_KEY);
+        await CleanupRunner();
+#else
+        await UniTask.CompletedTask;
 #endif
+        _gameStarting = false;
+        _refreshing = false;
+        _cachedRooms.Clear();
 
-        State = NetworkState.Disconnected;
+        SetState(NetworkState.Disconnected);
+        ClearSubscribers();
+    }
+
+    /// <summary>UI 등 외부 구독을 모두 끊는다. 파괴된 오브젝트로 이벤트가 날아가는 것을 막는다.</summary>
+    private void ClearSubscribers()
+    {
         OnStateChanged = null;
         OnRoomListUpdated = null;
         OnWaitingPlayersChanged = null;

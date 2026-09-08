@@ -71,6 +71,13 @@ public class TerrainBuilder
 
         terrainGO.name = $"Chunk_Terrain_{chunk.ChunkCoord.x}_{chunk.ChunkCoord.y}";
 
+        // 지형 머티리얼 지정.
+        // Terrain.CreateTerrainGameObject()는 머티리얼을 비워두면 렌더 파이프라인의
+        // defaultTerrainMaterial을 쓰는데, URP는 이 값을 에디터에서만 채워주고
+        // 빌드에서는 null을 돌려준다(UniversalRenderPipelineAsset.DefaultResources.cs).
+        // 그래서 지정하지 않으면 에디터는 멀쩡한데 빌드에서만 지형이 마젠타로 나온다.
+        ApplyTerrainMaterial(terrain, settings);
+
         // 추가 : 터레인 설정
         terrain.drawTreesAndFoliage = true;
         terrain.detailObjectDensity = 1.0f;     // 0~1
@@ -83,4 +90,32 @@ public class TerrainBuilder
 
         return (terrainData, terrainGO);
     }
+
+    /// <summary>
+    /// WorldSettings에 지정된 지형 머티리얼을 Terrain에 적용한다.
+    /// 미지정 시 빌드에서 지형이 마젠타로 렌더되므로 경고를 남긴다.
+    /// </summary>
+    private void ApplyTerrainMaterial(Terrain terrain, WorldSettings settings)
+    {
+        if (terrain == null) return;
+
+        Material material = settings != null ? settings.TerrainMaterial : null;
+
+        if (material == null)
+        {
+            if (!_materialWarned)
+            {
+                _materialWarned = true;
+                Debug.LogWarning(
+                    "[TerrainBuilder] WorldSettings.TerrainMaterial이 비어 있습니다. " +
+                    "빌드에서 지형이 마젠타로 렌더됩니다. " +
+                    "WorldSettings 에셋에 URP Terrain 머티리얼(TerrainLit)을 지정하세요.");
+            }
+            return;
+        }
+
+        terrain.materialTemplate = material;
+    }
+
+    private bool _materialWarned;
 }
