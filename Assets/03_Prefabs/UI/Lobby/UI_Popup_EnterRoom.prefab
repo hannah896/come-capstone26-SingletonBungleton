@@ -1189,6 +1189,22 @@ PrefabInstance:
       propertyPath: m_Name
       value: RoomNameText
       objectReference: {fileID: 0}
+    - target: {fileID: 7535669648949928010, guid: 64e9af8e6d93a4292beefbe33a19f307, type: 3}
+      propertyPath: m_Color.a
+      value: 0.67058825
+      objectReference: {fileID: 0}
+    - target: {fileID: 7535669648949928010, guid: 64e9af8e6d93a4292beefbe33a19f307, type: 3}
+      propertyPath: m_Color.b
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7535669648949928010, guid: 64e9af8e6d93a4292beefbe33a19f307, type: 3}
+      propertyPath: m_Color.g
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7535669648949928010, guid: 64e9af8e6d93a4292beefbe33a19f307, type: 3}
+      propertyPath: m_Color.r
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:

@@ -236,7 +236,8 @@ public class UI_Popup_EnterRoom : UI_Popup
 
         // 호스트가 세션에 공유한 월드 시드/옵션을 읽어 로컬 WorldGenRequest에 반영
         // (같은 시드로 각 클라가 동일 월드를 생성)
-        NetworkWorldConfig.ApplyFromSession();
+        // 참가 직후에는 세션 속성이 아직 안 왔을 수 있다 → 실패해도 GameScene이 도착할 때까지 다시 기다린다.
+        NetworkWorldConfig.TryApplyFromSession();
 
         Close();
         Extensions.ChangeScene("GameScene");
