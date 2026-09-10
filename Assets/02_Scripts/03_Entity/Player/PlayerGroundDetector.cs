@@ -40,8 +40,13 @@ public class PlayerGroundDetector
         float radius = cc.radius * 0.9f;
         Vector3 origin = transform.position + Vector3.up * (cc.center.y);
 
-        // 더 큰 거리에서 지면 감지 (울퉁불퉁한 테레인 대응)
-        float maxDistance = cc.center.y - radius + cc.skinWidth + checkDistance;
+        // 캡슐 하단보다 checkDistance만큼 아래까지 훑는다 (울퉁불퉁한 테레인 대응).
+        // 기준은 center.y가 아니라 height/2 — 캡슐 하단은 center.y - height/2이므로,
+        // origin(center.y)에서 캡슐 하단까지의 거리가 곧 height/2다.
+        // center.y를 쓰면 "캡슐 하단 = 루트 피벗"인 프리팹에서만 우연히 맞고,
+        // 캡슐이 피벗보다 위에 있는 프리팹(여성)에서는 그 차이만큼 과하게 훑어
+        // 아직 공중인데 IsGrounded가 켜진다.
+        float maxDistance = cc.height * 0.5f - radius + cc.skinWidth + checkDistance;
 
         if (Physics.SphereCast(origin, radius, Vector3.down, out groundHit, maxDistance, groundLayer))
         {

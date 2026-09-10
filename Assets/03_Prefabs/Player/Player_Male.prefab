@@ -443,6 +443,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 03b834712413e6e49ad9445f76dd851d, type: 3}
   m_PrefabInstance: {fileID: 4784344388405689635}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &6232438390550614969 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -7774490119401427302, guid: 03b834712413e6e49ad9445f76dd851d, type: 3}
+  m_PrefabInstance: {fileID: 4784344388405689635}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &7573059033022059250
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -460,8 +465,12 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1373583002437501106}
     - target: {fileID: 4509351423220894105, guid: 9d20080a9d1637c43a9619f8fbc3666f, type: 3}
+      propertyPath: m_Height
+      value: 1.8514835
+      objectReference: {fileID: 0}
+    - target: {fileID: 4509351423220894105, guid: 9d20080a9d1637c43a9619f8fbc3666f, type: 3}
       propertyPath: m_Center.y
-      value: 0.9
+      value: 0.89358634
       objectReference: {fileID: 0}
     - target: {fileID: 5174712511869228633, guid: 9d20080a9d1637c43a9619f8fbc3666f, type: 3}
       propertyPath: m_LocalPosition.x
@@ -503,6 +512,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6613656404316520952, guid: 9d20080a9d1637c43a9619f8fbc3666f, type: 3}
+      propertyPath: handAttachPoint
+      value: 
+      objectReference: {fileID: 6232438390550614969}
     - target: {fileID: 9146008707785666234, guid: 9d20080a9d1637c43a9619f8fbc3666f, type: 3}
       propertyPath: SortKey
       value: 3185121182
