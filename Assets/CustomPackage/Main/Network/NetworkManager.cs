@@ -146,8 +146,21 @@ public class NetworkManager : CoreManager
     public bool IsHost => false;
 #endif
 
-    // 현재 방(세션)에 참가한 멀티플레이 상태인지 여부
-    public bool IsInRoom => State >= NetworkState.InRoom;
+    // 현재 방(세션)에 참가한 멀티플레이 상태인지 여부.
+    // State 하나만 믿으면 안 된다. 방 참가 직전에 정리한 로비 러너의 OnShutdown 콜백이 뒤늦게 도착하면
+    // 이미 InRoom이 된 State가 Disconnected로 되돌아가고, 그러면 클라이언트가 자기를 싱글 플레이로 오인해
+    // 호스트 시드를 기다리지 않고 랜덤 시드로 월드를 만든다(= 플레이어마다 맵이 달라지는 원인).
+    // 그래서 살아 있는 러너의 세션 유효성도 함께 확인한다.
+    public bool IsInRoom => State >= NetworkState.InRoom || IsSessionAlive;
+
+#if PHOTON_FUSION
+    // 러너가 실제 세션(방)에 들어가 있는지 여부. 방 목록만 보는 로비 러너는 SessionInfo가 유효하지 않다.
+    private bool IsSessionAlive =>
+        _runner != null && _runner.IsRunning && !_runner.IsShutdown &&
+        _runner.SessionInfo != null && _runner.SessionInfo.IsValid;
+#else
+    private bool IsSessionAlive => false;
+#endif
 
     // 마지막으로 받아둔 방 목록. 방 목록 UI가 열리자마자 그릴 초기값으로 사용한다.
     public IReadOnlyList<RoomInfo> CachedRooms => _cachedRooms;
@@ -727,6 +740,9 @@ public class NetworkManager : CoreManager
     // 서버에서 연결 해제됨 (클라이언트: 호스트 종료/강퇴 등)
     void INetworkRunnerCallbacks.OnDisconnectedFromServer(NetworkRunner runner, NetDisconnectReason reason)
     {
+        // 현재 러너가 아닌(이미 정리된) 러너의 지연 콜백은 무시한다.
+        if (_runner != runner) return;
+
         _players.Clear();
         _characters.Clear();
         _worldReadyPlayers.Clear();
@@ -742,6 +758,15 @@ public class NetworkManager : CoreManager
     // 러너 셧다운 — 셧다운된 러너는 재사용할 수 없으므로 파괴하고 참조를 비운다 (다음 접속 시 새로 생성)
     void INetworkRunnerCallbacks.OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason)
     {
+        // 이미 교체된 러너(방 참가/생성 직전에 정리한 로비 러너)의 지연 콜백은 무시한다.
+        // 여기서 상태를 Disconnected로 되돌리면 방금 참가한 세션이 "방에 없음"으로 오인된다.
+        if (_runner != runner)
+        {
+            if (runner != null && runner.gameObject != null)
+                UnityEngine.Object.Destroy(runner.gameObject);
+            return;
+        }
+
         _players.Clear();
         _characters.Clear();
         _worldReadyPlayers.Clear();

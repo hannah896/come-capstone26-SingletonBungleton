@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -131,7 +131,7 @@ public static class NetworkWorldConfig
     // 실제 반영 + 로그 (양쪽 피어의 시드를 로그로 비교할 수 있게 항상 남긴다)
     private static void Apply(int seed, int branch, int loop, int size, string source)
     {
-        WorldGenRequest.Set((WorldBranchSetting)branch, (WorldLoopSetting)loop, seed, (WorldSize)size);
+        WorldGenRequest.Set((WorldBranchSetting)branch, (WorldLoopSetting)loop, seed, (WorldSize)size, fromHost: true);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[NetworkWorldConfig] 월드 옵션 수신({source}) — seed {seed}, " +

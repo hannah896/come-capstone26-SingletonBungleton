@@ -1,4 +1,4 @@
-using Cysharp.Threading.Tasks;
+﻿using Cysharp.Threading.Tasks;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -153,6 +153,48 @@ public class WorldGenManager : MonoBehaviour
         }, external);
     }
 
+    /// <summary>
+    /// 생성된 월드의 지문(해시)을 로그로 남긴다.
+    /// 각 피어는 같은 시드로 자기 월드를 따로 만들기 때문에, 시드가 같아도 생성 결과가
+    /// 어긋날 수 있다(부동소수점 차이, 에셋 버전 차이 등). 호스트와 클라의 이 로그를
+    /// 비교하면 "시드 전달 문제"인지 "생성 결정성 문제"인지 한 줄로 구분할 수 있다.
+    /// </summary>
+    private void LogWorldFingerprint(WorldLogicData logicData, WorldDisposeData disposeData)
+    {
+        if (logicData == null) return;
+
+        Vector2Int size = logicData.TerrainSize;
+        int heightHash = 17;
+        int territoryHash = 17;
+
+        unchecked
+        {
+            // 전체를 다 도는 대신 4타일 간격으로 표본을 뜬다 (차이가 있으면 어차피 광범위하게 갈린다)
+            for (int x = 0; x < size.x; x += 4)
+            {
+                for (int y = 0; y < size.y; y += 4)
+                {
+                    if (logicData.HeightWorld != null)
+                    {
+                        // 비트 단위로 비교해야 미세한 부동소수점 차이도 잡힌다
+                        int bits = BitConverter.SingleToInt32Bits(logicData.HeightWorld[x, y]);
+                        heightHash = (heightHash * 31) + bits;
+                    }
+
+                    if (logicData.TerritoryWorld != null)
+                        territoryHash = (territoryHash * 31) + logicData.TerritoryWorld[x, y];
+                }
+            }
+        }
+
+        int objectCount = disposeData?.ObjectDisposes?.Count ?? -1;
+        int itemCount = disposeData?.ItemDisposes?.Count ?? -1;
+
+        Debug.Log($"[WorldGen] 월드 지문 — seed {_worldSettings.WorldSeed}, size {size.x}x{size.y}, " +
+                  $"height {heightHash:X8}, territory {territoryHash:X8}, " +
+                  $"spawn {logicData.SpawnTile}, obj {objectCount}, item {itemCount}");
+    }
+
     /// <summary>월드 생성 진행률(0~1)과 현재 단계 설명.</summary>
     public event Action<float, string> OnProgress;
 
@@ -196,6 +238,10 @@ public class WorldGenManager : MonoBehaviour
 
             var graphData = _worldGraphDirector.GetWorldGraphData();
             var logicData = _worldGraphDirector.GetWorldLogicData();
+
+            // 멀티 검증용 — 같은 시드라면 모든 피어에서 이 값이 완전히 같아야 한다.
+            // 시드는 같은데 지문이 다르면 "전달"이 아니라 "생성 결정성"이 깨진 것이다.
+            LogWorldFingerprint(logicData, _worldGraphDirector.GetWorldDisposeData());
 
             ReportProgress(0.3f, "해안 경계 생성");
             await BuildCoastBoundariesAsync(logicData, _cts.Token);

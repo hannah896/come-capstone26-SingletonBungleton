@@ -1,4 +1,4 @@
-using Cysharp.Threading.Tasks;
+﻿using Cysharp.Threading.Tasks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -74,7 +74,8 @@ public class TerritoryBuilder : IGraphPipelineStage
         }
     }
 
-    [BurstCompile]
+    // 시드 동일 = 결과 동일을 보장하기 위해 엄격 모드 고정 (LandformJobs.HeightGenerationJob 주석 참고)
+    [BurstCompile(FloatMode = FloatMode.Strict, FloatPrecision = FloatPrecision.High)]
     private struct NoiseGenerationJob : IJobParallelFor
     {
         [WriteOnly] public NativeArray<float> NoiseMap;
