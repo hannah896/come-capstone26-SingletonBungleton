@@ -82,7 +82,9 @@ public class TextManager : CoreManager
         try
         {
             Main.Local.OnSettingFont += SetFontData;
-            _fontsSo = await Main.Resource.LoadAssetAsync<FontsSo>("FontsSo");
+            // 폰트 SO와 TMP_FontAsset은 앱 수명 내내 캐싱되므로 Required로 로드한다.
+            // NonRequired면 씬 전환 시 번들이 언로드되어 캐싱된 폰트 참조가 끊긴다.
+            _fontsSo = await Main.Resource.LoadAssetAsync<FontsSo>("FontsSo", AssetCacheType.Required);
             InitFontData();
         }
         catch (Exception e)

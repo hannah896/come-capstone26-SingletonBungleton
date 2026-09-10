@@ -605,7 +605,9 @@ public class UIManager : PrimaryManager
             if (!_screens.TryGetValue(type, out var screen))
             {
                 key ??= type.Name;
-                var prefab = await Main.Resource.LoadAssetAsync<T>(key, AssetCacheType.NonRequired, ct);
+                // 스크린 인스턴스는 _screens에 영구 캐싱되므로 에셋도 Required로 유지한다.
+                // NonRequired면 씬 전환 시 번들이 언로드되어 살아있는 인스턴스의 폰트/스프라이트 참조가 끊긴다.
+                var prefab = await Main.Resource.LoadAssetAsync<T>(key, AssetCacheType.Required, ct);
                 if (prefab == null) return null;
 
                 var instance = Object.Instantiate(prefab, _root.transform);

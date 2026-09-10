@@ -136,15 +136,36 @@ public class GameScene : SceneBase
             // #3. 플레이어 생성 단계 — 맵 생성 (WorldGen 내부에서 플레이어 소환까지 완료)
             GameState = GameState.Player;
 
+            bool isNetworkSession = Main.Network != null && Main.Network.IsInRoom;
+
+            // 멀티 세션인데 아직 옵션이 없으면(= 방 참가 직후 세션 속성을 놓친 경우)
+            // 호스트가 정한 시드가 도착할 때까지 기다린다. 여기서 그냥 넘어가면 각자 다른 월드가 만들어진다.
+            if (isNetworkSession && !WorldGenRequest.HasRequest)
+                await NetworkWorldConfig.WaitAndApplyAsync(token: token);
+
             if (WorldGenRequest.HasRequest)
             {
-                // 로비(UI_Popup_WorldGen)에서 확정한 옵션·시드로 생성
+                // 로비(UI_Popup_WorldGen/방 만들기) 또는 호스트에게서 받은 옵션·시드로 생성
                 WorldGenRequest.Data req = WorldGenRequest.Consume();
+                await WorldGenManager.Instance.GenerateWorld(
+                    req.Branch, req.Loop, req.Seed, req.Size, token);
+            }
+            else if (isNetworkSession && WorldGenRequest.HasData)
+            {
+                // 요청은 이미 소비됐지만 이번 세션에서 쓰던 옵션이 있다 (씬 리로드 등) → 같은 시드로 재생성
+                WorldGenRequest.Data req = WorldGenRequest.Peek();
                 await WorldGenManager.Instance.GenerateWorld(
                     req.Branch, req.Loop, req.Seed, req.Size, token);
             }
             else
             {
+                if (isNetworkSession)
+                {
+                    // 여기 도달 = 시드 공유 실패. 랜덤 시드로 생성되므로 다른 플레이어와 월드가 달라진다.
+                    Debug.LogError("[GameScene] 호스트의 월드 시드를 받지 못해 랜덤 시드로 생성합니다. " +
+                                   "다른 플레이어와 다른 월드가 됩니다.");
+                }
+
                 // 로비를 거치지 않고 직접 진입한 경우(에디터 테스트 등) 기본 옵션으로 새 맵 자동 생성
                 await WorldGenManager.Instance.GenerateWorldFromUI(
                     WorldBranchSetting.Default,

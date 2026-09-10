@@ -10,6 +10,14 @@ public class PlayerAnimData
     /// </summary>
     public event Action<int> OnTriggerPlayed;
 
+    /// <summary>
+    /// CrossFade로 상태를 직접 전환할 때 발생 (대상 상태 해시 전달).
+    /// CrossFade는 애니메이터 파라미터로 표현되지 않아 Bool/Trigger 복제만으로는 원격에 재현되지 않는다.
+    /// (사망 연출로 CrossFade한 뒤 부활 시 Idle로 CrossFade해도, 원격에는 사망 상태가 그대로 남는다)
+    /// 그래서 발동 사실을 이 이벤트로 알려 NetworkPlayerSync가 원격 피어에서 같은 CrossFade를 재현한다.
+    /// </summary>
+    public event Action<int> OnCrossFadePlayed;
+
     private Animator animator;
     private PlayerAnimHashKey animHashKey = new();
 
@@ -21,7 +29,34 @@ public class PlayerAnimData
 
     private const float CrossFadeTime = 0.05f;
 
+    // 원격 피어에서 같은 CrossFade를 재현하기 위한 대상 상태 목록.
+    // 배열 인덱스를 네트워크로 주고받으므로(해시 대신 1바이트), 새 CrossFade 대상은 반드시 여기에 추가한다.
+    private static readonly int[] s_crossFadeStates =
+    {
+        s_idleHash,
+        s_damageHash,
+        s_combatDeath01Hash,
+        s_combatDeath02Hash,
+    };
+
     public PlayerAnimHashKey AnimHashKey => animHashKey;
+
+    /// <summary>CrossFade 전환 시간 (원격 재현도 같은 값을 쓴다).</summary>
+    public static float CrossFadeDuration => CrossFadeTime;
+
+    /// <summary>CrossFade 대상 상태의 동기화 인덱스를 구한다. 목록에 없으면 -1.</summary>
+    public static int IndexOfCrossFadeState(int stateHash)
+    {
+        for (int i = 0; i < s_crossFadeStates.Length; i++)
+        {
+            if (s_crossFadeStates[i] == stateHash) return i;
+        }
+        return -1;
+    }
+
+    /// <summary>동기화 인덱스에 해당하는 CrossFade 대상 상태 해시를 구한다. 범위를 벗어나면 0.</summary>
+    public static int GetCrossFadeState(int index)
+        => index >= 0 && index < s_crossFadeStates.Length ? s_crossFadeStates[index] : 0;
 
     public PlayerAnimData(Animator animator)
     {
@@ -43,7 +78,7 @@ public class PlayerAnimData
 
         int entryHash = GetEntryStateHash(rootBoolHash);
         if (entryHash != 0)
-            animator.CrossFade(entryHash, CrossFadeTime, 0, 0f);
+            PlayCrossFade(entryHash);
     }
 
     /// <summary>
@@ -59,7 +94,16 @@ public class PlayerAnimData
         animator.SetBool(animHashKey.Dead, true);
 
         int deathHash = wasHit ? s_combatDeath01Hash : s_combatDeath02Hash;
-        animator.CrossFade(deathHash, CrossFadeTime, 0, 0f);
+        PlayCrossFade(deathHash);
+    }
+
+    /// <summary>
+    /// 지정 상태로 CrossFade하고, 원격 재현을 위해 <see cref="OnCrossFadePlayed"/>를 발행한다.
+    /// </summary>
+    public void PlayCrossFade(int stateHash)
+    {
+        animator.CrossFade(stateHash, CrossFadeTime, 0, 0f);
+        OnCrossFadePlayed?.Invoke(stateHash);
     }
 
     private int GetEntryStateHash(int rootBoolHash)

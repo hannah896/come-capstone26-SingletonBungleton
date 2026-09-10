@@ -113,6 +113,10 @@ public class NetworkManager : CoreManager
     // 최대 플레이어 수
     private int _maxPlayers = 4;
 
+    // 호스트가 방 생성 시 확정한 세션 int 속성(월드 시드/옵션 등).
+    // 플레이어 데이터 스폰 시 함께 기록해, 세션 속성이 클라에 늦게 도착해도 시드가 전달되게 한다.
+    private IReadOnlyDictionary<string, int> _sessionIntProperties;
+
     #endregion
 
 #endif
@@ -313,6 +317,8 @@ public class NetworkManager : CoreManager
         SetState(NetworkState.Connecting);
 
         // 호스트가 정한 int 속성(월드 시드/옵션 등)을 세션에 실어 모든 참가자에게 공유
+        _sessionIntProperties = args.Properties;
+
         Dictionary<string, SessionProperty> sessionProps = null;
         if (args.Properties != null && args.Properties.Count > 0)
         {
@@ -631,6 +637,9 @@ public class NetworkManager : CoreManager
 
             playerData.OwnerRef = player;
             playerData.IsMaster = player == r.LocalPlayer; // Host 모드: 호스트가 곧 방장
+
+            // 월드 시드/옵션도 함께 실어 보낸다 (세션 속성이 비어 있어도 클라가 같은 월드를 만들 수 있도록)
+            NetworkWorldConfig.WriteToPlayerData(playerData, _sessionIntProperties);
 
             if (player == r.LocalPlayer)
             {

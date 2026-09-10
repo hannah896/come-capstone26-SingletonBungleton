@@ -44,6 +44,14 @@ public struct NetworkInputData : INetworkInput
     // (같은 트리거가 연속으로 발동돼도 구분되고, 값이 그대로면 중복 발동하지 않는다).
     public byte AnimTriggerSeq;
 
+    // 마지막으로 CrossFade한 대상 상태 인덱스 + 1 (0 = 없음).
+    // CrossFade는 파라미터로 표현되지 않아 Bool/Trigger만으로는 원격에 재현되지 않는다
+    // (사망 → 부활 시 원격에 사망 애니메이션이 그대로 남던 원인).
+    public byte AnimCrossFadeIndex;
+
+    // CrossFade마다 1씩 증가. 원격 피어는 이 값이 바뀔 때만 CrossFade를 재현한다.
+    public byte AnimCrossFadeSeq;
+
     // 유효한 명령이 포함되어 있는지 여부
     public bool HasCommand => CommandType != CommandType.None;
 }

@@ -18,6 +18,10 @@ public static class WorldGenRequest
     /// <summary>소비되지 않은 생성 요청이 남아 있는지 여부.</summary>
     public static bool HasRequest { get; private set; }
 
+    /// <summary>이번 실행에서 한 번이라도 옵션이 확정된 적이 있는지 여부.
+    /// 씬을 다시 로드해도(요청은 이미 소비됨) 같은 시드로 재생성하기 위해 사용한다.</summary>
+    public static bool HasData { get; private set; }
+
     private static Data _data;
 
     /// <summary>로비에서 선택한 옵션으로 생성 요청을 등록합니다.</summary>
@@ -31,6 +35,7 @@ public static class WorldGenRequest
             Size = size
         };
         HasRequest = true;
+        HasData = true;
     }
 
     /// <summary>요청 데이터를 읽고 소비합니다(1회성).</summary>
@@ -39,6 +44,9 @@ public static class WorldGenRequest
         HasRequest = false;
         return _data;
     }
+
+    /// <summary>마지막으로 확정된 옵션을 소비하지 않고 읽습니다. (씬 리로드 시 같은 시드 재사용)</summary>
+    public static Data Peek() => _data;
 
     /// <summary>요청을 폐기합니다.</summary>
     public static void Clear() => HasRequest = false;

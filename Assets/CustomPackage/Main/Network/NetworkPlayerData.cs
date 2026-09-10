@@ -37,6 +37,15 @@ public class NetworkPlayerData : NetworkBehaviour
     // 방장 여부 — Host 모드에서는 호스트가 곧 방장이며, 스폰 시 호스트가 기록한다
     [Networked] public NetworkBool IsMaster { get; set; }
 
+    // 호스트가 확정한 월드 생성 옵션 (스폰 시 호스트가 기록 → 복제로 클라에 도착).
+    // 세션 속성(SessionInfo.Properties)은 방 참가 직후 아직 비어 있을 수 있어,
+    // 시드가 확실히 전달되도록 복제 상태로도 함께 내려보낸다. (NetworkWorldConfig 참고)
+    [Networked] public int WorldSeed { get; set; }
+    [Networked] public int WorldBranch { get; set; }
+    [Networked] public int WorldLoop { get; set; }
+    [Networked] public int WorldSizeIndex { get; set; }
+    [Networked] public NetworkBool HasWorldConfig { get; set; }
+
     #endregion
 
     #region Fields
