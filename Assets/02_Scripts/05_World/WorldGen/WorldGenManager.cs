@@ -303,7 +303,15 @@ public class WorldGenManager : MonoBehaviour
                 if (_playerInstance != null)
                 {
                     _playerInstance.SetActive(true);
-                    _playerInstance.transform.position = spawnPos;
+
+                    // CharacterController는 자체 내부 좌표를 갖고 있어 transform만 옮기면
+                    // 다음 Move에서 되돌려진다(스폰 직후 원점으로 튕기는 원인).
+                    // 반드시 PlayerMotor.Teleport(비활성화 → 이동 → 재활성화)를 거쳐야 한다.
+                    if (_playerInstance.TryGetComponent(out PlayerMotor playerMotor))
+                        playerMotor.Teleport(spawnPos);
+                    else
+                        _playerInstance.transform.position = spawnPos;
+
                     _worldChunkDirector.isPlayerSpawned = true;
                     _worldChunkDirector.SetTarget(_playerInstance.transform);
                 }
