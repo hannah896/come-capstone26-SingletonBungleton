@@ -30,7 +30,7 @@ MonoBehaviour:
   hasDurability: 1
   maxDurability: 100
   costPerDurability: 1
-  attackDamage: 0
+  attackDamage: 3
   attackRange: 0
   defense: 0
   hungerRestore: 0

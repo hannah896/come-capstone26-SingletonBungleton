@@ -100,18 +100,19 @@ public class UI_Hud_Player : UI_Hud
     }
 
     /// <summary>
-    /// 화면 중앙(크로스헤어)이 조준한 대상이 현재 장착 도구로 채취 가능한 자원이면
-    /// 크로스헤어를 강조 색/크기로 바꾼다.
+    /// 화면 중앙(크로스헤어)이 조준한 대상이 현재 장착 도구로 채취 가능한 자원이거나
+    /// G키로 주울 수 있는 아이템이면 크로스헤어를 강조 색/크기로 바꾼다.
     /// </summary>
     private void UpdateFocus(float deltaTime)
     {
         if (UI_Image_Focus == null || player == null) return;
 
-        bool canHarvest = player.Inventory != null
-            && player.Inventory.TryGetToolActionType(out _);
+        bool highlight = player.Inventory != null
+            && (player.Inventory.TryGetToolActionType(out _)
+                || player.Inventory.HasPickupTargetFocused());
 
-        UI_Image_Focus.SetColor(canHarvest ? FocusHighlightColor : FocusNormalColor);
+        UI_Image_Focus.SetColor(highlight ? FocusHighlightColor : FocusNormalColor);
         UI_Image_Focus.transform.localScale =
-            Vector3.one * (canHarvest ? FocusHighlightScale : FocusNormalScale);
+            Vector3.one * (highlight ? FocusHighlightScale : FocusNormalScale);
     }
 }

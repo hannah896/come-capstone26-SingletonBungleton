@@ -21,4 +21,5 @@ public enum ActionType
     Cook,       // 요리  — Kevin: HumanM@Watering01_R
     Inspect,    // 조사  — Kevin: HumanM@Loot01 - Begin/Loop/Stop
     Build,      // 설치  — Kevin: HumanM@HammeringWall01_R - Begin/Loop/Stop
+    Hand,       // 맨손  — 도구 없이 나무/돌을 느리게 채집
 }

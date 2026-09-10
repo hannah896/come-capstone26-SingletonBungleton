@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5bdf5b2023db67d4aa58ca30033de479, type: 3}
   m_Name: PlainsRule
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   ObjectRules:
   - ruleName: Fir
     prefabKey: ResourceNode_Fir
@@ -28,14 +28,14 @@ MonoBehaviour:
   ItemRules:
   - ruleName: Flower
     prefabKey: Resource_Flower
+    minCount: 14
+    maxCount: 28
+  - ruleName: Carrot
+    prefabKey: Resource_Carrot
     minCount: 10
     maxCount: 20
-  - ruleName: Grass
-    prefabKey: Resource_Plant_Grass
-    minCount: 10
-    maxCount: 20
-  - ruleName: Flint
-    prefabKey: Resource_Mineral_Flint
-    minCount: 10
-    maxCount: 20
+  - ruleName: Egg
+    prefabKey: Booty_Egg
+    minCount: 6
+    maxCount: 12
   SpawnerRules: []

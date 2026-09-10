@@ -11,39 +11,35 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5bdf5b2023db67d4aa58ca30033de479, type: 3}
   m_Name: ForestRule
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   ObjectRules:
   - ruleName: Fir
     prefabKey: ResourceNode_Fir
     density: 0.1
   - ruleName: Rock
     prefabKey: ResourceNode_Rock
-    density: 0.06
+    density: 0.05
   - ruleName: Grass
     prefabKey: ResourceNode_Grass
-    density: 0.06
+    density: 0.1
   - ruleName: Branch
     prefabKey: ResourceNode_Branch
-    density: 0.06
+    density: 0.1
   ItemRules:
-  - ruleName: Carrot
-    prefabKey: Resource_Carrot
-    minCount: 10
-    maxCount: 20
-  - ruleName: Potato
-    prefabKey: Resource_Potato
-    minCount: 10
-    maxCount: 20
+  - ruleName: Flower
+    prefabKey: Resource_Flower
+    minCount: 14
+    maxCount: 28
   - ruleName: Berry
     prefabKey: Resource_Berry
     minCount: 10
     maxCount: 20
-  - ruleName: Grass
-    prefabKey: Resource_Plant_Grass
+  - ruleName: Mushroom
+    prefabKey: Resource_Mushroom
     minCount: 10
     maxCount: 20
-  - ruleName: Flint
-    prefabKey: Resource_Mineral_Flint
-    minCount: 10
-    maxCount: 20
+  - ruleName: Carrot
+    prefabKey: Resource_Carrot
+    minCount: 6
+    maxCount: 12
   SpawnerRules: []

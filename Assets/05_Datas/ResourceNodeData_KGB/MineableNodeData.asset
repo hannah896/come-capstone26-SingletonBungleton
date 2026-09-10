@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: MineableNodeData
   ResourceNodeType: 2
-  MaxHealth: 3
+  MaxHealth: 6
   GatherAmount: 1
   RespawnTime: 300
   RequiredTool: 2

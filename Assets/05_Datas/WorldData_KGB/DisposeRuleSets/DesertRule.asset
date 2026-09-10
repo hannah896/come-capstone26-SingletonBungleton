@@ -11,7 +11,18 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5bdf5b2023db67d4aa58ca30033de479, type: 3}
   m_Name: DesertRule
-  m_EditorClassIdentifier: 
-  ObjectRules: []
-  ItemRules: []
+  m_EditorClassIdentifier:
+  ObjectRules:
+  - ruleName: Branch
+    prefabKey: ResourceNode_Branch
+    density: 0.1
+  ItemRules:
+  - ruleName: Potato
+    prefabKey: Resource_Potato
+    minCount: 10
+    maxCount: 20
+  - ruleName: Mushroom
+    prefabKey: Resource_Mushroom
+    minCount: 4
+    maxCount: 8
   SpawnerRules: []

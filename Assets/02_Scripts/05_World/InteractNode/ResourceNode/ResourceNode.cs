@@ -9,6 +9,19 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
     [SerializeField] private ResourceNodeData _resourceNodeData;
     protected ResourceNodeData ResourceNodeData => _resourceNodeData;
 
+    /// <summary>이 노드의 자원 타입 (맨손 채집 허용 여부 판정 등에 사용).</summary>
+    public ResourceNodeType NodeType => _resourceNodeData != null ? _resourceNodeData.ResourceNodeType : ResourceNodeType.None;
+
+    /// <summary>도구 없이 G키(줍기)로 바로 채집 가능한 노드인지 (풀 등).</summary>
+    public bool IsHandPickable => _resourceNodeData != null && _resourceNodeData.HandPickable && !_isDestroyed;
+
+    /// <summary>G키 줍기로 즉시 채집한다. Drops를 (설정에 따라) 인벤토리로 보내고 노드를 소진시킨다.</summary>
+    public void HandPick(DamageContext context)
+    {
+        if (!IsHandPickable) return;
+        HandleDestroyed(context);
+    }
+
     [SerializeField] private bool _despawnOnDestroyed = true;
 
     private int _currentHealth;
@@ -79,8 +92,9 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
 
     private static bool ToolMatches(ActionType action, HarvestToolType required) => required switch
     {
-        HarvestToolType.Axe        => action == ActionType.Chop,
-        HarvestToolType.Pickaxe    => action == ActionType.Mine,
+        // 도끼/곡괭이가 필요한 노드(나무·돌)는 맨손(Hand)으로도 느리게 채집 가능
+        HarvestToolType.Axe        => action == ActionType.Chop || action == ActionType.Hand,
+        HarvestToolType.Pickaxe    => action == ActionType.Mine || action == ActionType.Hand,
         HarvestToolType.Shovel     => action == ActionType.Dig,
         HarvestToolType.Hammer     => action == ActionType.Build,
         HarvestToolType.FishingRod => action == ActionType.Pick,

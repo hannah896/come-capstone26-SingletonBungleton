@@ -11,16 +11,20 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5bdf5b2023db67d4aa58ca30033de479, type: 3}
   m_Name: SnowRule
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   ObjectRules:
   - ruleName: Fir
     prefabKey: ResourceNode_Fir
-    density: 0.1
+    density: 0.05
   - ruleName: Rock
     prefabKey: ResourceNode_Rock
-    density: 0.06
-  ItemRules:
+    density: 0.05
   - ruleName: Ice
-    prefabKey: Resource_Ice
-    minCount: 125
-    maxCount: 200
+    prefabKey: ResourceNode_Ice
+    density: 0.1
+  ItemRules:
+  - ruleName: Berry
+    prefabKey: Resource_Berry
+    minCount: 4
+    maxCount: 8
+  SpawnerRules: []
