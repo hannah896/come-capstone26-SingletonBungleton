@@ -1,4 +1,4 @@
-#if PHOTON_FUSION
+﻿#if PHOTON_FUSION
 using Fusion;
 using UnityEngine;
 
@@ -107,7 +107,15 @@ public class NetworkPlayerSync : NetworkBehaviour
 
         if (Object.HasStateAuthority)
         {
-            // 호스트: 스폰 위치로 초기화
+            // 호스트: 스폰 위치로 초기화.
+            // Runner.Spawn에 좌표를 넘겨도 CharacterController는 자체 내부 좌표를 프리팹 원점(0,0,0)으로
+            // 들고 있어, 첫 Move에서 transform을 그리로 되돌린다. 지형은 (0,0)~(mapSize,mapSize)에 놓이므로
+            // 원점이 곧 맵 귀퉁이다 — 호스트 캐릭터만 (0,0)에 생성되던 원인.
+            // 클라이언트 분기와 똑같이 PlayerMotor.Teleport(비활성화 → 이동 → 재활성화)로
+            // 내부 좌표까지 맞춘 뒤 확정한다.
+            if (TryGetComponent(out PlayerMotor hostMotor))
+                hostMotor.Teleport(transform.position);
+
             NetPosition = transform.position;
             NetYaw = transform.eulerAngles.y;
         }

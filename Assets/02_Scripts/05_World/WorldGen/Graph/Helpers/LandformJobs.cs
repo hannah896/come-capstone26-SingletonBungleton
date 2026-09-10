@@ -26,7 +26,13 @@ namespace World.WorldGraph.Helpers.LandformJobs
     // 에디터(JIT, 로컬 CPU 기준)와 빌드(AOT, 타깃 CPU 기준)의 결과가 미세하게 달라진다.
     // 그 미세한 차이가 높이/바이옴 임계값 비교를 뒤집어 같은 시드에서도 피어마다 다른 맵이 나온다.
     // 멀티에서 모든 피어가 같은 지형을 만들어야 하므로 재현 가능한 엄격 모드로 고정한다.
-    [BurstCompile(FloatMode = FloatMode.Strict, FloatPrecision = FloatPrecision.High)]
+    //
+    // CompileSynchronously:
+    // 에디터의 Burst 기본값은 비동기 컴파일이라, 컴파일이 끝나기 전에 실행된 Job은 Burst가 아니라
+    // 매니지드(Mono) 코드로 돈다. 매니지드와 Burst는 부동소수점 결과가 달라서,
+    // "에디터 A는 Burst / 에디터 B는 매니지드"가 되면 같은 시드인데도 지형이 갈린다
+    // (에디터-에디터에서만 재현되던 원인). 동기 컴파일로 고정해 항상 Burst 결과를 쓰게 한다.
+    [BurstCompile(FloatMode = FloatMode.Strict, FloatPrecision = FloatPrecision.High, CompileSynchronously = true)]
     public struct HeightGenerationJob : IJobParallelFor
     {
         public int MapWidth;
@@ -198,7 +204,7 @@ namespace World.WorldGraph.Helpers.LandformJobs
     #region Smoothing Job
 
     // 시드 동일 = 결과 동일을 보장하기 위해 엄격 모드 고정 (HeightGenerationJob 주석 참고)
-    [BurstCompile(FloatMode = FloatMode.Strict, FloatPrecision = FloatPrecision.High)]
+    [BurstCompile(FloatMode = FloatMode.Strict, FloatPrecision = FloatPrecision.High, CompileSynchronously = true)]
     public struct HeightSmoothingJob : IJobParallelFor
     {
         [ReadOnly] public NativeArray<float> ReadMap;

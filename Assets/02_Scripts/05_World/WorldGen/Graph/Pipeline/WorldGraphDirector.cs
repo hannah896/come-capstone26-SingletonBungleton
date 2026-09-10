@@ -1,4 +1,4 @@
-using Cysharp.Threading.Tasks;
+﻿using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -117,9 +117,18 @@ public class WorldGraphDirector : MonoBehaviour
     }
 
     #region Getters
+
+    /// <summary>
+    /// 그래프·로직 데이터가 준비되었는지 여부. (에러 로그 없이 조회)
+    /// 생성이 시작된 뒤 데이터가 채워지기 전까지는 false이므로, 매 프레임 도는 기즈모 같은 곳에서
+    /// Get~ 대신 이걸로 먼저 걸러야 한다. (Get~은 없으면 에러를 남기므로 콘솔이 도배된다)
+    /// </summary>
+    public bool HasWorldData =>
+        _currentContext != null && _currentContext.GraphData != null && _currentContext.LogicData != null;
+
     public WorldLogicData GetWorldLogicData()
     {
-        if (_currentContext.LogicData == null)
+        if (_currentContext?.LogicData == null)
         {
             Debug.LogError("WorldGenContext가 초기화되지 않았습니다!");
             return null;
@@ -128,7 +137,7 @@ public class WorldGraphDirector : MonoBehaviour
     }
     public WorldGraphData GetWorldGraphData()
     {
-        if (_currentContext.GraphData == null)
+        if (_currentContext?.GraphData == null)
         {
             Debug.LogError("WorldGenContext가 초기화되지 않았습니다!");
             return null;
@@ -137,7 +146,7 @@ public class WorldGraphDirector : MonoBehaviour
     }
     public WorldDisposeData GetWorldDisposeData()
     {
-        if (_currentContext.DisposeData == null)
+        if (_currentContext?.DisposeData == null)
         {
             Debug.LogError("WorldGenContext가 초기화되지 않았습니다!");
             return null;

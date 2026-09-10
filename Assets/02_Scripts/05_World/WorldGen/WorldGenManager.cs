@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Unity.Burst;
 using UnityEngine;
 
 /// <summary>
@@ -190,9 +191,19 @@ public class WorldGenManager : MonoBehaviour
         int objectCount = disposeData?.ObjectDisposes?.Count ?? -1;
         int itemCount = disposeData?.ItemDisposes?.Count ?? -1;
 
+        // Burst 상태도 같이 남긴다. 지형 Job은 Burst 여부에 따라 부동소수점 결과가 달라지므로,
+        // 한쪽 에디터에서 Burst가 꺼져 있으면(Jobs > Burst > Enable Compilation) 같은 시드라도 맵이 갈린다.
         Debug.Log($"[WorldGen] 월드 지문 — seed {_worldSettings.WorldSeed}, size {size.x}x{size.y}, " +
                   $"height {heightHash:X8}, territory {territoryHash:X8}, " +
-                  $"spawn {logicData.SpawnTile}, obj {objectCount}, item {itemCount}");
+                  $"spawn {logicData.SpawnTile}, obj {objectCount}, item {itemCount}, " +
+                  $"burst {BurstCompiler.IsEnabled}");
+
+        if (!BurstCompiler.IsEnabled)
+        {
+            Debug.LogWarning("[WorldGen] Burst 컴파일이 꺼져 있습니다. " +
+                             "지형 Job이 매니지드로 실행되어 다른 피어와 같은 시드에서도 맵이 달라집니다. " +
+                             "Jobs > Burst > Enable Compilation 을 켜 주세요.");
+        }
     }
 
     /// <summary>월드 생성 진행률(0~1)과 현재 단계 설명.</summary>
@@ -587,6 +598,10 @@ public class WorldGenManager : MonoBehaviour
     void OnDrawGizmos()
     {
         if (!_isStartedWorldGeneration || !_drawGizmos || _worldGraphDirector == null || _worldSettings == null) return;
+
+        // 생성 시작(_isStartedWorldGeneration) 시점과 데이터가 채워지는 시점 사이에 간격이 있다.
+        // 그 사이에 Get~을 부르면 리페인트마다 "WorldGenContext가 초기화되지 않았습니다!"가 콘솔을 도배한다.
+        if (!_worldGraphDirector.HasWorldData) return;
 
         var graphData = _worldGraphDirector.GetWorldGraphData();
         var logicData = _worldGraphDirector.GetWorldLogicData();

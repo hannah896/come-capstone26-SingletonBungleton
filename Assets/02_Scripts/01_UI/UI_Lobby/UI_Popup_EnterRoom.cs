@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -234,10 +234,18 @@ public class UI_Popup_EnterRoom : UI_Popup
             return;
         }
 
-        // 호스트가 세션에 공유한 월드 시드/옵션을 읽어 로컬 WorldGenRequest에 반영
-        // (같은 시드로 각 클라가 동일 월드를 생성)
-        // 참가 직후에는 세션 속성이 아직 안 왔을 수 있다 → 실패해도 GameScene이 도착할 때까지 다시 기다린다.
-        NetworkWorldConfig.TryApplyFromSession();
+        // 호스트가 세션에 공유한 월드 시드/옵션을 여기서 확실히 받아둔다 (같은 시드 = 같은 월드).
+        //
+        // 참가 직후에는 세션 속성이 아직 안 와 있을 수 있어 한 번만 읽으면 놓친다.
+        // 그렇다고 GameScene에서 판단하면 그 사이 네트워크 상태가 잠깐 어긋난 순간에
+        // 자신을 싱글 플레이로 오인해 랜덤 시드로 월드를 만들어버린다.
+        // StartGame이 성공한 직후인 지금은 방 참가가 확정된 시점이므로, 여기서 기다리는 게 가장 안전하다.
+        bool applied = await NetworkWorldConfig.WaitAndApplyAsync();
+        if (!applied)
+        {
+            Debug.LogError($"[UI_Popup_EnterRoom] 호스트의 월드 시드를 받지 못했습니다: {roomName}. " +
+                           "이대로 진행하면 호스트와 다른 월드가 생성됩니다.");
+        }
 
         Close();
         Extensions.ChangeScene("GameScene");
