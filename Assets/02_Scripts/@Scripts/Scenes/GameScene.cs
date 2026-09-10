@@ -185,7 +185,7 @@ public class GameScene : SceneBase
             new GameObject(nameof(NetworkPlayerJoinNotice)).AddComponent<NetworkPlayerJoinNotice>();
         }
 
-        await Main.UI.ShowHudOverlay<UI_Hud_WorldState>("UI_WorldState");
+        await Main.UI.ShowHudOverlay<UI_Hud_WorldState>("UI_Hud_WorldState");
 
         // TODO: 소환된 플레이어가 자신의 HUD(UI_Hud_Game)를 띄우는 단계 (다음 작업)
     }

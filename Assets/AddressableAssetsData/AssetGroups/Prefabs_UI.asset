@@ -73,7 +73,7 @@ MonoBehaviour:
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: b73fd6962dd069d4b937253970337a73
-    m_Address: UI_WorldState
+    m_Address: UI_Hud_WorldState
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
