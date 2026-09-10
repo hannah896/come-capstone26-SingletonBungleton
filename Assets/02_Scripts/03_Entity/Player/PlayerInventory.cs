@@ -21,6 +21,8 @@ public class PlayerInventory : MonoBehaviour
     [Header("Tool Use")]
     [SerializeField] private float defaultToolUseRange = 2.5f;
     [SerializeField] private LayerMask toolUseLayer = ~0;
+    [Tooltip("맨손으로 나무/돌을 칠 때의 데미지 (도구보다 느리게 채집되도록 낮게 유지). 임시값.")]
+    [SerializeField] private int bareHandDamage = 1;
 
     [SerializeField] private List<ItemDataSO> slots = new();
     [SerializeField] private List<int> stackCounts = new();
@@ -120,8 +122,8 @@ public class PlayerInventory : MonoBehaviour
 
         if (inputData.ToolUsePressed)
         {
-            if (!TryCookAtBonfire())
-                TryUseEquippedHandTool();
+            if (!TryCookAtBonfire() && !TryUseEquippedHandTool())
+                TryBareHandHit();
         }
 
         if (inputData.DropPressed && hoveredSlotIndex >= 0)
@@ -751,6 +753,23 @@ public class PlayerInventory : MonoBehaviour
     }
 
 
+    /// <summary>크로스헤어가 조준한 대상이 G키로 주울 수 있는 월드 아이템 / 맨손 채집 노드인지 여부 (UI 포커스 판정용).</summary>
+    public bool HasPickupTargetFocused()
+    {
+        Camera camera = Camera.main;
+        if (camera == null) return false;
+
+        Ray ray = camera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        if (!Physics.Raycast(ray, out RaycastHit hit, pickupRadius, pickupLayer, QueryTriggerInteraction.Collide))
+            return false;
+
+        if (TryGetPickupCandidate(hit.collider, out _))
+            return true;
+
+        ResourceNode node = hit.collider.GetComponentInParent<ResourceNode>();
+        return node != null && node.IsHandPickable;
+    }
+
     private bool TryPickupFocused()
     {
         Camera camera = Camera.main;
@@ -759,6 +778,14 @@ public class PlayerInventory : MonoBehaviour
         Ray ray = camera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         if (!Physics.Raycast(ray, out RaycastHit hit, pickupRadius, pickupLayer, QueryTriggerInteraction.Collide))
             return false;
+
+        // 맨손 채집 노드 (풀 등) — G키로 즉시 채집
+        ResourceNode node = hit.collider.GetComponentInParent<ResourceNode>();
+        if (node != null && node.IsHandPickable)
+        {
+            node.HandPick(new DamageContext(gameObject, hit.point, 0, "Hand", ActionType.Hand));
+            return true;
+        }
 
         if (!TryGetPickupCandidate(hit.collider, out PickupCandidate candidate))
             return false;
@@ -784,30 +811,51 @@ public class PlayerInventory : MonoBehaviour
         PickupCandidate nearest = default;
         bool hasNearest = false;
         float nearestSqrDistance = float.MaxValue;
+        ResourceNode nearestNode = null;
+        float nearestNodeSqrDistance = float.MaxValue;
 
         for (int i = 0; i < count; i++)
         {
             Collider col = pickupBuffer[i];
             if (col == null) continue;
 
-            if (!TryGetPickupCandidate(col, out PickupCandidate candidate))
+            if (TryGetPickupCandidate(col, out PickupCandidate candidate))
+            {
+                float sqrDistance = (candidate.GameObject.transform.position - transform.position).sqrMagnitude;
+                if (sqrDistance < nearestSqrDistance)
+                {
+                    nearest = candidate;
+                    hasNearest = true;
+                    nearestSqrDistance = sqrDistance;
+                }
                 continue;
+            }
 
-            float sqrDistance = (candidate.GameObject.transform.position - transform.position).sqrMagnitude;
-            if (sqrDistance >= nearestSqrDistance) continue;
-
-            nearest = candidate;
-            hasNearest = true;
-            nearestSqrDistance = sqrDistance;
+            ResourceNode node = col.GetComponentInParent<ResourceNode>();
+            if (node != null && node.IsHandPickable)
+            {
+                float sqrDistance = (node.transform.position - transform.position).sqrMagnitude;
+                if (sqrDistance < nearestNodeSqrDistance)
+                {
+                    nearestNode = node;
+                    nearestNodeSqrDistance = sqrDistance;
+                }
+            }
         }
 
-        if (!hasNearest) return;
+        // 아이템이 더 가깝거나 노드가 없으면 아이템 우선
+        if (hasNearest && (nearestNode == null || nearestSqrDistance <= nearestNodeSqrDistance))
+        {
+            bool added = AddItem(nearest.ItemData, nearest.Amount, out int remainingAmount);
+            ApplyPickupResult(nearest, remainingAmount);
 
-        bool added = AddItem(nearest.ItemData, nearest.Amount, out int remainingAmount);
-        ApplyPickupResult(nearest, remainingAmount);
+            if (added || remainingAmount <= 0)
+                Destroy(nearest.GameObject);
+            return;
+        }
 
-        if (added || remainingAmount <= 0)
-            Destroy(nearest.GameObject);
+        if (nearestNode != null)
+            nearestNode.HandPick(new DamageContext(gameObject, nearestNode.transform.position, 0, "Hand", ActionType.Hand));
     }
 
     private static bool TryGetPickupCandidate(Collider col, out PickupCandidate candidate)
@@ -891,26 +939,46 @@ public class PlayerInventory : MonoBehaviour
         return bonfire.TryCookFromInventory(this);
     }
 
-    private void TryUseEquippedHandTool()
+    /// <summary>손에 든 도구로 채집을 시도한다. 도구가 없으면 false를 반환해 맨손 공격으로 넘긴다.</summary>
+    private bool TryUseEquippedHandTool()
     {
         ItemDataSO handItem = EquippedHand;
         if (handItem == null || handItem.itemType != ItemType.SurvivalTool)
-            return;
+            return false;
 
         IEquipable handTool = GetEquippedItemInstance(EquipSlot.Hand);
         if (handTool != null && !handTool.IsUsable)
-            return;
+            return true;
 
         float range = Mathf.Max(defaultToolUseRange, handItem.attackRange);
 
         if (!TryRaycastToolTarget(range, out RaycastHit hit))
-            return;
+            return true;
 
         ActionType actionType = GetActionTypeForTool(handItem.survivalToolType);
         if (!TryDamageHitTarget(hit, handItem, actionType, apply: true))
-            return;
+            return true;
 
         handTool?.UseDurability();
+        return true;
+    }
+
+    /// <summary>도구 없이 맨손으로 나무/돌 자원 노드를 느리게 친다.</summary>
+    private void TryBareHandHit()
+    {
+        if (!TryRaycastToolTarget(defaultToolUseRange, out RaycastHit hit))
+            return;
+
+        ResourceNode node = hit.collider.GetComponentInParent<ResourceNode>();
+        if (node == null) return;
+
+        // 맨손 채집은 나무/돌 노드로 한정한다.
+        if (node.NodeType != ResourceNodeType.Tree && node.NodeType != ResourceNodeType.Mine)
+            return;
+
+        var ctx = new DamageContext(gameObject, hit.point, Mathf.Max(1, bareHandDamage), "Hand", ActionType.Hand);
+        if (node.CanDamage(ctx))
+            node.ApplyDamage(ctx);
     }
 
     /// <summary>

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: BushNodeData
   ResourceNodeType: 3
-  MaxHealth: 2
+  MaxHealth: 4
   GatherAmount: 1
   RespawnTime: 120
   RequiredTool: 1

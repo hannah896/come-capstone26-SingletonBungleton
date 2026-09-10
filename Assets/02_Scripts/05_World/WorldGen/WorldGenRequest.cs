@@ -1,4 +1,4 @@
-/// <summary>
+﻿/// <summary>
 /// 로비에서 결정한 월드 생성 옵션을 게임씬으로 전달하기 위한 정적 홀더.
 ///
 /// Main.Clear()는 리플렉션으로 Managers 타입 필드만 비우므로(Main.cs 참고),
@@ -22,10 +22,23 @@ public static class WorldGenRequest
     /// 씬을 다시 로드해도(요청은 이미 소비됨) 같은 시드로 재생성하기 위해 사용한다.</summary>
     public static bool HasData { get; private set; }
 
+    /// <summary>
+    /// 마지막으로 확정된 옵션이 "이 세션의 호스트가 정한 값"인지 여부.
+    ///
+    /// 멀티 세션에서는 이 값이 true인 옵션만 써야 한다. 싱글 플레이(월드 생성 팝업)에서 남은
+    /// 이전 요청을 그대로 쓰면 플레이어마다 다른 시드로 월드가 만들어진다.
+    /// </summary>
+    public static bool IsFromHost { get; private set; }
+
+    /// <summary>호스트가 정한, 아직 소비되지 않은 생성 요청이 있는지 여부.</summary>
+    public static bool HasHostRequest => HasRequest && IsFromHost;
+
     private static Data _data;
 
     /// <summary>로비에서 선택한 옵션으로 생성 요청을 등록합니다.</summary>
-    public static void Set(WorldBranchSetting branch, WorldLoopSetting loop, int seed, WorldSize size = WorldSize.Large)
+    /// <param name="fromHost">이 세션의 호스트가 확정한 옵션이면 true (멀티 시드 공유 경로).</param>
+    public static void Set(WorldBranchSetting branch, WorldLoopSetting loop, int seed,
+        WorldSize size = WorldSize.Large, bool fromHost = false)
     {
         _data = new Data
         {
@@ -36,6 +49,7 @@ public static class WorldGenRequest
         };
         HasRequest = true;
         HasData = true;
+        IsFromHost = fromHost;
     }
 
     /// <summary>요청 데이터를 읽고 소비합니다(1회성).</summary>

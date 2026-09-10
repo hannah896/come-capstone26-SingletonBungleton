@@ -100,6 +100,8 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnte
             return;
         }
 
+        // 클릭한 슬롯으로 선택 포커스를 옮겨 스크롤 선택과 동일한 하이라이트가 뜨도록 한다.
+        playerInventory.SelectSlot(slotIndex);
         playerInventory.EquipFromSlot(slotIndex);
     }
 

@@ -1,4 +1,4 @@
-using Unity.Burst;
+﻿using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -21,7 +21,12 @@ namespace World.WorldGraph.Helpers.LandformJobs
 
     #region Height Generation Job
     // 2. 높이맵 생성 Job (기존 ModifyHeight 로직 대체)
-    [BurstCompile]
+    // FloatMode.Strict / FloatPrecision.High:
+    // 기본 설정(FloatMode.Default)에서는 Burst가 곱셈+덧셈을 FMA로 합치거나 연산 순서를 재배열하고,
+    // 에디터(JIT, 로컬 CPU 기준)와 빌드(AOT, 타깃 CPU 기준)의 결과가 미세하게 달라진다.
+    // 그 미세한 차이가 높이/바이옴 임계값 비교를 뒤집어 같은 시드에서도 피어마다 다른 맵이 나온다.
+    // 멀티에서 모든 피어가 같은 지형을 만들어야 하므로 재현 가능한 엄격 모드로 고정한다.
+    [BurstCompile(FloatMode = FloatMode.Strict, FloatPrecision = FloatPrecision.High)]
     public struct HeightGenerationJob : IJobParallelFor
     {
         public int MapWidth;
@@ -192,7 +197,8 @@ namespace World.WorldGraph.Helpers.LandformJobs
 
     #region Smoothing Job
 
-    [BurstCompile]
+    // 시드 동일 = 결과 동일을 보장하기 위해 엄격 모드 고정 (HeightGenerationJob 주석 참고)
+    [BurstCompile(FloatMode = FloatMode.Strict, FloatPrecision = FloatPrecision.High)]
     public struct HeightSmoothingJob : IJobParallelFor
     {
         [ReadOnly] public NativeArray<float> ReadMap;

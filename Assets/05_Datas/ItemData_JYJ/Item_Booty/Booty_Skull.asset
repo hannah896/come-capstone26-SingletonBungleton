@@ -11,19 +11,21 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
   m_Name: Booty_Skull
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   itemID: Skull
   itemName: "\uD574\uACE8"
   description: "\uBAAC\uC2A4\uD130\uAC00 \uB0A8\uAE34 \uD574\uACE8\uC785\uB2C8\uB2E4."
-  icon: {fileID: 21300000, guid: eb00635df507f9f49b76d958966e3ecd, type: 3}
+  icon: {fileID: 21300000, guid: 848d15748b538fd44bc376cc60243c34, type: 3}
   prefab: {fileID: 8857888291293560015, guid: 40576fc570b22894fb147afcbb6ea60c, type: 3}
   itemType: 3
   survivalToolType: 0
-  harvestableResources: 
+  harvestableNodeTypes: 
   combatGearType: 0
   resourceType: 0
   bootyType: 7
   foodType: 0
+  dishType: 0
+  specialType: 0
   isStackable: 1
   maxStack: 99
   equipSlot: 0
@@ -36,6 +38,8 @@ MonoBehaviour:
   hungerRestore: 0
   healthRestore: 0
   egoRestore: 0
+  expirationTime: 0
+  tags: 0
   isPlaceable: 0
   placementPrefab: {fileID: 0}
   placementFootprint: {x: 1, y: 1}

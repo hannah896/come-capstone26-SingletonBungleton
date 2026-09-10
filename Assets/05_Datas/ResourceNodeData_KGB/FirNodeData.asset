@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: FirNodeData
   ResourceNodeType: 1
-  MaxHealth: 3
+  MaxHealth: 6
   GatherAmount: 1
   RespawnTime: 300
   RequiredTool: 1

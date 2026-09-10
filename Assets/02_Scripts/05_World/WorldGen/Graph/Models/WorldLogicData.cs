@@ -39,6 +39,10 @@ public class WorldLogicData
         TerrainSize = gridSize;
         ChunkSize = chunkSize;
 
+        // 미할당 표시. WorldGenManager는 SpawnTile이 음수일 때 맵 중앙으로 폴백하는데,
+        // 초기화하지 않으면 기본값 (0,0)이 유효 좌표로 통과해 맵 귀퉁이에 스폰된다.
+        SpawnTile = new Vector2Int(-1, -1);
+
         TerritoryWorld = new int[gridSize.x, gridSize.y];
         HeightWorld = new float[gridSize.x, gridSize.y];
         BorderWorld = new int[gridSize.x, gridSize.y];

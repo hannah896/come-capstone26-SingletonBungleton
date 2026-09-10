@@ -111,10 +111,20 @@ public class NetworkPlayerSync : NetworkBehaviour
             NetPosition = transform.position;
             NetYaw = transform.eulerAngles.y;
         }
-        else if (!Object.HasInputAuthority)
+        else
         {
-            // 프록시: 첫 프레임은 확정 값으로 즉시 스냅
-            transform.SetPositionAndRotation(NetPosition, Quaternion.Euler(0f, NetYaw, 0f));
+            // 호스트가 아닌 피어는 자기 캐릭터든 남의 캐릭터든 확정 값으로 즉시 스냅한다.
+            // 이 프리팹에는 NetworkTransform이 없어 스폰 좌표가 복제되지 않는다.
+            // 예전에는 프록시(!InputAuthority)만 스냅해서, 클라이언트 자기 캐릭터가
+            // 프리팹 원점(0,0,0) — 맵 귀퉁이 — 에 그대로 남았다.
+            // 또한 CharacterController는 자체 내부 좌표를 갖고 있어 transform 대입만으로는
+            // 다음 Move에서 되돌려지므로 PlayerMotor.Teleport를 거친다.
+            transform.rotation = Quaternion.Euler(0f, NetYaw, 0f);
+
+            if (TryGetComponent(out PlayerMotor motor))
+                motor.Teleport(NetPosition);
+            else
+                transform.position = NetPosition;
         }
 
         // 뒤늦게 합류한 피어가 이미 지나간 트리거를 다시 재생하지 않도록 현재 시퀀스를 기준점으로 삼는다

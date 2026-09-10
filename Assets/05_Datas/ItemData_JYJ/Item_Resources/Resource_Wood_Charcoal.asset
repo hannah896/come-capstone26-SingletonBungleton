@@ -15,15 +15,17 @@ MonoBehaviour:
   itemID: Wood_Charcoal
   itemName: "\uC22F"
   description: "\uB098\uBB34\uC790\uC6D0_\uC22F\uC785\uB2C8\uB2E4."
-  icon: {fileID: 21300000, guid: 61bd8d06c45abcc4fbe017aaae493c82, type: 3}
+  icon: {fileID: 21300000, guid: d6c82e07839f4cf4ba1c3523f27a01a1, type: 3}
   prefab: {fileID: 7088679065596465652, guid: 3a83f5e3969b30848909267662094b10, type: 3}
   itemType: 2
   survivalToolType: 0
-  harvestableResources: 
+  harvestableNodeTypes: 
   combatGearType: 0
   resourceType: 1
   bootyType: 0
   foodType: 0
+  dishType: 0
+  specialType: 0
   isStackable: 1
   maxStack: 99
   equipSlot: 0
@@ -36,6 +38,8 @@ MonoBehaviour:
   hungerRestore: 0
   healthRestore: 0
   egoRestore: 0
+  expirationTime: 0
+  tags: 0
   isPlaceable: 0
   placementPrefab: {fileID: 0}
   placementFootprint: {x: 1, y: 1}

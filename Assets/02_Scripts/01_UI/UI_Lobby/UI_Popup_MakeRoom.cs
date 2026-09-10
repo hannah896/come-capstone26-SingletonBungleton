@@ -1,4 +1,4 @@
-using Cysharp.Threading.Tasks;
+﻿using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 
@@ -108,8 +108,8 @@ public class UI_Popup_MakeRoom : UI_Popup
             return;
         }
 
-        // 호스트도 로컬에 동일 옵션 반영 후 게임씬 진입
-        WorldGenRequest.Set(branch, loop, seed, size);
+        // 호스트도 로컬에 동일 옵션 반영 후 게임씬 진입 (이 세션의 기준 시드)
+        WorldGenRequest.Set(branch, loop, seed, size, fromHost: true);
 
         Close();
         Extensions.ChangeScene("GameScene");

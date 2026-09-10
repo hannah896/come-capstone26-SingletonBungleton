@@ -15,15 +15,17 @@ MonoBehaviour:
   itemID: Mineral_Coal
   itemName: "\uC11D\uD0C4"
   description: "\uAD11\uC11D\uC790\uC6D0_\uC11D\uD0C4\uC785\uB2C8\uB2E4."
-  icon: {fileID: 21300000, guid: 028bf7be9df820349997fec1a9b6d079, type: 3}
+  icon: {fileID: 21300000, guid: 312745a731f122944a86ca096563bb6e, type: 3}
   prefab: {fileID: 196400808065324781, guid: 6bcac75bfeaaafc42a1e39a298060882, type: 3}
   itemType: 2
   survivalToolType: 0
-  harvestableResources: 
+  harvestableNodeTypes: 
   combatGearType: 0
   resourceType: 9
   bootyType: 0
   foodType: 0
+  dishType: 0
+  specialType: 0
   isStackable: 1
   maxStack: 99
   equipSlot: 0
@@ -36,6 +38,8 @@ MonoBehaviour:
   hungerRestore: 0
   healthRestore: 0
   egoRestore: 0
+  expirationTime: 0
+  tags: 0
   isPlaceable: 0
   placementPrefab: {fileID: 0}
   placementFootprint: {x: 1, y: 1}

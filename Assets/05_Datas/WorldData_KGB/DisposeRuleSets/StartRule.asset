@@ -29,10 +29,6 @@ MonoBehaviour:
     prefabKey: ResourceNode_Bush
     density: 0.023
   ItemRules:
-  - ruleName: Flint
-    prefabKey: Resource_Mineral_Flint
-    minCount: 6
-    maxCount: 15
   - ruleName: Carrot
     prefabKey: Resource_Carrot
     minCount: 6
