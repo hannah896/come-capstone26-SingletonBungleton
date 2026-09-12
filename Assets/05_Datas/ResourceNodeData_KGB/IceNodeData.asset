@@ -25,5 +25,5 @@ MonoBehaviour:
     DropChance: 1
   DropRadius: 0.5
   DropFxPrefabKey:
-  GatherDirectlyToInventory: 1
+  GatherDirectlyToInventory: 0
   HandPickable: 0

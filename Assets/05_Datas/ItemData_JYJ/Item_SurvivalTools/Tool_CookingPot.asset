@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
+  m_Name: Tool_CookingPot
+  m_EditorClassIdentifier:
+  itemID: CookingPot
+  itemName: "요리솔"
+  description: "요리솔. 근처에서 CookPot 레시피로 요리할 수 있음"
+  icon: {fileID: 0}
+  prefab: {fileID: 2001000000000001, guid: c00fca17c00fca17c00fca17c00fca17, type: 3}
+  itemType: 7
+  survivalToolType: 0
+  harvestableResources:
+  combatGearType: 0
+  resourceType: 0
+  bootyType: 0
+  foodType: 0
+  isStackable: 1
+  maxStack: 99
+  equipSlot: 0
+  hasDurability: 1
+  maxDurability: 100
+  costPerDurability: 1
+  attackDamage: 0
+  attackRange: 0
+  defense: 0
+  hungerRestore: 0
+  healthRestore: 0
+  egoRestore: 0
+  isPlaceable: 1
+  placementPrefab: {fileID: 2001000000000001, guid: c00fca17c00fca17c00fca17c00fca17, type: 3}
+  placementFootprint: {x: 1, y: 1}
+  placementPivotOffset: {x: 0, y: 0, z: 0}
+  placementSnapToGrid: 1
+  placementCheckHeight: 2
+  placementCheckCenterOffset: {x: 0, y: 0, z: 0}
