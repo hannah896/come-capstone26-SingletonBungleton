@@ -40,6 +40,11 @@ public class WorldClock : MonoBehaviour
     public int CurrentHour { get; private set; }
     public MoonPhase CurrentMoonPhase { get; private set; } // [달 주기 시스템 추가] 현재 달 위상
 
+    /// <summary>자정 0, 정오 0.5인 하루 진행률. 정수 시간과 달리 매 프레임 변한다.</summary>
+    public float NormalizedTimeOfDay => _dayTimer == null
+        ? 0.25f
+        : Mathf.Repeat((SECONDS_PER_DAY - _dayTimer.Current) / SECONDS_PER_DAY, 1f);
+
     // 자원 재생, 특정 시간 조건 등에 사용할 '절대 시간(Timestamp)'
     public float TotalInGameSeconds
     {
