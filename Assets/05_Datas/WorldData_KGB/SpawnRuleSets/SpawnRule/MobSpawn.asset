@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49e6a274f1b34bca9bf4a2df6a7c18e5, type: 3}
+  m_Name: MobSpawn
+  m_EditorClassIdentifier: 
+  ruleName: 
+  monsterKey: 
+  minDistanceFromPlayer: 12
+  maxDistanceFromPlayer: 25
+  allowedTimePhases: -1
+  spawnInterval: 10
+  stayDuration: 30
+  spawnChance: 1
+  minSpawnCount: 1
+  maxSpawnCount: 1
+  slotCost: 1
