@@ -1,4 +1,4 @@
-#if PHOTON_FUSION
+﻿#if PHOTON_FUSION
 using Fusion;
 using UnityEngine;
 
@@ -43,8 +43,6 @@ public class NetworkPlayerSync : NetworkBehaviour
     // Trigger 발동 시퀀스 — 값이 바뀔 때만 원격에서 트리거를 재발동한다
     [Networked] private byte NetAnimTriggerSeq { get; set; }
 
-<<<<<<< Updated upstream
-=======
     // 호스트가 확정한 마지막 CrossFade 대상 인덱스 + 1 (0 = 없음)
     [Networked] private byte NetAnimCrossFadeIndex { get; set; }
 
@@ -55,7 +53,6 @@ public class NetworkPlayerSync : NetworkBehaviour
     // 아이템 이름은 최대 22자라 _32면 충분하다.
     [Networked] private NetworkString<_32> NetEquippedHandKey { get; set; }
 
->>>>>>> Stashed changes
     #endregion
 
     #region Fields
@@ -81,6 +78,14 @@ public class NetworkPlayerSync : NetworkBehaviour
 
     // 원격 전용 — 마지막으로 재현한 트리거 시퀀스
     private byte _appliedTriggerSeq;
+
+    // 소유자 전용 — 마지막으로 CrossFade한 대상과 그 시퀀스
+    private byte _localCrossFadeIndex;
+    private byte _localCrossFadeSeq;
+
+    // 원격 전용 — 마지막으로 재현한 CrossFade 시퀀스 (스폰 직후 1회는 무조건 반영해 현재 상태를 맞춘다)
+    private byte _appliedCrossFadeSeq;
+    private bool _crossFadeInitialized;
 
     // 트리거 이벤트 구독 해제를 위해 보관
     private PlayerAnimData _animData;
@@ -110,9 +115,8 @@ public class NetworkPlayerSync : NetworkBehaviour
             // Trigger는 애니메이터에서 되읽을 수 없으므로 발동 시점을 이벤트로 잡는다
             _animData = GetComponent<Player>()?.AnimData;
             if (_animData != null)
+            {
                 _animData.OnTriggerPlayed += OnLocalTriggerPlayed;
-<<<<<<< Updated upstream
-=======
 
                 // CrossFade(사망 연출·부활 복귀 등 상태 직접 전환)도 파라미터로는 표현되지 않아 따로 잡는다
                 _animData.OnCrossFadePlayed += OnLocalCrossFadePlayed;
@@ -133,19 +137,36 @@ public class NetworkPlayerSync : NetworkBehaviour
             // 남의 캐릭터: 손 본에 실제 아이템을 붙여 보여주는 뷰를 준비한다.
             // (소유자 자신은 1인칭 뷰모델이 따로 있어 붙이지 않는다)
             _equipmentView = Extensions.GetOrAddComponent<PlayerEquipmentView>(gameObject);
->>>>>>> Stashed changes
         }
 
         if (Object.HasStateAuthority)
         {
-            // 호스트: 스폰 위치로 초기화
+            // 호스트: 스폰 위치로 초기화.
+            // Runner.Spawn에 좌표를 넘겨도 CharacterController는 자체 내부 좌표를 프리팹 원점(0,0,0)으로
+            // 들고 있어, 첫 Move에서 transform을 그리로 되돌린다. 지형은 (0,0)~(mapSize,mapSize)에 놓이므로
+            // 원점이 곧 맵 귀퉁이다 — 호스트 캐릭터만 (0,0)에 생성되던 원인.
+            // 클라이언트 분기와 똑같이 PlayerMotor.Teleport(비활성화 → 이동 → 재활성화)로
+            // 내부 좌표까지 맞춘 뒤 확정한다.
+            if (TryGetComponent(out PlayerMotor hostMotor))
+                hostMotor.Teleport(transform.position);
+
             NetPosition = transform.position;
             NetYaw = transform.eulerAngles.y;
         }
-        else if (!Object.HasInputAuthority)
+        else
         {
-            // 프록시: 첫 프레임은 확정 값으로 즉시 스냅
-            transform.SetPositionAndRotation(NetPosition, Quaternion.Euler(0f, NetYaw, 0f));
+            // 호스트가 아닌 피어는 자기 캐릭터든 남의 캐릭터든 확정 값으로 즉시 스냅한다.
+            // 이 프리팹에는 NetworkTransform이 없어 스폰 좌표가 복제되지 않는다.
+            // 예전에는 프록시(!InputAuthority)만 스냅해서, 클라이언트 자기 캐릭터가
+            // 프리팹 원점(0,0,0) — 맵 귀퉁이 — 에 그대로 남았다.
+            // 또한 CharacterController는 자체 내부 좌표를 갖고 있어 transform 대입만으로는
+            // 다음 Move에서 되돌려지므로 PlayerMotor.Teleport를 거친다.
+            transform.rotation = Quaternion.Euler(0f, NetYaw, 0f);
+
+            if (TryGetComponent(out PlayerMotor motor))
+                motor.Teleport(NetPosition);
+            else
+                transform.position = NetPosition;
         }
 
         // 뒤늦게 합류한 피어가 이미 지나간 트리거를 다시 재생하지 않도록 현재 시퀀스를 기준점으로 삼는다
@@ -157,6 +178,7 @@ public class NetworkPlayerSync : NetworkBehaviour
         if (_animData != null)
         {
             _animData.OnTriggerPlayed -= OnLocalTriggerPlayed;
+            _animData.OnCrossFadePlayed -= OnLocalCrossFadePlayed;
             _animData = null;
         }
 
@@ -186,6 +208,8 @@ public class NetworkPlayerSync : NetworkBehaviour
             NetAnimBools = PackBools();
             NetAnimTriggerIndex = _localTriggerIndex;
             NetAnimTriggerSeq = _localTriggerSeq;
+            NetAnimCrossFadeIndex = _localCrossFadeIndex;
+            NetAnimCrossFadeSeq = _localCrossFadeSeq;
         }
         else if (GetInput(out NetworkInputData input) && input.HasCharacterState)
         {
@@ -198,6 +222,8 @@ public class NetworkPlayerSync : NetworkBehaviour
             NetAnimBools = input.AnimBools;
             NetAnimTriggerIndex = input.AnimTriggerIndex;
             NetAnimTriggerSeq = input.AnimTriggerSeq;
+            NetAnimCrossFadeIndex = input.AnimCrossFadeIndex;
+            NetAnimCrossFadeSeq = input.AnimCrossFadeSeq;
         }
     }
 
@@ -209,11 +235,8 @@ public class NetworkPlayerSync : NetworkBehaviour
         // 남의 캐릭터는 상태 머신이 돌지 않으므로 애니메이터를 복제 값으로 직접 구동한다.
         // (호스트가 보는 원격 캐릭터도 마찬가지 — 호스트에서도 그 캐릭터의 상태 머신은 돌지 않는다)
         ApplyAnimState();
-<<<<<<< Updated upstream
-=======
         ApplyCrossFade();
         ApplyEquipmentView();
->>>>>>> Stashed changes
 
         // 호스트가 보는 원격 캐릭터의 위치는 FixedUpdateNetwork에서 이미 적용됨
         if (Object.HasStateAuthority) return;
@@ -246,6 +269,8 @@ public class NetworkPlayerSync : NetworkBehaviour
         input.AnimBools = PackBools();
         input.AnimTriggerIndex = _localTriggerIndex;
         input.AnimTriggerSeq = _localTriggerSeq;
+        input.AnimCrossFadeIndex = _localCrossFadeIndex;
+        input.AnimCrossFadeSeq = _localCrossFadeSeq;
     }
 
     // 애니메이터와 파라미터 해시 목록을 캐싱한다.
@@ -322,6 +347,42 @@ public class NetworkPlayerSync : NetworkBehaviour
         {
             _animator.SetTrigger(_triggerHashes[index]);
         }
+    }
+
+    // 원격: 소유자가 수행한 CrossFade(상태 직접 전환)를 그대로 재현한다.
+    // 사망 연출과 부활 복귀는 파라미터가 아니라 CrossFade로 전환되므로,
+    // 이걸 재현하지 않으면 원격 화면에서 사망 애니메이션인 채로 돌아다니게 된다.
+    private void ApplyCrossFade()
+    {
+        if (_animator == null) return;
+
+        byte seq = NetAnimCrossFadeSeq;
+        if (_crossFadeInitialized && seq == _appliedCrossFadeSeq) return;
+
+        _crossFadeInitialized = true;
+        _appliedCrossFadeSeq = seq;
+
+        int stateHash = PlayerAnimData.GetCrossFadeState(NetAnimCrossFadeIndex - 1);
+        if (stateHash != 0)
+            _animator.CrossFade(stateHash, PlayerAnimData.CrossFadeDuration, 0, 0f);
+    }
+
+    // 소유자: 로컬에서 CrossFade가 발동됐다 — 인덱스와 시퀀스를 갱신해 다음 Input에 실어 보낸다
+    private void OnLocalCrossFadePlayed(int stateHash)
+    {
+        int index = PlayerAnimData.IndexOfCrossFadeState(stateHash);
+        if (index < 0)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning(
+                "[NetworkPlayerSync] 동기화 목록에 없는 CrossFade 대상입니다. " +
+                "PlayerAnimData.s_crossFadeStates에 추가해야 원격 피어에 재현됩니다.", this);
+#endif
+            return;
+        }
+
+        _localCrossFadeIndex = (byte)(index + 1);
+        _localCrossFadeSeq++;
     }
 
     // 소유자: 로컬에서 Trigger가 발동됐다 — 인덱스와 시퀀스를 갱신해 다음 Input에 실어 보낸다
