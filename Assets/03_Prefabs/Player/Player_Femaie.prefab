@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 5601182068425426865}
   - component: {fileID: 9146008707785666234}
   - component: {fileID: 338181743308742530}
+  - component: {fileID: 6613656404316520952}
   m_Layer: 31
   m_Name: Player_Femaie
   m_TagString: Player
@@ -58,13 +59,13 @@ CharacterController:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Height: 1.8
+  m_Height: 1.9154227
   m_Radius: 0.29
   m_SlopeLimit: 45
   m_StepOffset: 0.3
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0
-  m_Center: {x: 0, y: 1.6, z: 0}
+  m_Center: {x: 0, y: 1.6720871, z: 0}
 --- !u!114 &1279754771551504528
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -170,7 +171,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   slotCount: 20
   quickSlotCount: 20
-  rotItemSO: {fileID: 11400000, guid: eac0dd7b1fa44b0392f6ef6602d8b18b, type: 2}
   pickupRadius: 2
   pickupLayer:
     serializedVersion: 2
@@ -179,11 +179,15 @@ MonoBehaviour:
   toolUseLayer:
     serializedVersion: 2
     m_Bits: 4294967295
+  bareHandDamage: 1
   slots:
   - {fileID: 11400000, guid: 41909ce6e3bb1334898e2b02f5f26412, type: 2}
   - {fileID: 11400000, guid: ddbbce5581b91654598a8c87aa7a4a0f, type: 2}
   - {fileID: 11400000, guid: 9e6704d5c5132834594962d2ac92fc07, type: 2}
   stackCounts: 
+  expirationTimestamps: []
+  rotItemSO: {fileID: 11400000, guid: eac0dd7b1fa44b0392f6ef6602d8b18b, type: 2}
+  deathDropRadius: 1.5
 --- !u!114 &9146008707785666234
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -217,6 +221,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _lerpSpeed: 12
   _snapDistance: 8
+--- !u!114 &6613656404316520952
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 291828927232711877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cad7554807933a24aae442b52d099bbd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  handAttachPoint: {fileID: 3367956887733851697}
+  defaultLocalPosition: {x: 0, y: 0, z: 0}
+  defaultLocalEuler: {x: 0, y: 0, z: 0}
+  defaultLocalScale: {x: 1, y: 1, z: 1}
+  attachOverrides: []
+  torchLightIntensity: 3.5
+  torchLightRange: 7
+  torchLightColor: {r: 1, g: 0.45, b: 0.18, a: 1}
 --- !u!1 &783732110047109408
 GameObject:
   m_ObjectHideFlags: 0

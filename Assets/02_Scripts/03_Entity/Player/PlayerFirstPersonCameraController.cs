@@ -29,6 +29,14 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     [SerializeField] private bool hidePlayerBodyInFirstPerson = true;
     [SerializeField] private Transform toolPivot;
 
+#if UNITY_EDITOR
+    [Tooltip("Play 중에도 씬 뷰에서는 몸을 그린다. 게임 화면은 그대로 숨겨진다. (에디터 전용)")]
+    [SerializeField] private bool showBodyInSceneView = true;
+
+    [Tooltip("씬 뷰에 CharacterController 캡슐과 발 높이를 와이어로 그린다. (에디터 전용)")]
+    [SerializeField] private bool drawCapsuleGizmo = true;
+#endif
+
     [Header("도구 카메라")]
     [SerializeField] private string viewModelLayerName = "ViewModel";
     [SerializeField] private float toolCameraFov = 55f;
@@ -215,6 +223,12 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     private void OnEnable()
     {
         Main.Loop.OnLateUpdate += OnLateUpdateLoop;
+
+#if UNITY_EDITOR
+        // 카메라 단위로 몸 표시를 갈라주기 위한 훅. 중복 구독을 막고 OnDestroy에서만 해제한다.
+        RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
+        RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
+#endif
     }
 
     private void OnDisable()
@@ -227,6 +241,88 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         ClearEquippedToolView();
         RemoveToolCameraFromStack();
     }
+
+#if UNITY_EDITOR
+    private void OnDestroy()
+    {
+        RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
+    }
+
+    /// <summary>
+    /// 씬 뷰에서만 몸을 그린다. (에디터 전용)
+    ///
+    /// 1인칭에서 몸을 숨기는 수단인 shadowCastingMode는 <b>렌더러 속성</b>이라 카메라를 가리지 않는다.
+    /// 그래서 Play 중에는 씬 창에서도 캐릭터가 사라져 발이 지형에 묻히는지 같은 걸 눈으로 볼 수 없다.
+    /// URP는 카메라마다 이 콜백을 부르므로, 렌더 직전에 그 카메라가 씬 뷰인지 보고 표시를 갈라준다.
+    /// 게임 화면(Game/ToolCamera)에는 기존과 똑같이 ShadowsOnly가 적용된다.
+    /// </summary>
+    private void OnBeginCameraRendering(ScriptableRenderContext context, Camera renderingCamera)
+    {
+        if (bodyRenderers == null) return;
+
+        // 애초에 몸을 숨기지 않는 경우(원격 캐릭터 등)는 ApplyBodyVisibility가 정한 값을 그대로 둔다.
+        if (!isLocalView || !hidePlayerBodyInFirstPerson) return;
+
+        ShadowCastingMode mode =
+            showBodyInSceneView && renderingCamera.cameraType == CameraType.SceneView
+                ? ShadowCastingMode.On
+                : ShadowCastingMode.ShadowsOnly;
+
+        for (int i = 0; i < bodyRenderers.Length; i++)
+        {
+            if (bodyRenderers[i] == null) continue;
+            bodyRenderers[i].shadowCastingMode = mode;
+        }
+    }
+
+    /// <summary>
+    /// CharacterController 캡슐과 발 높이를 씬 뷰에 그린다. (에디터 전용)
+    /// 캡슐 하단과 메시 발끝이 어긋나면 캐릭터가 지형에 묻히거나 떠 보이므로, 그 둘을 같이 표시한다.
+    /// </summary>
+    private void OnDrawGizmosSelected()
+    {
+        if (!drawCapsuleGizmo) return;
+        if (!TryGetComponent(out CharacterController cc)) return;
+
+        Vector3 center = transform.position + cc.center;
+        float half = Mathf.Max(cc.height * 0.5f - cc.radius, 0f);
+        Vector3 sphereTop = center + Vector3.up * half;
+        Vector3 sphereBottom = center - Vector3.up * half;
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(sphereTop, cc.radius);
+        Gizmos.DrawWireSphere(sphereBottom, cc.radius);
+        Gizmos.DrawLine(sphereTop + Vector3.right * cc.radius, sphereBottom + Vector3.right * cc.radius);
+        Gizmos.DrawLine(sphereTop - Vector3.right * cc.radius, sphereBottom - Vector3.right * cc.radius);
+        Gizmos.DrawLine(sphereTop + Vector3.forward * cc.radius, sphereBottom + Vector3.forward * cc.radius);
+        Gizmos.DrawLine(sphereTop - Vector3.forward * cc.radius, sphereBottom - Vector3.forward * cc.radius);
+
+        // 캡슐 하단 (지면에 닿는 면)
+        float capsuleBottomY = center.y - cc.height * 0.5f;
+        Gizmos.color = Color.cyan;
+        DrawFlatCross(new Vector3(center.x, capsuleBottomY, center.z), cc.radius * 1.4f);
+
+        // 실제 메시 최저점 — 캡슐 하단보다 아래면 그만큼 지형에 묻힌다
+        Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
+        float meshMinY = float.MaxValue;
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] == null || !renderers[i].gameObject.activeInHierarchy) continue;
+            meshMinY = Mathf.Min(meshMinY, renderers[i].bounds.min.y);
+        }
+
+        if (meshMinY >= float.MaxValue) return;
+
+        Gizmos.color = meshMinY < capsuleBottomY - 0.001f ? Color.red : Color.yellow;
+        DrawFlatCross(new Vector3(center.x, meshMinY, center.z), cc.radius * 1.1f);
+    }
+
+    private static void DrawFlatCross(Vector3 point, float size)
+    {
+        Gizmos.DrawLine(point + Vector3.right * size, point - Vector3.right * size);
+        Gizmos.DrawLine(point + Vector3.forward * size, point - Vector3.forward * size);
+    }
+#endif
 
     private void OnLateUpdateLoop(float deltaTime)
     {

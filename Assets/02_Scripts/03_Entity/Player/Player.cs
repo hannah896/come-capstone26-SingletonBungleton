@@ -44,6 +44,12 @@ public class Player : MonoBehaviour, IDamageable
     public string CurrentSubStateName => machine?.CurrentSubStateName ?? "None";
     public bool IsGrounded => motor != null && motor.IsGrounded;
     public bool IsLocalPlayer => IsLocalPlayerObject();
+
+    /// <summary>
+    /// 사망 처리 중인지. 스탯(HP 0)이 아니라 <b>상태</b> 기준이라,
+    /// 사망 연출·사망 팝업·부활 대기까지 전부 포함한다.
+    /// </summary>
+    public bool IsDead => machine?.CurrentState is PlayerDeadState;
     #endregion
 
     private void OnValidate()
@@ -106,6 +112,9 @@ public class Player : MonoBehaviour, IDamageable
         handler.Bind(this, inputData);
         Main.Input.AddInput<InputActions_PlayerInputHandler>();
         Main.Input.AddInput<UIMapInputHandler>();       // UI 핸들러 추가함.
+
+        // ESC 일시정지. 플레이어 입력 맵과 분리돼 있어, 팝업이 플레이어 입력을 막아도 ESC로 닫을 수 있다.
+        Main.Input.AddInput<PauseInputHandler>();
 
         // 1인칭 카메라 컨트롤러 바인딩 및 카메라 동적 생성
         fpCameraController?.Bind(inputData, transform);
@@ -243,6 +252,33 @@ public class Player : MonoBehaviour, IDamageable
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[Player] Revived at {transform.position}");
+#endif
+        return true;
+    }
+
+    /// <summary>
+    /// 스탯은 그대로 두고 위치만 스폰 지점으로 되돌린다. (일시정지 팝업의 "구조" 버튼)
+    ///
+    /// 지형 밖으로 떨어져 무한 낙하 중이거나 지물에 끼여 움직일 수 없을 때의 탈출구다.
+    /// 회복을 겸하면 체력 회복 수단으로 악용되므로 <see cref="Revive"/>와 분리한다.
+    /// 사망 중에는 부활 흐름이 따로 있으므로 동작하지 않는다.
+    /// </summary>
+    /// <returns>이동했으면 true. 스폰 지점을 모르거나 사망 중이면 false.</returns>
+    public bool TeleportToSpawnPoint()
+    {
+        if (motor == null) return false;
+        if (machine?.CurrentState is PlayerDeadState) return false;
+
+        if (!TryGetRespawnPosition(out Vector3 position)) return false;
+
+        // Teleport가 남은 낙하 속도까지 초기화한다 (무한 낙하 중이면 이게 핵심).
+        motor.Teleport(position);
+
+        // 이동 직후 첫 프레임에 이전 입력이 그대로 나가는 것을 막는다.
+        inputData?.SuppressAllInputs();
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[Player] 구조 이동 → {position}");
 #endif
         return true;
     }

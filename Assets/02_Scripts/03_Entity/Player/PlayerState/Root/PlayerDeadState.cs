@@ -44,6 +44,11 @@ public class PlayerDeadState : PlayerRootStateBase
         // 원격 플레이어의 사망 연출은 각 클라이언트가 자기 화면에서 처리한다.
         if (!Entity.IsLocalPlayer) return;
 
+        // 일시정지 팝업이 열린 채로 죽으면 사망 팝업과 겹친다.
+        // (팝업은 플레이어 입력만 막을 뿐 게임을 멈추지 않으므로, 열어둔 사이 허기·몬스터로 죽을 수 있다)
+        if (UI_Popup_Pause.IsOpen)
+            UI_Popup_Pause.CloseIfOpen();
+
         // 소지품 전량 드롭 — 부활하면 빈손으로 시작한다.
         int droppedCount = Entity.Inventory != null ? Entity.Inventory.DropAll() : 0;
         if (droppedCount > 0)
