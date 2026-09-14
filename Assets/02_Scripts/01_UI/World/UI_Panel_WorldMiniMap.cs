@@ -7,9 +7,9 @@ using UnityEngine;
 public class UI_Panel_WorldMiniMap : UI_Panel
 {
     [Header("UI References")]
-    [Tooltip("런타임 미니맵 Sprite를 표시할 UI_Image입니다. 프레임 이미지는 별도 오브젝트로 두세요.")]
+    [Tooltip("BG와 분리된 MapImage를 연결한다. 이 이미지의 RectTransform이 지도 표시 영역이 된다.")]
     [SerializeField] private UI_Image _mapImage;
-    [Tooltip("RectMask2D가 붙은 표시 영역. 비워 두면 기존처럼 전체 지도를 축소 표시한다.")]
+    [Tooltip("별도의 표시 영역이 있을 때만 지정한다. 비워 두면 MapImage의 영역을 그대로 사용한다.")]
     [SerializeField] private RectTransform _mapViewport;
     [SerializeField] private RectTransform _playerMarker;
 
@@ -20,7 +20,11 @@ public class UI_Panel_WorldMiniMap : UI_Panel
     [Header("Viewport Settings")]
     [Tooltip("Viewport를 쓸 때 화면에 보이는 지도 배율이다. 4이면 가로·세로가 대략 1/4씩 보인다.")]
     [SerializeField, Min(1f)] private float _zoom = 4f;
+    [SerializeField, Min(1f)] private float _maxZoom = 16f;
+    [Tooltip("휠 한 칸마다 변경할 배율의 비율. 0.2이면 20%씩 확대한다.")]
+    [SerializeField, Min(0.01f)] private float _zoomStep = 0.2f;
 
+    private UI_MapViewport _navigation;
     private WorldMap _worldMap;
     private WorldMapData _mapData;
     private Transform _target;
@@ -30,11 +34,18 @@ public class UI_Panel_WorldMiniMap : UI_Panel
     public override bool Initialize()
     {
         if (!base.Initialize()) return false;
+        // 프리팹 참조가 비어 있어도 이름이 명확한 지도와 마커만 찾고 BG는 건드리지 않는다.
+        if (_mapImage == null)
+            _mapImage = transform.Find("MapImage")?.GetComponent<UI_Image>();
+        if (_playerMarker == null && _mapImage != null)
+            _playerMarker = _mapImage.transform.Find("PlayerMarker") as RectTransform;
 
-        // 기존 HUD 프리팹은 UI_WorldMiniMap 자신이 UI_Image인 구조다.
-        if (_mapImage == null && _mapViewport == null)
+        _navigation = UI_MapViewport.Create(_mapImage, _mapViewport, _playerMarker,
+            _zoom, _maxZoom, _zoomStep, fillViewport: true, followTarget: true);
+        if (_navigation != null)
         {
-            _mapImage = GetComponent<UI_Image>();
+            _mapImage = _navigation.MapImage;
+            _mapViewport = _navigation.Viewport;
         }
         return true;
     }
@@ -70,7 +81,6 @@ public class UI_Panel_WorldMiniMap : UI_Panel
     {
         _target = target;
         RefreshVisibility();
-        UpdateMapContent();
         UpdatePlayerMarker();
     }
 
@@ -135,7 +145,6 @@ public class UI_Panel_WorldMiniMap : UI_Panel
         }
 
         RefreshVisibility();
-        UpdateMapContent();
         UpdatePlayerMarker();
     }
 
@@ -153,6 +162,7 @@ public class UI_Panel_WorldMiniMap : UI_Panel
             _mapImage.Sprite = null;
         }
 
+        _navigation?.ResetView();
         RefreshVisibility();
     }
 
@@ -160,7 +170,7 @@ public class UI_Panel_WorldMiniMap : UI_Panel
     {
         if (_mapImage != null)
         {
-            _mapImage.enabled = _mapData?.Sprite != null;
+            _mapImage.Image.enabled = _mapData?.Sprite != null;
         }
 
         if (_playerMarker != null)
@@ -171,6 +181,13 @@ public class UI_Panel_WorldMiniMap : UI_Panel
 
     private void UpdatePlayerMarker()
     {
+        if (_navigation != null)
+        {
+            _navigation.FocusPosition = _mapData != null && _target != null
+                ? _mapData.NormalizeWorldPosition(_target.position)
+                : new Vector2(0.5f, 0.5f);
+            _navigation.Refresh();
+        }
         if (_mapData == null || _target == null || _playerMarker == null) return;
 
         Vector3 worldPosition = _target.position;
@@ -192,12 +209,7 @@ public class UI_Panel_WorldMiniMap : UI_Panel
         }
 
         Vector2 normalizedPosition = _mapData.NormalizeWorldPosition(worldPosition);
-        UpdateMapContent(normalizedPosition);
-
-        Vector2 markerPosition = _mapViewport != null ? new Vector2(0.5f, 0.5f) : normalizedPosition;
-        _playerMarker.anchorMin = markerPosition;
-        _playerMarker.anchorMax = markerPosition;
-        _playerMarker.anchoredPosition = Vector2.zero;
+        _navigation?.SetMarkerPosition(normalizedPosition);
 
         if (_rotatePlayerMarker)
         {
@@ -205,39 +217,4 @@ public class UI_Panel_WorldMiniMap : UI_Panel
         }
     }
 
-    private void UpdateMapContent()
-    {
-        if (_mapData == null || _mapViewport == null || _mapImage == null) return;
-        UpdateMapContent(new Vector2(0.5f, 0.5f));
-    }
-
-    private void UpdateMapContent(Vector2 normalizedPlayerPosition)
-    {
-        if (_mapData == null || _mapViewport == null || _mapImage == null) return;
-
-        RectTransform mapContent = _mapImage.Rect;
-        Vector2 viewportSize = _mapViewport.rect.size;
-        if (viewportSize.x <= 0f || viewportSize.y <= 0f) return;
-
-        float mapAspect = _mapData.Sprite.rect.width / _mapData.Sprite.rect.height;
-        float viewportAspect = viewportSize.x / viewportSize.y;
-        float zoom = Mathf.Max(1f, _zoom);
-        Vector2 contentSize;
-        if (mapAspect >= viewportAspect)
-        {
-            contentSize = new Vector2(viewportSize.y * zoom * mapAspect, viewportSize.y * zoom);
-        }
-        else
-        {
-            contentSize = new Vector2(viewportSize.x * zoom, viewportSize.x * zoom / mapAspect);
-        }
-
-        mapContent.anchorMin = new Vector2(0.5f, 0.5f);
-        mapContent.anchorMax = new Vector2(0.5f, 0.5f);
-        mapContent.pivot = new Vector2(0.5f, 0.5f);
-        mapContent.sizeDelta = contentSize;
-        mapContent.anchoredPosition = new Vector2(
-            (0.5f - normalizedPlayerPosition.x) * contentSize.x,
-            (0.5f - normalizedPlayerPosition.y) * contentSize.y);
-    }
 }

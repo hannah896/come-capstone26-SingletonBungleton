@@ -36,6 +36,10 @@ public class TimeManager : CoreManager
     protected override async UniTask OnInitializeAsync()
     {
         await base.OnInitializeAsync();
+
+        // 매니저 초기화 시 한 번 연결한다. 타이머의 Playing/일시정지 조건은 OnUpdate에서 확인한다.
+        // Clear는 씬 전환 때 타이머만 비우므로, Main과 수명이 같은 이 구독은 유지한다.
+        Main.Loop.OnUpdate += OnUpdate;
         GameEvents.OnGamePause += () => Pause = true;
         GameEvents.OnGameResume += () => Pause = false;
     }

@@ -46,12 +46,21 @@ public class NetworkPlayerData : NetworkBehaviour
     [Networked] public int WorldSizeIndex { get; set; }
     [Networked] public NetworkBool HasWorldConfig { get; set; }
 
+    // 월드 시계 (호스트 자신의 데이터 오브젝트에만 기록 → 모든 클라가 읽어 자기 WorldClock에 반영).
+    // 누적 초 하나로 보내면 날이 지날수록 float 정밀도가 떨어지므로 날짜와 하루 중 경과 초로 나눈다.
+    [Networked] public int WorldClockDays { get; set; }
+    [Networked] public float WorldClockSecondsToday { get; set; }
+    [Networked] public NetworkBool HasWorldClock { get; set; }
+
     #endregion
 
     #region Fields
 
     // Networked 프로퍼티 변경 감지 (대기방 UI 갱신용)
     private ChangeDetector _changes;
+
+    // 이 오브젝트가 로컬 WorldClock을 네트워크 구동 중으로 전환했는지 (Despawned에서 되돌리기용)
+    private bool _drivingWorldClock;
 
     #endregion
 
@@ -90,6 +99,11 @@ public class NetworkPlayerData : NetworkBehaviour
 
     public override void Despawned(NetworkRunner runner, bool hasState)
     {
+        // 시간을 구동하던 호스트 데이터가 사라지면(세션 종료) 로컬 시계 흐름을 되돌린다.
+        if (_drivingWorldClock && WorldClock.Instance != null)
+            WorldClock.Instance.SetNetworkDriven(false);
+        _drivingWorldClock = false;
+
         Main.Network?.UnregisterPlayerData(OwnerRef);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -97,9 +111,37 @@ public class NetworkPlayerData : NetworkBehaviour
 #endif
     }
 
+    // 호스트: 자기 데이터 오브젝트에서 틱마다 월드 시간을 전진시키고 결과를 복제 상태에 기록한다.
+    // TimeManager(NyoTimer)는 GameState가 Playing일 때만 흐르므로, 호스트가 죽거나 일시정지해도
+    // 세션 시간이 멈추지 않도록 네트워크 틱으로 직접 구동한다.
+    public override void FixedUpdateNetwork()
+    {
+        if (!HasStateAuthority || !IsMaster) return;
+
+        WorldClock clock = WorldClock.Instance;
+        if (clock == null) return;
+
+        // 맵/플레이어 생성 중에는 싱글과 마찬가지로 시간을 흘리지 않는다 (사망 중에는 계속 흐른다).
+        GameState state = GameScene.GameState;
+        bool canAdvance = state == GameState.Playing || state == GameState.Failed;
+
+        if (!clock.IsNetworkDriven) clock.SetNetworkDriven(true);
+        _drivingWorldClock = true;
+
+        if (canAdvance)
+            clock.SyncTime(clock.DaysPassed, clock.ElapsedSecondsToday + Runner.DeltaTime);
+
+        // SkipTime 등 호스트 로컬 변경도 그대로 반영된다.
+        WorldClockDays = clock.DaysPassed;
+        WorldClockSecondsToday = clock.ElapsedSecondsToday;
+        HasWorldClock = true;
+    }
+
     // Fusion 렌더 콜백 — 대기방 표시 값이 바뀌면 매니저에 알린다 (호스트 쓰기/원격 복제 모두 감지)
     public override void Render()
     {
+        ApplyWorldClockFromHost();
+
         if (_changes == null) return;
 
         foreach (string propertyName in _changes.DetectChanges(this))
@@ -115,9 +157,35 @@ public class NetworkPlayerData : NetworkBehaviour
         }
     }
 
+    // 클라이언트: 호스트 데이터에 복제된 월드 시간을 자기 WorldClock에 그대로 반영한다.
+    private void ApplyWorldClockFromHost()
+    {
+        if (HasStateAuthority || !IsMaster || !HasWorldClock) return;
+
+        WorldClock clock = WorldClock.Instance;
+        if (clock == null) return; // 아직 월드 생성 전 — 시계가 생기면 다음 프레임부터 반영
+
+        if (!clock.IsNetworkDriven) clock.SetNetworkDriven(true);
+        _drivingWorldClock = true;
+
+        clock.SyncTime(WorldClockDays, WorldClockSecondsToday);
+    }
+
     #endregion
 
     #region RPC
+
+    /// <summary>
+    /// 클라이언트가 시간 스킵(수면 등)을 호스트에 요청합니다. 결과는 호스트 시계 복제로 전원에게 반영됩니다.
+    /// </summary>
+    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+    public void Rpc_RequestSkipTime(float skipSeconds)
+    {
+        WorldClock clock = WorldClock.Instance;
+        if (clock == null || skipSeconds <= 0f) return;
+
+        clock.SkipTime(skipSeconds);
+    }
 
     /// <summary>
     /// 게임 시작 신호. 호스트(StateAuthority)가 자기 데이터 오브젝트에서 호출하면

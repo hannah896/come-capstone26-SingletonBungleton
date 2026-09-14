@@ -75,7 +75,7 @@ public class TerritoryBuilder : IGraphPipelineStage
     }
 
     // 시드 동일 = 결과 동일을 보장하기 위해 엄격 모드 고정 (LandformJobs.HeightGenerationJob 주석 참고)
-    [BurstCompile(FloatMode = FloatMode.Strict, FloatPrecision = FloatPrecision.High)]
+    [BurstCompile(FloatMode = FloatMode.Strict, FloatPrecision = FloatPrecision.High, CompileSynchronously = true)]
     private struct NoiseGenerationJob : IJobParallelFor
     {
         [WriteOnly] public NativeArray<float> NoiseMap;

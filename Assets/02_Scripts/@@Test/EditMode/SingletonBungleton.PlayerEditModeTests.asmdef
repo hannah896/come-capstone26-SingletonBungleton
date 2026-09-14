@@ -1,7 +1,9 @@
 {
     "name": "SingletonBungleton.PlayerEditModeTests",
     "rootNamespace": "",
-    "references": [],
+    "references": [
+        "UnityEngine.UI"
+    ],
     "includePlatforms": [
         "Editor"
     ],

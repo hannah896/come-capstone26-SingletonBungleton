@@ -14,6 +14,13 @@ public class UI_Popup_WorldMap : UI_Popup
     [SerializeField] private bool _rotatePlayerMarker = false;
     [SerializeField] private bool _hideMarkerOutsideWorld = true;
 
+    [Header("Viewport Settings")]
+    [SerializeField, Min(1f)] private float _zoom = 1f;
+    [SerializeField, Min(1f)] private float _maxZoom = 16f;
+    [Tooltip("휠 한 칸마다 변경할 배율의 비율. 0.2이면 20%씩 확대한다.")]
+    [SerializeField, Min(0.01f)] private float _zoomStep = 0.2f;
+
+    private UI_MapViewport _navigation;
     private WorldMap _worldMap;
     private WorldMapData _mapData;
     private Transform _target;
@@ -24,6 +31,9 @@ public class UI_Popup_WorldMap : UI_Popup
         if (!base.Initialize()) return false;
 
         // 배경 이미지와 지도 이미지를 혼동하지 않도록, 전체 지도용 UI_Image는 프리팹에서 명시적으로 연결한다.
+        _navigation = UI_MapViewport.Create(_mapImage, null, _playerMarker,
+            _zoom, _maxZoom, _zoomStep, fillViewport: false, followTarget: false);
+        if (_navigation != null) _mapImage = _navigation.MapImage;
         return true;
     }
 
@@ -117,6 +127,7 @@ public class UI_Popup_WorldMap : UI_Popup
     {
         _mapData = null;
         if (_mapImage != null) _mapImage.Sprite = null;
+        _navigation?.ResetView();
         RefreshVisibility();
     }
 
@@ -140,6 +151,7 @@ public class UI_Popup_WorldMap : UI_Popup
 
     private void UpdatePlayerMarker()
     {
+        _navigation?.Refresh();
         if (_mapData == null || _target == null || _playerMarker == null) return;
 
         Vector3 position = _target.position;
@@ -154,9 +166,7 @@ public class UI_Popup_WorldMap : UI_Popup
         if (!_playerMarker.gameObject.activeSelf) _playerMarker.gameObject.SetActive(true);
 
         Vector2 normalized = _mapData.NormalizeWorldPosition(position);
-        _playerMarker.anchorMin = normalized;
-        _playerMarker.anchorMax = normalized;
-        _playerMarker.anchoredPosition = Vector2.zero;
+        _navigation?.SetMarkerPosition(normalized);
         if (_rotatePlayerMarker)
         {
             _playerMarker.localRotation = Quaternion.Euler(0f, 0f, -_target.eulerAngles.y);

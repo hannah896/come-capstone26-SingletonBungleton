@@ -15,7 +15,7 @@ MonoBehaviour:
   BiomeType: 2
   DebugColor: {r: 1, g: 0.9583559, b: 0, a: 1}
   BiomeDisposeRule: {fileID: 11400000, guid: 4c12655652537f847b4414146180f096, type: 2}
-  BiomeSpawnRule: {fileID: 0}
+  BiomeSpawnRule: {fileID: 11400000, guid: 1773ca52083262c49b759ed221dca383, type: 2}
   TopKey: Desert_Top
   AltKey: Desert_Alt
   CliffKey: 

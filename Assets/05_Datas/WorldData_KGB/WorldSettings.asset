@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   CurrentStory: {fileID: 11400000, guid: 1286a88dc4584c44497a3905a9366d92, type: 2}
   WorldSeed: -2100506294
+  skyBoxSettings: {fileID: 11400000, guid: 0d23f72e2c4a4e5995d311085debd506, type: 2}
   worldSmall: 512
   worldMedium: 1024
   worldLarge: 1024

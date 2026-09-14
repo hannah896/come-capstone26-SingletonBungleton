@@ -1,4 +1,4 @@
-#if PHOTON_FUSION
+﻿#if PHOTON_FUSION
 using Fusion;
 using UnityEngine;
 
@@ -20,6 +20,11 @@ using UnityEngine;
 /// 일반적으로 처리하므로, 애니메이터 컨트롤러를 수정할 필요가 없고
 /// 남/여 컨트롤러의 파라미터 구성이 서로 달라도(같은 이름이 한쪽은 Bool, 다른 쪽은 Trigger) 그대로 동작한다.
 /// 같은 플레이어의 캐릭터는 모든 피어에서 동일한 프리팹으로 스폰되므로 파라미터 순서도 동일하다.
+///
+/// [장착 아이템]
+/// 소유자 화면의 장착 뷰는 1인칭 뷰모델(ViewModel 레이어 + 전용 ToolCamera)이라 남의 화면에는 렌더되지 않는다.
+/// 그래서 손에 든 아이템의 Addressable 키(= ItemDataSO 파일명)를 복제하고,
+/// 원격 피어는 <see cref="PlayerEquipmentView"/>로 손 본에 실제 프리팹을 붙여 보여준다.
 /// </summary>
 public class NetworkPlayerSync : NetworkBehaviour
 {
@@ -43,6 +48,10 @@ public class NetworkPlayerSync : NetworkBehaviour
 
     // CrossFade 시퀀스 — 값이 바뀔 때만 원격에서 CrossFade를 재현한다
     [Networked] private byte NetAnimCrossFadeSeq { get; set; }
+
+    // 손에 장착한 아이템의 Addressable 키 (= ItemDataSO 파일명). 빈 문자열 = 맨손.
+    // 아이템 이름은 최대 22자라 _32면 충분하다.
+    [Networked] private NetworkString<_32> NetEquippedHandKey { get; set; }
 
     #endregion
 
@@ -81,6 +90,15 @@ public class NetworkPlayerSync : NetworkBehaviour
     // 트리거 이벤트 구독 해제를 위해 보관
     private PlayerAnimData _animData;
 
+    // 소유자 전용 — 장착 변경 구독 해제를 위해 보관
+    private PlayerInventory _inventory;
+
+    // 원격 전용 — 손 본에 실제 아이템을 붙여 보여주는 뷰
+    private PlayerEquipmentView _equipmentView;
+
+    // 원격 전용 — 마지막으로 뷰에 반영한 장착 키
+    private string _appliedEquipKey;
+
     #endregion
 
     #region Lifecycle
@@ -103,11 +121,35 @@ public class NetworkPlayerSync : NetworkBehaviour
                 // CrossFade(사망 연출·부활 복귀 등 상태 직접 전환)도 파라미터로는 표현되지 않아 따로 잡는다
                 _animData.OnCrossFadePlayed += OnLocalCrossFadePlayed;
             }
+
+            // 손에 든 아이템이 바뀔 때마다 호스트로 보고한다 (남의 화면에 그려주기 위함)
+            _inventory = GetComponent<PlayerInventory>();
+            if (_inventory != null)
+            {
+                _inventory.OnEquippedItemChanged += OnLocalEquippedItemChanged;
+
+                // 재접속·리스폰 등으로 이미 장착한 상태로 스폰될 수 있으므로 현재 값을 한 번 보고한다
+                ReportEquippedHand(GetItemKey(_inventory.EquippedHand));
+            }
+        }
+        else
+        {
+            // 남의 캐릭터: 손 본에 실제 아이템을 붙여 보여주는 뷰를 준비한다.
+            // (소유자 자신은 1인칭 뷰모델이 따로 있어 붙이지 않는다)
+            _equipmentView = Extensions.GetOrAddComponent<PlayerEquipmentView>(gameObject);
         }
 
         if (Object.HasStateAuthority)
         {
-            // 호스트: 스폰 위치로 초기화
+            // 호스트: 스폰 위치로 초기화.
+            // Runner.Spawn에 좌표를 넘겨도 CharacterController는 자체 내부 좌표를 프리팹 원점(0,0,0)으로
+            // 들고 있어, 첫 Move에서 transform을 그리로 되돌린다. 지형은 (0,0)~(mapSize,mapSize)에 놓이므로
+            // 원점이 곧 맵 귀퉁이다 — 호스트 캐릭터만 (0,0)에 생성되던 원인.
+            // 클라이언트 분기와 똑같이 PlayerMotor.Teleport(비활성화 → 이동 → 재활성화)로
+            // 내부 좌표까지 맞춘 뒤 확정한다.
+            if (TryGetComponent(out PlayerMotor hostMotor))
+                hostMotor.Teleport(transform.position);
+
             NetPosition = transform.position;
             NetYaw = transform.eulerAngles.y;
         }
@@ -138,6 +180,12 @@ public class NetworkPlayerSync : NetworkBehaviour
             _animData.OnTriggerPlayed -= OnLocalTriggerPlayed;
             _animData.OnCrossFadePlayed -= OnLocalCrossFadePlayed;
             _animData = null;
+        }
+
+        if (_inventory != null)
+        {
+            _inventory.OnEquippedItemChanged -= OnLocalEquippedItemChanged;
+            _inventory = null;
         }
 
         if (Object.HasInputAuthority)
@@ -188,6 +236,7 @@ public class NetworkPlayerSync : NetworkBehaviour
         // (호스트가 보는 원격 캐릭터도 마찬가지 — 호스트에서도 그 캐릭터의 상태 머신은 돌지 않는다)
         ApplyAnimState();
         ApplyCrossFade();
+        ApplyEquipmentView();
 
         // 호스트가 보는 원격 캐릭터의 위치는 FixedUpdateNetwork에서 이미 적용됨
         if (Object.HasStateAuthority) return;
@@ -349,6 +398,55 @@ public class NetworkPlayerSync : NetworkBehaviour
             _localTriggerSeq++;
             return;
         }
+    }
+
+    #endregion
+
+    #region 장착 아이템 동기화
+
+    // 소유자: 장착이 바뀌었다 — 손 슬롯만 호스트로 보고한다
+    private void OnLocalEquippedItemChanged(EquipSlot slot, ItemDataSO itemData)
+    {
+        if (slot != EquipSlot.Hand) return;
+
+        ReportEquippedHand(GetItemKey(itemData));
+    }
+
+    // 소유자 → 호스트. 호스트 자신의 캐릭터라면 RPC 없이 바로 확정한다.
+    private void ReportEquippedHand(string key)
+    {
+        key ??= string.Empty;
+
+        if (Object.HasStateAuthority)
+            NetEquippedHandKey = key;
+        else
+            Rpc_ReportEquippedHand(key);
+    }
+
+    // 장착은 프레임마다 바뀌지 않으므로 매 틱 Input에 싣지 않고 변경 시점에만 RPC로 보낸다.
+    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+    private void Rpc_ReportEquippedHand(NetworkString<_32> key)
+    {
+        NetEquippedHandKey = key;
+    }
+
+    // 원격: 복제된 키가 바뀌면 손 본의 아이템 뷰를 교체한다.
+    // (뒤늦게 합류한 피어도 _appliedEquipKey가 null이라 첫 프레임에 현재 장착이 반영된다)
+    private void ApplyEquipmentView()
+    {
+        if (_equipmentView == null) return;
+
+        string key = NetEquippedHandKey.Value ?? string.Empty;
+        if (key == _appliedEquipKey) return;
+
+        _appliedEquipKey = key;
+        _equipmentView.SetHandItem(key);
+    }
+
+    // 아이템 프리팹의 Addressable 키는 ItemDataSO 파일명이다 (PlayerFirstPersonCameraController와 동일 규칙)
+    private static string GetItemKey(ItemDataSO itemData)
+    {
+        return itemData != null ? itemData.name : string.Empty;
     }
 
     #endregion
