@@ -9,6 +9,11 @@ public class WorldSettings : ScriptableObject
     [SerializeField] public StoryData CurrentStory;
     [SerializeField] public int WorldSeed = 0; // 월드 시드 (랜덤 시드로 덮어쓰기됨)
 
+    [Header("World SkyBox")]
+    [Tooltip("월드 시계에 따라 적용할 하늘과 조명 설정")]
+    [SerializeField] private WorldSkyBoxSettings skyBoxSettings;
+    public WorldSkyBoxSettings SkyBoxSettings => skyBoxSettings;
+
     [Header("Map Size")]
     [SerializeField] private int worldSmall;    
     [SerializeField] private int worldMedium;  

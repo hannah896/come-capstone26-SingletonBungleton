@@ -10,9 +10,11 @@ public class WorldSimulationManager : MonoBehaviour
 {
     private WorldChunkDirector _chunkDirector;
     private WorldClock _worldClock;
+    private WorldSkyBoxController _skyBoxController;
+    private Light _directionalLight;
     private bool _isInitialized = false;
 
-    public void Initialize(WorldChunkDirector chunkDirector)
+    public void Initialize(WorldChunkDirector chunkDirector, WorldSkyBoxSettings skyBoxSettings)
     {
         _chunkDirector = chunkDirector;
 
@@ -27,12 +29,55 @@ public class WorldSimulationManager : MonoBehaviour
 
         _worldClock.OnPhaseChanged += HandlePhaseChanged;
 
+        InitializeSkyBox(skyBoxSettings);
+
         _isInitialized = true;
+    }
+
+    private void InitializeSkyBox(WorldSkyBoxSettings skyBoxSettings)
+    {
+        if (skyBoxSettings == null)
+        {
+            if (_skyBoxController != null) _skyBoxController.Unbind();
+            Debug.LogError("[WorldSimulationManager] WorldSettings에 SkyBoxSettings가 연결되지 않았습니다.", this);
+            return;
+        }
+
+        // 시뮬레이션 오브젝트에 런타임으로 생성한다. 씬에 미리 배치할 필요가 없다.
+        if (_skyBoxController == null && !TryGetComponent(out _skyBoxController))
+            _skyBoxController = gameObject.AddComponent<WorldSkyBoxController>();
+
+        if (_directionalLight == null)
+            _directionalLight = FindDirectionalLight();
+
+        _skyBoxController.Initialize(_worldClock, skyBoxSettings, _directionalLight);
+    }
+
+    private Light FindDirectionalLight()
+    {
+        // 씬의 태양이 지정되어 있으면 우선 사용하고, 없으면 같은 씬의 가장 밝은 방향광을 찾는다.
+        Light sun = RenderSettings.sun;
+        if (sun != null && sun.type == LightType.Directional &&
+            sun.isActiveAndEnabled && sun.gameObject.scene == gameObject.scene)
+            return sun;
+
+        Light brightest = null;
+        foreach (Light light in Object.FindObjectsByType<Light>(FindObjectsSortMode.None))
+        {
+            if (light.type != LightType.Directional || !light.isActiveAndEnabled ||
+                light.gameObject.scene != gameObject.scene) continue;
+
+            if (brightest == null || light.intensity > brightest.intensity)
+                brightest = light;
+        }
+        return brightest;
     }
 
     private void OnDestroy()
     {
         _isInitialized = false;
+        if (_skyBoxController != null) _skyBoxController.Unbind();
+        _skyBoxController = null;
         if (_worldClock != null)
             _worldClock.OnPhaseChanged -= HandlePhaseChanged;
         _worldClock = null;

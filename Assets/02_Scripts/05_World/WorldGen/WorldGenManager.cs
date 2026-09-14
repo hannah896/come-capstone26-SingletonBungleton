@@ -368,7 +368,7 @@ public class WorldGenManager : MonoBehaviour
             }
 
             _simulationManager = Extensions.GetOrAddComponent<WorldSimulationManager>(this.gameObject);
-            _simulationManager.Initialize(_worldChunkDirector);
+            _simulationManager.Initialize(_worldChunkDirector, _worldSettings.SkyBoxSettings);
 
             _dynamicSpawnDirector.Initialize(
                 logicData,

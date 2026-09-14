@@ -27,8 +27,8 @@ public class WorldClock : MonoBehaviour
     public static WorldClock Instance { get; private set; }
 
     [Header("Time Settings")]
-    [Tooltip("현실 24분 = 인게임 1일 (초 단위)")]
-    private const float SECONDS_PER_DAY = 1440f;
+    private const float SECONDS_PER_DAY = 1440f; // 기본값: 현실 24분
+    
     private const int MOON_CYCLE_DAYS = 8;
 
     private NyoTimer _dayTimer;
@@ -60,7 +60,7 @@ public class WorldClock : MonoBehaviour
     // 다른 시스템들이 구독할 이벤트 (라이팅 변경, 몬스터 스폰 등)
     public event Action<TimePhase> OnPhaseChanged;
     public event Action<int> OnDayPassed;
-    public event Action<int> OnHourPassed; // 인게임 1시간(현실 1분) 경과 알림
+    public event Action<int> OnHourPassed; // 인게임 1시간 경과 알림
 
     // [달 주기 시스템 추가] 달 위상 변경 알림
     public event Action<MoonPhase> OnMoonPhaseChanged; 
@@ -73,10 +73,10 @@ public class WorldClock : MonoBehaviour
 
     private void Start()
     {
-        // 1. 프레임워크의 TimeManager에게 1440초짜리 무한 루프 타이머 발급 요청
+        // 1. 프레임워크의 TimeManager에게 하루 길이의 무한 루프 타이머 발급 요청
         _dayTimer = Main.Time.NewTimer("WorldClockTimer", SECONDS_PER_DAY, isAutoDestroy: false, start: true, loop: true);
 
-        // 2. 게임 시작 시간을 '아침(06:00)'으로 강제 세팅 (1440초의 25% 경과 = 남은 시간 75%)
+        // 2. 게임 시작 시간을 '아침(06:00)'으로 강제 세팅 (하루의 25% 경과 = 남은 시간 75%)
         _dayTimer.Current = SECONDS_PER_DAY * 0.75f;
 
         // 3. 타이머 이벤트 구독
@@ -100,7 +100,7 @@ public class WorldClock : MonoBehaviour
         float timeOfDay = SECONDS_PER_DAY - timer.Current;
 
         // --- 1. 인게임 시간(Hour) 체크 ---
-        // (0 ~ 1439초를 24시간으로 변환)
+        // (하루 진행률을 24시간으로 변환)
         int currentHour = Mathf.FloorToInt((timeOfDay / SECONDS_PER_DAY) * 24f);
         CurrentHour = currentHour;
         if (currentHour != _lastHour)

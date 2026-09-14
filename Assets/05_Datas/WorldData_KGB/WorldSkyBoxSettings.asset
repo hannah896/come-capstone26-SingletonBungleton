@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b46cbc777d584df295d6af229542cd8e, type: 3}
+  m_Name: WorldSkyBoxSettings
+  m_EditorClassIdentifier:
+  _dawn:
+    Skybox: {fileID: 2100000, guid: d1fdb8e44b28da34d9e922cca0bc740e, type: 2}
+    LightColor: {r: 0.45, g: 0.55, b: 0.85, a: 1}
+    LightIntensity: 0.15
+    AmbientIntensity: 0.3
+  _morning:
+    Skybox: {fileID: 2100000, guid: 7c86d4abbd33b564b9e773aceadb8572, type: 2}
+    LightColor: {r: 1, g: 0.85, b: 0.65, a: 1}
+    LightIntensity: 0.8
+    AmbientIntensity: 0.8
+  _afternoon:
+    Skybox: {fileID: 2100000, guid: 9ca22510633fbfd4399f1704cd9d5c72, type: 2}
+    LightColor: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}
+    LightIntensity: 1
+    AmbientIntensity: 1
+  _dusk:
+    Skybox: {fileID: 2100000, guid: 44d0573bf6d91e447b62f3aff840f2ae, type: 2}
+    LightColor: {r: 1, g: 0.5, b: 0.35, a: 1}
+    LightIntensity: 0.45
+    AmbientIntensity: 0.55
