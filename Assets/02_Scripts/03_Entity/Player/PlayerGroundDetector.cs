@@ -11,7 +11,9 @@ public class PlayerGroundDetector
 
     // 설정값
     private float checkDistance = 0.5f;  // 0.3 → 0.5로 증가 (울퉁불퉁한 지형 대응)
-    private readonly float maxSlopeAngle = 45f;
+    // 오를 수 있는 최대 경사 — CharacterController.slopeLimit(프리팹 값)을 그대로 따른다.
+    // 따로 두면 한쪽만 올렸을 때 CC는 오르는데 여기서 미끄러뜨리는 식으로 서로 어긋난다.
+    private float maxSlopeAngle => cc.slopeLimit;
     private readonly float coyoteTimeDuration = 0.15f;
     private readonly LayerMask groundLayer;
 
