@@ -189,6 +189,9 @@ public class NetworkManager : CoreManager
     public NetworkPlayerData LocalPlayerData =>
         _runner != null && _players.TryGetValue(_runner.LocalPlayer, out var data) ? data : null;
 
+    // 이 클라가 조작하는 캐릭터 (스폰 전이면 null)
+    public NetworkObject LocalCharacter => _localCharacter;
+
     #endregion
 
 #endif

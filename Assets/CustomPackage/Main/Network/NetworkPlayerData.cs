@@ -9,7 +9,7 @@ using UnityEngine;
 /// 각 클라이언트는 자기 오브젝트에 InputAuthority만 가지며,
 /// 이름/성별 등 자기 값 변경은 RPC로 호스트에 요청하고 결과는 Networked 복제로 받는다.
 /// </summary>
-public class NetworkPlayerData : NetworkBehaviour
+public partial class NetworkPlayerData : NetworkBehaviour
 {
     #region Networked Properties
 
@@ -85,6 +85,9 @@ public class NetworkPlayerData : NetworkBehaviour
 
         Main.Network?.RegisterPlayerData(OwnerRef, this);
 
+        // 방장 데이터면 월드 공유 상태(자원 파괴/바닥 아이템)의 창구가 된다
+        InitializeWorldState();
+
         // 클라이언트: 자기 데이터가 복제 도착하면 로컬에서 고른 이름/성별을 호스트에 올린다
         // (호스트 자신의 값은 스폰 시 onBeforeSpawned에서 이미 기록됨)
         if (HasInputAuthority && !HasStateAuthority && Main.Network != null)
@@ -104,6 +107,8 @@ public class NetworkPlayerData : NetworkBehaviour
             WorldClock.Instance.SetNetworkDriven(false);
         _drivingWorldClock = false;
 
+        ReleaseWorldState();
+
         Main.Network?.UnregisterPlayerData(OwnerRef);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -118,6 +123,8 @@ public class NetworkPlayerData : NetworkBehaviour
     {
         if (!HasStateAuthority || !IsMaster) return;
 
+        TickWorldStateHost();
+
         WorldClock clock = WorldClock.Instance;
         if (clock == null) return;
 
@@ -129,7 +136,7 @@ public class NetworkPlayerData : NetworkBehaviour
         _drivingWorldClock = true;
 
         if (canAdvance)
-            clock.SyncTime(clock.DaysPassed, clock.ElapsedSecondsToday + Runner.DeltaTime);
+            clock.SyncTime(clock.DaysPassed, clock.ElapsedSecondsToday + Runner.DeltaTime * clock.TimeScale);
 
         // SkipTime 등 호스트 로컬 변경도 그대로 반영된다.
         WorldClockDays = clock.DaysPassed;
@@ -141,6 +148,7 @@ public class NetworkPlayerData : NetworkBehaviour
     public override void Render()
     {
         ApplyWorldClockFromHost();
+        RenderWorldState();
 
         if (_changes == null) return;
 

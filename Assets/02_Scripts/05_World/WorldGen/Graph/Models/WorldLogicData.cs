@@ -64,6 +64,34 @@ public class WorldLogicData
     {
         return _chunks.GetOrAdd(chunkCoord, coord => new ChunkData(coord, ChunkSize));
     }
+
+    // 배치 오브젝트 instanceId → 소속 청크 (멀티 자원 동기화에서 ID만으로 청크를 찾기 위해 사용)
+    private Dictionary<int, ChunkData> _chunkByInstanceId;
+
+    /// <summary>
+    /// 배치 오브젝트의 instanceId로 소속 청크를 찾는다. 없으면 null.
+    /// 청크 분할(ChunkSlicer)이 끝난 뒤 첫 호출 시 한 번만 색인을 만든다. (메인 스레드 전용)
+    /// </summary>
+    public ChunkData FindChunkByInstanceId(int instanceId)
+    {
+        if (instanceId == 0) return null;
+
+        if (_chunkByInstanceId == null)
+        {
+            _chunkByInstanceId = new Dictionary<int, ChunkData>();
+            foreach (ChunkData chunk in _chunks.Values)
+            {
+                if (chunk?.DisposeDatas == null) continue;
+                foreach (DisposeData dispose in chunk.DisposeDatas)
+                {
+                    if (dispose != null && dispose.instanceId != 0)
+                        _chunkByInstanceId[dispose.instanceId] = chunk;
+                }
+            }
+        }
+
+        return _chunkByInstanceId.TryGetValue(instanceId, out ChunkData found) ? found : null;
+    }
     /// <summary>
     /// 월드 타일 좌표를 기반으로 해당 위치의 청크 좌표를 계산합니다.
     /// </summary>

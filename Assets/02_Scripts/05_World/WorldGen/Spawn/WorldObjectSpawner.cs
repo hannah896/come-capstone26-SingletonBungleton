@@ -6,11 +6,24 @@ using UnityEngine;
 /// <summary>
 /// 월드 생성 시 오브젝트를 관리하는 클래스.
 /// 각 청크마다 오브젝트를 스폰하고, 청크가 언로드될 때 오브젝트를 정리.
-/// 
+///
 /// </summary>
 public class WorldObjectSpawner
 {
-    private readonly Dictionary<Vector2Int, List<GameObject>> _activeChunkObjects = new Dictionary<Vector2Int, List<GameObject>>();
+    // 청크별로 스폰된 오브젝트 (instanceId와 함께 보관 — 파괴/원격 동기화 시 개별 조회용)
+    private readonly struct SpawnedObject
+    {
+        public readonly int InstanceId;
+        public readonly GameObject GameObject;
+
+        public SpawnedObject(int instanceId, GameObject gameObject)
+        {
+            InstanceId = instanceId;
+            GameObject = gameObject;
+        }
+    }
+
+    private readonly Dictionary<Vector2Int, List<SpawnedObject>> _activeChunkObjects = new Dictionary<Vector2Int, List<SpawnedObject>>();
     private readonly Dictionary<Vector2Int, Transform> _activeChunkRoots = new Dictionary<Vector2Int, Transform>();
 
     private int _chunkSize;
@@ -30,7 +43,7 @@ public class WorldObjectSpawner
         DespawnChunkObjects(chunk.ChunkCoord);
 
         Transform chunkRoot = GetOrCreateChunkRoot(chunk.ChunkCoord, _root);
-        List<GameObject> spawned = new List<GameObject>(chunk.DisposeDatas.Count);
+        List<SpawnedObject> spawned = new List<SpawnedObject>(chunk.DisposeDatas.Count);
         _activeChunkObjects[chunk.ChunkCoord] = spawned;
 
         for (int i = 0; i < chunk.DisposeDatas.Count; i++)
@@ -44,6 +57,13 @@ public class WorldObjectSpawner
             GameObject instance = await Extensions.SpawnAsync(dispose.prefabName, chunkRoot, ct);
             if (instance == null) continue;
 
+            // 스폰을 기다리는 사이 다른 플레이어가 부순 것으로 동기화됐다면 바로 되돌린다
+            if (chunk.IsObjectDestroyed(dispose.instanceId))
+            {
+                Extensions.Despawn(instance);
+                continue;
+            }
+
             Vector3 position = GetDisposeWorldPosition(chunk, dispose, _chunkSize);
 
             instance.transform.SetPositionAndRotation(position, dispose.rotation);
@@ -51,7 +71,7 @@ public class WorldObjectSpawner
 
             InitializeDisposeComponents(instance, dispose, chunk);
 
-            spawned.Add(instance);
+            spawned.Add(new SpawnedObject(dispose.instanceId, instance));
 
             if ((i % 25) == 0)
             {
@@ -85,23 +105,57 @@ public class WorldObjectSpawner
         InitializeDisposeComponents(instance, dispose, chunk);
 
         // 5. 🌟 핵심: 청크가 언로드될 때 같이 지워지도록 관리 리스트에 추가!
-        if (_activeChunkObjects.TryGetValue(chunk.ChunkCoord, out List<GameObject> objects))
+        var entry = new SpawnedObject(dispose.instanceId, instance);
+        if (_activeChunkObjects.TryGetValue(chunk.ChunkCoord, out List<SpawnedObject> objects))
         {
-            objects.Add(instance);
+            objects.Add(entry);
         }
         else
         {
-            _activeChunkObjects[chunk.ChunkCoord] = new List<GameObject> { instance };
+            _activeChunkObjects[chunk.ChunkCoord] = new List<SpawnedObject> { entry };
+        }
+    }
+
+    /// <summary>
+    /// 현재 화면에 스폰되어 있는 배치 오브젝트를 instanceId로 찾는다.
+    /// </summary>
+    public bool TryGetActiveInstance(Vector2Int coord, int instanceId, out GameObject instance)
+    {
+        instance = null;
+        if (instanceId == 0 || !_activeChunkObjects.TryGetValue(coord, out List<SpawnedObject> objects)) return false;
+
+        for (int i = 0; i < objects.Count; i++)
+        {
+            if (objects[i].InstanceId != instanceId) continue;
+            instance = objects[i].GameObject;
+            return instance != null;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// 배치 오브젝트를 관리 목록에서 뺀다. (오브젝트가 스스로 풀에 반납되기 직전에 호출)
+    /// 빼지 않으면 청크 언로드 때 이미 반납된 오브젝트를 한 번 더 반납해,
+    /// 그 사이 풀에서 재사용 중인 다른 오브젝트가 사라진다.
+    /// </summary>
+    public void DetachInstance(Vector2Int coord, int instanceId)
+    {
+        if (instanceId == 0 || !_activeChunkObjects.TryGetValue(coord, out List<SpawnedObject> objects)) return;
+
+        for (int i = objects.Count - 1; i >= 0; i--)
+        {
+            if (objects[i].InstanceId == instanceId)
+                objects.RemoveAt(i);
         }
     }
 
     public void DespawnChunkObjects(Vector2Int coord)
     {
-        if (_activeChunkObjects.TryGetValue(coord, out List<GameObject> objects))
+        if (_activeChunkObjects.TryGetValue(coord, out List<SpawnedObject> objects))
         {
-            foreach (GameObject obj in objects)
+            foreach (SpawnedObject obj in objects)
             {
-                if (obj != null) Extensions.Despawn(obj);
+                if (obj.GameObject != null) Extensions.Despawn(obj.GameObject);
             }
 
             _activeChunkObjects.Remove(coord);

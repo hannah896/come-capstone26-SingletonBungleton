@@ -19,6 +19,15 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
     public void HandPick(DamageContext context)
     {
         if (!IsHandPickable) return;
+
+        // 멀티: 즉시 소진 = 최대 체력만큼 데미지를 보고해 호스트가 파괴를 확정하게 한다
+        if (IsNetworkManaged)
+        {
+            RememberLocalContext(context);
+            ReportNetworkDamage(MaxHealth);
+            return;
+        }
+
         HandleDestroyed(context);
     }
 
@@ -30,6 +39,15 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
     private DisposeData _placement;
     private ChunkData _chunk;
 
+    // 멀티: 이 피어가 마지막으로 가한 타격 (호스트가 "이 피어가 부쉈다"고 확정하면 드롭 지급에 사용)
+    private DamageContext _lastLocalContext;
+    private bool _hasLocalContext;
+
+    private int MaxHealth => Mathf.Max(1, _resourceNodeData.MaxHealth);
+
+    // 월드에 배치된 노드이고 세션 중이면 체력/파괴를 호스트가 관리한다
+    private bool IsNetworkManaged => WorldResourceSync.IsNetworked && _placement != null && _placement.instanceId != 0;
+
     private Vector3 _deathPosition;
     protected Vector3 DeathPosition => _deathPosition;
 
@@ -38,13 +56,38 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
 
     protected virtual void Awake()
     {
+        ResetState();
+    }
+
+    // 체력/채집 횟수/파괴 여부를 초기값으로
+    private void ResetState()
+    {
         _currentHealth = Mathf.Max(1, _resourceNodeData.MaxHealth);
         _remainingGather = Mathf.Max(0, _resourceNodeData.GatherAmount);
+        _isDestroyed = false;
+        _hasLocalContext = false;
+        _lastLocalContext = default;
+    }
+
+    private void RememberLocalContext(DamageContext context)
+    {
+        _lastLocalContext = context;
+        _hasLocalContext = true;
+    }
+
+    // 호스트에 데미지 보고 (재생성 시간은 이 노드 데이터 기준)
+    private void ReportNetworkDamage(int amount)
+    {
+        WorldResourceSync.ReportDamage(_placement.instanceId, amount, MaxHealth, _resourceNodeData.RespawnTime);
     }
 
     // 배치 초기화 메서드. DisposeData와 ChunkData를 받아 초기화 작업을 수행
     public void InitializeDispose(DisposeData placement, ChunkData chunk)
     {
+        // 풀에서 재사용된 노드는 이전 수명의 "파괴됨" 상태를 들고 있으므로 스폰마다 초기화한다.
+        // (Awake는 최초 1회만 불려, 재생성된 자원이 채집 불가 상태로 나오던 원인)
+        ResetState();
+
         _placement = placement;
         _chunk = chunk;
         OnPlacementInitialized(placement, chunk);
@@ -106,6 +149,18 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
     {
         if (!CanDamage(context)) return;
 
+        // 멀티: 체력은 호스트가 모든 플레이어의 타격을 합산해 관리한다.
+        // 여기서는 표시용 예상 체력만 계산하고, 파괴는 호스트 확정(ApplyNetworkDestroyed)을 기다린다.
+        if (IsNetworkManaged)
+        {
+            RememberLocalContext(context);
+            int predictedDamage = WorldResourceSync.GetSharedDamage(_placement.instanceId) + context.Amount;
+            _currentHealth = Mathf.Max(0, MaxHealth - predictedDamage);
+            OnDamaged(context);
+            ReportNetworkDamage(context.Amount);
+            return;
+        }
+
         _currentHealth = Mathf.Max(0, _currentHealth - context.Amount);
         OnDamaged(context);
 
@@ -129,6 +184,12 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
 
         if (_remainingGather <= 0)
         {
+            if (IsNetworkManaged)
+            {
+                ReportNetworkDamage(MaxHealth); // 소진 확정은 호스트에 맡긴다
+                return;
+            }
+
             HandleDestroyed(default);
         }
     }
@@ -145,6 +206,36 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
         _deathPosition = transform.position;
     }
 
+    /// <summary>
+    /// 호스트가 파괴를 확정했을 때 호출된다. (WorldResourceSync 전용 — 청크 파괴 표시는 호출 측에서 이미 했다)
+    /// destroyedByLocal: 이 피어의 플레이어가 마지막 타격을 넣었으면 드롭까지 처리하고,
+    /// 아니면 드롭 없이 파괴 연출과 제거만 한다 (드롭은 부순 한 명만 받는다).
+    /// </summary>
+    public void ApplyNetworkDestroyed(bool destroyedByLocal, GameObject localPlayer)
+    {
+        if (_isDestroyed) return;
+
+        _isDestroyed = true;
+
+        if (destroyedByLocal)
+        {
+            DamageContext context = _hasLocalContext
+                ? _lastLocalContext
+                : new DamageContext(localPlayer, transform.position, 0, "Network");
+            OnDestroyed(context);
+        }
+        else
+        {
+            _deathPosition = transform.position;
+            OnRemoteDestroyed();
+        }
+
+        DespawnSelf();
+    }
+
+    /// <summary>원격 파괴 시 연출. 드롭은 부순 플레이어만 받으므로 여기서는 생성하지 않는다.</summary>
+    protected virtual void OnRemoteDestroyed() { }
+
     private void HandleDestroyed(DamageContext context)
     {
         if (_isDestroyed) return;
@@ -159,10 +250,17 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
         }
 
         OnDestroyed(context);
+        DespawnSelf();
+    }
 
-        if (_despawnOnDestroyed)
-        {
-            Extensions.Despawn(gameObject);
-        }
+    // 풀 반납 (스포너 관리 목록에서 먼저 빼서 청크 언로드 때 중복 반납되지 않게)
+    private void DespawnSelf()
+    {
+        if (!_despawnOnDestroyed) return;
+
+        if (_placement != null)
+            WorldResourceSync.DetachFromSpawner(_chunk, _placement.instanceId);
+
+        Extensions.Despawn(gameObject);
     }
 }

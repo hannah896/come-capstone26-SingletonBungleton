@@ -17,6 +17,12 @@ public class BreakableResourceNode : ResourceNode
         SpawnDropsAsync(context).Forget();
     }
 
+    // 다른 플레이어가 부순 경우: 파괴 이펙트만 보여주고 드롭은 만들지 않는다 (드롭 중복 방지)
+    protected override void OnRemoteDestroyed()
+    {
+        SpawnDestroyFxAsync().Forget();
+    }
+
     private async UniTask SpawnDestroyFxAsync()
     {
         if (string.IsNullOrEmpty(ResourceNodeData.DropFxPrefabKey)) return;
@@ -37,6 +43,10 @@ public class BreakableResourceNode : ResourceNode
             ? context.Instigator.GetComponent<PlayerInventory>()
             : null;
 
+        // 노드는 곧 풀로 반납돼 재사용될 수 있으므로 필요한 값은 await 전에 잡아둔다
+        Vector3 deathPosition = DeathPosition;
+        float dropRadius = ResourceNodeData.DropRadius;
+
         // 배열에 등록된 모든 드롭 아이템(통나무, 나뭇가지, 사과 등)을 순회
         foreach (DropData dropData in ResourceNodeData.Drops)
         {
@@ -51,27 +61,24 @@ public class BreakableResourceNode : ResourceNode
             int count = Random.Range(minCount, maxCount + 1);
             if (count <= 0) continue;
 
-            // 3. 결정된 수량만큼 스폰
+            // 3. 인벤토리 직행 모드면 먼저 인벤토리에 넣는다
+            ItemDataSO itemSO = inventory != null
+                ? await WorldItemSync.LoadItemDataAsync(dropData.DropPrefabKey)
+                : null;
+
             for (int i = 0; i < count; i++)
             {
-                GameObject dropObj = await Extensions.SpawnAsync(dropData.DropPrefabKey, null);
-                if (dropObj == null) continue;
-
-                Item item = dropObj.GetComponent<Item>();
-                if (inventory != null && item != null && item.ItemDataSO != null)
+                if (inventory != null && itemSO != null)
                 {
-                    bool added = inventory.AddItem(item.ItemDataSO, 1, out int remaining);
-                    if (added || remaining <= 0)
-                    {
-                        Extensions.Despawn(dropObj);
-                        continue;
-                    }
+                    inventory.AddItem(itemSO, 1, out int remaining);
+                    if (remaining <= 0) continue;
                 }
 
                 // 인벤토리에 못 넣었거나(가득 참) direct 모드가 아니면 바닥에 흩뿌리기
-                Vector2 offset2D = Random.insideUnitCircle * ResourceNodeData.DropRadius;
+                // (멀티에서는 호스트를 거쳐 모든 피어에 같은 바닥 아이템이 생긴다)
+                Vector2 offset2D = Random.insideUnitCircle * dropRadius;
                 Vector3 offset = new Vector3(offset2D.x, 0f, offset2D.y);
-                dropObj.transform.position = DeathPosition + offset;
+                WorldItemSync.SpawnDroppedItem(dropData.DropPrefabKey, 1, deathPosition + offset);
             }
         }
     }
