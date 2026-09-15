@@ -52,6 +52,9 @@ public partial class NetworkPlayerData : NetworkBehaviour
     [Networked] public float WorldClockSecondsToday { get; set; }
     [Networked] public NetworkBool HasWorldClock { get; set; }
 
+    // 월드 시간 배속 (에디터 Time Debug 툴 — 누가 바꾸든 호스트 값으로 전원 동일)
+    [Networked] public float WorldClockTimeScale { get; set; }
+
     #endregion
 
     #region Fields
@@ -61,6 +64,10 @@ public partial class NetworkPlayerData : NetworkBehaviour
 
     // 이 오브젝트가 로컬 WorldClock을 네트워크 구동 중으로 전환했는지 (Despawned에서 되돌리기용)
     private bool _drivingWorldClock;
+
+    // 클라이언트: 마지막으로 반영한 호스트 배속 (값이 바뀔 때만 반영해, 요청 직후 표시가 옛 값으로 튀지 않게)
+    private float _appliedTimeScale = -1f;
+    private WorldClock _appliedTimeScaleClock;
 
     #endregion
 
@@ -141,6 +148,7 @@ public partial class NetworkPlayerData : NetworkBehaviour
         // SkipTime 등 호스트 로컬 변경도 그대로 반영된다.
         WorldClockDays = clock.DaysPassed;
         WorldClockSecondsToday = clock.ElapsedSecondsToday;
+        WorldClockTimeScale = clock.TimeScale;
         HasWorldClock = true;
     }
 
@@ -177,6 +185,14 @@ public partial class NetworkPlayerData : NetworkBehaviour
         _drivingWorldClock = true;
 
         clock.SyncTime(WorldClockDays, WorldClockSecondsToday);
+
+        // 시계가 새로 만들어졌거나(기본 x1) 호스트 배속이 바뀌었을 때만 반영
+        if (clock != _appliedTimeScaleClock || WorldClockTimeScale != _appliedTimeScale)
+        {
+            _appliedTimeScaleClock = clock;
+            _appliedTimeScale = WorldClockTimeScale;
+            clock.SyncTimeScale(WorldClockTimeScale);
+        }
     }
 
     #endregion
@@ -193,6 +209,18 @@ public partial class NetworkPlayerData : NetworkBehaviour
         if (clock == null || skipSeconds <= 0f) return;
 
         clock.SkipTime(skipSeconds);
+    }
+
+    /// <summary>
+    /// 클라이언트가 월드 시간 배속 변경을 호스트에 요청합니다. (에디터 Time Debug 툴) 결과는 복제로 전원에게 반영됩니다.
+    /// </summary>
+    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+    public void Rpc_RequestTimeScale(float scale)
+    {
+        WorldClock clock = WorldClock.Instance;
+        if (clock == null) return;
+
+        clock.SetTimeScale(scale);
     }
 
     /// <summary>

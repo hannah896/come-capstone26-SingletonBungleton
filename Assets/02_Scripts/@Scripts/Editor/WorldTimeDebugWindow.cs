@@ -73,7 +73,7 @@ public class WorldTimeDebugWindow : EditorWindow
 
         if (IsRemoteClient(clock))
         {
-            EditorGUILayout.HelpBox("멀티 클라이언트입니다. 배속은 시간을 구동하는 호스트에서 설정해야 적용됩니다.", MessageType.Warning);
+            EditorGUILayout.HelpBox("멀티 클라이언트입니다. 배속/건너뛰기는 호스트에 요청되어 모든 플레이어에게 적용됩니다.", MessageType.Info);
         }
 
         float scale = EditorGUILayout.Slider("배속", clock.TimeScale, 1f, WorldClock.MaxTimeScale);

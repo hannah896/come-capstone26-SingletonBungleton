@@ -54,7 +54,7 @@ public class WorldClock : MonoBehaviour
 
     /// <summary>
     /// 월드 시간 배속 (디버그/테스트용, 기본 1). 이동·몬스터 등 게임 속도와 무관하게 시계만 빨라진다.
-    /// 멀티에서는 시간을 구동하는 호스트의 값만 적용된다.
+    /// 멀티에서는 호스트 값이 기준이며, 클라이언트가 바꾸면 호스트에 요청해 전원에게 적용된다.
     /// </summary>
     public float TimeScale { get; private set; } = 1f;
 
@@ -115,6 +115,24 @@ public class WorldClock : MonoBehaviour
     }
 
     public void SetTimeScale(float scale)
+    {
+        scale = Mathf.Clamp(scale, 1f, MaxTimeScale);
+
+#if PHOTON_FUSION
+        // 멀티 클라이언트는 호스트에 요청한다. 표시는 바로 바꾸고, 확정 값은 복제로 돌아온다.
+        if (IsNetworkDriven && Main.Network != null && !Main.Network.IsHost)
+        {
+            TimeScale = scale;
+            Main.Network.LocalPlayerData?.Rpc_RequestTimeScale(scale);
+            return;
+        }
+#endif
+
+        TimeScale = scale;
+    }
+
+    /// <summary>호스트가 확정한 배속을 반영한다. (네트워크 복제 전용 — 요청을 다시 보내지 않는다)</summary>
+    public void SyncTimeScale(float scale)
     {
         TimeScale = Mathf.Clamp(scale, 1f, MaxTimeScale);
     }
