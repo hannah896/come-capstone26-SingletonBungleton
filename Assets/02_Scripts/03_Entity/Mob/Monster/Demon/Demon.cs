@@ -146,7 +146,8 @@ public class Demon : Monster
             var meteor = await Extensions.SpawnAsync<Meteor>(data.MeteorKey);
             if (meteor == null) continue;
 
-            meteor.Init(gameObject, impact, damage, data.MeteorImpactRadius, warning, data.MeteorLingerTime);
+            meteor.Init(gameObject, impact, damage, data.MeteorImpactRadius, warning, data.MeteorLingerTime,
+                data.MeteorDotDamage, data.MeteorDotDuration, data.MeteorDotInterval);
         }
     }
 }

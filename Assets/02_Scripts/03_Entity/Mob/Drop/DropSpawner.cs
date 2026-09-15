@@ -6,9 +6,9 @@ using UnityEngine;
 /// </summary>
 public static class DropSpawner
 {
-    public static async UniTask SpawnAsync(DropData[] drops, Vector3 origin, float radius)
+    public static UniTask SpawnAsync(DropData[] drops, Vector3 origin, float radius)
     {
-        if (drops == null || drops.Length == 0) return;
+        if (drops == null || drops.Length == 0) return UniTask.CompletedTask;
 
         foreach (DropData dropData in drops)
         {
@@ -24,13 +24,12 @@ public static class DropSpawner
 
             for (int i = 0; i < count; i++)
             {
-                GameObject dropObj = await Extensions.SpawnAsync(dropData.DropPrefabKey, null);
-                if (dropObj == null) continue;
-
-                // 바닥에 흩뿌리기
+                // 바닥에 흩뿌리기 (멀티에서는 호스트를 거쳐 모든 피어에 같은 아이템이 생긴다)
                 Vector2 offset2D = Random.insideUnitCircle * radius;
-                dropObj.transform.position = origin + new Vector3(offset2D.x, 0f, offset2D.y);
+                WorldItemSync.SpawnDroppedItem(dropData.DropPrefabKey, 1, origin + new Vector3(offset2D.x, 0f, offset2D.y));
             }
         }
+
+        return UniTask.CompletedTask;
     }
 }

@@ -186,8 +186,9 @@ public class Player : MonoBehaviour, IDamageable
         {
             stat.UpdateHunger(deltaTime);
             stat.UpdateEgo(deltaTime);
+            stat.UpdateDot(deltaTime);
 
-            // 자연사 감지 (허기·Ego로 HP가 0이 된 경우)
+            // 자연사 감지 (허기·Ego·도트로 HP가 0이 된 경우)
             if (stat.IsDead
                 && machine.CurrentState is not PlayerDeadState
                 && machine.CurrentState is not PlayerHurtState)
@@ -238,6 +239,7 @@ public class Player : MonoBehaviour, IDamageable
         stat.RestoreHp(stat.MaxHp);
         stat.RestoreHunger(stat.MaxHunger);
         stat.RestoreEgo(stat.MaxEgo);
+        stat.ClearDot();
 
         // 리스폰 지점으로 이동. 지점을 못 구하면(테스트 씬 등) 제자리에서 부활한다.
         if (TryGetRespawnPosition(out Vector3 respawnPosition))
@@ -323,6 +325,13 @@ public class Player : MonoBehaviour, IDamageable
         if (!CanDamage(damageCtx)) return;
         // TakeDamage → OnDamaged → HandleDamaged 로 PlayerHurtState 전환까지 이어진다.
         stat.TakeDamage(damageCtx.Amount);
+    }
+
+    /// <summary>도트 데미지를 건다. (몬스터 장판/투사체 등)</summary>
+    public void ApplyDot(float damagePerTick, float duration, float tickInterval = 1f)
+    {
+        if (stat == null || stat.IsDead) return;
+        stat.ApplyDot(damagePerTick, duration, tickInterval);
     }
     #endregion
 

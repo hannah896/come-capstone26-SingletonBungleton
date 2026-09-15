@@ -31,6 +31,9 @@ public class Meteor : MonoBehaviour, IPoolable
     private Vector3 impactPos;     // 폭발(지면) 지점
     private int damage;
     private float impactRadius;
+    private float dotDamage;       // 명중 시 거는 도트 틱 데미지 (0 이하면 도트 없음)
+    private float dotDuration;
+    private float dotInterval;
     private float warningTimer;    // 예고 남은 시간
     private float lingerTimer;     // 폭발 후 회수까지 남은 시간
     private Phase phase = Phase.Idle;
@@ -46,12 +49,16 @@ public class Meteor : MonoBehaviour, IPoolable
     }
 
     /// <summary>장판 파라미터를 주입하고 예고 → 폭발을 시작한다.</summary>
-    public void Init(GameObject owner, Vector3 impactPos, int damage, float impactRadius, float warningTime, float lingerTime)
+    public void Init(GameObject owner, Vector3 impactPos, int damage, float impactRadius, float warningTime, float lingerTime,
+                     float dotDamage = 0f, float dotDuration = 0f, float dotInterval = 1f)
     {
         this.owner = owner;
         this.impactPos = impactPos;
         this.damage = damage;
         this.impactRadius = Mathf.Max(impactRadius, 0f);
+        this.dotDamage = dotDamage;
+        this.dotDuration = dotDuration;
+        this.dotInterval = dotInterval;
         warningTimer = Mathf.Max(warningTime, 0f);
         lingerTimer = Mathf.Max(lingerTime, 0f);
 
@@ -142,6 +149,10 @@ public class Meteor : MonoBehaviour, IPoolable
 
             if (player.TryGetComponent<IDamageable>(out var dmg) && dmg.CanDamage(ctx))
                 dmg.ApplyDamage(ctx);
+
+            // 명중한 플레이어에게 도트 데미지를 건다 (이미 걸려 있으면 갱신)
+            if (dotDamage > 0f && dotDuration > 0f)
+                player.ApplyDot(dotDamage, dotDuration, dotInterval);
         }
     }
 

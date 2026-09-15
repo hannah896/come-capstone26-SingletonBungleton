@@ -53,6 +53,15 @@ public class PlayerStatus
     public float WetnessTemperatureDecreaseRate { get; private set; }
     public float WaterproofRate { get; private set; }
     #endregion
+
+    #region 도트 데미지
+    private float dotDamagePerTick;
+    private float dotTickInterval;
+    private float dotTickTimer;    // 다음 틱까지 남은 시간
+    private int dotTicksLeft;      // 남은 틱 횟수
+    /// <summary>도트 데미지가 걸려 있는지.</summary>
+    public bool IsDotActive => dotTicksLeft > 0;
+    #endregion
     #endregion
 
     public PlayerStatus(PlayerStatData data)
@@ -122,6 +131,59 @@ public class PlayerStatus
     {
         CurrentEgo = Mathf.Max(CurrentEgo - EgoDecreaseRate * deltaTime, 0f);
     }
+
+    /// <summary>
+    /// 도트 데미지를 건다. tickInterval마다 damagePerTick씩 duration 동안 체력을 깎는다.
+    /// 이미 걸려 있으면 중첩하지 않고 갱신한다(더 센 틱 데미지·더 긴 남은 횟수를 유지).
+    /// 틱 타이머는 이어서 돌리므로 연속 피격으로 틱이 계속 밀리지 않는다.
+    /// </summary>
+    public void ApplyDot(float damagePerTick, float duration, float tickInterval = 1f)
+    {
+        if (damagePerTick <= 0f || duration <= 0f) return;
+
+        tickInterval = Mathf.Max(tickInterval, 0.01f);
+        int ticks = Mathf.Max(Mathf.RoundToInt(duration / tickInterval), 1);
+
+        if (IsDotActive)
+        {
+            dotDamagePerTick = Mathf.Max(dotDamagePerTick, damagePerTick);
+            dotTicksLeft = Mathf.Max(dotTicksLeft, ticks);
+            return;
+        }
+
+        dotDamagePerTick = damagePerTick;
+        dotTickInterval = tickInterval;
+        dotTicksLeft = ticks;
+        dotTickTimer = tickInterval; // 첫 틱은 interval 뒤에 들어간다
+    }
+
+    /// <summary>
+    /// 도트 데미지를 시간 경과에 따라 적용한다.
+    /// 틱마다 방어력을 무시하고 체력을 깎으며, 피격 경직(OnDamaged)은 발생시키지 않는다.
+    /// </summary>
+    public void UpdateDot(float deltaTime)
+    {
+        if (!IsDotActive) return;
+
+        if (IsDead)
+        {
+            ClearDot();
+            return;
+        }
+
+        dotTickTimer -= deltaTime;
+        while (dotTickTimer <= 0f && dotTicksLeft > 0)
+        {
+            if (!Invincible)
+                CurrentHp = Mathf.Max(CurrentHp - dotDamagePerTick, 0f);
+
+            dotTicksLeft--;
+            dotTickTimer += dotTickInterval;
+        }
+    }
+
+    /// <summary>걸려 있는 도트 데미지를 제거한다.</summary>
+    public void ClearDot() => dotTicksLeft = 0;
 
     public void RestoreHunger(float amount)
         => CurrentHunger = Mathf.Clamp(CurrentHunger + amount, 0f, MaxHunger);

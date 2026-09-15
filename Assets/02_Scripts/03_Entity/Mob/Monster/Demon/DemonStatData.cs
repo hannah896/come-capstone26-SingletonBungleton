@@ -38,4 +38,12 @@ public class DemonStatData : MonsterStatData
     public float MeteorLingerTime = 1.5f;
     [Tooltip("운석 1발의 데미지. 0 이하면 AttackDamage 사용")]
     public float MeteorDamage = 0f;
+
+    [Header("데몬 - 운석 도트 데미지")]
+    [Tooltip("운석에 맞은 플레이어에게 틱마다 들어가는 데미지. 0 이하면 도트 없음")]
+    public float MeteorDotDamage = 3f;
+    [Tooltip("도트 데미지 지속 시간(초)")]
+    public float MeteorDotDuration = 5f;
+    [Tooltip("도트 데미지 틱 간격(초)")]
+    public float MeteorDotInterval = 1f;
 }

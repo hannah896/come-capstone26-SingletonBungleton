@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -170,6 +169,29 @@ public class PlayerInventory : MonoBehaviour
         return added;
     }
 
+    /// <summary>
+    /// 인벤토리에 실제로 넣을 수 있는 수량 (최대 amount). AddItem과 같은 규칙으로 계산한다.
+    /// 멀티에서 바닥 아이템을 줍기 전에 들어갈 만큼만 호스트에 요청할 때 사용.
+    /// </summary>
+    public int GetAddableAmount(ItemDataSO itemData, int amount)
+    {
+        if (itemData == null || amount <= 0) return 0;
+
+        int maxStack = itemData.isStackable ? Mathf.Max(1, itemData.maxStack) : 1;
+        int addable = 0;
+
+        for (int i = 0; i < slots.Count && addable < amount; i++)
+        {
+            if (slots[i] == null)
+                addable += maxStack;
+            else if (itemData.isStackable && slots[i] == itemData)
+                // 같은 아이템인데 수량이 0으로 남은 슬롯은 AddItem이 비운 뒤 새로 채운다
+                addable += stackCounts[i] <= 0 ? maxStack : Mathf.Max(0, maxStack - stackCounts[i]);
+        }
+
+        return Mathf.Min(addable, amount);
+    }
+
     public bool RemoveItem(ItemDataSO itemData, int amount = 1)
     {
         if (itemData == null || amount <= 0) return false;
@@ -262,7 +284,7 @@ public class PlayerInventory : MonoBehaviour
         ClearSlot(slotIndex);
         OnInventoryChanged?.Invoke();
 
-        SpawnDroppedItemAsync(itemData, amount, dropPosition).Forget();
+        SpawnDroppedItem(itemData, amount, dropPosition);
         return true;
     }
 
@@ -300,45 +322,26 @@ public class PlayerInventory : MonoBehaviour
         if (pending.Count <= 0) return 0;
 
         OnInventoryChanged?.Invoke();
-        ScatterDropsAsync(pending, GetDropOriginPosition()).Forget();
+        ScatterDrops(pending, GetDropOriginPosition());
         return pending.Count;
     }
 
     // 여러 스택을 한 점에 겹쳐 쌓지 않도록 발밑 반경 안에 흩뿌린다.
-    private async UniTaskVoid ScatterDropsAsync(List<PendingDrop> drops, Vector3 origin)
+    private void ScatterDrops(List<PendingDrop> drops, Vector3 origin)
     {
         for (int i = 0; i < drops.Count; i++)
         {
             Vector2 offset = UnityEngine.Random.insideUnitCircle * deathDropRadius;
             Vector3 position = origin + new Vector3(offset.x, 0f, offset.y);
 
-            await SpawnDroppedItemAsync(drops[i].ItemData, drops[i].Amount, position);
+            SpawnDroppedItem(drops[i].ItemData, drops[i].Amount, position);
         }
     }
 
-    private async UniTask SpawnDroppedItemAsync(ItemDataSO itemData, int amount, Vector3 position)
+    // 아이템 주소는 SO 이름과 같다. 멀티에서는 호스트를 거쳐 모든 피어에 같은 바닥 아이템이 생긴다.
+    private static void SpawnDroppedItem(ItemDataSO itemData, int amount, Vector3 position)
     {
-        string address = itemData.name;
-        GameObject dropObj = await Extensions.SpawnAsync(address, null);
-        if (dropObj == null)
-        {
-            Debug.LogWarning($"[Drop] SpawnAsync 실패: 주소 '{address}'로 스폰된 오브젝트가 없습니다. Addressables에 등록됐는지 확인하세요.");
-            return;
-        }
-
-        dropObj.transform.position = position;
-
-        Item item = dropObj.GetComponent<Item>();
-        if (item == null)
-        {
-            Debug.LogWarning($"[Drop] '{address}' 프리팹에 Item 컴포넌트가 없습니다.");
-            return;
-        }
-
-        item.Init(itemData);
-        item.ResetToWorldTransform();
-        if (item.itemData is IStackable stackable)
-            stackable.stackCount = Mathf.Max(1, amount);
+        WorldItemSync.SpawnDroppedItem(itemData.name, amount, position);
     }
 
     /// <summary>드롭 아이템이 놓일 기준 지점(플레이어 발밑).</summary>
@@ -790,12 +793,7 @@ public class PlayerInventory : MonoBehaviour
         if (!TryGetPickupCandidate(hit.collider, out PickupCandidate candidate))
             return false;
 
-        bool added = AddItem(candidate.ItemData, candidate.Amount, out int remainingAmount);
-        ApplyPickupResult(candidate, remainingAmount);
-
-        if (added || remainingAmount <= 0)
-            Destroy(candidate.GameObject);
-
+        PickupWorldItem(candidate);
         return true;
     }
 
@@ -846,16 +844,27 @@ public class PlayerInventory : MonoBehaviour
         // 아이템이 더 가깝거나 노드가 없으면 아이템 우선
         if (hasNearest && (nearestNode == null || nearestSqrDistance <= nearestNodeSqrDistance))
         {
-            bool added = AddItem(nearest.ItemData, nearest.Amount, out int remainingAmount);
-            ApplyPickupResult(nearest, remainingAmount);
-
-            if (added || remainingAmount <= 0)
-                Destroy(nearest.GameObject);
+            PickupWorldItem(nearest);
             return;
         }
 
         if (nearestNode != null)
             nearestNode.HandPick(new DamageContext(gameObject, nearestNode.transform.position, 0, "Hand", ActionType.Hand));
+    }
+
+    private void PickupWorldItem(PickupCandidate candidate)
+    {
+        Item worldItem = candidate.GameObject.GetComponent<Item>();
+
+        // 멀티: 바닥/월드 배치 아이템은 호스트 승인 후 지급된다 (다른 플레이어와 동시에 주워도 한 번만)
+        if (WorldItemSync.TryRequestPickup(this, worldItem))
+            return;
+
+        bool added = AddItem(candidate.ItemData, candidate.Amount, out int remainingAmount);
+        ApplyPickupResult(candidate, remainingAmount);
+
+        if (added || remainingAmount <= 0)
+            WorldItemSync.RemovePickedItem(worldItem);
     }
 
     private static bool TryGetPickupCandidate(Collider col, out PickupCandidate candidate)
