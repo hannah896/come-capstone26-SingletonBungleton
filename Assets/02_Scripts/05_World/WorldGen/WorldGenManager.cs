@@ -35,7 +35,7 @@ public class WorldGenManager : MonoBehaviour
     [SerializeField] private WorldSimulationManager _simulationManager;
     [SerializeField] private WorldMap _worldMap;
 
-    private const string PLAYER_ADDRESSKEY = "Player";
+    private const string PLAYER_ADDRESSKEY = "Player_Female";
     private const string GROUND_LAYER_NAME = "Ground";
     private const string INVISIBLE_WALL_ADDRESSKEY = "InvisibleWall";
     private const float COAST_WALL_THICKNESS = 2.0f;            //벽 두께
@@ -350,7 +350,7 @@ public class WorldGenManager : MonoBehaviour
             {
                 if (_playerInstance == null)
                 {
-                    Player player = await Extensions.Instantiate<Player>("Player");
+                    Player player = await Extensions.Instantiate<Player>(PLAYER_ADDRESSKEY);
                     if (player != null)
                     {
                         _playerInstance = player.gameObject;

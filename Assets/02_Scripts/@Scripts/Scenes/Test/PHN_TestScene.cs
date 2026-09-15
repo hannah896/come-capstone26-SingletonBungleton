@@ -9,7 +9,7 @@ public class PHN_TestScene : SceneBase
     {
         // 테스트 씬에서도 게임 로직(OnGameUpdate)이 돌도록 Testing 상태로 진입한다.
         GameScene.GameProcessing = GameProcessing.Testing;
-        await Extensions.Instantiate<Player>("Player");
+        await Extensions.Instantiate<Player>("Player_Female");
     }
 
     public override void ExitScene()

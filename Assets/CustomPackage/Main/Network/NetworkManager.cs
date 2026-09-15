@@ -58,7 +58,7 @@ public class NetworkManager : CoreManager
     private const string PLAYER_DATA_PREFAB_KEY = "NetworkPlayerData";
 
     // 플레이어 캐릭터(조작 대상) 프리팹 Addressable 키 (여자, 기본)
-    private const string PLAYER_CHARACTER_PREFAB_KEY = "Player";
+    private const string PLAYER_CHARACTER_PREFAB_KEY = "Player_Female";
 
     // 남자 캐릭터 프리팹 Addressable 키
     private const string PLAYER_CHARACTER_MALE_PREFAB_KEY = "Player_Male";

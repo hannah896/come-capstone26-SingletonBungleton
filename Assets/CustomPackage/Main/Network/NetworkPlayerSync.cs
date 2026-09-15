@@ -137,6 +137,11 @@ public class NetworkPlayerSync : NetworkBehaviour
             // 남의 캐릭터: 손 본에 실제 아이템을 붙여 보여주는 뷰를 준비한다.
             // (소유자 자신은 1인칭 뷰모델이 따로 있어 붙이지 않는다)
             _equipmentView = Extensions.GetOrAddComponent<PlayerEquipmentView>(gameObject);
+
+            // 남의 캐릭터 머리 위에 이름표를 붙인다 (프리팹 수정 없이 런타임에 3D 텍스트 생성)
+            PlayerRef owner = Object.InputAuthority;
+            Extensions.GetOrAddComponent<PlayerNameTag>(gameObject)
+                .Bind(() => Main.Network?.GetPlayerData(owner)?.PlayerName ?? string.Empty);
         }
 
         if (Object.HasStateAuthority)

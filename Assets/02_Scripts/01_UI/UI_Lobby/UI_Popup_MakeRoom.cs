@@ -3,7 +3,8 @@ using TMPro;
 using UnityEngine;
 
 /// <summary>
-/// 방 만들기 팝업. 방 이름과 최대 인원을 입력받아 호스트로 방을 생성하고 게임씬으로 전환한다.
+/// 방 만들기 팝업. 방 이름과 최대 인원을 입력받고, UI_Popup_SelectPlayer에서 이름/성별을 확정하면
+/// 호스트로 방을 생성하고 게임씬으로 전환한다.
 /// 호스트가 월드 시드/옵션을 확정해 세션에 공유하므로, 참가자들이 동일 월드를 생성한다.
 /// 버튼 처리는 UI_HUD_LobbyScene과 동일하게 SetDownUpButton + OnButtonUp 방식을 사용.
 /// </summary>
@@ -75,11 +76,26 @@ public class UI_Popup_MakeRoom : UI_Popup
         }
     }
 
-    // 방 생성 (호스트) → 시드/옵션 세션 공유 → 게임씬 진입
+    // 방 생성 버튼 → 플레이어 설정 팝업. 거기서 확정해야 실제로 방을 만든다.
     private void OnMakeRoom()
     {
-        MakeRoomAsync().Forget();
+        ShowSelectPlayerAsync().Forget();
     }
+
+    private async UniTaskVoid ShowSelectPlayerAsync()
+    {
+        UI_Popup_SelectPlayer popup = await Extensions.ShowPopup<UI_Popup_SelectPlayer>(clickGuard: true, clickClose: true);
+        if (popup == null) return;
+
+        popup.SetOnConfirm(() =>
+        {
+            // 확정 전에 이 팝업이 닫혔다면 방을 만들지 않는다
+            if (this == null) return;
+            MakeRoomAsync().Forget();
+        });
+    }
+
+    // 방 생성 (호스트) → 시드/옵션 세션 공유 → 게임씬 진입
 
     private async UniTaskVoid MakeRoomAsync()
     {

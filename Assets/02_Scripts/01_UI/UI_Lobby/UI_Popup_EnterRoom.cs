@@ -10,7 +10,7 @@ using UnityEngine.UI;
 /// 방 목록은 NetworkManager를 통해 얻는다:
 ///   - 열릴 때 Main.Network.BrowseRoomsAsync()로 로비 접속(방 탐색 시작)
 ///   - Main.Network.OnRoomListUpdated 이벤트로 방 목록을 받아 갱신
-///   - 방 클릭 시 Main.Network.JoinRoomByNameAsync()로 참가 후 게임씬 전환
+///   - 방 클릭 시 UI_Popup_SelectPlayer로 이름/성별 확정 → Main.Network.JoinRoomByNameAsync()로 참가 후 게임씬 전환
 ///
 /// 목록 항목은 프리팹 계층(ScrollView/Content)에 배치된 방 버튼 오브젝트를
 /// "템플릿"으로 캐싱해두고 복제하며, 복제본에 GetOrAddComponent로 UI_Button_Room을 붙인다.
@@ -214,11 +214,24 @@ public class UI_Popup_EnterRoom : UI_Popup
         }
     }
 
-    // 방 클릭 → 참가 (정원 미달인 방만)
+    // 방 클릭 → 플레이어 설정 팝업 → 확정 시 참가 (정원 미달인 방만)
     private void OnClickRoom(UI_Button_Room room)
     {
         if (room == null || !room.IsJoinable) return;
-        JoinRoomAsync(room.RoomName).Forget();
+        ShowSelectPlayerAsync(room.RoomName).Forget();
+    }
+
+    private async UniTaskVoid ShowSelectPlayerAsync(string roomName)
+    {
+        UI_Popup_SelectPlayer popup = await Extensions.ShowPopup<UI_Popup_SelectPlayer>(clickGuard: true, clickClose: true);
+        if (popup == null) return;
+
+        popup.SetOnConfirm(() =>
+        {
+            // 확정 전에 이 팝업이 닫혔다면 참가하지 않는다
+            if (this == null) return;
+            JoinRoomAsync(roomName).Forget();
+        });
     }
 
     private async UniTaskVoid JoinRoomAsync(string roomName)

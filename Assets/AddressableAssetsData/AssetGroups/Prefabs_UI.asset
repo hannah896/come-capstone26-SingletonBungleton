@@ -51,6 +51,11 @@ MonoBehaviour:
     m_SerializedLabels:
     - EveryScene
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5511c3073996f9349a4c4aef921ae964
+    m_Address: UI_Popup_SelectPlayer
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 7695ada1d45bf4f4a9d698c74f3e57b4
     m_Address: UI_Popup_MakeRoom
     m_ReadOnly: 0
