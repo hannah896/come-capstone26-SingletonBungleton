@@ -53,6 +53,10 @@ public class WorldGenManager : MonoBehaviour
 
     public WorldGraphDirector GraphDirector => _worldGraphDirector;
     public WorldSettings WorldSettings => _worldSettings;
+    public WorldChunkDirector ChunkDirector => _worldChunkDirector;
+
+    /// <summary>현재 월드의 논리 데이터. 청크 디렉터 초기화 전에는 null (멀티 자원 동기화가 준비 여부로 사용).</summary>
+    public WorldLogicData CurrentLogicData { get; private set; }
 
     /// <summary>WorldSettings 에셋 로드가 완료되어 월드 생성이 가능한 상태인지 여부.</summary>
     public bool IsWorldSettingsLoaded => _isWorldSettingsLoaded;
@@ -235,6 +239,7 @@ public class WorldGenManager : MonoBehaviour
         try
         {
             Debug.Log("=== 월드 생성 시작 ===");
+            CurrentLogicData = null; // 새 월드가 준비될 때까지 이전 월드에 원격 파괴가 반영되지 않도록
             ReportProgress(0.05f, "월드 설정 적용");
 
             applySettings?.Invoke();
@@ -299,6 +304,7 @@ public class WorldGenManager : MonoBehaviour
             // 4단계: 청크 디렉터 초기화 및 스폰 지역 확정 렌더링 대기
             // ==========================================================
             _worldChunkDirector.Initialize(logicData, _worldRenderDirector);
+            CurrentLogicData = logicData;
 
             await _worldChunkDirector.LoadInitialSpawnAreaAsync(spawnChunkCoord);
             Debug.Log("월드 생성이 완료되었습니다!");

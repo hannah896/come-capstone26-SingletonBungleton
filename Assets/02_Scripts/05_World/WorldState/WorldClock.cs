@@ -51,6 +51,14 @@ public class WorldClock : MonoBehaviour
     /// </summary>
     public bool IsNetworkDriven { get; private set; }
     public int CurrentHour { get; private set; }
+
+    /// <summary>
+    /// 월드 시간 배속 (디버그/테스트용, 기본 1). 이동·몬스터 등 게임 속도와 무관하게 시계만 빨라진다.
+    /// 멀티에서는 시간을 구동하는 호스트의 값만 적용된다.
+    /// </summary>
+    public float TimeScale { get; private set; } = 1f;
+
+    public const float MaxTimeScale = 120f;
     public MoonPhase CurrentMoonPhase { get; private set; } // [달 주기 시스템 추가] 현재 달 위상
 
     /// <summary>자정 0, 정오 0.5인 하루 진행률. 정수 시간과 달리 매 프레임 변한다.</summary>
@@ -102,6 +110,23 @@ public class WorldClock : MonoBehaviour
         // 시작 직후 현재 상태 초기화
         CheckTimeFlow(_dayTimer);
         UpdateMoonPhase(true);
+
+        Main.Loop.OnUpdate += OnUpdate;
+    }
+
+    public void SetTimeScale(float scale)
+    {
+        TimeScale = Mathf.Clamp(scale, 1f, MaxTimeScale);
+    }
+
+    // 배속 분만큼 추가로 시간을 흘린다 (기본 1배 흐름은 NyoTimer가 담당).
+    // 네트워크 구동 중에는 호스트가 틱마다 배속을 곱해 전진시키므로 여기서는 건드리지 않는다.
+    private void OnUpdate(float deltaTime)
+    {
+        if (TimeScale <= 1f || IsNetworkDriven || _dayTimer == null || _dayTimer.Pause) return;
+        if (Main.Time.Pause || GameScene.GameState != GameState.Playing) return; // NyoTimer와 같은 정지 조건
+
+        SkipTime(deltaTime * (TimeScale - 1f));
     }
 
     private void HandleDayEnded(NyoTimer timer)
@@ -280,6 +305,8 @@ public class WorldClock : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (Main.Instance != null && Main.Loop != null) Main.Loop.OnUpdate -= OnUpdate;
+
         if (_dayTimer != null)
         {
             _dayTimer.OnTimeEnd -= HandleDayEnded;
