@@ -853,7 +853,7 @@ GameObject:
   - component: {fileID: 2677564380162137956}
   - component: {fileID: 1522034520307763889}
   m_Layer: 0
-  m_Name: Imp Devil
+  m_Name: Devil
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

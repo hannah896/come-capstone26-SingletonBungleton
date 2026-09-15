@@ -238,7 +238,7 @@ GameObject:
   - component: {fileID: 3914446929460496296}
   - component: {fileID: 7255239276948858608}
   m_Layer: 0
-  m_Name: Imp Mischief
+  m_Name: Mischief
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

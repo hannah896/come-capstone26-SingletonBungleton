@@ -1538,7 +1538,7 @@ GameObject:
   - component: {fileID: 1000000000000000001}
   - component: {fileID: 1000000000000000002}
   m_Layer: 0
-  m_Name: Imp Demon
+  m_Name: Demon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
