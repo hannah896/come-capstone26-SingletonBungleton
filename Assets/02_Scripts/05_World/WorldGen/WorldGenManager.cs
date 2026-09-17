@@ -384,6 +384,11 @@ public class WorldGenManager : MonoBehaviour
                 }
             }
 
+            // 동물 AI용 NavMesh: 플레이어 주변을 런타임에 주기적으로 빌드 (클라는 내부에서 건너뜀)
+            var navMeshBuilder = Extensions.GetOrAddComponent<RuntimeNavMeshBuilder>(this.gameObject);
+            if (_playerInstance != null)
+                navMeshBuilder.SetTarget(_playerInstance.transform);
+
             _simulationManager = Extensions.GetOrAddComponent<WorldSimulationManager>(this.gameObject);
             _simulationManager.Initialize(_worldChunkDirector, _worldSettings.SkyBoxSettings);
 

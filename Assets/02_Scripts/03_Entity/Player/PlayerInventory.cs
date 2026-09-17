@@ -1032,6 +1032,14 @@ public class PlayerInventory : MonoBehaviour
             return true;
         }
 
+        Animal animal = hit.collider.GetComponentInParent<Animal>();
+        if (animal != null)
+        {
+            if (!animal.CanDamage(ctx)) return false;
+            if (apply) DamageAnimal(animal, ctx, handItem, actionType);
+            return true;
+        }
+
         return false;
     }
 
@@ -1051,6 +1059,23 @@ public class PlayerInventory : MonoBehaviour
 #endif
         // 싱글플레이: 디렉터가 없으므로 그대로 로컬 적용
         monster.ApplyDamage(ctx);
+    }
+
+    /// <summary>
+    /// 동물에 데미지를 넣는다. 멀티플레이에서는 호스트에 보고하고, 넉백 방향 계산용으로 내 위치를 함께 보낸다.
+    /// </summary>
+    private void DamageAnimal(Animal animal, DamageContext ctx, ItemDataSO handItem, ActionType actionType)
+    {
+#if PHOTON_FUSION
+        var director = NetworkAnimalDirector.Instance;
+        if (director != null)
+        {
+            director.ReportDamage(animal, ctx.Amount, transform.position, handItem.itemID, actionType);
+            return;
+        }
+#endif
+        // 싱글플레이: 디렉터가 없으므로 그대로 로컬 적용
+        animal.ApplyDamage(ctx);
     }
 
     private bool TryRaycastToolTarget(float range, out RaycastHit hit)
