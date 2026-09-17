@@ -357,8 +357,11 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
             if (candidateBiome.BiomeSpawnRule != sourceRuleSet)
                 continue;
 
+            // 활성 청크 검사는 이 피어가 청크를 스트리밍하는 로컬 플레이어에게만 적용한다.
+            // 멀티에서 호스트는 원격 플레이어 주변 청크를 로드하지 않으므로, 검사하면 클라 주변엔 영영 스폰되지 않는다.
+            // (높이는 논리 데이터에서 가져오고 몬스터는 transform으로 이동하므로 청크가 없어도 동작한다)
             Vector2Int chunkCoord = _logicData.GetChunkCoord(tileX, tileZ);
-            if (!_activeChunkCoords.Contains(chunkCoord))
+            if (sourcePlayer.IsLocalPlayer && !_activeChunkCoords.Contains(chunkCoord))
                 continue;
 
             Vector3 candidate = new Vector3(

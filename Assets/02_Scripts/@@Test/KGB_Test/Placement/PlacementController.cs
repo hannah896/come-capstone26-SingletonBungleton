@@ -289,7 +289,8 @@ public class PlacementController : MonoBehaviour
             return;
         }
 
-        Instantiate(activeItemData.placementPrefab, currentPosition, currentRotation);
+        // 싱글은 바로 설치, 멀티는 호스트를 거쳐 모든 피어에 설치된다
+        StructureSync.Place(activeItemData, currentPosition, currentRotation);
 
         if (!playerInventory.HasItem(activeItemData))
             CancelPlacement();

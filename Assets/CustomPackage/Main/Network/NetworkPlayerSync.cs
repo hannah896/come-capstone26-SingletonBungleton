@@ -53,6 +53,9 @@ public class NetworkPlayerSync : NetworkBehaviour
     // 아이템 이름은 최대 22자라 _32면 충분하다.
     [Networked] private NetworkString<_32> NetEquippedHandKey { get; set; }
 
+    // 소유자가 보고한 사망 상태. 원격 피어의 몬스터 타게팅/피격 판정에 쓴다 (HP는 소유자 피어에만 있다).
+    [Networked] private NetworkBool NetIsDead { get; set; }
+
     #endregion
 
     #region Fields
@@ -99,6 +102,14 @@ public class NetworkPlayerSync : NetworkBehaviour
     // 원격 전용 — 마지막으로 뷰에 반영한 장착 키
     private string _appliedEquipKey;
 
+    // 소유자 전용 — 마지막으로 보고한 사망 상태
+    private bool _reportedDead;
+
+    private Player _player;
+
+    /// <summary>원격 캐릭터의 사망 여부 (소유자가 보고한 값).</summary>
+    public bool IsRemoteDead => Object != null && Object.IsValid && NetIsDead;
+
     #endregion
 
     #region Lifecycle
@@ -106,6 +117,7 @@ public class NetworkPlayerSync : NetworkBehaviour
     public override void Spawned()
     {
         CacheAnimator();
+        _player = GetComponent<Player>();
 
         if (Object.HasInputAuthority)
         {
@@ -235,7 +247,11 @@ public class NetworkPlayerSync : NetworkBehaviour
     public override void Render()
     {
         // 자기 캐릭터(입력 권한)는 로컬 시뮬레이션이 그린다 — 복제 값으로 덮지 않는다
-        if (Object.HasInputAuthority) return;
+        if (Object.HasInputAuthority)
+        {
+            ReportDeadStateIfChanged();
+            return;
+        }
 
         // 남의 캐릭터는 상태 머신이 돌지 않으므로 애니메이터를 복제 값으로 직접 구동한다.
         // (호스트가 보는 원격 캐릭터도 마찬가지 — 호스트에서도 그 캐릭터의 상태 머신은 돌지 않는다)
@@ -452,6 +468,60 @@ public class NetworkPlayerSync : NetworkBehaviour
     private static string GetItemKey(ItemDataSO itemData)
     {
         return itemData != null ? itemData.name : string.Empty;
+    }
+
+    #endregion
+
+    #region 피격 / 사망 상태 동기화
+
+    /// <summary>
+    /// 호스트 → 소유자: 몬스터가 이 캐릭터에 준 데미지를 전달한다.
+    /// 몬스터 AI는 호스트에서만 돌기 때문에 호출자는 항상 호스트다.
+    /// </summary>
+    public void ForwardDamage(int amount)
+    {
+        if (amount <= 0) return;
+
+        if (Object.HasInputAuthority) _player?.ApplyLocalDamage(amount);
+        else if (Object.HasStateAuthority) Rpc_ReceiveDamage(amount);
+    }
+
+    /// <summary>호스트 → 소유자: 도트 데미지를 전달한다.</summary>
+    public void ForwardDot(float damagePerTick, float duration, float tickInterval)
+    {
+        if (Object.HasInputAuthority) _player?.ApplyLocalDot(damagePerTick, duration, tickInterval);
+        else if (Object.HasStateAuthority) Rpc_ReceiveDot(damagePerTick, duration, tickInterval);
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority)]
+    private void Rpc_ReceiveDamage(int amount)
+    {
+        _player?.ApplyLocalDamage(amount);
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority)]
+    private void Rpc_ReceiveDot(float damagePerTick, float duration, float tickInterval)
+    {
+        _player?.ApplyLocalDot(damagePerTick, duration, tickInterval);
+    }
+
+    // 소유자: 사망/부활이 바뀐 순간에만 호스트에 보고한다
+    private void ReportDeadStateIfChanged()
+    {
+        if (_player == null) return;
+
+        bool dead = !_player.IsAlive || _player.IsDead;
+        if (dead == _reportedDead) return;
+        _reportedDead = dead;
+
+        if (Object.HasStateAuthority) NetIsDead = dead;
+        else Rpc_ReportDead(dead);
+    }
+
+    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+    private void Rpc_ReportDead(NetworkBool dead)
+    {
+        NetIsDead = dead;
     }
 
     #endregion

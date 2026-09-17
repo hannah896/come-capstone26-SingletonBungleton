@@ -17,9 +17,12 @@ public partial class NetworkPlayerData
 {
     #region Constants
 
-    private const int DestroyedCapacity = 512;
+    // Fusion 오브젝트 상태 상한(32KB) 때문에 256으로 제한. 가득 차면 가장 먼저 재생성될 항목부터 밀어낸다(EvictEarliestRespawn)
+    private const int DestroyedCapacity = 256;
     private const int DamageCapacity = 128;
     private const int DropCapacity = 256;
+    // 바닥에 동시에 떨어져 있는 아이템 종류 수 상한. 더 이상 쓰지 않는 이름은 자동 정리된다
+    private const int ItemNameCapacity = 24;
 
     // 이 시간(현실 초) 동안 아무도 안 친 자원은 누적 데미지를 잊는다 (용량 확보)
     private const float DamageForgetSeconds = 60f;
@@ -39,6 +42,10 @@ public partial class NetworkPlayerData
 
     [Networked, Capacity(DropCapacity)]
     public NetworkDictionary<int, WorldDropEntry> WorldDrops => default;
+
+    // 드롭 테이블이 참조하는 아이템 키 이름표 (해시 → 키)
+    [Networked, Capacity(ItemNameCapacity)]
+    public NetworkDictionary<int, NetworkString<_32>> ItemKeyNames => default;
 
     [Networked] private int LastDropId { get; set; }
 
@@ -221,7 +228,15 @@ public partial class NetworkPlayerData
 
             view = new DropView { Count = entry.Count };
             _dropViews[pair.Key] = view;
-            SpawnDropViewAsync(pair.Key, entry.ItemKey.ToString(), entry.Position, view).Forget();
+            string itemKey = NetworkItemKeys.Resolve(ItemKeyNames, entry.ItemHash);
+            if (itemKey == null)
+            {
+                _dropViews.Remove(pair.Key);
+                _worldDirty = true; // 이름표가 아직 안 왔다 — 다음 반영에서 다시 시도
+                continue;
+            }
+
+            SpawnDropViewAsync(pair.Key, itemKey, entry.Position, view).Forget();
         }
 
         // 누군가 주워서 사라진 드롭
@@ -315,14 +330,11 @@ public partial class NetworkPlayerData
     {
         if (!HasStateAuthority || string.IsNullOrEmpty(itemKey) || count <= 0) return;
 
-        if (itemKey.Length > 31)
-        {
-            Debug.LogError($"[NetworkPlayerData] 아이템 키가 너무 길어 드롭을 동기화할 수 없습니다: {itemKey}");
-            return;
-        }
-
         if (WorldDrops.Count >= WorldDrops.Capacity)
             EvictOldestDrop();
+
+        if (!NetworkItemKeys.TryRegister(ItemKeyNames, itemKey, IsDropItemHashUsed, out int itemHash))
+            return;
 
         int dropId = LastDropId + 1;
         if (dropId <= 0) dropId = 1; // 오버플로 방지 (0은 "네트워크 드롭 아님" 표시)
@@ -330,7 +342,7 @@ public partial class NetworkPlayerData
 
         WorldDrops.Set(dropId, new WorldDropEntry
         {
-            ItemKey = itemKey,
+            ItemHash = itemHash,
             Count = count,
             Position = position,
         });
@@ -345,6 +357,7 @@ public partial class NetworkPlayerData
         int taken = Mathf.Min(amount, entry.Count);
         if (taken <= 0) return;
 
+        string itemKey = NetworkItemKeys.Resolve(ItemKeyNames, entry.ItemHash);
         entry.Count -= taken;
         if (entry.Count <= 0)
             WorldDrops.Remove(dropId);
@@ -355,11 +368,29 @@ public partial class NetworkPlayerData
         if (requesterData == null)
         {
             // 요청자가 그새 나갔다 — 아이템을 되돌려 놓는다
-            HostDropItem(entry.ItemKey.ToString(), taken, entry.Position);
+            HostDropItem(itemKey, taken, entry.Position);
             return;
         }
 
-        requesterData.Rpc_GrantPickup(entry.ItemKey.ToString(), taken);
+        if (itemKey != null)
+            requesterData.Rpc_GrantPickup(itemKey, taken);
+    }
+
+    /// <summary>바닥 아이템을 지급 없이 없앤다. (모닥불 요리 등으로 다른 아이템으로 바뀌는 경우)</summary>
+    public void HostRemoveDrop(int dropId)
+    {
+        if (!HasStateAuthority) return;
+        WorldDrops.Remove(dropId);
+    }
+
+    // 아직 바닥에 남은 드롭 중 이 아이템 해시를 쓰는 것이 있는지 (이름표 정리용)
+    private bool IsDropItemHashUsed(int itemHash)
+    {
+        foreach (KeyValuePair<int, WorldDropEntry> pair in WorldDrops)
+        {
+            if (pair.Value.ItemHash == itemHash) return true;
+        }
+        return false;
     }
 
     private void EvictOldestDamage()

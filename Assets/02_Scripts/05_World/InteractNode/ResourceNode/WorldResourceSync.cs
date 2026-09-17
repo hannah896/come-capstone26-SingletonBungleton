@@ -23,6 +23,9 @@ public interface IWorldStateNetwork
 
     /// <summary>바닥 아이템을 줍겠다고 요청한다. 호스트가 승인한 수량만큼 인벤토리에 들어온다.</summary>
     void RequestPickupItem(int dropId, int amount);
+
+    /// <summary>호스트 전용: 바닥 아이템을 아무에게도 지급하지 않고 없앤다. (모닥불에 구워져 다른 아이템으로 바뀌는 경우 등)</summary>
+    void RemoveDrop(int dropId);
 }
 
 /// <summary>

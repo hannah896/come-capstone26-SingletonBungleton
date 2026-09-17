@@ -69,6 +69,9 @@ public class NetworkManager : CoreManager
     // 동물 복제 디렉터 프리팹 Addressable 키 (세션당 1개, 호스트가 스폰)
     private const string ANIMAL_DIRECTOR_PREFAB_KEY = "NetworkAnimalDirector";
 
+    // 구조물 복제 디렉터 프리팹 Addressable 키 (세션당 1개, 호스트가 스폰)
+    private const string STRUCTURE_DIRECTOR_PREFAB_KEY = "NetworkStructureDirector";
+
     // Fusion NetworkRunner 인스턴스
     private NetworkRunner _runner;
 
@@ -92,6 +95,12 @@ public class NetworkManager : CoreManager
 
     // 호스트가 스폰한 동물 디렉터 (세션당 1개)
     private NetworkObject _animalDirector;
+
+    // 구조물 복제 디렉터 프리팹 (NetworkObject 포함)
+    private GameObject _structureDirectorPrefab;
+
+    // 호스트가 스폰한 구조물 디렉터 (세션당 1개)
+    private NetworkObject _structureDirector;
 
     // 게임 시작 처리 중 여부 (Rpc_StartGame 중복 수신 가드)
     private bool _gameStarting;
@@ -262,6 +271,9 @@ public class NetworkManager : CoreManager
         // 동물 복제 디렉터 프리팹 로드 (호스트가 월드 준비 후 1개 스폰)
         _animalDirectorPrefab = await Main.Resource.LoadAssetAsync<GameObject>(ANIMAL_DIRECTOR_PREFAB_KEY, AssetCacheType.Required);
 
+        // 구조물 복제 디렉터 프리팹 로드 (호스트가 월드 준비 후 1개 스폰)
+        _structureDirectorPrefab = await Main.Resource.LoadAssetAsync<GameObject>(STRUCTURE_DIRECTOR_PREFAB_KEY, AssetCacheType.Required);
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (_playerDataPrefab == null)
         {
@@ -282,6 +294,10 @@ public class NetworkManager : CoreManager
         if (_animalDirectorPrefab == null)
         {
             Debug.LogError($"[NetworkManager] Failed to load animal director prefab: {ANIMAL_DIRECTOR_PREFAB_KEY}");
+        }
+        if (_structureDirectorPrefab == null)
+        {
+            Debug.LogError($"[NetworkManager] Failed to load structure director prefab: {STRUCTURE_DIRECTOR_PREFAB_KEY}");
         }
 #endif
 #endif
@@ -592,33 +608,53 @@ public class NetworkManager : CoreManager
             return;
         }
 
-        _monsterDirector = _runner.Spawn(netObj);
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        Debug.Log("[NetworkManager] MonsterDirector spawned");
-#endif
+        _monsterDirector = TrySpawnDirector(netObj, "MonsterDirector");
     }
 
     // 호스트가 동물 복제 디렉터를 세션당 1개 스폰한다. (몬스터 디렉터와 같은 방식)
     private void SpawnAnimalDirector()
+        => SpawnSessionDirector(_animalDirectorPrefab, ref _animalDirector, "AnimalDirector");
+
+    // 호스트가 구조물 복제 디렉터를 세션당 1개 스폰한다.
+    private void SpawnStructureDirector()
+        => SpawnSessionDirector(_structureDirectorPrefab, ref _structureDirector, "StructureDirector");
+
+    // 세션 전역 디렉터(NetworkObject 프리팹)를 호스트가 한 번만 스폰한다.
+    private void SpawnSessionDirector(GameObject prefab, ref NetworkObject spawned, string label)
     {
         if (_runner == null || !_runner.IsServer) return;
-        if (_animalDirector != null) return;
-        if (_animalDirectorPrefab == null) return;
+        if (spawned != null) return;
+        if (prefab == null) return;
 
-        if (!_animalDirectorPrefab.TryGetComponent<NetworkObject>(out var netObj))
+        if (!prefab.TryGetComponent<NetworkObject>(out var netObj))
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            Debug.LogError("[NetworkManager] AnimalDirector 프리팹에 NetworkObject가 없습니다. Runner.Spawn 불가.");
+            Debug.LogError($"[NetworkManager] {label} 프리팹에 NetworkObject가 없습니다. Runner.Spawn 불가.");
 #endif
             return;
         }
 
-        _animalDirector = _runner.Spawn(netObj);
+        spawned = TrySpawnDirector(netObj, label);
+    }
 
+    // 디렉터 스폰 실패(프리팹 테이블 미등록 등)가 월드 준비 흐름 전체를 끊지 않도록 예외를 여기서 삼킨다.
+    // (예외가 올라가면 뒤이은 캐릭터 스폰까지 실행되지 않는다)
+    private NetworkObject TrySpawnDirector(NetworkObject prefab, string label)
+    {
+        try
+        {
+            NetworkObject spawned = _runner.Spawn(prefab);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        Debug.Log("[NetworkManager] AnimalDirector spawned");
+            Debug.Log($"[NetworkManager] {label} spawned");
 #endif
+            return spawned;
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[NetworkManager] {label} 스폰 실패. Fusion 프리팹 테이블에 없으면 " +
+                           $"Tools > Fusion > Rebuild Prefab Table을 실행하세요.\n{e}");
+            return null;
+        }
     }
 
     // 클라이언트가 자기 월드 생성 완료를 호스트에 보고한다.
@@ -815,6 +851,7 @@ public class NetworkManager : CoreManager
         _localCharacterSync = null;
         _monsterDirector = null;
         _animalDirector = null;
+        _structureDirector = null;
         _worldReady = false;
         _gameStarting = false;
 
@@ -896,6 +933,7 @@ public class NetworkManager : CoreManager
         _localCharacterSync = null;
         _monsterDirector = null;
         _animalDirector = null;
+        _structureDirector = null;
         _worldReady = false;
     }
 
@@ -1152,6 +1190,7 @@ public class NetworkManager : CoreManager
             // 몬스터 복제 디렉터를 먼저 띄운다 (스포너가 등록할 대상이 있어야 한다)
             SpawnMonsterDirector();
             SpawnAnimalDirector();
+            SpawnStructureDirector();
 
             // Host 모드: 호스트가 전원 캐릭터를 스폰한다 (InputAuthority만 각 플레이어에게 부여)
             SpawnAllCharacters();

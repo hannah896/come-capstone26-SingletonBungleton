@@ -37,6 +37,7 @@ public class Meteor : MonoBehaviour, IPoolable
     private float warningTimer;    // 예고 남은 시간
     private float lingerTimer;     // 폭발 후 회수까지 남은 시간
     private Phase phase = Phase.Idle;
+    private bool visualOnly;       // 멀티 클라의 연출용 복제본 (데미지를 주지 않는다)
     private bool loopHooked;
     private VisualEffect[] _vfx;   // 자식으로 붙은 이펙트
 
@@ -52,6 +53,26 @@ public class Meteor : MonoBehaviour, IPoolable
     public void Init(GameObject owner, Vector3 impactPos, int damage, float impactRadius, float warningTime, float lingerTime,
                      float dotDamage = 0f, float dotDuration = 0f, float dotInterval = 1f)
     {
+#if PHOTON_FUSION
+        // 멀티 호스트: 클라 화면에도 같은 장판을 띄운다 (판정은 이 원본만 한다).
+        // 예고 시간이 0이면 원본이 시작하자마자 폭발·회수되므로 시작 전에 보낸다.
+        if (NetworkMonsterDirector.ShouldBroadcastEffects)
+            NetworkMonsterDirector.Instance.BroadcastMeteor(
+                Main.Pool.GetAddress(gameObject), impactPos, impactRadius, warningTime, lingerTime);
+#endif
+        Begin(owner, impactPos, damage, impactRadius, warningTime, lingerTime, dotDamage, dotDuration, dotInterval, visual: false);
+    }
+
+    /// <summary>
+    /// 멀티 클라 전용: 호스트가 깐 장판의 연출용 복제본. 예고/폭발 이펙트만 재생하고 데미지는 주지 않는다.
+    /// </summary>
+    public void InitVisual(Vector3 impactPos, float impactRadius, float warningTime, float lingerTime)
+        => Begin(null, impactPos, 0, impactRadius, warningTime, lingerTime, 0f, 0f, 1f, visual: true);
+
+    private void Begin(GameObject owner, Vector3 impactPos, int damage, float impactRadius, float warningTime, float lingerTime,
+                       float dotDamage, float dotDuration, float dotInterval, bool visual)
+    {
+        visualOnly = visual;
         this.owner = owner;
         this.impactPos = impactPos;
         this.damage = damage;
@@ -123,7 +144,8 @@ public class Meteor : MonoBehaviour, IPoolable
     {
         phase = Phase.Exploding;
         SendVfxEvent(explodeEvent);
-        ApplyAreaDamage();
+        if (!visualOnly)
+            ApplyAreaDamage();
 
         // 잔여 재생 시간이 없으면 바로 회수한다.
         if (lingerTimer <= 0f)
@@ -138,7 +160,7 @@ public class Meteor : MonoBehaviour, IPoolable
         foreach (var col in hits)
         {
             var player = col.GetComponentInParent<Player>();
-            if (player == null || player.Stat == null || player.Stat.IsDead) continue;
+            if (player == null || !player.IsAlive) continue;
             if (!_damaged.Add(player)) continue; // 같은 플레이어 중복 피격 방지
 
             var ctx = new DamageContext(

@@ -342,7 +342,7 @@ public class Devil : Monster
         tailCooldown = DevilData.TailCooldown;
         PlayAnim(MonsterAnimId.FlyTail);
 
-        if (Target == null || Target.Stat == null || Target.Stat.IsDead) return;
+        if (Target == null || !Target.IsAlive) return;
         if (!IsTargetInTailRange()) return;
 
         int damage = ResolveDamage(DevilData.TailDamage);
@@ -374,7 +374,7 @@ public class Devil : Monster
         foreach (var col in hits)
         {
             var player = col.GetComponentInParent<Player>();
-            if (player == null || player.Stat == null || player.Stat.IsDead) continue;
+            if (player == null || !player.IsAlive) continue;
 
             ApplyDamageToTarget(player, damage);
             return; // 같은 플레이어를 여러 콜라이더로 중복 타격하지 않는다

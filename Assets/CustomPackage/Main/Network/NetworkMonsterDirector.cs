@@ -233,6 +233,58 @@ public class NetworkMonsterDirector : NetworkBehaviour
 
     #endregion
 
+    #region 공격 연출 복제 (호스트 → 클라)
+
+    /// <summary>
+    /// 이 피어가 공격 연출을 다른 피어에 뿌려야 하는지. 멀티 세션의 호스트일 때만 true.
+    /// (클라의 연출 복제본이 다시 뿌리지 않도록 호출자는 복제본이 아닌 경우에만 부른다)
+    /// </summary>
+    public static bool ShouldBroadcastEffects
+        => Instance != null && Instance.Object != null && Instance.Object.IsValid && Instance.HasStateAuthority;
+
+    /// <summary>호스트가 발사한 투사체를 클라에도 연출용으로 띄운다. 데미지 판정은 호스트 원본만 한다.</summary>
+    public void BroadcastProjectile(string key, Vector3 origin, Vector3 direction, float speed, float lifeTime)
+    {
+        if (!HasStateAuthority || string.IsNullOrEmpty(key)) return;
+        Rpc_SpawnProjectile(key, origin, direction, speed, lifeTime);
+    }
+
+    /// <summary>호스트가 깐 운석 장판을 클라에도 연출용으로 띄운다. 데미지 판정은 호스트 원본만 한다.</summary>
+    public void BroadcastMeteor(string key, Vector3 impactPos, float impactRadius, float warningTime, float lingerTime)
+    {
+        if (!HasStateAuthority || string.IsNullOrEmpty(key)) return;
+        Rpc_SpawnMeteor(key, impactPos, impactRadius, warningTime, lingerTime);
+    }
+
+    // Proxies = 호스트(StateAuthority)를 제외한 모든 피어
+    [Rpc(RpcSources.StateAuthority, RpcTargets.Proxies)]
+    private void Rpc_SpawnProjectile(string key, Vector3 origin, Vector3 direction, float speed, float lifeTime)
+    {
+        SpawnProjectileVisualAsync(key, origin, direction, speed, lifeTime).Forget();
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.Proxies)]
+    private void Rpc_SpawnMeteor(string key, Vector3 impactPos, float impactRadius, float warningTime, float lingerTime)
+    {
+        SpawnMeteorVisualAsync(key, impactPos, impactRadius, warningTime, lingerTime).Forget();
+    }
+
+    private static async UniTaskVoid SpawnProjectileVisualAsync(string key, Vector3 origin, Vector3 direction, float speed, float lifeTime)
+    {
+        var projectile = await Extensions.SpawnAsync<MonsterProjectile>(key);
+        if (projectile == null) return;
+        projectile.InitVisual(origin, direction, speed, lifeTime);
+    }
+
+    private static async UniTaskVoid SpawnMeteorVisualAsync(string key, Vector3 impactPos, float impactRadius, float warningTime, float lingerTime)
+    {
+        var meteor = await Extensions.SpawnAsync<Meteor>(key);
+        if (meteor == null) return;
+        meteor.InitVisual(impactPos, impactRadius, warningTime, lingerTime);
+    }
+
+    #endregion
+
     #region 데미지 보고 (클라 → 호스트)
 
     /// <summary>

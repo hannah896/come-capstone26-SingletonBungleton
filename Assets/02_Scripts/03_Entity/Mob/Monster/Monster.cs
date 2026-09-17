@@ -246,7 +246,7 @@ public class Monster : Mob
         foreach (var col in hits)
         {
             var player = col.GetComponentInParent<Player>();
-            if (player == null || player.Stat == null || player.Stat.IsDead) continue;
+            if (player == null || !player.IsAlive) continue;
             if (!InFieldOfView(player.transform.position)) continue;
 
             float sqr = (player.transform.position - transform.position).sqrMagnitude;
@@ -264,7 +264,7 @@ public class Monster : Mob
     public bool IsTargetValid()
     {
         if (target == null || !target.isActiveAndEnabled) return false;
-        if (target.Stat == null || target.Stat.IsDead) return false;
+        if (!target.IsAlive) return false;
         return PlanarDistanceToTarget() <= DetectRange;
     }
 

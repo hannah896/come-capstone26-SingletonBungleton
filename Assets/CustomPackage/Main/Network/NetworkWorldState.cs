@@ -24,8 +24,9 @@ public struct WorldDamageEntry : INetworkStruct
 /// <summary>바닥에 떨어진 아이템 1묶음 (키 = 호스트가 발급한 드롭 ID).</summary>
 public struct WorldDropEntry : INetworkStruct
 {
-    // 아이템 Addressable 키 (= ItemDataSO 이름)
-    public NetworkString<_32> ItemKey;
+    // 아이템 Addressable 키(= ItemDataSO 이름)의 해시. 실제 키는 방장 데이터의 ItemKeyNames에서 찾는다.
+    // (문자열을 그대로 넣으면 한 칸이 수십 워드라 오브젝트 상태 상한 32KB를 넘는다 — NetworkItemKeys 참고)
+    public int ItemHash;
     public int Count;
     public Vector3 Position;
 }
@@ -91,6 +92,12 @@ public sealed class NetworkWorldState : IWorldStateNetwork
             _master.HostPickupItem(local.OwnerRef, dropId, amount);
         else
             local.Rpc_RequestPickupItem(dropId, amount);
+    }
+
+    public void RemoveDrop(int dropId)
+    {
+        if (!IsActive || !_master.HasStateAuthority) return;
+        _master.HostRemoveDrop(dropId);
     }
 
     // 요청을 보낼 이 피어의 데이터 오브젝트 (클라는 자기 것에만 InputAuthority가 있다)

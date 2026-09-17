@@ -106,7 +106,12 @@ public static class WorldItemSync
     /// </summary>
     public static bool TryRequestPickup(PlayerInventory inventory, Item item)
     {
-        if (!WorldResourceSync.IsNetworked || inventory == null || item == null) return false;
+        if (inventory == null || item == null) return false;
+
+        // 플레이어가 설치한 구조물 아이템 (모닥불 등) — 구조물 디렉터가 관리한다
+        if (StructureSync.TryRequestPickup(item)) return true;
+
+        if (!WorldResourceSync.IsNetworked) return false;
 
         if (item.NetworkDropId != 0)
         {

@@ -50,6 +50,22 @@ public class Player : MonoBehaviour, IDamageable
     /// 사망 연출·사망 팝업·부활 대기까지 전부 포함한다.
     /// </summary>
     public bool IsDead => machine?.CurrentState is PlayerDeadState;
+
+    /// <summary>
+    /// 공격·타게팅 기준 생존 여부. 몬스터/투사체/동물 판정은 이 값을 쓴다.
+    /// 원격 캐릭터는 이 피어의 스탯이 갱신되지 않으므로(HP는 소유자 피어에만 있다) 소유자가 보고한 사망 상태를 쓴다.
+    /// </summary>
+    public bool IsAlive
+    {
+        get
+        {
+            if (IsLocalPlayerObject()) return stat != null && !stat.IsDead;
+#if PHOTON_FUSION
+            if (TryGetComponent(out NetworkPlayerSync sync)) return !sync.IsRemoteDead;
+#endif
+            return true;
+        }
+    }
     #endregion
 
     private void OnValidate()
@@ -318,20 +334,50 @@ public class Player : MonoBehaviour, IDamageable
     #region IDamageable
     // 몬스터 등 외부 공격 수신구. 자원 채집과 동일한 DamageContext 계약을 사용한다.
     public bool CanDamage(DamageContext damageCtx)
-        => stat != null && !stat.IsDead && damageCtx.Amount > 0;
+        => IsAlive && damageCtx.Amount > 0;
 
     public void ApplyDamage(DamageContext damageCtx)
     {
         if (!CanDamage(damageCtx)) return;
-        // TakeDamage → OnDamaged → HandleDamaged 로 PlayerHurtState 전환까지 이어진다.
-        stat.TakeDamage(damageCtx.Amount);
+
+        // 원격 캐릭터(호스트의 몬스터가 클라 플레이어를 때린 경우): HP는 소유자 피어에 있으므로 그쪽으로 넘긴다.
+        if (TryForwardToOwner(sync => sync.ForwardDamage(damageCtx.Amount))) return;
+
+        ApplyLocalDamage(damageCtx.Amount);
     }
 
     /// <summary>도트 데미지를 건다. (몬스터 장판/투사체 등)</summary>
     public void ApplyDot(float damagePerTick, float duration, float tickInterval = 1f)
     {
+        if (!IsAlive) return;
+        if (TryForwardToOwner(sync => sync.ForwardDot(damagePerTick, duration, tickInterval))) return;
+
+        ApplyLocalDot(damagePerTick, duration, tickInterval);
+    }
+
+    /// <summary>이 피어의 스탯에 데미지를 적용한다. 네트워크로 전달받은 데미지도 여기로 들어온다.</summary>
+    public void ApplyLocalDamage(int amount)
+    {
+        if (stat == null || stat.IsDead || amount <= 0) return;
+        // TakeDamage → OnDamaged → HandleDamaged 로 PlayerHurtState 전환까지 이어진다.
+        stat.TakeDamage(amount);
+    }
+
+    /// <summary>이 피어의 스탯에 도트 데미지를 건다. 네트워크로 전달받은 도트도 여기로 들어온다.</summary>
+    public void ApplyLocalDot(float damagePerTick, float duration, float tickInterval)
+    {
         if (stat == null || stat.IsDead) return;
         stat.ApplyDot(damagePerTick, duration, tickInterval);
+    }
+
+    // 원격 캐릭터면 소유자 피어로 전달하고 true. 로컬 캐릭터(싱글 포함)면 false.
+    private bool TryForwardToOwner(System.Action<NetworkPlayerSync> forward)
+    {
+        if (IsLocalPlayerObject()) return false;
+#if PHOTON_FUSION
+        if (TryGetComponent(out NetworkPlayerSync sync)) forward(sync);
+#endif
+        return true; // 원격 캐릭터에는 로컬 적용하지 않는다 (복제본 HP를 깎아봐야 의미가 없다)
     }
     #endregion
 

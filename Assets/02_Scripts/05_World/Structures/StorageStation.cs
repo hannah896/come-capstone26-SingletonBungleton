@@ -176,6 +176,31 @@ public abstract class StorageStation : StationBase
         return count;
     }
 
+    /// <summary>
+    /// 멀티 클라 전용: 호스트가 복제한 슬롯 내용으로 덮어쓴다. 실제로 바뀐 칸이 있을 때만 변경 이벤트를 보낸다.
+    /// 게임 코드는 이 메서드 대신 StructureSync를 통해 보관함을 조작한다.
+    /// </summary>
+    public void ApplyNetworkSlots(ItemDataSO[] items, int[] counts)
+    {
+        if (items == null || counts == null) return;
+
+        bool changed = false;
+        int count = Mathf.Min(slots.Count, Mathf.Min(items.Length, counts.Length));
+        for (int i = 0; i < count; i++)
+        {
+            ItemDataSO itemData = counts[i] > 0 ? items[i] : null;
+            int stack = itemData != null ? counts[i] : 0;
+            if (slots[i] == itemData && stackCounts[i] == stack) continue;
+
+            slots[i] = itemData;
+            stackCounts[i] = stack;
+            changed = true;
+        }
+
+        if (changed)
+            OnStorageChanged?.Invoke();
+    }
+
     // 슬롯 개수 변경 메서드, 기존 데이터 유지 또는 초기화 후 이벤트 호출
     public void SetSlotCount(int count)
     {

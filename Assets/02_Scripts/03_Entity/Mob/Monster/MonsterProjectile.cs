@@ -35,6 +35,7 @@ public class MonsterProjectile : MonoBehaviour, IPoolable
     private float lingerTimer;     // 명중 후 회수까지 남은 시간
     private bool active;
     private bool hitting;          // 명중 이펙트 재생 중 (더 이상 비행/판정하지 않는다)
+    private bool visualOnly;       // 멀티 클라의 연출용 복제본 (데미지를 주지 않는다)
     private bool loopHooked;
     private VisualEffect[] _vfx;   // 자식으로 붙은 이펙트
 
@@ -46,6 +47,26 @@ public class MonsterProjectile : MonoBehaviour, IPoolable
     /// <summary>발사 파라미터를 주입하고 비행을 시작한다.</summary>
     public void Init(GameObject owner, Vector3 origin, Vector3 direction, float speed, int damage, float lifeTime)
     {
+        Launch(owner, origin, direction, speed, damage, lifeTime, visual: false);
+
+#if PHOTON_FUSION
+        // 멀티 호스트: 클라 화면에도 같은 투사체를 띄운다 (판정은 이 원본만 한다)
+        if (NetworkMonsterDirector.ShouldBroadcastEffects)
+            NetworkMonsterDirector.Instance.BroadcastProjectile(
+                Main.Pool.GetAddress(gameObject), origin, this.direction, speed, lifeTime);
+#endif
+    }
+
+    /// <summary>
+    /// 멀티 클라 전용: 호스트가 쏜 투사체의 연출용 복제본으로 비행시킨다.
+    /// 플레이어에 닿으면 명중 이펙트만 재생하고 데미지는 주지 않는다(데미지는 호스트가 확정해 전달한다).
+    /// </summary>
+    public void InitVisual(Vector3 origin, Vector3 direction, float speed, float lifeTime)
+        => Launch(null, origin, direction, speed, 0, lifeTime, visual: true);
+
+    private void Launch(GameObject owner, Vector3 origin, Vector3 direction, float speed, int damage, float lifeTime, bool visual)
+    {
+        visualOnly = visual;
         this.owner = owner;
         this.direction = direction.normalized;
         this.speed = speed;
@@ -162,7 +183,7 @@ public class MonsterProjectile : MonoBehaviour, IPoolable
         foreach (var col in hits)
         {
             var player = col.GetComponentInParent<Player>();
-            if (player == null || player.Stat == null || player.Stat.IsDead) continue;
+            if (player == null || !player.IsAlive) continue;
 
             var ctx = new DamageContext(
                 instigator: owner,
@@ -170,7 +191,7 @@ public class MonsterProjectile : MonoBehaviour, IPoolable
                 amount: damage,
                 toolId: string.Empty);
 
-            if (player.TryGetComponent<IDamageable>(out var dmg) && dmg.CanDamage(ctx))
+            if (!visualOnly && player.TryGetComponent<IDamageable>(out var dmg) && dmg.CanDamage(ctx))
                 dmg.ApplyDamage(ctx);
 
             BeginHit();

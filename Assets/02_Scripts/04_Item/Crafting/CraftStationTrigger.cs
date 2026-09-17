@@ -17,15 +17,24 @@ public class CraftStationTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!other.CompareTag("Player")) return;
+        if (!IsLocalPlayer(other)) return;
         CraftingManager.Instance?.SetNearbyStation(stationType);
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (!other.CompareTag("Player")) return;
+        if (!IsLocalPlayer(other)) return;
         // 같은 타입의 다른 스테이션이 있을 수 있으므로 None으로만 초기화
         if (CraftingManager.Instance?.GetNearbyStation() == stationType)
             CraftingManager.Instance.SetNearbyStation(CraftStation.None);
+    }
+
+    // 이 피어가 조작하는 플레이어만 센다 (멀티에서 원격 플레이어가 다가와도 내 제작대 판정이 바뀌면 안 된다)
+    private static bool IsLocalPlayer(Collider other)
+    {
+        if (!other.CompareTag("Player")) return false;
+
+        Player player = other.GetComponentInParent<Player>();
+        return player == null || player.IsLocalPlayer;
     }
 }

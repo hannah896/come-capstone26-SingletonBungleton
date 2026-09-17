@@ -65,4 +65,13 @@ public class CookingPot : StorageStation
         isCooking = false;
         OnCookingStateChanged?.Invoke(false);
     }
+
+    /// <summary>멀티 클라 전용: 호스트가 복제한 요리 상태를 반영한다. (게임 코드는 StructureSync.StartCooking/StopCooking 사용)</summary>
+    public void ApplyNetworkCooking(bool cooking)
+    {
+        if (isCooking == cooking) return;
+
+        isCooking = cooking;
+        OnCookingStateChanged?.Invoke(cooking);
+    }
 }

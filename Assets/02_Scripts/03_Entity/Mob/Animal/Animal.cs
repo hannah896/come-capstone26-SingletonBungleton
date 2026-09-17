@@ -319,7 +319,7 @@ public class Animal : Mob
         {
             var player = threatBuffer[i].GetComponentInParent<Player>();
             if (player == null || !player.isActiveAndEnabled) continue;
-            if (player.Stat == null || player.Stat.IsDead) continue;
+            if (!player.IsAlive) continue;
 
             float sqr = (player.transform.position - transform.position).sqrMagnitude;
             if (sqr < bestSqr)

@@ -15,6 +15,11 @@ MonoBehaviour:
   m_GroupName: Common
   m_GUID: 1355e2feab16e06409f202acb6043666
   m_SerializeEntries:
+  - m_GUID: 020b47c643d4a734481044b731e0fbb3
+    m_Address: NetworkStructureDirector
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 1d6338392f77fc948bed46122e4fa171
     m_Address: NetworkAnimalDirector
     m_ReadOnly: 0
@@ -42,6 +47,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 9ebcd66ab4045844187672673de88087
     m_Address: Canvas_Hud
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b5b17806e5694424d85f1c75126a038e
+    m_Address: NetworkMonsterDirector
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

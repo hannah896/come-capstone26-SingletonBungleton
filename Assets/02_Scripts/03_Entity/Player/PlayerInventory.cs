@@ -16,6 +16,8 @@ public class PlayerInventory : MonoBehaviour
     [Header("줍기 설정")]
     [SerializeField] private float pickupRadius = 2f;
     [SerializeField] private LayerMask pickupLayer = ~0;
+    [Tooltip("화면 중앙 조준으로 줍기/상호작용할 수 있는 거리(m, 카메라 기준). 카메라가 눈높이에 있어 바닥 아이템까지 닿도록 pickupRadius보다 길게 둔다")]
+    [SerializeField] private float focusRange = 3f;
 
     [Header("Tool Use")]
     [SerializeField] private float defaultToolUseRange = 2.5f;
@@ -40,11 +42,21 @@ public class PlayerInventory : MonoBehaviour
 
     private readonly Dictionary<EquipSlot, IEquipable> equippedItemInstances = new();
     private readonly Collider[] pickupBuffer = new Collider[16];
+    private readonly RaycastHit[] focusHits = new RaycastHit[16];
     private PlayerInputData inputData;
     private Player owner;
     private int selectedSlotIndex;
     private int hoveredSlotIndex = -1;
     private CharacterController characterController;
+
+    // 화면 중앙으로 조준한 대상의 종류
+    private enum FocusKind
+    {
+        None,
+        Pickup,     // 주울 수 있는 월드 아이템 (G)
+        HandPick,   // 맨손 채집 노드 — 풀 등 (G)
+        Cook,       // 선택 슬롯의 날것을 구울 수 있는 모닥불 (우클릭)
+    }
 
     private struct PickupCandidate
     {
@@ -756,45 +768,92 @@ public class PlayerInventory : MonoBehaviour
     }
 
 
-    /// <summary>크로스헤어가 조준한 대상이 G키로 주울 수 있는 월드 아이템 / 맨손 채집 노드인지 여부 (UI 포커스 판정용).</summary>
-    public bool HasPickupTargetFocused()
-    {
-        Camera camera = Camera.main;
-        if (camera == null) return false;
-
-        Ray ray = camera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        if (!Physics.Raycast(ray, out RaycastHit hit, pickupRadius, pickupLayer, QueryTriggerInteraction.Collide))
-            return false;
-
-        if (TryGetPickupCandidate(hit.collider, out _))
-            return true;
-
-        ResourceNode node = hit.collider.GetComponentInParent<ResourceNode>();
-        return node != null && node.IsHandPickable;
-    }
+    /// <summary>크로스헤어가 줍기/상호작용 가능한 대상(월드 아이템, 맨손 채집 노드, 요리 가능한 모닥불)을 조준 중인지 (UI 포커스 판정용).</summary>
+    public bool HasInteractTargetFocused()
+        => TryGetFocusedTarget(out _, out _);
 
     private bool TryPickupFocused()
     {
+        if (!TryGetFocusedTarget(out RaycastHit hit, out FocusKind kind))
+            return false;
+
+        switch (kind)
+        {
+            // 맨손 채집 노드 (풀 등) — G키로 즉시 채집
+            case FocusKind.HandPick:
+                hit.collider.GetComponentInParent<ResourceNode>()
+                    .HandPick(new DamageContext(gameObject, hit.point, 0, "Hand", ActionType.Hand));
+                return true;
+
+            case FocusKind.Pickup:
+                if (!TryGetPickupCandidate(hit.collider, out PickupCandidate candidate)) return false;
+                PickupWorldItem(candidate);
+                return true;
+
+            default:
+                return false; // 요리는 G가 아니라 우클릭(TryCookAtBonfire)
+        }
+    }
+
+    /// <summary>
+    /// 화면 중앙 레이에 걸린 것 중 가장 가까운 줍기/상호작용 대상을 찾는다.
+    /// 대상이 아닌 트리거(스테이션 근접 범위 등)와 자기 캐릭터 콜라이더는 통과하고, 대상이 아닌 실제 물체(벽·지형)에 막히면 멈춘다.
+    /// 포커스 표시와 G키 줍기가 같은 판정을 써서 점이 켜진 대상이 곧 주워지는 대상이 되도록 한다.
+    /// </summary>
+    private bool TryGetFocusedTarget(out RaycastHit targetHit, out FocusKind kind)
+    {
+        targetHit = default;
+        kind = FocusKind.None;
+
         Camera camera = Camera.main;
         if (camera == null) return false;
 
         Ray ray = camera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        if (!Physics.Raycast(ray, out RaycastHit hit, pickupRadius, pickupLayer, QueryTriggerInteraction.Collide))
-            return false;
+        int count = Physics.RaycastNonAlloc(ray, focusHits, focusRange, pickupLayer, QueryTriggerInteraction.Collide);
+        Array.Sort(focusHits, 0, count, RaycastDistanceComparer.Instance);
 
-        // 맨손 채집 노드 (풀 등) — G키로 즉시 채집
-        ResourceNode node = hit.collider.GetComponentInParent<ResourceNode>();
-        if (node != null && node.IsHandPickable)
+        for (int i = 0; i < count; i++)
         {
-            node.HandPick(new DamageContext(gameObject, hit.point, 0, "Hand", ActionType.Hand));
-            return true;
+            RaycastHit hit = focusHits[i];
+            Collider col = hit.collider;
+            if (col == null) continue;
+
+            // 자기 캐릭터(1인칭 뷰모델 포함) 콜라이더는 무시
+            if (col.transform.IsChildOf(transform)) continue;
+
+            kind = ClassifyFocus(col);
+            if (kind != FocusKind.None)
+            {
+                targetHit = hit;
+                return true;
+            }
+
+            if (!col.isTrigger) return false; // 벽/지형 등 실제 물체에 막힘
         }
 
-        if (!TryGetPickupCandidate(hit.collider, out PickupCandidate candidate))
-            return false;
+        return false;
+    }
 
-        PickupWorldItem(candidate);
-        return true;
+    private FocusKind ClassifyFocus(Collider col)
+    {
+        if (TryGetPickupCandidate(col, out _))
+            return FocusKind.Pickup;
+
+        ResourceNode node = col.GetComponentInParent<ResourceNode>();
+        if (node != null && node.IsHandPickable)
+            return FocusKind.HandPick;
+
+        BonfireCooker bonfire = col.GetComponentInParent<BonfireCooker>();
+        if (bonfire != null && bonfire.CanCookFromInventory(this))
+            return FocusKind.Cook;
+
+        return FocusKind.None;
+    }
+
+    private sealed class RaycastDistanceComparer : IComparer<RaycastHit>
+    {
+        public static readonly RaycastDistanceComparer Instance = new();
+        public int Compare(RaycastHit a, RaycastHit b) => a.distance.CompareTo(b.distance);
     }
 
     private void TryPickupNearest()
@@ -998,17 +1057,18 @@ public class PlayerInventory : MonoBehaviour
     {
         if (actionType == ActionType.Build)
         {
+            // 철거는 StructureSync를 거친다 (멀티에서는 호스트가 확정해 모든 피어에서 사라진다)
             Structure structure = hit.collider.GetComponentInParent<Structure>();
             if (structure != null)
             {
-                if (!structure.CanDemolish()) return false;
-                if (apply) structure.Demolish();
+                if (!StructureSync.CanDemolish(structure.gameObject)) return false;
+                if (apply) StructureSync.Demolish(structure.gameObject);
                 return true;
             }
             Item placedItem = hit.collider.GetComponentInParent<Item>();
             if (placedItem != null && placedItem.ItemDataSO != null && placedItem.ItemDataSO.itemType == ItemType.Structure)
             {
-                if (apply) Destroy(placedItem.gameObject);
+                if (apply) StructureSync.Demolish(placedItem.gameObject);
                 return true;
             }
         }

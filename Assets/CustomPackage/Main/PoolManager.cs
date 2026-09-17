@@ -53,6 +53,9 @@ public sealed class PoolManager : CoreManager
         // 원본 프리팹
         private readonly GameObject _prefab;
 
+        // 이 풀의 Addressable 주소
+        public string Address { get; }
+
         // 풀 루트 트랜스폼
         private readonly Transform _root;
 
@@ -79,6 +82,7 @@ public sealed class PoolManager : CoreManager
         {
             _prefab = prefab;
             _onDestroyed = onDestroyed;
+            Address = address;
 
             _root = new GameObject($"Pool_{address}").transform;
             _root.SetParent(parent, false);
@@ -266,6 +270,16 @@ public sealed class PoolManager : CoreManager
     }
 
     #endregion
+
+    /// <summary>
+    /// 풀에서 꺼낸 인스턴스의 Addressable 주소를 반환합니다. 풀 소속이 아니면 null.
+    /// (네트워크로 "같은 프리팹을 스폰하라"고 전달할 때 사용)
+    /// </summary>
+    public string GetAddress(GameObject go)
+    {
+        if (go == null) return null;
+        return _instanceToPool.TryGetValue(go, out var pool) && pool != null ? pool.Address : null;
+    }
 
     #region Despawn
 
