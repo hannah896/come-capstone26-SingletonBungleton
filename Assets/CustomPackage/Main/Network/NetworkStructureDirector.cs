@@ -11,6 +11,8 @@ public struct StructureNetState : INetworkStruct
     public int ItemHash;
     public Vector3 Position;
     public Quaternion Rotation;
+    // Vector3.zero는 일반 설치(프리팹 기본 스케일), 양수 값은 저장에서 복원한 스케일이다.
+    public Vector3 Scale;
 
     // 요리솥 전용: 요리 중인지
     public NetworkBool IsCooking;
@@ -72,6 +74,8 @@ public class NetworkStructureDirector : NetworkBehaviour
     private readonly Dictionary<string, ItemDataSO> _itemCache = new();
     private readonly HashSet<string> _loadingKeys = new();
     private readonly HashSet<string> _failedKeys = new(); // 로드 실패한 키 — 매 프레임 재시도하지 않는다
+    // 불러오기 직후 호스트 뷰가 생성되면 실제 보관함에 적용할 저장 상태
+    private readonly Dictionary<int, StructureSaveData> _pendingRestores = new();
 
     private readonly HashSet<int> _seenIds = new();
     private readonly List<int> _removeBuffer = new();
@@ -98,6 +102,8 @@ public class NetworkStructureDirector : NetworkBehaviour
         Instance = this;
         _changes = GetChangeDetector(ChangeDetector.Source.SimulationState);
         _dirty = true;
+        if (HasStateAuthority)
+            NetworkSaveCoordinator.RestoreHostStructures();
     }
 
     public override void Despawned(NetworkRunner runner, bool hasState)
@@ -203,6 +209,8 @@ public class NetworkStructureDirector : NetworkBehaviour
         }
 
         GameObject root = Instantiate(itemData.placementPrefab, state.Position, state.Rotation);
+        if (state.Scale.x > 0f && state.Scale.y > 0f && state.Scale.z > 0f)
+            root.transform.localScale = state.Scale;
         PlacedStructure placed = Extensions.GetOrAddComponent<PlacedStructure>(root);
         placed.NetworkId = id;
         placed.ItemKey = key;
@@ -213,6 +221,20 @@ public class NetworkStructureDirector : NetworkBehaviour
 
         if (HasStateAuthority)
         {
+            if (_pendingRestores.TryGetValue(id, out StructureSaveData saved))
+            {
+                root.transform.localScale = saved.scale;
+                if (saved.slotCount > 0)
+                {
+                    if (view.Storage == null)
+                        throw new System.InvalidOperationException("저장된 보관함 구조물에 StorageStation이 없습니다.");
+                    await view.Storage.RestoreSlotsAsync(saved.slotCount, saved.slots);
+                }
+                if (saved.isCooking && view.Pot != null)
+                    view.Pot.TryStartCooking();
+                _pendingRestores.Remove(id);
+            }
+
             // 호스트: 실제 보관함/요리솥이 원본 — 바뀔 때마다 테이블에 기록한다
             if (view.Storage != null)
             {
@@ -366,6 +388,111 @@ public class NetworkStructureDirector : NetworkBehaviour
             if (pair.Value.ItemHash == itemHash) return true;
         }
         return false;
+    }
+
+    #endregion
+
+    #region 저장 / 불러오기
+
+    public List<StructureSaveData> CaptureSaveData()
+    {
+        if (!HasStateAuthority)
+            throw new System.InvalidOperationException("호스트만 공유 건축물 상태를 저장할 수 있습니다.");
+
+        var result = new List<StructureSaveData>(Structures.Count);
+        foreach (KeyValuePair<int, StructureNetState> pair in Structures)
+        {
+            string itemKey = NetworkItemKeys.Resolve(ItemKeyNames, pair.Value.ItemHash);
+            if (string.IsNullOrEmpty(itemKey) || !_itemCache.TryGetValue(itemKey, out ItemDataSO itemData) || itemData == null ||
+                !_views.TryGetValue(pair.Key, out View view) || view.Root == null || view.Loading || view.Failed)
+                throw new System.InvalidOperationException("공유 건축물을 준비 중입니다. 잠시 뒤 다시 저장해 주세요.");
+
+            StorageStation storage = view.Storage;
+            result.Add(new StructureSaveData
+            {
+                id = pair.Key.ToString(),
+                sourceItem = ItemSaveCatalog.Create(itemData, 1),
+                position = pair.Value.Position,
+                rotation = pair.Value.Rotation,
+                scale = view.Root.transform.localScale,
+                slotCount = storage != null ? storage.SlotCount : 0,
+                slots = storage != null ? storage.CaptureSlots() : new List<ItemStackSaveData>(),
+                isCooking = view.Pot != null && view.Pot.IsCooking
+            });
+        }
+        result.Sort((left, right) => string.CompareOrdinal(left.id, right.id));
+        return result;
+    }
+
+    public void RestoreSaveData(List<StructureSaveData> savedStructures)
+    {
+        if (!HasStateAuthority)
+            throw new System.InvalidOperationException("호스트만 공유 건축물 상태를 복원할 수 있습니다.");
+        if (savedStructures == null || savedStructures.Count > StructureCapacity)
+            throw new System.InvalidOperationException("저장된 공유 건축물 수가 네트워크 용량을 초과합니다.");
+
+        int slotTotal = 0;
+        var names = new Dictionary<int, string>();
+        foreach (StructureSaveData saved in savedStructures)
+        {
+            if (saved == null || saved.sourceItem == null || saved.slots == null || saved.slotCount > SlotKeyScale)
+                throw new System.InvalidOperationException("저장된 공유 건축물 데이터가 올바르지 않습니다.");
+            RegisterSavedKey(saved.sourceItem.itemKey, names);
+            slotTotal += saved.slots.Count;
+            foreach (ItemStackSaveData slot in saved.slots)
+                RegisterSavedKey(slot.itemKey, names);
+        }
+        if (slotTotal > SlotCapacity || names.Count > ItemNameCapacity)
+            throw new System.InvalidOperationException("저장된 공유 건축물 내용이 네트워크 용량을 초과합니다.");
+
+        foreach (View view in _views.Values) DestroyView(view);
+        _views.Clear();
+        _pendingRestores.Clear();
+        Structures.Clear();
+        StorageSlots.Clear();
+        ItemKeyNames.Clear();
+        LastStructureId = 0;
+
+        for (int index = 0; index < savedStructures.Count; index++)
+        {
+            StructureSaveData saved = savedStructures[index];
+            int id = index + 1;
+            if (!NetworkItemKeys.TryRegister(ItemKeyNames, saved.sourceItem.itemKey, IsItemHashUsed, out int structureHash))
+                throw new System.InvalidOperationException($"건축물 키를 네트워크에 등록할 수 없습니다: {saved.sourceItem.itemKey}");
+
+            Structures.Set(id, new StructureNetState
+            {
+                ItemHash = structureHash,
+                Position = saved.position,
+                Rotation = saved.rotation,
+                Scale = saved.scale,
+                IsCooking = saved.isCooking
+            });
+            foreach (ItemStackSaveData slot in saved.slots)
+            {
+                if (!NetworkItemKeys.TryRegister(ItemKeyNames, slot.itemKey, IsItemHashUsed, out int itemHash))
+                    throw new System.InvalidOperationException($"보관함 아이템 키를 네트워크에 등록할 수 없습니다: {slot.itemKey}");
+                StorageSlots.Set(SlotKey(id, slot.slotIndex), new StorageSlotNetState
+                {
+                    ItemHash = itemHash,
+                    Count = slot.count
+                });
+            }
+            _pendingRestores[id] = saved;
+            LastStructureId = id;
+        }
+        _dirty = true;
+    }
+
+    private static void RegisterSavedKey(string itemKey, Dictionary<int, string> names)
+    {
+        if (string.IsNullOrEmpty(itemKey))
+            throw new System.InvalidOperationException("저장된 네트워크 아이템 키가 비어 있습니다.");
+        int hash = NetworkItemKeys.Hash(itemKey);
+        if (hash == 0 || itemKey.Length > NetworkItemKeys.MaxKeyLength ||
+            (names.TryGetValue(hash, out string existing) && existing != itemKey))
+            throw new System.InvalidOperationException($"저장된 네트워크 아이템 키가 올바르지 않습니다: {itemKey}");
+        names[hash] = itemKey;
     }
 
     #endregion
@@ -551,7 +678,7 @@ public class NetworkStructureDirector : NetworkBehaviour
 
         NetworkPlayerData data = Main.Network != null ? Main.Network.GetPlayerData(requester) : null;
         if (data != null)
-            data.Rpc_GrantPickup(itemKey, amount);
+            data.Rpc_GrantPickup(itemKey, amount, string.Empty, -1f, -1f);
         else
             WorldItemSync.SpawnDroppedItem(itemKey, amount, fallbackPosition);
     }

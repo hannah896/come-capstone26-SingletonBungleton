@@ -4,6 +4,8 @@ using UnityEngine;
 public class RecipeDataSO : ScriptableObject
 {
     [Header("=== 기본 정보 ===")]
+    public string recipeID;
+    public string PersistentId => string.IsNullOrWhiteSpace(recipeID) ? name : recipeID;
     public string recipeName;
 
     [Header("=== 카테고리 ===")]

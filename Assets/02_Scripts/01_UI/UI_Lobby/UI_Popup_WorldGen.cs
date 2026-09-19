@@ -92,6 +92,7 @@ public class UI_Popup_WorldGen : UI_Popup
 
     private void OnClickGenerate()
     {
+        Main.Save.BeginNewGame();
         WorldBranchSetting branch = BranchOptions[_branchIndex];
         WorldLoopSetting loop = LoopOptions[_loopIndex];
 

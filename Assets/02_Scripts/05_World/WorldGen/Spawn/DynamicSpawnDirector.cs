@@ -99,7 +99,8 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
 
     private void OnGameUpdate(float deltaTime)
     {
-        if (!_isInitialized || !Monster.IsSimulatedPeer)
+        if (!_isInitialized || !Monster.IsSimulatedPeer ||
+            (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)))
             return;
 
         _targetRefreshCooldown -= deltaTime;

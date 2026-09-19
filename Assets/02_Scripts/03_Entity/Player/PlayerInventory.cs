@@ -7,7 +7,7 @@ using UnityEngine.InputSystem;
 /// 플레이어가 직접 들고 있는 인벤토리입니다.
 /// 플레이어 단위 인벤토리 슬롯과 장착 슬롯을 관리합니다.
 /// </summary>
-public class PlayerInventory : MonoBehaviour
+public partial class PlayerInventory : MonoBehaviour
 {
     [Header("인벤토리 설정")]
     [SerializeField] private int slotCount = 20;
@@ -70,11 +70,13 @@ public class PlayerInventory : MonoBehaviour
     {
         public readonly ItemDataSO ItemData;
         public readonly int Amount;
+        public readonly ItemStackSaveData State;
 
-        public PendingDrop(ItemDataSO itemData, int amount)
+        public PendingDrop(ItemDataSO itemData, int amount, ItemStackSaveData state)
         {
             ItemData = itemData;
             Amount = amount;
+            State = state;
         }
     }
 
@@ -111,6 +113,7 @@ public class PlayerInventory : MonoBehaviour
 
     public void Tick()
     {
+        if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
         CheckExpirations();
         TickEquippedTorchDurability();
 
@@ -257,6 +260,7 @@ public class PlayerInventory : MonoBehaviour
     /// 1개 먹어서 허기/체력/Ego를 회복하고 소모한다.</summary>
     public bool EatFromSlot(int slotIndex)
     {
+        if (Application.isPlaying && Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return false;
         if (!IsValidSlot(slotIndex)) return false;
 
         ItemDataSO itemData = slots[slotIndex];
@@ -284,6 +288,7 @@ public class PlayerInventory : MonoBehaviour
     /// <summary>슬롯의 아이템 전체(스택 통째로)를 플레이어 앞 땅에 드롭한다.</summary>
     public bool DropFromSlot(int slotIndex)
     {
+        if (Application.isPlaying && Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return false;
         if (!IsValidSlot(slotIndex)) return false;
 
         ItemDataSO itemData = slots[slotIndex];
@@ -292,11 +297,12 @@ public class PlayerInventory : MonoBehaviour
 
         // 스폰 대기 중에 플레이어가 파괴될 수 있으므로 위치를 미리 계산해 둔다.
         Vector3 dropPosition = GetDropOriginPosition() + transform.forward * 1.5f;
+        var saved = CaptureSlot(slotIndex);
 
         ClearSlot(slotIndex);
         OnInventoryChanged?.Invoke();
 
-        SpawnDroppedItem(itemData, amount, dropPosition);
+        SpawnDroppedItem(itemData, amount, dropPosition, saved);
         return true;
     }
 
@@ -316,8 +322,9 @@ public class PlayerInventory : MonoBehaviour
             ItemDataSO equipped = GetEquippedItem(equipSlot);
             if (equipped == null) continue;
 
+            var saved = CaptureEquipment(equipSlot);
             if (ClearEquippedItem(equipSlot))
-                pending.Add(new PendingDrop(equipped, 1));
+                pending.Add(new PendingDrop(equipped, 1, saved));
         }
 
         // 인벤토리 슬롯 전체
@@ -327,8 +334,9 @@ public class PlayerInventory : MonoBehaviour
             int amount = stackCounts[i];
             if (itemData == null || amount <= 0) continue;
 
+            var saved = CaptureSlot(i);
             ClearSlot(i);
-            pending.Add(new PendingDrop(itemData, amount));
+            pending.Add(new PendingDrop(itemData, amount, saved));
         }
 
         if (pending.Count <= 0) return 0;
@@ -346,14 +354,14 @@ public class PlayerInventory : MonoBehaviour
             Vector2 offset = UnityEngine.Random.insideUnitCircle * deathDropRadius;
             Vector3 position = origin + new Vector3(offset.x, 0f, offset.y);
 
-            SpawnDroppedItem(drops[i].ItemData, drops[i].Amount, position);
+            SpawnDroppedItem(drops[i].ItemData, drops[i].Amount, position, drops[i].State);
         }
     }
 
     // 아이템 주소는 SO 이름과 같다. 멀티에서는 호스트를 거쳐 모든 피어에 같은 바닥 아이템이 생긴다.
-    private static void SpawnDroppedItem(ItemDataSO itemData, int amount, Vector3 position)
+    private static void SpawnDroppedItem(ItemDataSO itemData, int amount, Vector3 position, ItemStackSaveData saved)
     {
-        WorldItemSync.SpawnDroppedItem(itemData.name, amount, position);
+        WorldItemSync.SpawnDroppedItem(itemData.name, amount, position, saved);
     }
 
     /// <summary>드롭 아이템이 놓일 기준 지점(플레이어 발밑).</summary>
@@ -368,6 +376,7 @@ public class PlayerInventory : MonoBehaviour
 
     public bool EquipFromSlot(int slotIndex)
     {
+        if (Application.isPlaying && Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return false;
         if (!IsValidSlot(slotIndex)) return false;
 
         ItemDataSO itemData = slots[slotIndex];
@@ -406,17 +415,19 @@ public class PlayerInventory : MonoBehaviour
             }
         }
 
+        var nextState = CaptureSlot(slotIndex);
+        var previousState = CaptureEquipment(itemData.equipSlot);
         RemoveOneFromSlot(slotIndex);
 
         // 기존 장착 아이템을 인벤토리로 돌려보내기
         if (currentEquipped != null)
-            TryAddItemToSlots(currentEquipped, 1, out _);
+            TryAddItemToSlots(currentEquipped, 1, out _, previousState.durability, previousState.spoilRemainingSeconds);
 
         // 교체 시 기존 아이템 해제 이벤트 명시적으로 발생
         if (currentEquipped != null && currentEquipped != itemData)
             OnEquippedItemChanged?.Invoke(itemData.equipSlot, null); // 해제 알림
 
-        SetEquippedItem(itemData.equipSlot, itemData);
+        SetEquippedItem(itemData.equipSlot, itemData, nextState.durability, nextState.spoilRemainingSeconds);
         OnInventoryChanged?.Invoke();
         return true;
     }
@@ -452,6 +463,7 @@ public class PlayerInventory : MonoBehaviour
 
     public bool EquipItem(ItemDataSO itemData)
     {
+        if (Application.isPlaying && Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return false;
         if (itemData == null || itemData.equipSlot == EquipSlot.None) return false;
 
         for (int i = 0; i < slots.Count; i++)
@@ -465,6 +477,7 @@ public class PlayerInventory : MonoBehaviour
 
     public bool UnequipItem(EquipSlot equipSlot)
     {
+        if (Application.isPlaying && Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return false;
         if (equipSlot == EquipSlot.None) return false;
 
         ItemDataSO itemData = GetEquippedItem(equipSlot);
@@ -478,8 +491,9 @@ public class PlayerInventory : MonoBehaviour
         }
 
         // 공간 확인 후 한 번에 처리
+        var saved = CaptureEquipment(equipSlot);
         SetEquippedItem(equipSlot, null);
-        TryAddItemToSlots(itemData, 1, out _);
+        TryAddItemToSlots(itemData, 1, out _, saved.durability, saved.spoilRemainingSeconds);
         OnInventoryChanged?.Invoke();
         return true;
     }
@@ -556,6 +570,8 @@ public class PlayerInventory : MonoBehaviour
 
         while (expirationTimestamps.Count < slotCount)
             expirationTimestamps.Add(0f);
+        while (slotDurabilities.Count < slotCount)
+            slotDurabilities.Add(-1f);
 
         // 초과 슬롯은 뒤에서 제거
         while (slots.Count > slotCount)
@@ -566,6 +582,8 @@ public class PlayerInventory : MonoBehaviour
 
         while (expirationTimestamps.Count > slotCount)
             expirationTimestamps.RemoveAt(expirationTimestamps.Count - 1);
+        while (slotDurabilities.Count > slotCount)
+            slotDurabilities.RemoveAt(slotDurabilities.Count - 1);
 
         // 기존 데이터 보존: stackCount가 0이면 maxStack 기준으로 복원
         for (int i = 0; i < slotCount; i++)
@@ -590,7 +608,7 @@ public class PlayerInventory : MonoBehaviour
         return Mathf.Clamp(quickSlotCount, 1, slots.Count);
     }
 
-    private void FillExistingStacks(ItemDataSO itemData, ref int remainingAmount)
+    private void FillExistingStacks(ItemDataSO itemData, ref int remainingAmount, float spoilRemainingSeconds = -1f)
     {
         int maxStack = Mathf.Max(1, itemData.maxStack);
 
@@ -612,7 +630,7 @@ public class PlayerInventory : MonoBehaviour
 
             if (itemData.expirationTime > 0f)
             {
-                float newDeadline = Time.time + itemData.expirationTime * 60f;
+                float newDeadline = SavePlayClock.Now + (spoilRemainingSeconds < 0f ? itemData.expirationTime * 60f : spoilRemainingSeconds);
                 expirationTimestamps[i] = expirationTimestamps[i] > 0f
                     ? Mathf.Min(expirationTimestamps[i], newDeadline)
                     : newDeadline;
@@ -620,13 +638,14 @@ public class PlayerInventory : MonoBehaviour
         }
     }
 
-    private bool TryAddItemToSlots(ItemDataSO itemData, int amount, out int remainingAmount)
+    private bool TryAddItemToSlots(ItemDataSO itemData, int amount, out int remainingAmount,
+        float durability = -1f, float spoilRemainingSeconds = -1f)
     {
         remainingAmount = amount;
         if (itemData == null || amount <= 0) return false;
 
         if (itemData.isStackable)
-            FillExistingStacks(itemData, ref remainingAmount);
+            FillExistingStacks(itemData, ref remainingAmount, spoilRemainingSeconds);
 
         while (remainingAmount > 0)
         {
@@ -640,8 +659,10 @@ public class PlayerInventory : MonoBehaviour
 
             slots[emptyIndex] = itemData;
             stackCounts[emptyIndex] = stackSize;
+            slotDurabilities[emptyIndex] = itemData.hasDurability
+                ? (durability < 0f ? itemData.maxDurability : durability) : -1f;
             expirationTimestamps[emptyIndex] = itemData.expirationTime > 0f
-                ? Time.time + itemData.expirationTime * 60f
+                ? SavePlayClock.Now + (spoilRemainingSeconds < 0f ? itemData.expirationTime * 60f : spoilRemainingSeconds)
                 : 0f;
             remainingAmount -= stackSize;
         }
@@ -677,6 +698,7 @@ public class PlayerInventory : MonoBehaviour
         slots[index] = null;
         stackCounts[index] = 0;
         expirationTimestamps[index] = 0f;
+        slotDurabilities[index] = -1f;
     }
 
     /// <summary>소비기한이 지난 스택을 rotItemSO로 전환한다.</summary>
@@ -688,7 +710,7 @@ public class PlayerInventory : MonoBehaviour
         for (int i = 0; i < slots.Count; i++)
         {
             if (slots[i] == null || stackCounts[i] <= 0) continue;
-            if (expirationTimestamps[i] <= 0f || Time.time < expirationTimestamps[i]) continue;
+            if (expirationTimestamps[i] <= 0f || SavePlayClock.Now < expirationTimestamps[i]) continue;
 
             int rotAmount = stackCounts[i];
             ClearSlot(i);
@@ -709,10 +731,21 @@ public class PlayerInventory : MonoBehaviour
         torch?.DrainDurabilityOverTime(Time.deltaTime);
     }
 
-    private void SetEquippedItem(EquipSlot equipSlot, ItemDataSO itemData)
+    private void SetEquippedItem(EquipSlot equipSlot, ItemDataSO itemData,
+        float durability = -1f, float spoilRemainingSeconds = -1f)
     {
-        if (itemData == null)
-            UnsubscribeEquippedItemInstance(equipSlot);
+        UnsubscribeEquippedItemInstance(equipSlot);
+        equippedSpoilDeadlines.Remove(equipSlot);
+        if (itemData != null)
+        {
+            var runtime = ItemData.CreateFromSO(itemData) as ItemData_Equipable;
+            if (runtime != null)
+            {
+                runtime.RestoreDurability(durability);
+                RegisterEquippedItemInstance(equipSlot, runtime);
+            }
+            equippedSpoilDeadlines[equipSlot] = spoilRemainingSeconds < 0f ? -1f : SavePlayClock.Now + spoilRemainingSeconds;
+        }
 
         switch (equipSlot)
         {
@@ -919,10 +952,12 @@ public class PlayerInventory : MonoBehaviour
         if (WorldItemSync.TryRequestPickup(this, worldItem))
             return;
 
-        bool added = AddItem(candidate.ItemData, candidate.Amount, out int remainingAmount);
+        var saved = worldItem != null ? worldItem.CaptureSaveData() : null;
+        bool added = AddItem(candidate.ItemData, candidate.Amount, out int remainingAmount,
+            saved?.durability ?? -1f, saved?.spoilRemainingSeconds ?? -1f);
         ApplyPickupResult(candidate, remainingAmount);
 
-        if (added || remainingAmount <= 0)
+        if (remainingAmount <= 0)
             WorldItemSync.RemovePickedItem(worldItem);
     }
 

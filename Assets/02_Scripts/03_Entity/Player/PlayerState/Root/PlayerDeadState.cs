@@ -50,12 +50,14 @@ public class PlayerDeadState : PlayerRootStateBase
             UI_Popup_Pause.CloseIfOpen();
 
         // 소지품 전량 드롭 — 부활하면 빈손으로 시작한다.
-        int droppedCount = Entity.Inventory != null ? Entity.Inventory.DropAll() : 0;
+        int droppedCount = Main.Save != null && Main.Save.IsRestoring
+            ? 0 : Entity.Inventory != null ? Entity.Inventory.DropAll() : 0;
         if (droppedCount > 0)
             Debug.Log($"[State] Dead — 소지품 {droppedCount}스택 드롭");
 
-        _prevGameState = GameScene.GameState;
-        _prevProcessing = GameScene.GameProcessing;
+        bool restoring = Main.Save != null && Main.Save.IsRestoring;
+        _prevGameState = restoring ? GameState.Playing : GameScene.GameState;
+        _prevProcessing = restoring ? GameProcessing.Processing : GameScene.GameProcessing;
         _hasNotifiedGameOver = true;
 
         // 게임 오버 허브에 통지 — GameProcessing이 Stopping이 되고 GameEvents.OnGameOver가 발행된다.

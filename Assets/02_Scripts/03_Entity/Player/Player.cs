@@ -44,6 +44,7 @@ public class Player : MonoBehaviour, IDamageable
     public string CurrentSubStateName => machine?.CurrentSubStateName ?? "None";
     public bool IsGrounded => motor != null && motor.IsGrounded;
     public bool IsLocalPlayer => IsLocalPlayerObject();
+    public bool IsSaveReady { get; private set; }
 
     /// <summary>
     /// 사망 처리 중인지. 스탯(HP 0)이 아니라 <b>상태</b> 기준이라,
@@ -116,6 +117,8 @@ public class Player : MonoBehaviour, IDamageable
             fpCameraController?.InitBodyRenderers(transform);
             var remoteLocomotionState = new PlayerLocomotionState(machine);
             machine.Init(remoteLocomotionState);
+            await UniTask.WaitUntil(() => stat != null, cancellationToken: token);
+            IsSaveReady = true;
             return;
         }
 
@@ -152,6 +155,8 @@ public class Player : MonoBehaviour, IDamageable
         // 초기 상태: Locomotion
         var locomotionState = new PlayerLocomotionState(machine);
         machine.Init(locomotionState);
+        await UniTask.WaitUntil(() => stat != null, cancellationToken: token);
+        IsSaveReady = true;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[Player] Started - Locomotion State initialized");
@@ -177,6 +182,7 @@ public class Player : MonoBehaviour, IDamageable
 
     private void OnLoopUpdate(float deltaTime)
     {
+        if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
         if (motor == null || machine == null) return;
 
         // 원격 플레이어(입력 권한 없음)는 로컬 시뮬레이션을 돌리지 않는다.
@@ -216,6 +222,7 @@ public class Player : MonoBehaviour, IDamageable
 
     private void OnLoopGameUpdate(float deltaTime)
     {
+        if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
         // 원격 플레이어는 로컬 시뮬레이션을 돌리지 않는다(NetworkPlayerSync가 위치 복제).
         if (!IsLocalPlayerObject())
             return;
@@ -229,11 +236,26 @@ public class Player : MonoBehaviour, IDamageable
     /// </summary>
     public void OnActionAnimationEvent()
     {
+        if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
         if (machine?.CurrentState is PlayerActionState action)
             action.OnActionEvent();
     }
 
     #region Revive
+
+    /// <summary>저장 복구는 사망 연출/아이템 드롭을 다시 실행하지 않는다.</summary>
+    public void RefreshStateAfterLoad()
+    {
+        inputData?.SuppressAllInputs();
+        motor?.ResetVelocity();
+        if (stat.IsDead)
+        {
+            // 사망 중 저장은 부활 대기 상태로 복원한다. 진입 시 드롭은 별도로 차단된다.
+            machine.ChangeState(new PlayerDeadState(machine, wasHit: false));
+        }
+        else
+            machine.ChangeState(new PlayerLocomotionState(machine));
+    }
 
     // 부활 지점의 지면을 찾을 때 사용하는 레이캐스트 파라미터
     private const string GroundLayerName = "Ground";
@@ -338,6 +360,7 @@ public class Player : MonoBehaviour, IDamageable
 
     public void ApplyDamage(DamageContext damageCtx)
     {
+        if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
         if (!CanDamage(damageCtx)) return;
 
         // 원격 캐릭터(호스트의 몬스터가 클라 플레이어를 때린 경우): HP는 소유자 피어에 있으므로 그쪽으로 넘긴다.
@@ -349,6 +372,7 @@ public class Player : MonoBehaviour, IDamageable
     /// <summary>도트 데미지를 건다. (몬스터 장판/투사체 등)</summary>
     public void ApplyDot(float damagePerTick, float duration, float tickInterval = 1f)
     {
+        if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
         if (!IsAlive) return;
         if (TryForwardToOwner(sync => sync.ForwardDot(damagePerTick, duration, tickInterval))) return;
 
@@ -358,6 +382,7 @@ public class Player : MonoBehaviour, IDamageable
     /// <summary>이 피어의 스탯에 데미지를 적용한다. 네트워크로 전달받은 데미지도 여기로 들어온다.</summary>
     public void ApplyLocalDamage(int amount)
     {
+        if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
         if (stat == null || stat.IsDead || amount <= 0) return;
         // TakeDamage → OnDamaged → HandleDamaged 로 PlayerHurtState 전환까지 이어진다.
         stat.TakeDamage(amount);
@@ -366,6 +391,7 @@ public class Player : MonoBehaviour, IDamageable
     /// <summary>이 피어의 스탯에 도트 데미지를 건다. 네트워크로 전달받은 도트도 여기로 들어온다.</summary>
     public void ApplyLocalDot(float damagePerTick, float duration, float tickInterval)
     {
+        if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
         if (stat == null || stat.IsDead) return;
         stat.ApplyDot(damagePerTick, duration, tickInterval);
     }

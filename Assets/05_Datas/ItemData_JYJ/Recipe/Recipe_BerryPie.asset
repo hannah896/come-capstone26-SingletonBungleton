@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 64f7e092734e07b468c75b5208bc1759, type: 3}
   m_Name: Recipe_BerryPie
   m_EditorClassIdentifier:
+  recipeID: Recipe_BerryPie
   recipeName: 베리 파이
   category: 8
   requiredStation: 3

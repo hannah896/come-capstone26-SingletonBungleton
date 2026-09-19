@@ -85,7 +85,8 @@ public class WorldSimulationManager : MonoBehaviour
 
     private void HandlePhaseChanged(TimePhase newPhase)
     {
-        if (!_isInitialized || _worldClock == null) return;
+        if (!_isInitialized || _worldClock == null ||
+            (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing))) return;
         float currentTime = _worldClock.TotalInGameSeconds;
 
         // 현재 플레이어 주변에 로드된 청크들에 접근

@@ -54,6 +54,7 @@ public class Main : MonoBehaviour
     public static CommandManager Command => Instance?._command;
     public static SimulationManager Simulation => Instance?._simulation;
     public static NetworkManager Network => Instance?._network;
+    public static SaveManager Save => Instance?._save;
 
     #endregion
 
@@ -87,6 +88,7 @@ public class Main : MonoBehaviour
     private readonly CommandManager _command = new();
     private readonly SimulationManager _simulation = new();
     private readonly NetworkManager _network = new();
+    private readonly SaveManager _save = new();
 
     // Content Managers
     private readonly GameManager _game = new();
@@ -202,6 +204,7 @@ public class Main : MonoBehaviour
 
         Loop.Update(UnityEngine.Time.deltaTime);
         Loop.GameUpdate(UnityEngine.Time.deltaTime);
+        if (_save.IsInitialized) _save.Tick();
     }
 
     private void LateUpdate()

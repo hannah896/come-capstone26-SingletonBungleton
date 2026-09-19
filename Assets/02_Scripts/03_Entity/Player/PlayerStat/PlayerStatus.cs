@@ -194,5 +194,27 @@ public class PlayerStatus
     public void RestoreEgo(float amount)
         => CurrentEgo = Mathf.Clamp(CurrentEgo + amount, 0f, MaxEgo);
 
+    public PlayerStatusSaveData CaptureSaveData() => new()
+    {
+        hp = CurrentHp, hunger = CurrentHunger, ego = CurrentEgo,
+        temperature = Temperature, wetness = Wetness,
+        dotDamagePerTick = dotDamagePerTick, dotTickInterval = dotTickInterval,
+        dotTickTimer = dotTickTimer, dotTicksLeft = dotTicksLeft
+    };
+
+    public void RestoreSaveData(PlayerStatusSaveData saved)
+    {
+        if (saved == null) throw new ArgumentNullException(nameof(saved));
+        CurrentHp = Mathf.Clamp(saved.hp, 0f, MaxHp);
+        CurrentHunger = Mathf.Clamp(saved.hunger, 0f, MaxHunger);
+        CurrentEgo = Mathf.Clamp(saved.ego, 0f, MaxEgo);
+        Temperature = saved.temperature;
+        Wetness = Mathf.Clamp(saved.wetness, 0f, MaxWetness);
+        dotDamagePerTick = Mathf.Max(0f, saved.dotDamagePerTick);
+        dotTickInterval = Mathf.Max(0.01f, saved.dotTickInterval);
+        dotTickTimer = Mathf.Clamp(saved.dotTickTimer, 0f, dotTickInterval);
+        dotTicksLeft = Mathf.Max(0, saved.dotTicksLeft);
+    }
+
     public bool IsDead => !Invincible && CurrentHp <= 0f;
 }

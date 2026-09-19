@@ -16,6 +16,10 @@ public partial class NetworkPlayerData : NetworkBehaviour
     // 이 데이터를 소유한 플레이어 참조
     [Networked] public PlayerRef OwnerRef { get; set; }
 
+    // 세션의 PlayerRef와 별개로 앱 재실행 후에도 유지되는 저장 프로필 ID.
+    [Networked] public NetworkString<_64> PersistentPlayerId { get; set; }
+    [Networked] public NetworkBool ProfileRejected { get; set; }
+
     // 플레이어 이름 (바이트 버퍼로 네트워크 동기화)
     [Networked, Capacity(32)] public NetworkArray<byte> NameBuffer => default;
 
@@ -99,7 +103,7 @@ public partial class NetworkPlayerData : NetworkBehaviour
         // (호스트 자신의 값은 스폰 시 onBeforeSpawned에서 이미 기록됨)
         if (HasInputAuthority && !HasStateAuthority && Main.Network != null)
         {
-            Rpc_SetProfile(Main.Network.LocalPlayerName, Main.Network.LocalCharacterIndex);
+            Rpc_SetProfile(Main.Network.LocalPlayerName, Main.Network.LocalCharacterIndex, Main.Save.LocalPlayerId);
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -129,6 +133,7 @@ public partial class NetworkPlayerData : NetworkBehaviour
     public override void FixedUpdateNetwork()
     {
         if (!HasStateAuthority || !IsMaster) return;
+        if (Main.Save != null && (Main.Save.IsCapturing || Main.Save.IsRestoring)) return;
 
         TickWorldStateHost();
 
@@ -237,10 +242,23 @@ public partial class NetworkPlayerData : NetworkBehaviour
     /// 클라이언트가 자기 이름/성별을 호스트에 등록합니다. (스폰 직후 1회)
     /// </summary>
     [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
-    private void Rpc_SetProfile(string playerName, int characterIndex)
+    private void Rpc_SetProfile(string playerName, int characterIndex, string persistentPlayerId)
     {
+        if (!System.Guid.TryParse(persistentPlayerId, out var parsed)) { ProfileRejected = true; return; }
+        string normalized = parsed.ToString("N");
+        foreach (var pair in Main.Network.GetAllPlayers())
+        {
+            if (pair.Key != OwnerRef && pair.Value != null && pair.Value.PersistentPlayerId.ToString() == normalized)
+            {
+                ProfileRejected = true;
+                Debug.LogError("동일한 저장 플레이어 ID의 중복 접속을 거부했습니다.");
+                return;
+            }
+        }
+        PersistentPlayerId = normalized;
         WriteNameInternal(playerName);
-        CharacterIndex = characterIndex;
+        PlayerSaveData saved = NetworkSaveCoordinator.FindSavedPlayer(normalized);
+        CharacterIndex = saved != null ? saved.characterIndex : characterIndex;
     }
 
     /// <summary>

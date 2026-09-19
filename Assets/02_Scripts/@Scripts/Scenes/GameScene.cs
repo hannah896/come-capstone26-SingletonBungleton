@@ -48,7 +48,8 @@ public class GameScene : SceneBase
     /// 정식 진행(Processing) 또는 테스트 씬(Testing)일 때 true.
     /// </summary>
     public static bool IsGameUpdating =>
-        GameProcessing == GameProcessing.Processing || GameProcessing == GameProcessing.Testing;
+        (GameProcessing == GameProcessing.Processing || GameProcessing == GameProcessing.Testing) &&
+        !(Main.Save?.IsRestoring ?? false) && !(Main.Save?.IsCapturing ?? false);
 
     // 인게임 HUD (플레이어 소환 후 표시 예정)
     public UI_Hud_Game UIHud { get; private set; }
@@ -69,7 +70,23 @@ public class GameScene : SceneBase
 
     public override async UniTask EnterScene(CancellationToken token)
     {
-        await StartGame();
+        try { await StartGame(); }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception e)
+        {
+            Debug.LogError($"[GameScene] 게임 준비 실패: {e}");
+            GameProcessing = GameProcessing.Stopping;
+            RecoverFailedLoadAsync(e.Message).Forget();
+        }
+    }
+
+    private static async UniTaskVoid RecoverFailedLoadAsync(string message)
+    {
+        if (Main.Network != null && Main.Network.IsInRoom) await Main.Network.LeaveRoomAsync();
+        Main.Save.EndSession();
+        await UniTask.WaitUntil(() => !Main.Scene.IsTransitioning);
+        await Main.Scene.ChangeSceneAsync("LobbyScene");
+        SaveManager.ShowError("불러오기를 완료하지 못했습니다. " + message);
     }
 
     public override void ExitScene()
@@ -89,6 +106,9 @@ public class GameScene : SceneBase
     public async UniTask StartGame()
     {
         CancellationToken token = Main.Scene.CurrentToken;
+        Main.Save.BeginSceneLoad();
+        GameProcessing = GameProcessing.Stopping;
+        await NetworkSaveCoordinator.PrepareClientRestoreAsync(token);
 
         // #1. 크래프팅 시스템 선행 생성 (플레이어 Bind보다 먼저 존재해야 함)
         // allRecipes는 Resources/CraftingManager 프리팹에 미리 구워둔 값을 쓴다 (AssetDatabase는 빌드에서 동작하지 않음).
@@ -121,15 +141,15 @@ public class GameScene : SceneBase
         await UniTask.WaitUntil(() => WorldGenManager.Instance != null, cancellationToken: token);
         await UniTask.WaitUntil(() => WorldGenManager.Instance.WorldSettings != null, cancellationToken: token);
 
-        // #2. 맵 로드/생성
-        //     - 저장된 월드 데이터가 있으면 로드
-        //     - 없으면 새 맵을 자동 생성 (WorldGen 내부에서 맵 생성 + 플레이어 소환까지 완료)
-        // TODO: 저장 시스템 구현 후 분기 조건 교체
-        bool hasSavedWorld = false;
-
-        if (hasSavedWorld)
+        // 복원 시에도 동일한 생성 파이프라인을 사용하되, 청크 배치 전에 변경분을 적용한다.
+        GameState = GameState.Player;
+        if (Main.Save.PendingLoad != null)
         {
-            // TODO: 저장된 월드 데이터 로드 후 플레이어 배치
+            WorldSaveData saved = Main.Save.PendingLoad.world;
+            WorldGenRequest.Set(saved.branch, saved.loop, saved.seed, saved.size,
+                fromHost: Main.Network != null && Main.Network.IsInRoom);
+            WorldGenRequest.Consume();
+            await WorldGenManager.Instance.GenerateWorld(saved.branch, saved.loop, saved.seed, saved.size, token);
         }
         else
         {
@@ -161,13 +181,7 @@ public class GameScene : SceneBase
                 }
                 else
                 {
-                    // 여기 도달 = 시드 공유 실패. 랜덤 시드로 생성되므로 다른 플레이어와 월드가 달라진다.
-                    Debug.LogError("[GameScene] 호스트의 월드 시드를 받지 못해 랜덤 시드로 생성합니다. " +
-                                   "다른 플레이어와 다른 월드가 됩니다.");
-
-                    await WorldGenManager.Instance.GenerateWorldFromUI(
-                        WorldBranchSetting.Default,
-                        WorldLoopSetting.Default);
+                    throw new InvalidOperationException("호스트의 월드 생성 정보를 받지 못했습니다.");
                 }
             }
             else if (WorldGenRequest.HasRequest)
@@ -186,9 +200,16 @@ public class GameScene : SceneBase
             }
         }
 
-        // 여기 도달 = 맵 생성 + 플레이어 소환 완료 → 게임 진행 시작
-        GameProcessing = GameProcessing.Processing;
-        GameState = GameState.Playing;
+        Player localPlayer = FindLocalPlayer();
+        if (localPlayer == null) throw new InvalidOperationException("플레이어를 생성하지 못했습니다.");
+        await PlayerSaveAdapter.WaitUntilReadyAsync(localPlayer, token);
+        await Main.UI.ShowHudOverlay<UI_Hud_WorldState>("UI_Hud_WorldState");
+        await NetworkSaveCoordinator.RestoreLocalPlayerAsync(localPlayer, token);
+        Main.Save.CompleteLoad();
+
+        // 모든 복원과 초기화가 끝난 뒤 입력·시간·시뮬레이션을 시작한다.
+        GameProcessing = localPlayer.IsDead ? GameProcessing.Stopping : GameProcessing.Processing;
+        GameState = localPlayer.IsDead ? GameState.Failed : GameState.Playing;
 
         // 멀티 세션이면 다른 플레이어의 접속을 토스트로 알린다.
         // (로딩 중에 토스트가 뜨지 않도록 게임 진행이 시작된 뒤에 만든다.
@@ -198,8 +219,6 @@ public class GameScene : SceneBase
             new GameObject(nameof(NetworkPlayerJoinNotice)).AddComponent<NetworkPlayerJoinNotice>();
         }
 
-        await Main.UI.ShowHudOverlay<UI_Hud_WorldState>("UI_Hud_WorldState");
-
         // TODO: 소환된 플레이어가 자신의 HUD(UI_Hud_Game)를 띄우는 단계 (다음 작업)
     }
 
@@ -207,6 +226,13 @@ public class GameScene : SceneBase
     public void FailGame()
     {
         // TODO: 게임 오버 연출 및 후처리
+    }
+
+    private static Player FindLocalPlayer()
+    {
+        foreach (var player in UnityEngine.Object.FindObjectsByType<Player>(FindObjectsSortMode.None))
+            if (player.IsLocalPlayer) return player;
+        return null;
     }
 
     #endregion

@@ -58,6 +58,7 @@ public class BonfireCooker : MonoBehaviour
     // ── 월드 드롭 요리 (트리거) ─────────────────────────────────
     private void OnTriggerEnter(Collider other)
     {
+        if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
         Item item = other.GetComponentInParent<Item>();
         if (item == null) return;
 
@@ -91,10 +92,9 @@ public class BonfireCooker : MonoBehaviour
     private async UniTaskVoid CookDropAsync(Item item, string cookedKey)
     {
         Vector3 spawnPos = item.transform.position;
+        int count = WorldItemSync.GetStackCount(item);
+        item.GetComponent<PersistentDroppedItem>()?.Unregister();
         Destroy(item.gameObject);
-
-        GameObject cooked = await Extensions.SpawnAsync(cookedKey, null);
-        if (cooked != null)
-            cooked.transform.position = spawnPos;
+        await WorldItemSync.SpawnItemAsync(cookedKey, count, spawnPos);
     }
 }

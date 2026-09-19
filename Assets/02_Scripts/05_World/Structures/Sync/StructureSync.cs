@@ -43,6 +43,7 @@ public static class StructureSync
 
         GameObject root = Object.Instantiate(itemData.placementPrefab, position, rotation);
         Extensions.GetOrAddComponent<PlacedStructure>(root).ItemKey = itemData.name;
+        Extensions.GetOrAddComponent<PersistentStructure>(root).Initialize(itemData);
     }
 
     /// <summary>망치로 부술 수 있는지. 보관함은 비어 있어야 한다.</summary>

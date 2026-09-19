@@ -25,6 +25,34 @@ public class Item : MonoBehaviour, IDisposeInitializable
 
     [System.NonSerialized]
     public ItemData itemData;  // 런타임 전용 — Awake에서 _itemSO 기반으로 생성
+    private float spoilDeadline = -1f;
+    public float SpoilRemainingSeconds => spoilDeadline < 0f ? -1f : Mathf.Max(0f, spoilDeadline - SavePlayClock.Now);
+
+    public ItemStackSaveData CaptureSaveData(int slotIndex = -1)
+    {
+        int count = itemData is IStackable stack ? stack.stackCount : stackCount;
+        return ItemSaveCatalog.Create(ItemDataSO, count, slotIndex,
+            itemData is ItemData_Equipable equipment ? equipment.CurrentDurability : -1f,
+            SpoilRemainingSeconds);
+    }
+
+    public void RestoreSaveData(ItemStackSaveData saved)
+    {
+        if (saved == null) return;
+        stackCount = Mathf.Max(1, saved.count);
+        if (itemData is IStackable stack) stack.stackCount = stackCount;
+        if (itemData is ItemData_Equipable equipment) equipment.RestoreDurability(saved.durability);
+        spoilDeadline = saved.spoilRemainingSeconds < 0f ? -1f : SavePlayClock.Now + saved.spoilRemainingSeconds;
+    }
+
+    // 표시 오브젝트는 인벤토리가 소유하는 장비 모델을 함께 사용한다.
+    public void BindRuntimeData(ItemData runtime)
+    {
+        if (itemData is Item_SurvivalTool oldTool) oldTool.OnTorchToggled -= SetTorchLight;
+        itemData = runtime;
+        _itemSO = runtime?.data;
+        BindTorchLight();
+    }
 
     // 월드 생성(ItemDisposer)으로 배치된 경우의 배치 정보 — 드롭/장착 뷰로 쓰일 때는 null
     [System.NonSerialized] private DisposeData _placement;
@@ -56,6 +84,7 @@ public class Item : MonoBehaviour, IDisposeInitializable
     /// <summary>월드 생성 배치 시 호출 (WorldObjectSpawner).</summary>
     public void InitializeDispose(DisposeData dispose, ChunkData chunk)
     {
+        if (_itemSO != null) Init(_itemSO);
         _placement = dispose;
         _chunk = chunk;
         NetworkDropId = 0;
@@ -120,6 +149,7 @@ public class Item : MonoBehaviour, IDisposeInitializable
 
         stackCount = Mathf.Max(1, stackCount);
         itemData = ItemData.CreateFromSO(_itemSO, stackCount);
+        spoilDeadline = _itemSO.expirationTime > 0f ? SavePlayClock.Now + _itemSO.expirationTime * 60f : -1f;
 
         ResetWorldViewState(_itemSO.itemType);
 
@@ -198,9 +228,11 @@ public class Item : MonoBehaviour, IDisposeInitializable
     /// <summary>코드로 동적 생성할 때 SO를 주입한다.</summary>
     public virtual void Init(ItemDataSO so)
     {
+        if (itemData is Item_SurvivalTool previousTool) previousTool.OnTorchToggled -= SetTorchLight;
         _itemSO = so;
         stackCount = 1;
         itemData = ItemData.CreateFromSO(so, stackCount);
+        spoilDeadline = so.expirationTime > 0f ? SavePlayClock.Now + so.expirationTime * 60f : -1f;
 
         ResetWorldViewState(so.itemType);
 

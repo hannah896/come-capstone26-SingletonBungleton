@@ -255,6 +255,19 @@ public class WorldGenManager : MonoBehaviour
             var graphData = _worldGraphDirector.GetWorldGraphData();
             var logicData = _worldGraphDirector.GetWorldLogicData();
 
+            WorldSaveData savedWorld = Main.Save != null && Main.Save.IsRestoring
+                ? Main.Save.PendingLoad?.world : null;
+            if (savedWorld != null)
+            {
+                // 생성된 배치 목록에 먼저 변경분을 얹어야 채집한 자원이 다시 스폰되지 않는다.
+                WorldSaveAdapter.ApplyChunkChanges(savedWorld, logicData);
+                WorldClock clock = WorldClock.Instance;
+                if (clock == null) clock = new GameObject(nameof(WorldClock)).AddComponent<WorldClock>();
+                clock.EnsureInitialized();
+                clock.LoadTime(savedWorld.totalSeconds);
+                NetworkSaveCoordinator.RestoreHostWorldState(savedWorld);
+            }
+
             // 멀티 검증용 — 같은 시드라면 모든 피어에서 이 값이 완전히 같아야 한다.
             // 시드는 같은데 지문이 다르면 "전달"이 아니라 "생성 결정성"이 깨진 것이다.
             LogWorldFingerprint(logicData, _worldGraphDirector.GetWorldDisposeData());
@@ -298,6 +311,25 @@ public class WorldGenManager : MonoBehaviour
 
             Vector2Int spawnChunkCoord = logicData.GetChunkCoord(startingX, startingZ);
 
+            // 부활 지점은 원래 시작 지역으로 유지하고, 이어하기에서는 저장 위치 주변부터 준비한다.
+            float spawnTileHeight = logicData.GetHeightAt(startingX, startingZ);
+            Vector3 defaultSpawnPos = new Vector3(startingX, spawnTileHeight + 20f, startingZ);
+            PlayerSpawnPosition = defaultSpawnPos;
+            HasPlayerSpawnPosition = true;
+            Vector3 spawnPos = defaultSpawnPos;
+            PlayerSaveData savedPlayer = savedWorld != null ? Main.Save.GetLocalPlayerSave() : null;
+            if (savedPlayer != null)
+            {
+                Vector3 position = savedPlayer.position;
+                if (float.IsNaN(position.x) || float.IsInfinity(position.x) ||
+                    float.IsNaN(position.y) || float.IsInfinity(position.y) ||
+                    float.IsNaN(position.z) || float.IsInfinity(position.z) ||
+                    position.x < 0f || position.z < 0f || position.x >= mapSize.x || position.z >= mapSize.y)
+                    throw new InvalidOperationException("저장된 플레이어 위치가 월드 범위를 벗어났습니다.");
+                spawnPos = position;
+                spawnChunkCoord = logicData.GetChunkCoord(Mathf.FloorToInt(position.x), Mathf.FloorToInt(position.z));
+            }
+
             ReportProgress(0.7f, "스폰 지역 렌더링 중");
 
             // ==========================================================
@@ -307,6 +339,8 @@ public class WorldGenManager : MonoBehaviour
             CurrentLogicData = logicData;
 
             await _worldChunkDirector.LoadInitialSpawnAreaAsync(spawnChunkCoord);
+            if (savedWorld != null)
+                await WorldSaveAdapter.RestoreRuntimeAsync(savedWorld, _cts.Token);
             Debug.Log("월드 생성이 완료되었습니다!");
 
             ReportProgress(0.85f, "플레이어 준비");
@@ -326,13 +360,6 @@ public class WorldGenManager : MonoBehaviour
             //   - 멀티: 호스트가 Runner.Spawn으로 네트워크 스폰(각 클라는 복제된 로컬 플레이어를 청크 타깃으로)
             //   - 싱글: 기존 로컬 스폰
             // ==========================================================
-            float spawnTileHeight = logicData.GetHeightAt(startingX, startingZ);
-            Vector3 spawnPos = new Vector3(startingX, spawnTileHeight + 20f, startingZ);
-
-            // 부활 지점으로 재사용한다 (Player.Revive)
-            PlayerSpawnPosition = spawnPos;
-            HasPlayerSpawnPosition = true;
-
             bool isMultiplayer = Main.Network != null && Main.Network.IsInRoom;
             if (isMultiplayer)
             {

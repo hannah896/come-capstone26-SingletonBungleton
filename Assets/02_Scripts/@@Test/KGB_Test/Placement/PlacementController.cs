@@ -277,6 +277,7 @@ public class PlacementController : MonoBehaviour
 
     private void ConfirmPlacement()
     {
+        if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
         if (!IsPlaceableItem(activeItemData) || playerInventory == null)
         {
             CancelPlacement();

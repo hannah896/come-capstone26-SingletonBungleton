@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -13,29 +14,50 @@ using UnityEngine;
 /// </summary>
 public static class WorldItemSync
 {
+    private static int pendingOperations;
+
+    // 이미 시작한 드롭 생성·줍기 지급이 끝난 뒤 저장한다. 입력 차단은 호출자가 담당한다.
+    public static async UniTask WaitForPendingAsync(CancellationToken token)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+        timeout.CancelAfterSlim(TimeSpan.FromSeconds(10));
+        await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate, timeout.Token);
+        await UniTask.WaitUntil(() => pendingOperations == 0, cancellationToken: timeout.Token);
+    }
+
     #region 드롭
 
     /// <summary>
     /// 바닥에 아이템을 떨어뜨린다. 멀티에서는 호스트를 거쳐 모든 피어에 생긴다.
     /// itemKey는 아이템 Addressable 키(= ItemDataSO 이름).
     /// </summary>
-    public static void SpawnDroppedItem(string itemKey, int count, Vector3 position)
+    public static void SpawnDroppedItem(string itemKey, int count, Vector3 position, ItemStackSaveData state = null)
     {
         if (string.IsNullOrEmpty(itemKey) || count <= 0) return;
 
         if (WorldResourceSync.IsNetworked)
         {
-            WorldResourceSync.Network.RequestDropItem(itemKey, count, position);
+            if (state != null)
+                NetworkSaveCoordinator.RequestDropWithState(state, position);
+            else
+                WorldResourceSync.Network.RequestDropItem(itemKey, count, position);
             return;
         }
 
-        SpawnItemAsync(itemKey, count, position).Forget();
+        SpawnItemAsync(itemKey, count, position, state).Forget();
     }
 
     /// <summary>
     /// 아이템 오브젝트를 풀에서 꺼내 바닥 아이템 상태로 놓는다. (네트워크 요청 없이 이 피어에만 생성)
     /// </summary>
-    public static async UniTask<Item> SpawnItemAsync(string itemKey, int count, Vector3 position)
+    public static async UniTask<Item> SpawnItemAsync(string itemKey, int count, Vector3 position, ItemStackSaveData state = null)
+    {
+        pendingOperations++;
+        try { return await SpawnItemCoreAsync(itemKey, count, position, state); }
+        finally { pendingOperations--; }
+    }
+
+    private static async UniTask<Item> SpawnItemCoreAsync(string itemKey, int count, Vector3 position, ItemStackSaveData state)
     {
         GameObject dropObj;
         try
@@ -69,6 +91,8 @@ public static class WorldItemSync
             item.Init(item.ItemDataSO);
         item.ResetToWorldTransform();
         SetStackCount(item, count);
+        if (state != null) item.RestoreSaveData(state);
+        Extensions.GetOrAddComponent<PersistentDroppedItem>(dropObj).Initialize(item);
 
         return item;
     }
@@ -178,23 +202,29 @@ public static class WorldItemSync
     }
 
     /// <summary>멀티: 호스트가 바닥 아이템 줍기를 승인했다. (요청한 피어에서만 호출)</summary>
-    public static void HandlePickupGranted(string itemKey, int amount)
+    public static void HandlePickupGranted(string itemKey, int amount, ItemStackSaveData state = null)
     {
-        HandlePickupGrantedAsync(itemKey, amount).Forget();
+        HandlePickupGrantedAsync(itemKey, amount, state).Forget();
     }
 
-    private static async UniTaskVoid HandlePickupGrantedAsync(string itemKey, int amount)
+    private static async UniTaskVoid HandlePickupGrantedAsync(string itemKey, int amount, ItemStackSaveData state)
     {
-        ItemDataSO itemSO = await LoadItemDataAsync(itemKey);
-        if (itemSO == null) return;
+        pendingOperations++;
+        try
+        {
+            ItemDataSO itemSO = await LoadItemDataAsync(itemKey);
+            if (itemSO == null) return;
 
-        GameObject player = WorldResourceSync.Network?.LocalPlayerObject;
-        Vector3 position = player != null ? player.transform.position : Vector3.zero;
-        GiveToLocalPlayer(itemSO, itemKey, amount, position);
+            GameObject player = WorldResourceSync.Network?.LocalPlayerObject;
+            Vector3 position = player != null ? player.transform.position : Vector3.zero;
+            GiveToLocalPlayer(itemSO, itemKey, amount, position, state);
+        }
+        finally { pendingOperations--; }
     }
 
     // 로컬 플레이어 인벤토리에 넣고, 넘치는 수량은 발밑에 다시 떨어뜨린다
-    private static void GiveToLocalPlayer(ItemDataSO itemSO, string itemKey, int amount, Vector3 fallbackPosition)
+    private static void GiveToLocalPlayer(ItemDataSO itemSO, string itemKey, int amount, Vector3 fallbackPosition,
+        ItemStackSaveData state = null)
     {
         if (itemSO == null || amount <= 0) return;
 
@@ -203,12 +233,14 @@ public static class WorldItemSync
 
         int remaining = amount;
         if (inventory != null)
-            inventory.AddItem(itemSO, amount, out remaining);
+            inventory.AddItem(itemSO, amount, out remaining, state?.durability ?? -1f, state?.spoilRemainingSeconds ?? -1f);
 
         if (remaining > 0)
         {
             Vector3 position = player != null ? player.transform.position : fallbackPosition;
-            SpawnDroppedItem(itemKey, remaining, position);
+            ItemStackSaveData overflow = state == null ? null : ItemSaveCatalog.Create(itemSO, remaining,
+                durability: state.durability, spoilRemainingSeconds: state.spoilRemainingSeconds);
+            SpawnDroppedItem(itemKey, remaining, position, overflow);
         }
     }
 

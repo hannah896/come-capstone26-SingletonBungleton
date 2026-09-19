@@ -31,6 +31,7 @@ public class UI_Popup_Pause : UI_Popup
 
     // 로비 이동·종료처럼 되돌릴 수 없는 동작이 버튼 연타로 중복 실행되는 것을 막는다.
     private bool _isHandled;
+    private UI_Button _saveButton;
 
     // 팝업이 플레이어 입력을 차단했는지 여부 (닫을 때 복구용)
     private bool _playerInputBlocked;
@@ -134,6 +135,7 @@ public class UI_Popup_Pause : UI_Popup
         UI_Button_Setting?.SetEvent(OnButtonSetting);
         UI_Button_Help?.SetEvent(OnButtonHelp);
         UI_Button_Exit?.SetEvent(OnButtonExit);
+        _saveButton = SaveMenuButton.Add(UI_Button_Setting, transform, "UI_Button_Save", "저장", OnButtonSave);
 
         return true;
     }
@@ -144,6 +146,7 @@ public class UI_Popup_Pause : UI_Popup
 
         // 씬 배치 인스턴스는 재사용되므로 열 때마다 상태를 되돌린다.
         _isHandled = false;
+        if (_saveButton != null) _saveButton.SetActive(Main.Save.CanSave, setColor: false);
 
         // Start()는 최초 1회만 돌기 때문에, 재활성화 경로에서는 여기서 입력을 막는다.
         BlockPlayerInput();
@@ -189,20 +192,24 @@ public class UI_Popup_Pause : UI_Popup
     {
         if (_isHandled) return;
         _isHandled = true;
+        ExitAfterSaveAsync(false).Forget();
+    }
 
-        // 팝업이 막아둔 입력을 되돌려놓고 나간다. 씬이 바뀌어도 InputManager는 유지되므로
-        // 복구하지 않으면 다음 게임에서 플레이어 입력이 꺼진 채로 시작한다.
+    private void OnButtonSave()
+    {
+        if (!_isHandled) Main.Save.SaveAsync().Forget();
+    }
+
+    private async UniTaskVoid ExitAfterSaveAsync(bool quit)
+    {
         RestorePlayerInput();
-
-        // 다음 게임에 진행 상태가 남지 않도록 초기화한다.
-        GameScene.GameState = GameState.None;
-        GameScene.GameProcessing = GameProcessing.None;
-
-        if (Main.Network != null && Main.Network.IsInRoom)
-            Main.Network.LeaveRoomAsync().Forget();
-
-        // UI/타이머/풀/에셋 정리는 SceneManagerEx의 씬 전환 표준 정리가 수행한다.
-        Extensions.ChangeScene("LobbyScene");
+        bool ok = await Main.Save.SaveAndExitAsync(quit);
+        if (this == null) return;
+        if (!ok)
+        {
+            _isHandled = false;
+            BlockPlayerInput();
+        }
     }
 
     // 설정 팝업 열기 — 이 팝업은 닫지 않고 뒤에 남긴다 (설정을 닫으면 다시 일시정지 화면).
@@ -256,27 +263,7 @@ public class UI_Popup_Pause : UI_Popup
         if (_isHandled) return;
         _isHandled = true;
 
-        Quit();
-    }
-
-    private void Quit()
-    {
-        // 퇴장 요청만 던지고 기다리지 않는다.
-        //
-        // LeaveRoomAsync는 Fusion 러너를 셧다운하는데, 러너가 내려가면 이 피어의 NetworkObject가
-        // 전부 디스폰된다 — 호스트가 스폰해 준 내 캐릭터도 같이 사라진다.
-        // 지형은 피어마다 로컬 생성이라 그대로 남으므로, 캐릭터만 없어진 정지 화면이 보인다.
-        // (시네머신 카메라도 Follow 대상을 잃고 그 자리에 굳는다)
-        // 그 상태로 셧다운 완료를 기다리면 그 정지 화면이 그대로 노출되므로,
-        // 요청만 보내고 곧바로 종료한다. 종료 과정에서 소켓이 닫히면 호스트도 이탈을 인지한다.
-        if (Main.Network != null && Main.Network.IsInRoom)
-            Main.Network.LeaveRoomAsync().Forget();
-
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-#else
-        Application.Quit();
-#endif
+        ExitAfterSaveAsync(true).Forget();
     }
 
     #endregion

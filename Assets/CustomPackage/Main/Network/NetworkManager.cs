@@ -462,6 +462,7 @@ public class NetworkManager : CoreManager
     /// </summary>
     public async UniTask LeaveRoomAsync()
     {
+        await NetworkSaveCoordinator.FlushLocalPlayerAsync();
         await ShutdownSession();
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -564,7 +565,10 @@ public class NetworkManager : CoreManager
         }
 
         // 대기방에서 각 플레이어가 고른 성별로 프리팹 분기 (남자 프리팹 로드 실패 시 여자로 폴백)
-        int characterIndex = GetPlayerData(player)?.CharacterIndex ?? (int)PlayerCharacter.Female;
+        NetworkPlayerData playerData = GetPlayerData(player);
+        if (playerData == null || string.IsNullOrEmpty(playerData.PersistentPlayerId.ToString())) return;
+        PlayerSaveData savedPlayer = NetworkSaveCoordinator.FindSavedPlayer(playerData.PersistentPlayerId.ToString());
+        int characterIndex = savedPlayer != null ? savedPlayer.characterIndex : playerData.CharacterIndex;
         GameObject prefab =
             characterIndex == (int)PlayerCharacter.Male && _playerCharacterMalePrefab != null
                 ? _playerCharacterMalePrefab
@@ -580,7 +584,11 @@ public class NetworkManager : CoreManager
             return;
         }
 
-        var character = _runner.Spawn(netObj, _spawnPoint, Quaternion.identity, inputAuthority: player);
+        Vector3 defaultPosition = WorldGenManager.Instance != null
+            ? WorldGenManager.Instance.PlayerSpawnPosition : _spawnPoint;
+        Vector3 position = savedPlayer != null ? savedPlayer.position : defaultPosition;
+        Quaternion rotation = savedPlayer != null ? Quaternion.Euler(0f, savedPlayer.yaw, 0f) : Quaternion.identity;
+        var character = _runner.Spawn(netObj, position, rotation, inputAuthority: player);
         _characters[player] = character;
 
         // 호스트 자신의 캐릭터는 입력 수집 대상으로도 등록
@@ -588,7 +596,7 @@ public class NetworkManager : CoreManager
             RegisterLocalCharacter(character);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        Debug.Log($"[NetworkManager] Character spawned for {player} at {_spawnPoint}");
+        Debug.Log($"[NetworkManager] Character spawned for {player} at {position}");
 #endif
     }
 
@@ -733,8 +741,10 @@ public class NetworkManager : CoreManager
 
             if (player == r.LocalPlayer)
             {
+                playerData.PersistentPlayerId = Main.Save.LocalPlayerId;
                 playerData.WriteNameInternal(_playerName);
-                playerData.CharacterIndex = _localCharacterIndex;
+                PlayerSaveData saved = Main.Save.FindPlayer(Main.Save.LocalPlayerId);
+                playerData.CharacterIndex = saved != null ? saved.characterIndex : _localCharacterIndex;
             }
         });
 
@@ -747,6 +757,7 @@ public class NetworkManager : CoreManager
     // (Host 모드: StateAuthority는 항상 호스트라 자동 정리 플래그가 동작하지 않으므로 명시적으로 정리)
     void INetworkRunnerCallbacks.OnPlayerLeft(NetworkRunner runner, PlayerRef player)
     {
+        NetworkSaveCoordinator.OnPlayerLeft(player);
         if (runner.IsServer)
         {
             if (_players.TryGetValue(player, out var data) && data != null && data.Object != null)
@@ -820,6 +831,7 @@ public class NetworkManager : CoreManager
         // 현재 러너가 아닌(이미 정리된) 러너의 지연 콜백은 무시한다.
         if (_runner != runner) return;
 
+        NetworkSaveCoordinator.OnSessionEnded();
         _players.Clear();
         _characters.Clear();
         _worldReadyPlayers.Clear();
@@ -844,6 +856,7 @@ public class NetworkManager : CoreManager
             return;
         }
 
+        NetworkSaveCoordinator.OnSessionEnded();
         _players.Clear();
         _characters.Clear();
         _worldReadyPlayers.Clear();
@@ -878,7 +891,8 @@ public class NetworkManager : CoreManager
     void INetworkRunnerCallbacks.OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message) { }
     void INetworkRunnerCallbacks.OnCustomAuthenticationResponse(NetworkRunner runner, Dictionary<string, object> data) { }
     void INetworkRunnerCallbacks.OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken) { }
-    void INetworkRunnerCallbacks.OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey key, ArraySegment<byte> data) { }
+    void INetworkRunnerCallbacks.OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey key, ArraySegment<byte> data)
+        => NetworkSaveCoordinator.Receive(runner, player, key, data);
     void INetworkRunnerCallbacks.OnReliableDataProgress(NetworkRunner runner, PlayerRef player, ReliableKey key, float progress) { }
     void INetworkRunnerCallbacks.OnSceneLoadDone(NetworkRunner runner) { }
     void INetworkRunnerCallbacks.OnSceneLoadStart(NetworkRunner runner) { }

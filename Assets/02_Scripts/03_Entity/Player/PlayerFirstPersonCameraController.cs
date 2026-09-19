@@ -326,6 +326,7 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
 
     private void OnLateUpdateLoop(float deltaTime)
     {
+        if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
         if (!isLocalView) return;
         if (inputData == null || playerBody == null || eyePivot == null) return;
 
@@ -371,9 +372,18 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         PlaceEquippedToolUnderPivot(itemData).Forget();
     }
 
+    private int equippedViewVersion;
+
+    public void RestoreYaw(float savedYaw)
+    {
+        yaw = savedYaw;
+        if (playerBody != null) playerBody.rotation = Quaternion.Euler(0f, yaw, 0f);
+    }
+
     // 아이템 프리팹은 Addressables에 ItemDataSO 파일명(itemData.name)을 키로 등록해야 합니다.
     private async UniTaskVoid PlaceEquippedToolUnderPivot(ItemDataSO itemData)
     {
+        int version = ++equippedViewVersion;
         ClearEquippedToolView();
 
         if (toolPivot == null || itemData == null)
@@ -384,6 +394,11 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
             .AttachExternalCancellation(token);
 
         if (spawned == null) return;
+        if (version != equippedViewVersion)
+        {
+            Extensions.Despawn(spawned);
+            return;
+        }
 
         equippedToolObject = spawned;
         ApplyEquippedToolViewTransform(itemData);
@@ -391,7 +406,6 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         ApplyViewModelLayer(equippedToolObject);
         ConfigureEquippedTorchLight(itemData);
         RemoveToolViewPhysics(equippedToolObject);
-        playerInventory?.RegisterEquippedItemInstance(EquipSlot.Hand, equippedToolEquipable);
         equippedToolEquipable?.Equip();
     }
 
@@ -501,7 +515,6 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         if (equippedToolEquipable != null)
         {
             equippedToolEquipable.Unequip();
-            playerInventory?.UnregisterEquippedItemInstance(EquipSlot.Hand, equippedToolEquipable);
             equippedToolEquipable = null;
         }
 
@@ -516,7 +529,9 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         Item item = equippedToolObject.GetComponentInChildren<Item>(true);
         if (item != null)
         {
-            item.Init(itemData);
+            ItemData runtime = playerInventory?.GetEquippedItemInstance(EquipSlot.Hand) as ItemData;
+            if (runtime != null) item.BindRuntimeData(runtime);
+            else item.Init(itemData);
             equippedToolEquipable = item.itemData as IEquipable;
             if (equippedToolEquipable != null) return;
         }

@@ -13,6 +13,13 @@ public abstract class ItemData_Equipable : ItemData, IEquipable
     public event Action<IEquipable> OnBroken;
     public ItemDataSO ItemSO => data;
     public float CurrentDurability => _currentDurability;
+    // 복원 중 파손 이벤트/해제 부작용 없이 모델 상태만 적용한다.
+    public void RestoreDurability(float durability)
+    {
+        _currentDurability = data.hasDurability
+            ? Mathf.Clamp(durability < 0f ? data.maxDurability : durability, 0f, data.maxDurability) : 0f;
+        _isUsable = !data.hasDurability || _currentDurability > 0f;
+    }
     public bool IsUsable
     {
         get => _isUsable;

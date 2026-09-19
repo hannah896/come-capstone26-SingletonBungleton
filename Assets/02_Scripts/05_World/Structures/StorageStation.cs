@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 /// <summary>
@@ -12,6 +14,8 @@ public abstract class StorageStation : StationBase
 
     [SerializeField] private List<ItemDataSO> slots = new();
     [SerializeField] private List<int> stackCounts = new();     // 각 슬롯에 있는 아이템의 개수 (0이면 빈 슬롯)
+    private readonly List<float> _durabilities = new();
+    private readonly List<float> _spoilRemaining = new();
 
     // 보관함 내용이 변경될 때마다 호출되는 이벤트 (UI 등에서 구독하여 업데이트에 활용)
     public event Action OnStorageChanged;
@@ -51,8 +55,16 @@ public abstract class StorageStation : StationBase
 
     // 상자에 아이템을 추가하는 메서드, 남은 개수 반환, 성공 여부 반환
     public bool AddItem(ItemDataSO itemData, int amount, out int remainingAmount)
+        => AddItem(itemData, amount, out remainingAmount, -1f, -1f);
+
+    public bool AddItem(ItemDataSO itemData, int amount, out int remainingAmount,
+        float durability, float spoilRemainingSeconds)
     {
+        int[] previousCounts = stackCounts.ToArray();
         bool added = TryAddItemToSlots(itemData, amount, out remainingAmount);
+        for (int i = 0; i < slots.Count; i++)
+            if (slots[i] == itemData && stackCounts[i] > previousCounts[i])
+                MergeSlotState(i, previousCounts[i], durability, spoilRemainingSeconds);
         OnStorageChanged?.Invoke();
         return added;
     }
@@ -62,6 +74,10 @@ public abstract class StorageStation : StationBase
     }
 
     public bool AddItemAt(ItemDataSO itemData, int index, int amount, out int remainingAmount)
+        => AddItemAt(itemData, index, amount, out remainingAmount, -1f, -1f);
+
+    public bool AddItemAt(ItemDataSO itemData, int index, int amount, out int remainingAmount,
+        float durability, float spoilRemainingSeconds)
     {
         remainingAmount = amount;
         if (index < 0 || index >= slots.Count) return false;
@@ -76,6 +92,7 @@ public abstract class StorageStation : StationBase
         int addAmount = Mathf.Min(space, remainingAmount);
         slots[index] = itemData;
         stackCounts[index] += addAmount;
+        MergeSlotState(index, currentCount, durability, spoilRemainingSeconds);
         remainingAmount -= addAmount;
         OnStorageChanged?.Invoke();
         return true;
@@ -88,6 +105,8 @@ public abstract class StorageStation : StationBase
         if (fromIndex < 0 || fromIndex >= slotCount || toIndex < 0 || toIndex >= slotCount) return;
         ItemDataSO tempItem = slots[fromIndex];
         int tempCount = stackCounts[fromIndex];
+        float tempDurability = _durabilities[fromIndex];
+        float tempSpoil = _spoilRemaining[fromIndex];
         if (slots[fromIndex] == slots[toIndex] && tempItem != null)
         {
             // 같은 아이템이면 합치기
@@ -95,6 +114,7 @@ public abstract class StorageStation : StationBase
             int total = tempCount + stackCounts[toIndex];
             stackCounts[toIndex] = Mathf.Min(total, maxStack);
             stackCounts[fromIndex] = total - stackCounts[toIndex];
+            MergeSlotState(toIndex, 1, tempDurability, tempSpoil);
             if (stackCounts[fromIndex] <= 0)
                 ClearSlot(fromIndex);
         }
@@ -105,6 +125,10 @@ public abstract class StorageStation : StationBase
             stackCounts[fromIndex] = stackCounts[toIndex];
             slots[toIndex] = tempItem;
             stackCounts[toIndex] = tempCount;
+            _durabilities[fromIndex] = _durabilities[toIndex];
+            _spoilRemaining[fromIndex] = _spoilRemaining[toIndex];
+            _durabilities[toIndex] = tempDurability;
+            _spoilRemaining[toIndex] = tempSpoil;
         }
         OnStorageChanged?.Invoke();
     }
@@ -227,11 +251,18 @@ public abstract class StorageStation : StationBase
         while (stackCounts.Count > slotCount)
             stackCounts.RemoveAt(stackCounts.Count - 1);
 
+        while (_durabilities.Count < slotCount) _durabilities.Add(-1f);
+        while (_spoilRemaining.Count < slotCount) _spoilRemaining.Add(-1f);
+        if (_durabilities.Count > slotCount) _durabilities.RemoveRange(slotCount, _durabilities.Count - slotCount);
+        if (_spoilRemaining.Count > slotCount) _spoilRemaining.RemoveRange(slotCount, _spoilRemaining.Count - slotCount);
+
         for (int i = 0; i < slotCount; i++)
         {
             if (slots[i] == null)
             {
                 stackCounts[i] = 0;
+                _durabilities[i] = -1f;
+                _spoilRemaining[i] = -1f;
                 continue;
             }
 
@@ -308,5 +339,70 @@ public abstract class StorageStation : StationBase
     {
         slots[index] = null;
         stackCounts[index] = 0;
+        _durabilities[index] = -1f;
+        _spoilRemaining[index] = -1f;
+    }
+
+    public ItemStackSaveData CaptureSlot(int index)
+    {
+        if (index < 0 || index >= slots.Count || slots[index] == null || stackCounts[index] <= 0) return null;
+        return ItemSaveCatalog.Create(slots[index], stackCounts[index], index,
+            _durabilities[index], _spoilRemaining[index]);
+    }
+
+    public List<ItemStackSaveData> CaptureSlots()
+    {
+        var result = new List<ItemStackSaveData>();
+        for (int i = 0; i < slots.Count; i++)
+        {
+            ItemStackSaveData slot = CaptureSlot(i);
+            if (slot != null) result.Add(slot);
+        }
+        return result;
+    }
+
+    // 아이템을 추가하는 플레이 경로를 거치지 않고 빈 슬롯까지 정확히 복구한다.
+    public async UniTask RestoreSlotsAsync(int count, List<ItemStackSaveData> savedSlots,
+        CancellationToken token = default)
+    {
+        if (count < 1 || count > 256 || savedSlots == null)
+            throw new InvalidOperationException("보관함 저장 슬롯 정보가 올바르지 않습니다.");
+        var resolved = new List<ItemDataSO>(savedSlots.Count);
+        var indices = new HashSet<int>();
+        foreach (var slot in savedSlots)
+        {
+            if (slot == null || slot.slotIndex < 0 || slot.slotIndex >= count || !indices.Add(slot.slotIndex))
+                throw new InvalidOperationException("보관함 저장 슬롯이 중복되거나 범위를 벗어났습니다.");
+            ItemDataSO item = await ItemSaveCatalog.ResolveAsync(slot, token);
+            if (item == null || slot.count <= 0 || slot.count > (item.isStackable ? Mathf.Max(1, item.maxStack) : 1))
+                throw new InvalidOperationException("보관함 저장 아이템 수량이 올바르지 않습니다.");
+            resolved.Add(item);
+        }
+        slotCount = count;
+        InitializeSlots();
+        for (int i = 0; i < slotCount; i++) ClearSlot(i);
+        for (int i = 0; i < savedSlots.Count; i++)
+        {
+            ItemStackSaveData saved = savedSlots[i];
+            slots[saved.slotIndex] = resolved[i];
+            stackCounts[saved.slotIndex] = saved.count;
+            _durabilities[saved.slotIndex] = saved.durability;
+            _spoilRemaining[saved.slotIndex] = saved.spoilRemainingSeconds;
+        }
+        OnStorageChanged?.Invoke();
+    }
+
+    private void MergeSlotState(int index, int previousCount, float durability, float spoilRemainingSeconds)
+    {
+        if (previousCount <= 0)
+        {
+            _durabilities[index] = durability;
+            _spoilRemaining[index] = spoilRemainingSeconds;
+            return;
+        }
+        if (durability >= 0f)
+            _durabilities[index] = _durabilities[index] < 0f ? durability : Mathf.Min(_durabilities[index], durability);
+        if (spoilRemainingSeconds >= 0f)
+            _spoilRemaining[index] = _spoilRemaining[index] < 0f ? spoilRemainingSeconds : Mathf.Min(_spoilRemaining[index], spoilRemainingSeconds);
     }
 }

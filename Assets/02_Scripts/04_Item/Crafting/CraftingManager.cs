@@ -14,7 +14,7 @@ public class CraftingManager : MonoBehaviour
     private readonly HashSet<string> learnedRecipes = new();
     private CraftStation nearbyStation = CraftStation.None;
 
-    private const string LearnedPrefKey = "CraftingManager_Learned";
+    private readonly List<CraftJobSaveData> pendingCrafts = new();
 
     public event Action OnCraftingChanged;
     public event Action<RecipeDataSO, ItemDataSO, int> OnCrafted;
@@ -23,7 +23,6 @@ public class CraftingManager : MonoBehaviour
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
-        LoadLearnedRecipes();
     }
 
     public void Bind(PlayerInventory playerInventory)
@@ -48,7 +47,7 @@ public class CraftingManager : MonoBehaviour
     public bool IsUnlocked(RecipeDataSO recipe)
     {
         if (recipe.requiredStation == CraftStation.None) return true;
-        if (learnedRecipes.Contains(recipe.name)) return true;
+        if (learnedRecipes.Contains(recipe.PersistentId)) return true;
         return nearbyStation >= recipe.requiredStation;
     }
 
@@ -57,7 +56,7 @@ public class CraftingManager : MonoBehaviour
 
     /// <summary>이 레시피를 이전에 프로토타입한 적 있는지.</summary>
     public bool IsLearned(RecipeDataSO recipe) =>
-        recipe.requiredStation == CraftStation.None || learnedRecipes.Contains(recipe.name);
+        recipe.requiredStation == CraftStation.None || learnedRecipes.Contains(recipe.PersistentId);
 
     // ── 크래프팅 로직 ────────────────────────────────────────────
 
@@ -85,42 +84,62 @@ public class CraftingManager : MonoBehaviour
     /// </summary>
     public bool Craft(RecipeDataSO recipe)
     {
+        if (Application.isPlaying && Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return false;
         if (!CanCraft(recipe)) return false;
 
         foreach (var ingredient in recipe.ingredients)
             inventory.RemoveItem(ingredient.itemData, ingredient.amount);
 
         if (recipe.craftTime > 0f)
-            StartCoroutine(FinishCraftAfterDelay(recipe));
+            BeginPendingCraft(recipe, recipe.craftTime);
         else
             FinishCraft(recipe);
 
         return true;
     }
 
-    private IEnumerator FinishCraftAfterDelay(RecipeDataSO recipe)
+    private void BeginPendingCraft(RecipeDataSO recipe, float remaining)
     {
-        yield return new WaitForSeconds(recipe.craftTime);
+        var job = new CraftJobSaveData { recipeId = recipe.PersistentId, remainingSeconds = Mathf.Max(0f, remaining) };
+        pendingCrafts.Add(job);
+        StartCoroutine(FinishCraftAfterDelay(recipe, job));
+    }
+
+    private IEnumerator FinishCraftAfterDelay(RecipeDataSO recipe, CraftJobSaveData job)
+    {
+        // 재료는 이미 소모됐다. 남은 시간을 저장해 재접속 시 결과물을 정확히 한 번 지급한다.
+        while (job.remainingSeconds > 0f || (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)))
+        {
+            yield return null;
+            if ((Main.Save == null || (!Main.Save.IsRestoring && !Main.Save.IsCapturing))
+                && GameScene.GameProcessing != GameProcessing.Stopping)
+                job.remainingSeconds = Mathf.Max(0f, job.remainingSeconds - Time.deltaTime);
+        }
+        pendingCrafts.Remove(job);
         FinishCraft(recipe);
     }
 
     private void FinishCraft(RecipeDataSO recipe)
     {
-        bool success = inventory.AddItem(recipe.resultItem, recipe.resultAmount);
+        bool success = inventory.GetAddableAmount(recipe.resultItem, recipe.resultAmount) >= recipe.resultAmount
+            && inventory.AddItem(recipe.resultItem, recipe.resultAmount);
 
         if (!success)
         {
             Debug.LogWarning($"[크래프팅] 인벤토리 가득 참 — {recipe.recipeName} 재료 반환");
             foreach (var ingredient in recipe.ingredients)
-                inventory.AddItem(ingredient.itemData, ingredient.amount);
+            {
+                inventory.AddItem(ingredient.itemData, ingredient.amount, out int remaining);
+                if (remaining > 0)
+                    WorldItemSync.SpawnDroppedItem(ingredient.itemData.name, remaining, inventory.transform.position);
+            }
         }
         else
         {
             // 스테이션이 필요했던 레시피는 최초 제작 시 영구 해금
-            if (recipe.requiredStation != CraftStation.None && !learnedRecipes.Contains(recipe.name))
+            if (recipe.requiredStation != CraftStation.None && !learnedRecipes.Contains(recipe.PersistentId))
             {
-                learnedRecipes.Add(recipe.name);
-                SaveLearnedRecipes();
+                learnedRecipes.Add(recipe.PersistentId);
                 Debug.Log($"[크래프팅] {recipe.recipeName} 레시피 해금됨");
             }
 
@@ -163,18 +182,47 @@ public class CraftingManager : MonoBehaviour
 
     // ── 저장/불러오기 ─────────────────────────────────────────────
 
-    private void SaveLearnedRecipes()
+    public CraftingSaveData CaptureSaveData()
     {
-        PlayerPrefs.SetString(LearnedPrefKey, string.Join(",", learnedRecipes));
-        PlayerPrefs.Save();
+        var saved = new CraftingSaveData { learnedRecipeIds = new List<string>(learnedRecipes) };
+        foreach (var job in pendingCrafts)
+            saved.pending.Add(new CraftJobSaveData { recipeId = job.recipeId, remainingSeconds = job.remainingSeconds });
+        return saved;
     }
 
-    private void LoadLearnedRecipes()
+    public void ValidateSaveData(CraftingSaveData saved)
     {
-        string saved = PlayerPrefs.GetString(LearnedPrefKey, string.Empty);
-        if (string.IsNullOrEmpty(saved)) return;
-        foreach (var entry in saved.Split(','))
-            if (!string.IsNullOrEmpty(entry)) learnedRecipes.Add(entry);
+        saved ??= new CraftingSaveData();
+        var recipes = new Dictionary<string, RecipeDataSO>(StringComparer.Ordinal);
+        foreach (var recipe in allRecipes)
+            if (recipe != null && !recipes.TryAdd(recipe.PersistentId, recipe))
+                throw new InvalidOperationException($"레시피 ID 중복: {recipe.PersistentId}");
+        foreach (var job in saved.pending ?? new List<CraftJobSaveData>())
+            if (job == null || string.IsNullOrWhiteSpace(job.recipeId) || !recipes.ContainsKey(job.recipeId)
+                || float.IsNaN(job.remainingSeconds) || float.IsInfinity(job.remainingSeconds) || job.remainingSeconds < 0f)
+                throw new InvalidOperationException("진행 중인 제작 레시피를 복원할 수 없습니다.");
+    }
+
+    public void RestoreSaveData(CraftingSaveData saved)
+    {
+        saved ??= new CraftingSaveData();
+        ValidateSaveData(saved);
+        var recipes = new Dictionary<string, RecipeDataSO>(StringComparer.Ordinal);
+        foreach (var recipe in allRecipes)
+            if (recipe != null) recipes.Add(recipe.PersistentId, recipe);
+        StopAllCoroutines();
+        pendingCrafts.Clear();
+        learnedRecipes.Clear();
+        foreach (var id in saved.learnedRecipeIds ?? new List<string>())
+            if (!string.IsNullOrWhiteSpace(id)) learnedRecipes.Add(id);
+        foreach (var job in saved.pending ?? new List<CraftJobSaveData>())
+            BeginPendingCraft(recipes[job.recipeId], job.remainingSeconds);
+        OnCraftingChanged?.Invoke();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this) Instance = null;
     }
 
     /// <summary>개발용: 모든 학습 데이터 초기화.</summary>
@@ -182,7 +230,6 @@ public class CraftingManager : MonoBehaviour
     public void ClearLearnedRecipes()
     {
         learnedRecipes.Clear();
-        PlayerPrefs.DeleteKey(LearnedPrefKey);
         OnCraftingChanged?.Invoke();
     }
 

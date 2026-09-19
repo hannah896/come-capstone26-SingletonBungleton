@@ -92,8 +92,12 @@ public class WorldClock : MonoBehaviour
         else Destroy(gameObject);
     }
 
-    private void Start()
+    private void Start() => EnsureInitialized();
+
+    /// <summary>씬의 Start 호출 순서와 무관하게 로드 시계를 준비한다.</summary>
+    public void EnsureInitialized()
     {
+        if (_dayTimer != null) return;
         // 1. 프레임워크의 TimeManager에게 하루 길이의 무한 루프 타이머 발급 요청
         _dayTimer = Main.Time.NewTimer("WorldClockTimer", SECONDS_PER_DAY, isAutoDestroy: false, start: true, loop: true);
 
@@ -141,6 +145,8 @@ public class WorldClock : MonoBehaviour
     // 네트워크 구동 중에는 호스트가 틱마다 배속을 곱해 전진시키므로 여기서는 건드리지 않는다.
     private void OnUpdate(float deltaTime)
     {
+        if (_dayTimer != null)
+            _dayTimer.Pause = IsNetworkDriven || (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing));
         if (TimeScale <= 1f || IsNetworkDriven || _dayTimer == null || _dayTimer.Pause) return;
         if (Main.Time.Pause || GameScene.GameState != GameState.Playing) return; // NyoTimer와 같은 정지 조건
 
@@ -302,7 +308,9 @@ public class WorldClock : MonoBehaviour
     /// </summary>
     public void LoadTime(float savedTotalSeconds)
     {
-        if (_dayTimer == null) return;
+        if (float.IsNaN(savedTotalSeconds) || float.IsInfinity(savedTotalSeconds) || savedTotalSeconds < 0f)
+            throw new ArgumentOutOfRangeException(nameof(savedTotalSeconds));
+        EnsureInitialized();
 
         // 1. 누적 시간을 기준으로 '몇 일차'인지 계산하여 복구
         _daysPassed = Mathf.FloorToInt(savedTotalSeconds / SECONDS_PER_DAY);

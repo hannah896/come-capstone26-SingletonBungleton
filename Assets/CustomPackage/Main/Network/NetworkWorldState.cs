@@ -29,6 +29,8 @@ public struct WorldDropEntry : INetworkStruct
     public int ItemHash;
     public int Count;
     public Vector3 Position;
+    public float Durability;
+    public float SpoilRemainingSeconds;
 }
 
 /// <summary>

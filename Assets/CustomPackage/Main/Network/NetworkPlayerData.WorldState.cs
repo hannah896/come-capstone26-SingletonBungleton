@@ -236,7 +236,7 @@ public partial class NetworkPlayerData
                 continue;
             }
 
-            SpawnDropViewAsync(pair.Key, itemKey, entry.Position, view).Forget();
+            SpawnDropViewAsync(pair.Key, itemKey, entry, view).Forget();
         }
 
         // 누군가 주워서 사라진 드롭
@@ -253,9 +253,16 @@ public partial class NetworkPlayerData
         }
     }
 
-    private async UniTaskVoid SpawnDropViewAsync(int dropId, string itemKey, Vector3 position, DropView view)
+    private async UniTaskVoid SpawnDropViewAsync(int dropId, string itemKey, WorldDropEntry entry, DropView view)
     {
-        Item item = await WorldItemSync.SpawnItemAsync(itemKey, view.Count, position);
+        var state = new ItemStackSaveData
+        {
+            itemKey = itemKey,
+            count = view.Count,
+            durability = entry.Durability,
+            spoilRemainingSeconds = entry.SpoilRemainingSeconds
+        };
+        Item item = await WorldItemSync.SpawnItemAsync(itemKey, view.Count, entry.Position, state);
         if (item == null) return;
 
         // 로드하는 사이 주워졌거나 세션이 끝났다
@@ -326,10 +333,10 @@ public partial class NetworkPlayerData
     }
 
     /// <summary>바닥 아이템을 새로 등록한다.</summary>
-    public void HostDropItem(string itemKey, int count, Vector3 position)
+    public void HostDropItem(string itemKey, int count, Vector3 position, string itemId = null,
+        float durability = -1f, float spoilRemainingSeconds = -1f)
     {
         if (!HasStateAuthority || string.IsNullOrEmpty(itemKey) || count <= 0) return;
-
         if (WorldDrops.Count >= WorldDrops.Capacity)
             EvictOldestDrop();
 
@@ -345,6 +352,8 @@ public partial class NetworkPlayerData
             ItemHash = itemHash,
             Count = count,
             Position = position,
+            Durability = durability,
+            SpoilRemainingSeconds = spoilRemainingSeconds,
         });
     }
 
@@ -353,6 +362,15 @@ public partial class NetworkPlayerData
     {
         if (!HasStateAuthority || amount <= 0) return;
         if (!WorldDrops.TryGet(dropId, out WorldDropEntry entry)) return; // 이미 누가 주웠다
+
+        string itemId = null;
+        if (_dropViews.TryGetValue(dropId, out var view) && view.Item != null)
+        {
+            ItemStackSaveData state = view.Item.CaptureSaveData();
+            itemId = state.itemId;
+            entry.Durability = state.durability;
+            entry.SpoilRemainingSeconds = state.spoilRemainingSeconds;
+        }
 
         int taken = Mathf.Min(amount, entry.Count);
         if (taken <= 0) return;
@@ -368,12 +386,14 @@ public partial class NetworkPlayerData
         if (requesterData == null)
         {
             // 요청자가 그새 나갔다 — 아이템을 되돌려 놓는다
-            HostDropItem(itemKey, taken, entry.Position);
+            HostDropItem(itemKey, taken, entry.Position, itemId,
+                entry.Durability, entry.SpoilRemainingSeconds);
             return;
         }
 
         if (itemKey != null)
-            requesterData.Rpc_GrantPickup(itemKey, taken);
+            requesterData.Rpc_GrantPickup(itemKey, taken, itemId ?? string.Empty,
+                entry.Durability, entry.SpoilRemainingSeconds);
     }
 
     /// <summary>바닥 아이템을 지급 없이 없앤다. (모닥불 요리 등으로 다른 아이템으로 바뀌는 경우)</summary>
@@ -463,9 +483,13 @@ public partial class NetworkPlayerData
 
     /// <summary>호스트 → 요청자: 승인된 수량만큼 인벤토리에 넣는다. (호스트 자신이면 로컬 실행)</summary>
     [Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority)]
-    public void Rpc_GrantPickup(string itemKey, int amount)
+    public void Rpc_GrantPickup(string itemKey, int amount, string itemId, float durability, float spoilRemainingSeconds)
     {
-        WorldItemSync.HandlePickupGranted(itemKey, amount);
+        WorldItemSync.HandlePickupGranted(itemKey, amount, new ItemStackSaveData
+        {
+            itemId = itemId, itemKey = itemKey, count = amount,
+            durability = durability, spoilRemainingSeconds = spoilRemainingSeconds
+        });
     }
 
     private static NetworkPlayerData FindWorldMaster()

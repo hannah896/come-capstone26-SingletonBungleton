@@ -12,7 +12,12 @@ public abstract class Structure : MonoBehaviour, IInteractable
     public virtual bool CanDemolish() => true;
 
     /// <summary>망치로 부순다. 아무것도 드롭하지 않고 그냥 사라진다.</summary>
-    public virtual void Demolish() => Destroy(gameObject);
+    public virtual void Demolish()
+    {
+        if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
+        GetComponentInParent<PersistentStructure>()?.Unregister();
+        Destroy(gameObject);
+    }
 }
 
 // 건축물 타입 정의    

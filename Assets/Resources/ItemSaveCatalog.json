@@ -1,0 +1,252 @@
+{
+  "items": [
+    {
+      "itemId": "Axe_Gold",
+      "itemKey": "Tool_Axe_Gold"
+    },
+    {
+      "itemId": "Axe_Iron",
+      "itemKey": "Tool_Axe_Iron"
+    },
+    {
+      "itemId": "Axe_Stone",
+      "itemKey": "Tool_Axe_Stone"
+    },
+    {
+      "itemId": "Berry",
+      "itemKey": "Resource_Berry"
+    },
+    {
+      "itemId": "BerryJam",
+      "itemKey": "Dish_BerryJam"
+    },
+    {
+      "itemId": "BerryPie",
+      "itemKey": "Dish_BerryPie"
+    },
+    {
+      "itemId": "Bonefire",
+      "itemKey": "Tool_Bonfire"
+    },
+    {
+      "itemId": "Bow",
+      "itemKey": "Weapon_Bow"
+    },
+    {
+      "itemId": "Carrot",
+      "itemKey": "Resource_Carrot"
+    },
+    {
+      "itemId": "Chestplate",
+      "itemKey": "Armor_Chestplate"
+    },
+    {
+      "itemId": "CookedEgg",
+      "itemKey": "Food_CookedEgg"
+    },
+    {
+      "itemId": "CookedMeat1",
+      "itemKey": "Food_CookedMeat1"
+    },
+    {
+      "itemId": "CookedMeat2",
+      "itemKey": "Food_CookedMeat2"
+    },
+    {
+      "itemId": "CookedMeat3",
+      "itemKey": "Food_CookedMeat3"
+    },
+    {
+      "itemId": "CookingPot",
+      "itemKey": "Tool_CookingPot"
+    },
+    {
+      "itemId": "Egg",
+      "itemKey": "Booty_Egg"
+    },
+    {
+      "itemId": "Feather",
+      "itemKey": "Booty_Feather"
+    },
+    {
+      "itemId": "Fish",
+      "itemKey": "Booty_Fish"
+    },
+    {
+      "itemId": "FishingRod",
+      "itemKey": "Tool_FishingRod"
+    },
+    {
+      "itemId": "FishSteak",
+      "itemKey": "Dish_FishSteak"
+    },
+    {
+      "itemId": "Flower",
+      "itemKey": "Resource_Flower"
+    },
+    {
+      "itemId": "FlowerTea",
+      "itemKey": "Dish_FlowerTea"
+    },
+    {
+      "itemId": "Grass",
+      "itemKey": "Resource_Plant_Grass"
+    },
+    {
+      "itemId": "Hammer_Gold",
+      "itemKey": "Tool_Hammer_Gold"
+    },
+    {
+      "itemId": "Hammer_Iron",
+      "itemKey": "Tool_Hammer_Iron"
+    },
+    {
+      "itemId": "Hammer_Stone",
+      "itemKey": "Tool_Hammer_Stone"
+    },
+    {
+      "itemId": "Helmet",
+      "itemKey": "Armor_Helmet"
+    },
+    {
+      "itemId": "Ice",
+      "itemKey": "Resource_Ice"
+    },
+    {
+      "itemId": "Jerky",
+      "itemKey": "Dish_Jerky"
+    },
+    {
+      "itemId": "Leather",
+      "itemKey": "Booty_Leather"
+    },
+    {
+      "itemId": "Meat1",
+      "itemKey": "Booty_Meat1"
+    },
+    {
+      "itemId": "Meat2",
+      "itemKey": "Booty_Meat2"
+    },
+    {
+      "itemId": "Meat3",
+      "itemKey": "Booty_Meat3"
+    },
+    {
+      "itemId": "MeatStew",
+      "itemKey": "Dish_MeatStew"
+    },
+    {
+      "itemId": "Mineral_Coal",
+      "itemKey": "Resource_Mineral_Coal"
+    },
+    {
+      "itemId": "Mineral_Flint",
+      "itemKey": "Resource_Mineral_Flint"
+    },
+    {
+      "itemId": "Mineral_Gold",
+      "itemKey": "Resource_Mineral_Gold"
+    },
+    {
+      "itemId": "Mineral_Iron",
+      "itemKey": "Resource_Mineral_Iron"
+    },
+    {
+      "itemId": "Mineral_Stone",
+      "itemKey": "Resource_Mineral_Stone"
+    },
+    {
+      "itemId": "Mushroom",
+      "itemKey": "Resource_Mushroom"
+    },
+    {
+      "itemId": "MushroomSoup",
+      "itemKey": "Dish_MushroomSoup"
+    },
+    {
+      "itemId": "Omelette",
+      "itemKey": "Dish_Omelette"
+    },
+    {
+      "itemId": "Pickaxe_Gold",
+      "itemKey": "Tool_Pickaxe_Gold"
+    },
+    {
+      "itemId": "Pickaxe_Iron",
+      "itemKey": "Tool_Pickaxe_Iron"
+    },
+    {
+      "itemId": "Pickaxe_Stone",
+      "itemKey": "Tool_Pickaxe_Stone"
+    },
+    {
+      "itemId": "Potato",
+      "itemKey": "Resource_Potato"
+    },
+    {
+      "itemId": "RoastedBerry",
+      "itemKey": "Food_RoastedBerry"
+    },
+    {
+      "itemId": "RoastedCarrot",
+      "itemKey": "Food_RoastedCarrot"
+    },
+    {
+      "itemId": "RoastedMushroom",
+      "itemKey": "Food_RoastedMushroom"
+    },
+    {
+      "itemId": "RoastedPotato",
+      "itemKey": "Food_RoastedPotato"
+    },
+    {
+      "itemId": "Rot",
+      "itemKey": "Special_Rot"
+    },
+    {
+      "itemId": "Shield",
+      "itemKey": "Armor_Shield"
+    },
+    {
+      "itemId": "Shovel_Gold",
+      "itemKey": "Tool_Shovel_Gold"
+    },
+    {
+      "itemId": "Shovel_Iron",
+      "itemKey": "Tool_Shovel_Iron"
+    },
+    {
+      "itemId": "Shovel_Stone",
+      "itemKey": "Tool_Shovel_Stone"
+    },
+    {
+      "itemId": "Skull",
+      "itemKey": "Booty_Skull"
+    },
+    {
+      "itemId": "Spear",
+      "itemKey": "Weapon_Spear"
+    },
+    {
+      "itemId": "Sword",
+      "itemKey": "Weapon_Sword"
+    },
+    {
+      "itemId": "Torch",
+      "itemKey": "Tool_Torch"
+    },
+    {
+      "itemId": "Wood_Branch",
+      "itemKey": "Resource_Wood_Branch"
+    },
+    {
+      "itemId": "Wood_Charcoal",
+      "itemKey": "Resource_Wood_Charcoal"
+    },
+    {
+      "itemId": "Wood_Plank",
+      "itemKey": "Resource_Wood_Plank"
+    }
+  ]
+}

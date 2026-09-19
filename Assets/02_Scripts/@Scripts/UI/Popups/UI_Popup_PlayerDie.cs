@@ -113,15 +113,13 @@ public class UI_Popup_PlayerDie : UI_Popup
         if (_isHandled) return;
         _isHandled = true;
 
-        // 다음 게임에서 사망 상태가 남지 않도록 정적 진행 상태를 초기화한다.
-        GameScene.GameState = GameState.None;
-        GameScene.GameProcessing = GameProcessing.None;
+        LeaveAfterSaveAsync().Forget();
+    }
 
-        if (Main.Network != null && Main.Network.IsInRoom)
-            Main.Network.LeaveRoomAsync().Forget();
-
-        // UI/타이머/풀/에셋 정리는 SceneManagerEx의 씬 전환 표준 정리가 수행한다.
-        Extensions.ChangeScene("LobbyScene");
+    private async UniTaskVoid LeaveAfterSaveAsync()
+    {
+        bool ok = await Main.Save.SaveAndExitAsync(false);
+        if (!ok && this != null) _isHandled = false;
     }
 
     #endregion

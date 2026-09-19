@@ -37,6 +37,7 @@ public class SceneManagerEx : ContentManager
 
     // 현재 씬
     public SceneBase Current => _currentScene;
+    public bool IsTransitioning => _isTransitioning;
 
     // 현재 취소 토큰
     public CancellationToken CurrentToken => _cts.Token;

@@ -7,11 +7,15 @@ public class UI_HUD_LobbyScene : UI_Hud
     [SerializeField] private UI_Button UI_Button_EnterRoom;
     [SerializeField] private UI_Button UI_Button_Setting;
     [SerializeField] private UI_Button UI_Button_Exit;
+    private UI_Button continueButton;
+    private bool continueBusy;
 
 
     protected override void Start()
     {
         base.Start();
+
+        continueButton = SaveMenuButton.Add(UI_Button_MakeRoom, transform, "UI_Button_Continue", "이어하기", OnContinue);
 
         // OnButtonUp은 SetDownUpButton()으로 PointerUp EventTrigger를 등록해야 발생한다.
         UI_Button_MakeRoom.SetDownUpButton();
@@ -29,14 +33,31 @@ public class UI_HUD_LobbyScene : UI_Hud
 
     private void OnMakeRoom()
     {
+        if (continueBusy) return;
+        Main.Save.BeginNewGame();
         // 방 만들기 팝업을 띄운다. 방 이름/최대 인원 선택 후 팝업에서 게임씬으로 전환한다.
         Extensions.ShowPopup<UI_Popup_MakeRoom>(clickGuard: true).Forget();
     }
 
     private void OnEnterRoom()
     {
+        if (continueBusy) return;
+        Main.Save.BeginNewGame();
         // 방 입장 팝업을 띄운다. 방 목록에서 선택 후 팝업에서 게임씬으로 전환한다.
         Extensions.ShowPopup<UI_Popup_EnterRoom>(clickGuard: true, clickClose: true).Forget();
+    }
+
+    private void OnContinue() => ContinueAsync().Forget();
+
+    private async UniTaskVoid ContinueAsync()
+    {
+        if (continueBusy) return;
+        continueBusy = true;
+        try
+        {
+            await Extensions.ShowPopup<UI_Popup_LoadRoom>(clickGuard: true);
+        }
+        finally { continueBusy = false; }
     }
 
     private void OnSetting() 

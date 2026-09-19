@@ -79,6 +79,7 @@ public class TimeManager : CoreManager
     public void OnUpdate(float deltaTime)
     {
         if (Pause) return;
+        if ((Main.Save?.IsRestoring ?? false) || (Main.Save?.IsCapturing ?? false)) return;
         if (GameScene.GameState != GameState.Playing) return;
 
         List<NyoTimer> timers = new(_timers.Values);

@@ -27,6 +27,15 @@ public class UI_Popup_MakeRoom : UI_Popup
 
     // 선택된 최대 인원 (기본 4명)
     private int _maxPlayers = 4;
+    private bool _continueMode;
+    private bool _creating;
+
+    public void SetContinueMode()
+    {
+        _continueMode = true;
+        if (RoomNameInput != null && !string.IsNullOrWhiteSpace(Main.Save.PendingLoad?.worldName))
+            RoomNameInput.text = Main.Save.PendingLoad.worldName;
+    }
     #endregion
 
     protected override void Start()
@@ -79,7 +88,9 @@ public class UI_Popup_MakeRoom : UI_Popup
     // 방 생성 버튼 → 플레이어 설정 팝업. 거기서 확정해야 실제로 방을 만든다.
     private void OnMakeRoom()
     {
-        ShowSelectPlayerAsync().Forget();
+        if (_creating) return;
+        if (_continueMode) MakeRoomAsync().Forget();
+        else ShowSelectPlayerAsync().Forget();
     }
 
     private async UniTaskVoid ShowSelectPlayerAsync()
@@ -99,6 +110,10 @@ public class UI_Popup_MakeRoom : UI_Popup
 
     private async UniTaskVoid MakeRoomAsync()
     {
+        if (_creating) return;
+        _creating = true;
+        try
+        {
         string roomName = RoomNameInput != null && !string.IsNullOrWhiteSpace(RoomNameInput.text)
             ? RoomNameInput.text
             : "TestRoom";
@@ -108,6 +123,20 @@ public class UI_Popup_MakeRoom : UI_Popup
         WorldBranchSetting branch = WorldBranchSetting.Default;
         WorldLoopSetting loop = WorldLoopSetting.Default;
         WorldSize size = WorldSize.Large;
+        if (_continueMode)
+        {
+            WorldSaveData saved = Main.Save.PendingLoad?.world;
+            if (saved == null) { SaveManager.ShowError("이어할 저장 데이터가 없습니다."); return; }
+            seed = saved.seed;
+            branch = saved.branch;
+            loop = saved.loop;
+            size = saved.size;
+        }
+        else
+        {
+            Main.Save.BeginNewGame();
+            Main.Save.SetWorldName(roomName);
+        }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[UI_Popup_MakeRoom] 방 생성: {roomName} (최대 {_maxPlayers}명, seed {seed})");
@@ -118,6 +147,7 @@ public class UI_Popup_MakeRoom : UI_Popup
         bool ok = await Main.Network.HostRoomAsync(roomName, _maxPlayers, props);
         if (!ok)
         {
+            SaveManager.ShowError("방을 만들지 못했습니다. 다시 시도해주세요.");
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.LogWarning($"[UI_Popup_MakeRoom] 방 생성 실패: {roomName}");
 #endif
@@ -129,10 +159,15 @@ public class UI_Popup_MakeRoom : UI_Popup
 
         Close();
         Extensions.ChangeScene("GameScene");
+        }
+        catch (System.Exception e) { SaveManager.ShowError("방 생성 실패: " + e.Message); }
+        finally { _creating = false; }
     }
 
     private void OnClose()
     {
+        if (_creating) return;
+        if (_continueMode) Main.Save.EndSession();
         Close();
     }
 }
