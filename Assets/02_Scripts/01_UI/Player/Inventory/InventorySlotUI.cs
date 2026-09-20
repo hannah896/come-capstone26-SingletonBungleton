@@ -100,6 +100,22 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnte
             return;
         }
 
+        // 상자/냉장고가 열려 있으면 클릭은 장착이 아니라 그 보관함으로 넣기.
+        UI_Popup_Chest openStorage = UI_Popup_Chest.Current;
+        if (openStorage != null)
+        {
+            ItemDataSO itemData = slotIndex >= 0 && slotIndex < playerInventory.Slots.Count
+                ? playerInventory.Slots[slotIndex]
+                : null;
+            int stack = slotIndex >= 0 && slotIndex < playerInventory.StackCounts.Count
+                ? playerInventory.StackCounts[slotIndex]
+                : 0;
+
+            if (itemData != null && stack > 0)
+                openStorage.DepositFromInventory(itemData, stack);
+            return;
+        }
+
         // 클릭한 슬롯으로 선택 포커스를 옮겨 스크롤 선택과 동일한 하이라이트가 뜨도록 한다.
         playerInventory.SelectSlot(slotIndex);
         playerInventory.EquipFromSlot(slotIndex);

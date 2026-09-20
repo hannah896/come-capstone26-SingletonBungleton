@@ -371,7 +371,7 @@ public class CraftingUI : UI_Panel
         }
         else
         {
-            bool nearby = CraftingManager.Instance.GetNearbyStation() >= req;
+            bool nearby = CraftingManager.Instance.IsNearStation(req);
             string stationName = req switch
             {
                 CraftStation.Workbench => "작업대",

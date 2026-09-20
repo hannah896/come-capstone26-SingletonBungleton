@@ -56,6 +56,7 @@ public class PlayerInventory : MonoBehaviour
         Pickup,     // 주울 수 있는 월드 아이템 (G)
         HandPick,   // 맨손 채집 노드 — 풀 등 (G)
         Cook,       // 선택 슬롯의 날것을 구울 수 있는 모닥불 (우클릭)
+        Structure,  // 상자·냉장고 등 열 수 있는 구조물 (E)
     }
 
     private struct PickupCandidate
@@ -128,8 +129,12 @@ public class PlayerInventory : MonoBehaviour
                 TryPickupNearest();
         }
 
+        // E: 조준한 구조물이 있으면 열고, 없으면 기존처럼 선택 슬롯 장착
         if (inputData.EquipSelectedPressed)
-            EquipSelectedSlot();
+        {
+            if (!TryInteractFocused())
+                EquipSelectedSlot();
+        }
 
         if (inputData.ToolUsePressed)
         {
@@ -179,6 +184,39 @@ public class PlayerInventory : MonoBehaviour
         bool added = TryAddItemToSlots(itemData, amount, out remainingAmount);
         OnInventoryChanged?.Invoke();
         return added;
+    }
+
+    /// <summary>
+    /// 남은 소비기한(초)을 지정해서 넣는다. 보관함에서 꺼낸 아이템처럼 기한을 이어받아야 할 때 사용.
+    /// remainingSeconds가 음수면 아이템 기본 소비기한으로 새로 시작한다.
+    /// </summary>
+    public bool AddItem(ItemDataSO itemData, int amount, out int remainingAmount, float remainingSeconds)
+    {
+        bool added = TryAddItemToSlots(itemData, amount, out remainingAmount, remainingSeconds);
+        OnInventoryChanged?.Invoke();
+        return added;
+    }
+
+    /// <summary>
+    /// 인벤토리에 있는 해당 아이템의 남은 소비기한(초) 중 가장 이른 값. 부패하지 않거나 없으면 -1.
+    /// 보관함에 넣을 때 기한을 넘겨주기 위해 사용한다 (신선한 걸로 세탁하지 못하게 가장 이른 값을 준다).
+    /// </summary>
+    public float GetRemainingExpirationSeconds(ItemDataSO itemData)
+    {
+        if (itemData == null || itemData.expirationTime <= 0f) return -1f;
+
+        float earliest = -1f;
+        for (int i = 0; i < slots.Count; i++)
+        {
+            if (slots[i] != itemData || stackCounts[i] <= 0) continue;
+            if (expirationTimestamps[i] <= 0f) continue;
+
+            float remaining = Mathf.Max(0f, expirationTimestamps[i] - Time.time);
+            if (earliest < 0f || remaining < earliest)
+                earliest = remaining;
+        }
+
+        return earliest;
     }
 
     /// <summary>
@@ -590,7 +628,7 @@ public class PlayerInventory : MonoBehaviour
         return Mathf.Clamp(quickSlotCount, 1, slots.Count);
     }
 
-    private void FillExistingStacks(ItemDataSO itemData, ref int remainingAmount)
+    private void FillExistingStacks(ItemDataSO itemData, ref int remainingAmount, float newDeadline = -1f)
     {
         int maxStack = Mathf.Max(1, itemData.maxStack);
 
@@ -610,9 +648,8 @@ public class PlayerInventory : MonoBehaviour
             stackCounts[i] += addAmount;
             remainingAmount -= addAmount;
 
-            if (itemData.expirationTime > 0f)
+            if (newDeadline > 0f)
             {
-                float newDeadline = Time.time + itemData.expirationTime * 60f;
                 expirationTimestamps[i] = expirationTimestamps[i] > 0f
                     ? Mathf.Min(expirationTimestamps[i], newDeadline)
                     : newDeadline;
@@ -620,13 +657,21 @@ public class PlayerInventory : MonoBehaviour
         }
     }
 
-    private bool TryAddItemToSlots(ItemDataSO itemData, int amount, out int remainingAmount)
+    private bool TryAddItemToSlots(ItemDataSO itemData, int amount, out int remainingAmount, float remainingSeconds = -1f)
     {
         remainingAmount = amount;
         if (itemData == null || amount <= 0) return false;
 
+        // remainingSeconds가 음수면 아이템 기본 소비기한으로 새로 시작한다.
+        float deadline = 0f;
+        if (itemData.expirationTime > 0f)
+        {
+            float seconds = remainingSeconds >= 0f ? remainingSeconds : itemData.expirationTime * 60f;
+            deadline = Time.time + seconds;
+        }
+
         if (itemData.isStackable)
-            FillExistingStacks(itemData, ref remainingAmount);
+            FillExistingStacks(itemData, ref remainingAmount, deadline);
 
         while (remainingAmount > 0)
         {
@@ -640,9 +685,7 @@ public class PlayerInventory : MonoBehaviour
 
             slots[emptyIndex] = itemData;
             stackCounts[emptyIndex] = stackSize;
-            expirationTimestamps[emptyIndex] = itemData.expirationTime > 0f
-                ? Time.time + itemData.expirationTime * 60f
-                : 0f;
+            expirationTimestamps[emptyIndex] = deadline;
             remainingAmount -= stackSize;
         }
 
@@ -847,7 +890,34 @@ public class PlayerInventory : MonoBehaviour
         if (bonfire != null && bonfire.CanCookFromInventory(this))
             return FocusKind.Cook;
 
+        // 상자·냉장고 같은 상호작용 구조물 (E키로 연다)
+        Structure structure = col.GetComponentInParent<Structure>();
+        if (structure != null && structure.CanInteract(BuildInteractionContext(structure.transform.position)))
+            return FocusKind.Structure;
+
         return FocusKind.None;
+    }
+
+    private InteractionContext BuildInteractionContext(Vector3 point, Vector3 normal = default)
+        => new InteractionContext(gameObject, point, normal);
+
+    /// <summary>
+    /// 조준한 구조물(상자·냉장고 등)을 연다. 연 경우 true.
+    /// E키는 대상이 있으면 상호작용, 없으면 기존처럼 선택 슬롯 장착으로 동작한다.
+    /// </summary>
+    private bool TryInteractFocused()
+    {
+        if (!TryGetFocusedTarget(out RaycastHit hit, out FocusKind kind)) return false;
+        if (kind != FocusKind.Structure) return false;
+
+        Structure structure = hit.collider.GetComponentInParent<Structure>();
+        if (structure == null) return false;
+
+        InteractionContext ctx = BuildInteractionContext(hit.point, hit.normal);
+        if (!structure.CanInteract(ctx)) return false;
+
+        structure.Interact(ctx);
+        return true;
     }
 
     private sealed class RaycastDistanceComparer : IComparer<RaycastHit>

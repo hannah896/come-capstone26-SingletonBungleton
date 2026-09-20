@@ -118,13 +118,15 @@ public static class StructureSync
         }
 #endif
 
+        // 남은 소비기한을 먼저 읽어두고(빼고 나면 못 읽는다) 보관함으로 넘긴다
+        float remainingSeconds = inventory.GetRemainingExpirationSeconds(itemData);
         inventory.RemoveItem(itemData, amount);
 
         int remaining;
         if (slotIndex < 0)
-            storage.AddItem(itemData, amount, out remaining);
+            storage.AddItem(itemData, amount, out remaining, remainingSeconds);
         else
-            storage.AddItemAt(itemData, slotIndex, amount, out remaining);
+            storage.AddItemAt(itemData, slotIndex, amount, out remaining, remainingSeconds);
 
         if (remaining > 0)
             ReturnToInventory(inventory, itemData, remaining);
@@ -150,8 +152,10 @@ public static class StructureSync
         }
 #endif
 
+        // 보관함 배수를 되돌린 기한을 그대로 인벤토리로 넘긴다 (냉장고에서 꺼내면 다시 정상 속도로 상한다)
+        float remainingSeconds = storage.GetRemainingSeconds(slotIndex);
         if (storage.RemoveItemAt(slotIndex, addable))
-            inventory.AddItem(itemData, addable);
+            inventory.AddItem(itemData, addable, out _, remainingSeconds);
     }
 
     /// <summary>보관함 안에서 슬롯을 교환하거나 같은 아이템이면 합친다.</summary>

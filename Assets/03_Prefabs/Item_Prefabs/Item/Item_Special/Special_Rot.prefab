@@ -29,7 +29,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.6, y: 0, z: 1.6}
+  m_LocalScale: {x: 1.6, y: 1.6, z: 1.6}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6492565630091234489}
@@ -98,6 +98,7 @@ MonoBehaviour:
   _itemSO: {fileID: 11400000, guid: eac0dd7b1fa44b0392f6ef6602d8b18b, type: 2}
   stackCount: 1
   _torchLight: {fileID: 0}
+  placedRespawnSeconds: 1440
 --- !u!1001 &6742033193068850002
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -12,7 +12,7 @@ public class CraftingManager : MonoBehaviour
 
     private PlayerInventory inventory;
     private readonly HashSet<string> learnedRecipes = new();
-    private CraftStation nearbyStation = CraftStation.None;
+    private readonly Dictionary<CraftStation, int> nearbyStationCounts = new();
 
     private const string LearnedPrefKey = "CraftingManager_Learned";
 
@@ -33,14 +33,29 @@ public class CraftingManager : MonoBehaviour
 
     // ── 스테이션 ────────────────────────────────────────────────
 
-    /// <summary>플레이어가 작업대에 입장/퇴장할 때 호출한다.</summary>
-    public void SetNearbyStation(CraftStation station)
+    /// <summary>플레이어가 스테이션 범위에 들어올 때 호출한다. 같은 타입 스테이션이 여러 개 겹쳐도 카운트로 추적한다.</summary>
+    public void EnterStation(CraftStation station)
     {
-        nearbyStation = station;
+        if (station == CraftStation.None) return;
+        nearbyStationCounts.TryGetValue(station, out int count);
+        nearbyStationCounts[station] = count + 1;
         OnCraftingChanged?.Invoke();
     }
 
-    public CraftStation GetNearbyStation() => nearbyStation;
+    /// <summary>플레이어가 스테이션 범위를 벗어날 때 호출한다.</summary>
+    public void ExitStation(CraftStation station)
+    {
+        if (station == CraftStation.None) return;
+        if (!nearbyStationCounts.TryGetValue(station, out int count)) return;
+
+        if (count <= 1) nearbyStationCounts.Remove(station);
+        else nearbyStationCounts[station] = count - 1;
+        OnCraftingChanged?.Invoke();
+    }
+
+    /// <summary>지금 이 스테이션 타입 범위 안에 있는지. (None은 항상 true — 스테이션이 필요 없는 레시피용)</summary>
+    public bool IsNearStation(CraftStation station) =>
+        station == CraftStation.None || (nearbyStationCounts.TryGetValue(station, out int count) && count > 0);
 
     // ── 레시피 잠금/해금 ─────────────────────────────────────────
 
@@ -49,7 +64,7 @@ public class CraftingManager : MonoBehaviour
     {
         if (recipe.requiredStation == CraftStation.None) return true;
         if (learnedRecipes.Contains(recipe.name)) return true;
-        return nearbyStation >= recipe.requiredStation;
+        return IsNearStation(recipe.requiredStation);
     }
 
     /// <summary>잠겨 있는 레시피인지 (스테이션 없고 미해금).</summary>
