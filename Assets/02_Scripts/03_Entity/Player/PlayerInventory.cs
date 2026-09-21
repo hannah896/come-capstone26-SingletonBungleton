@@ -1085,26 +1085,21 @@ public class PlayerInventory : MonoBehaviour
     }
 
     /// <summary>
-    /// 장착된 도구 타입으로 수행할 ActionType을 반환한다. 유효 타겟이 있을 때만 true.
+    /// 손에 든 아이템과 조준 대상으로 수행할 ActionType을 반환한다. 유효 타겟이 있을 때만 true.
+    /// 몬스터·동물을 조준하면 무엇을 들었든(도구/무기) Attack, 그 외에는 도구 고유 액션(벌목/채굴 등).
     /// </summary>
     public bool TryGetToolActionType(out ActionType actionType)
     {
         actionType = ActionType.None;
 
-        ItemDataSO handItem = EquippedHand;
-        if (handItem == null || handItem.itemType != ItemType.SurvivalTool)
+        if (!TryGetUsableHandItem(out ItemDataSO handItem, out _))
             return false;
 
-        IEquipable handTool = GetEquippedItemInstance(EquipSlot.Hand);
-        if (handTool != null && !handTool.IsUsable)
+        if (!TryRaycastToolTarget(GetHandRange(handItem), out RaycastHit hit))
             return false;
 
-        actionType = GetActionTypeForTool(handItem.survivalToolType);
+        actionType = ResolveHandAction(hit, handItem);
         if (actionType == ActionType.None)
-            return false;
-
-        float range = Mathf.Max(defaultToolUseRange, handItem.attackRange);
-        if (!TryRaycastToolTarget(range, out RaycastHit hit))
             return false;
 
         return TryDamageHitTarget(hit, handItem, actionType, apply: false);
@@ -1132,28 +1127,73 @@ public class PlayerInventory : MonoBehaviour
         return bonfire.TryCookFromInventory(this);
     }
 
-    /// <summary>손에 든 도구로 채집을 시도한다. 도구가 없으면 false를 반환해 맨손 공격으로 넘긴다.</summary>
+    /// <summary>
+    /// 손에 든 도구/무기로 조준 대상을 친다 (몬스터·동물 공격 또는 채집).
+    /// 손이 비었으면 false를 반환해 맨손 채집으로 넘긴다. 무기로 몬스터·동물 외의 것을 조준해도 맨손 채집으로 넘긴다.
+    /// </summary>
     private bool TryUseEquippedHandTool()
     {
         ItemDataSO handItem = EquippedHand;
-        if (handItem == null || handItem.itemType != ItemType.SurvivalTool)
+        if (!IsHandUsableItem(handItem))
             return false;
 
         IEquipable handTool = GetEquippedItemInstance(EquipSlot.Hand);
         if (handTool != null && !handTool.IsUsable)
             return true;
 
-        float range = Mathf.Max(defaultToolUseRange, handItem.attackRange);
-
-        if (!TryRaycastToolTarget(range, out RaycastHit hit))
+        if (!TryRaycastToolTarget(GetHandRange(handItem), out RaycastHit hit))
             return true;
 
-        ActionType actionType = GetActionTypeForTool(handItem.survivalToolType);
+        ActionType actionType = ResolveHandAction(hit, handItem);
+        if (actionType == ActionType.None)
+            return handItem.itemType == ItemType.SurvivalTool;
+
         if (!TryDamageHitTarget(hit, handItem, actionType, apply: true))
             return true;
 
         handTool?.UseDurability();
         return true;
+    }
+
+    // 공격/도구 사용에 쓸 수 있는 손 아이템 종류 (생존도구·전투장비)
+    private static bool IsHandUsableItem(ItemDataSO item)
+        => item != null && (item.itemType == ItemType.SurvivalTool || item.itemType == ItemType.CombatGear);
+
+    // 손에 쓸 수 있는 아이템이 있고 부서지지 않았으면 true.
+    private bool TryGetUsableHandItem(out ItemDataSO handItem, out IEquipable handTool)
+    {
+        handItem = EquippedHand;
+        handTool = GetEquippedItemInstance(EquipSlot.Hand);
+
+        if (!IsHandUsableItem(handItem)) return false;
+        return handTool == null || handTool.IsUsable;
+    }
+
+    private float GetHandRange(ItemDataSO handItem)
+        => Mathf.Max(defaultToolUseRange, handItem.attackRange);
+
+    // 몬스터·동물이면 무엇을 들었든 공격. 아니면 생존도구 고유 액션 (전투장비는 없음).
+    private static ActionType ResolveHandAction(RaycastHit hit, ItemDataSO handItem)
+    {
+        if (IsCombatTarget(hit.collider))
+            return ActionType.Attack;
+
+        return handItem.itemType == ItemType.SurvivalTool
+            ? GetActionTypeForTool(handItem.survivalToolType)
+            : ActionType.None;
+    }
+
+    private static bool IsCombatTarget(Collider collider)
+        => collider.GetComponentInParent<Monster>() != null || collider.GetComponentInParent<Animal>() != null;
+
+    /// <summary>
+    /// 전투 데미지 = 손 아이템 공격력 + 플레이어 기본 공격력. (도구는 공격력이 낮아 기본 공격력이 바닥을 받쳐준다)
+    /// </summary>
+    private DamageContext CreateCombatContext(RaycastHit hit, ItemDataSO handItem, ActionType actionType)
+    {
+        float baseAttack = owner != null && owner.Stat != null ? owner.Stat.Attack : 0f;
+        int damage = Mathf.Max(1, Mathf.RoundToInt(handItem.attackDamage + baseAttack));
+        return new DamageContext(gameObject, hit.point, damage, handItem.itemID, actionType, handItem.harvestableNodeTypes);
     }
 
     /// <summary>도구 없이 맨손으로 나무/돌 자원 노드를 느리게 친다.</summary>
@@ -1212,16 +1252,18 @@ public class PlayerInventory : MonoBehaviour
         Monster monster = hit.collider.GetComponentInParent<Monster>();
         if (monster != null)
         {
-            if (!monster.CanDamage(ctx)) return false;
-            if (apply) DamageMonster(monster, ctx, handItem, actionType);
+            DamageContext combatCtx = CreateCombatContext(hit, handItem, actionType);
+            if (!monster.CanDamage(combatCtx)) return false;
+            if (apply) DamageMonster(monster, combatCtx, handItem, actionType);
             return true;
         }
 
         Animal animal = hit.collider.GetComponentInParent<Animal>();
         if (animal != null)
         {
-            if (!animal.CanDamage(ctx)) return false;
-            if (apply) DamageAnimal(animal, ctx, handItem, actionType);
+            DamageContext combatCtx = CreateCombatContext(hit, handItem, actionType);
+            if (!animal.CanDamage(combatCtx)) return false;
+            if (apply) DamageAnimal(animal, combatCtx, handItem, actionType);
             return true;
         }
 
