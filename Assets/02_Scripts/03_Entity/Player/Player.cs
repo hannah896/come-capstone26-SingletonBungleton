@@ -32,6 +32,17 @@ public class Player : MonoBehaviour, IDamageable
     [SerializeField] private PlayerInventory playerInventory;
     #endregion
 
+    #region Outfit
+    [Tooltip("방어구를 캐릭터 위에 덮어 표시하는 뷰들 (부위별 1개: 몸통, 머리 등)")]
+    [SerializeField] private PlayerOutfitView[] outfitViews;
+    #endregion
+
+    #region Action Tool
+    // 도구 액션 애니메이션 중 바디의 손(RightHand/ToolPivot)에 장착 도구와 같은 오브젝트를 들리는 뷰 (로컬 전용)
+    private PlayerEquipmentView actionToolView;
+    private bool isActionToolVisible;
+    #endregion
+
     #region Properties
     public Animator Animator => animator;
     public PlayerMotor Motor => motor;
@@ -40,6 +51,7 @@ public class Player : MonoBehaviour, IDamageable
     public PlayerStatus Stat => stat;
     public PlayerInventory Inventory => playerInventory;
     public PlayerFirstPersonCameraController FPCameraController => fpCameraController;
+    public PlayerOutfitView[] OutfitViews => outfitViews;
     public string CurrentStateName => machine?.CurrentStateName ?? "None";
     public string CurrentSubStateName => machine?.CurrentSubStateName ?? "None";
     public bool IsGrounded => motor != null && motor.IsGrounded;
@@ -110,6 +122,11 @@ public class Player : MonoBehaviour, IDamageable
         bool isLocalPlayer = IsLocalPlayerObject();
         fpCameraController?.SetLocalView(isLocalPlayer);
 
+        // 원격 플레이어도 방어구는 보여야 하므로 조기 리턴 전에 표시 조건을 넘긴다.
+        if (outfitViews != null)
+            foreach (PlayerOutfitView view in outfitViews)
+                view?.SetLocalView(isLocalPlayer);
+
         if (!isLocalPlayer)
         {
             // 원격 플레이어도 몸체 렌더러 초기화 필요 (그림자/가시성 설정 적용을 위해)
@@ -138,6 +155,10 @@ public class Player : MonoBehaviour, IDamageable
         if (fpCameraController != null)
             await fpCameraController.InitCameraAsync();
 
+        if (outfitViews != null)
+            foreach (PlayerOutfitView view in outfitViews)
+                view?.BindInventory(playerInventory);
+        BindActionToolView();
         playerInventory?.Bind(this, inputData);
         if (playerInventory != null)
         {
@@ -156,6 +177,15 @@ public class Player : MonoBehaviour, IDamageable
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[Player] Started - Locomotion State initialized");
 #endif
+    }
+
+    // 이벤트 구독 해제는 OnDisable이 아니라 파괴 시점에만 한다.
+    private void OnDestroy()
+    {
+        if (playerInventory != null)
+            playerInventory.OnEquippedItemChanged -= OnActionToolEquipChanged;
+        if (actionToolView != null && fpCameraController != null)
+            actionToolView.OnViewChanged -= fpCameraController.SetAttachedBodyObject;
     }
 
     private void OnEnable()
@@ -242,6 +272,52 @@ public class Player : MonoBehaviour, IDamageable
         if (machine?.CurrentState is PlayerActionState action)
             action.OnSwingEvent();
     }
+
+    #region Action Tool
+
+    /// <summary>도구 액션 애니메이션 동안 바디의 손에 현재 장착 도구를 들린다.</summary>
+    public void ShowActionTool()
+    {
+        isActionToolVisible = true;
+        RefreshActionTool();
+    }
+
+    /// <summary>바디의 손에 들린 액션 도구를 치운다.</summary>
+    public void HideActionTool()
+    {
+        isActionToolVisible = false;
+        RefreshActionTool();
+    }
+
+    private void BindActionToolView()
+    {
+        if (playerInventory == null) return;
+
+        actionToolView = Extensions.GetOrAddComponent<PlayerEquipmentView>(gameObject);
+
+        // 1인칭에서는 몸과 똑같이 그림자만 보이게(씬 뷰에서는 보이게) 한다.
+        if (fpCameraController != null)
+            actionToolView.OnViewChanged += fpCameraController.SetAttachedBodyObject;
+
+        // 액션 도중 도구가 부서지거나 바뀌면 손에 든 것도 따라 바꾼다.
+        playerInventory.OnEquippedItemChanged += OnActionToolEquipChanged;
+    }
+
+    private void OnActionToolEquipChanged(EquipSlot slot, ItemDataSO itemData)
+    {
+        if (slot == EquipSlot.Hand)
+            RefreshActionTool();
+    }
+
+    private void RefreshActionTool()
+    {
+        if (actionToolView == null) return;
+
+        ItemDataSO hand = playerInventory != null ? playerInventory.EquippedHand : null;
+        actionToolView.SetHandItem(isActionToolVisible && hand != null ? hand.name : string.Empty);
+    }
+
+    #endregion
 
     #region Revive
 
@@ -369,8 +445,17 @@ public class Player : MonoBehaviour, IDamageable
     public void ApplyLocalDamage(int amount)
     {
         if (stat == null || stat.IsDead || amount <= 0) return;
+
+        // 방어구 감소율을 먼저 적용하고, 실제로 맞았을 때만 방어구 내구도를 깎는다.
+        float damage = amount;
+        if (playerInventory != null && !stat.Invincible)
+        {
+            damage *= playerInventory.GetArmorDamageMultiplier();
+            playerInventory.ConsumeArmorDurabilityOnHit();
+        }
+
         // TakeDamage → OnDamaged → HandleDamaged 로 PlayerHurtState 전환까지 이어진다.
-        stat.TakeDamage(amount);
+        stat.TakeDamage(damage);
     }
 
     /// <summary>이 피어의 스탯에 도트 데미지를 건다. 네트워크로 전달받은 도트도 여기로 들어온다.</summary>

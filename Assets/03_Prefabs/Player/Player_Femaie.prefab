@@ -17,6 +17,8 @@ GameObject:
   - component: {fileID: 9146008707785666234}
   - component: {fileID: 338181743308742530}
   - component: {fileID: 6613656404316520952}
+  - component: {fileID: 3009027082736589027}
+  - component: {fileID: 5049166734155591387}
   m_Layer: 31
   m_Name: Player_Femaie
   m_TagString: Player
@@ -82,6 +84,9 @@ MonoBehaviour:
   motor: {fileID: 3458799336253370163}
   fpCameraController: {fileID: 2209426419262318571}
   playerInventory: {fileID: 5601182068425426865}
+  outfitViews:
+  - {fileID: 3009027082736589027}
+  - {fileID: 5049166734155591387}
 --- !u!114 &3458799336253370163
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -248,6 +253,48 @@ MonoBehaviour:
   torchLightIntensity: 3.5
   torchLightRange: 7
   torchLightColor: {r: 1, g: 0.45, b: 0.18, a: 1}
+--- !u!114 &3009027082736589027
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 291828927232711877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8250a546a6c9bd843a73a75414a1c0a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skeletonRoot: {fileID: 2558728847133240127}
+  attachToBone: 0
+  attachBone: 10
+  watchedSlot: 2
+  outfitBindings:
+  - itemKey: Armor_Chestplate
+    outfitKey: Armor_F
+  fallbackOutfitKey: 
+  hideInFirstPerson: 0
+--- !u!114 &5049166734155591387
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 291828927232711877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8250a546a6c9bd843a73a75414a1c0a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skeletonRoot: {fileID: 2558728847133240127}
+  attachToBone: 1
+  attachBone: 10
+  watchedSlot: 1
+  outfitBindings:
+  - itemKey: Armor_Helmet
+    outfitKey: Helmet_F
+  fallbackOutfitKey: 
+  hideInFirstPerson: 1
 --- !u!1 &385572181032873360
 GameObject:
   m_ObjectHideFlags: 0
@@ -711,6 +758,11 @@ PrefabInstance:
 --- !u!95 &707795020089778651 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 7ba053ea9b532bd4784dc795612d69e0, type: 3}
+  m_PrefabInstance: {fileID: 6392862402148129866}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2558728847133240127 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8879528566716807029, guid: 7ba053ea9b532bd4784dc795612d69e0, type: 3}
   m_PrefabInstance: {fileID: 6392862402148129866}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &3367956887733851697 stripped

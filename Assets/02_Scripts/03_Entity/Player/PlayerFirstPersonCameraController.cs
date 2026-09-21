@@ -91,6 +91,9 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     private GameObject equippedToolObject;
     private IEquipable equippedToolEquipable;
     private Renderer[] bodyRenderers;
+
+    // 몸에 나중에 붙는 렌더러 (액션 중 손에 든 도구 등). 몸과 같은 규칙으로 숨긴다.
+    private Renderer[] attachedBodyRenderers;
     private bool isLocalView = true;
     private Camera toolCamera;
     private Camera stackedBaseCamera;
@@ -284,11 +287,8 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
                 ? ShadowCastingMode.On
                 : ShadowCastingMode.ShadowsOnly;
 
-        for (int i = 0; i < bodyRenderers.Length; i++)
-        {
-            if (bodyRenderers[i] == null) continue;
-            bodyRenderers[i].shadowCastingMode = mode;
-        }
+        SetShadowMode(bodyRenderers, mode);
+        SetShadowMode(attachedBodyRenderers, mode);
     }
 
     /// <summary>
@@ -367,17 +367,37 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         bodyRenderers = playerBody.GetComponentsInChildren<Renderer>(true);
     }
 
+    /// <summary>
+    /// 몸에 붙인 오브젝트(액션 중 손에 든 도구 등)를 몸체와 같은 규칙으로 보이게/숨기게 한다.
+    /// null을 넘기면 등록을 해제한다. 한 번에 하나만 추적한다.
+    /// </summary>
+    public void SetAttachedBodyObject(GameObject attached)
+    {
+        // 풀로 돌아간 오브젝트가 다른 곳에서 재사용될 때 투명하게 나오지 않도록 원래대로 돌려둔다.
+        SetShadowMode(attachedBodyRenderers, ShadowCastingMode.On);
+
+        attachedBodyRenderers = attached != null ? attached.GetComponentsInChildren<Renderer>(true) : null;
+        ApplyBodyVisibility();
+    }
+
     private void ApplyBodyVisibility()
     {
-        if (bodyRenderers == null) return;
+        ShadowCastingMode mode = isLocalView && hidePlayerBodyInFirstPerson
+            ? ShadowCastingMode.ShadowsOnly
+            : ShadowCastingMode.On;
 
-        for (int i = 0; i < bodyRenderers.Length; i++)
+        SetShadowMode(bodyRenderers, mode);
+        SetShadowMode(attachedBodyRenderers, mode);
+    }
+
+    private static void SetShadowMode(Renderer[] renderers, ShadowCastingMode mode)
+    {
+        if (renderers == null) return;
+
+        for (int i = 0; i < renderers.Length; i++)
         {
-            if (bodyRenderers[i] == null) continue;
-            bodyRenderers[i].shadowCastingMode =
-                isLocalView && hidePlayerBodyInFirstPerson
-                    ? ShadowCastingMode.ShadowsOnly
-                    : ShadowCastingMode.On;
+            if (renderers[i] == null) continue;
+            renderers[i].shadowCastingMode = mode;
         }
     }
 

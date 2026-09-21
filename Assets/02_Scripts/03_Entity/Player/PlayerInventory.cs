@@ -773,8 +773,59 @@ public class PlayerInventory : MonoBehaviour
                 break;
         }
 
+        // 손 장비는 1인칭 뷰가 프리팹을 띄우며 인스턴스를 등록하지만,
+        // 머리/몸통 방어구는 띄울 프리팹이 없으므로 여기서 내구도 인스턴스를 직접 만든다.
+        if (itemData != null && equipSlot != EquipSlot.Hand)
+            RegisterEquippedItemInstance(equipSlot, ItemData.CreateFromSO(itemData) as IEquipable);
+
         OnEquippedItemChanged?.Invoke(equipSlot, itemData);
     }
+
+    #region Armor
+
+    // 방어구 방어력을 피해 감소율(%)로 읽는 슬롯. 방패는 손 슬롯이다.
+    private static readonly EquipSlot[] ArmorSlots = { EquipSlot.Head, EquipSlot.Chest, EquipSlot.Hand };
+
+    /// <summary>
+    /// 장착 방어구로 인한 받는 피해 배율 (1 = 감소 없음).
+    /// 방어구의 defense는 피해 감소율(%)로 취급하고, 여러 부위는 곱연산으로 겹친다.
+    /// 예) 투구 15 + 갑옷 30 → 0.85 × 0.70 = 0.595
+    /// </summary>
+    public float GetArmorDamageMultiplier()
+    {
+        float multiplier = 1f;
+        for (int i = 0; i < ArmorSlots.Length; i++)
+        {
+            if (!TryGetUsableArmor(ArmorSlots[i], out ItemDataSO armor, out _)) continue;
+            multiplier *= 1f - Mathf.Clamp(armor.defense, 0f, 95f) * 0.01f;
+        }
+
+        return multiplier;
+    }
+
+    /// <summary>피격 시 장착한 방어구들의 내구도를 한 번씩 깎는다. 다 닳으면 OnBroken으로 장착 해제된다.</summary>
+    public void ConsumeArmorDurabilityOnHit()
+    {
+        for (int i = 0; i < ArmorSlots.Length; i++)
+        {
+            if (TryGetUsableArmor(ArmorSlots[i], out _, out IEquipable instance))
+                instance?.UseDurability();
+        }
+    }
+
+    // 방어력이 있는 전투장비(투구/갑옷/방패)이고 부서지지 않았으면 true.
+    private bool TryGetUsableArmor(EquipSlot slot, out ItemDataSO armor, out IEquipable instance)
+    {
+        armor = GetEquippedItem(slot);
+        instance = GetEquippedItemInstance(slot);
+
+        if (armor == null || armor.itemType != ItemType.CombatGear || armor.defense <= 0f)
+            return false;
+
+        return instance == null || instance.IsUsable;
+    }
+
+    #endregion
 
     private void OnEquippedItemBroken(IEquipable brokenItem)
     {
