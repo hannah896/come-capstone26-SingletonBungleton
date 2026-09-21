@@ -12,6 +12,9 @@ public class PlayerInputData
     public Vector2 LookInput { get; set; }
     public bool SprintHeld { get; set; }
 
+    // 도구 사용 키를 누르고 있는 동안 true. 벌목/채굴을 누르는 동안 반복하는 데 쓴다.
+    public bool ToolUseHeld { get; set; }
+
     // Ctrl 키(RotateView)를 누르고 있는 동안에만 LookInput으로 시야를 회전시킨다.
     public bool RotateViewHeld { get; set; }
 
@@ -58,7 +61,8 @@ public class PlayerInputData
     }
 
     /// <summary>
-    /// 연출 재생 중 입력 차단. LookInput(카메라)은 유지한다.
+    /// 연출 재생 중 입력 차단. LookInput(카메라)과 ToolUseHeld는 유지한다.
+    /// ToolUseHeld를 여기서 끄면 액션 중에 손을 떼지 않았는데도 반복이 한 타 만에 끊긴다.
     /// </summary>
     public void SuppressAllInputs()
     {

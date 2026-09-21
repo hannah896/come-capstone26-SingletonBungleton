@@ -26,6 +26,10 @@ public class PlayerAnimData
     private static readonly int s_damageHash        = Animator.StringToHash("HumanF@Damage01");
     private static readonly int s_combatDeath01Hash = Animator.StringToHash("HumanF@CombatDeath01");
     private static readonly int s_combatDeath02Hash = Animator.StringToHash("HumanF@CombatDeath02");
+    // 벌목 반복: Stop 상태는 Action bool이 false일 때만 Exit로 빠져 Entry를 거칠 수 없으므로,
+    // 다음 타격은 Begin 상태로 직접 CrossFade해서 되감는다. (PlayerChopState.LoopStateHash)
+    private static readonly int s_chopBeginHash     = Animator.StringToHash("Action_Chop_Begin");
+    private static readonly int s_mineBeginHash     = Animator.StringToHash("Action_Mine_Begin");
 
     private const float CrossFadeTime = 0.05f;
 
@@ -37,6 +41,8 @@ public class PlayerAnimData
         s_damageHash,
         s_combatDeath01Hash,
         s_combatDeath02Hash,
+        s_chopBeginHash,
+        s_mineBeginHash,
     };
 
     public PlayerAnimHashKey AnimHashKey => animHashKey;

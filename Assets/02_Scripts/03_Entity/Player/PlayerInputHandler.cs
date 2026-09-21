@@ -65,6 +65,8 @@ public sealed class InputActions_PlayerInputHandler : InputActions
         p.PickUp.performed += OnPickup;
         p.Drop.performed += OnDrop;
         p.ToolUse.performed += OnToolUsePerformed;
+        p.ToolUse.started += OnToolUseStarted;
+        p.ToolUse.canceled += OnToolUseCanceled;
         p.RotateView.started += OnRotateViewStarted;
         p.RotateView.canceled += OnRotateViewCanceled;
         p.ScrollWheel.performed += OnScrollWheel;
@@ -104,6 +106,8 @@ public sealed class InputActions_PlayerInputHandler : InputActions
         p.PickUp.performed -= OnPickup;
         p.Drop.performed -= OnDrop;
         p.ToolUse.performed -= OnToolUsePerformed;
+        p.ToolUse.started -= OnToolUseStarted;
+        p.ToolUse.canceled -= OnToolUseCanceled;
         p.RotateView.started -= OnRotateViewStarted;
         p.RotateView.canceled -= OnRotateViewCanceled;
         p.ScrollWheel.performed -= OnScrollWheel;
@@ -111,6 +115,11 @@ public sealed class InputActions_PlayerInputHandler : InputActions
         p.Previous.performed -= OnPrevious;
         p.Next.performed -= OnNext;
         p.InventorySlot.performed -= OnInventorySlot;
+
+        // 홀드 상태가 true로 남으면 다음 액션이 저절로 반복된다.
+        if (inputData != null)
+            inputData.ToolUseHeld = false;
+
         isConnected = false;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -226,6 +235,19 @@ public sealed class InputActions_PlayerInputHandler : InputActions
     {
         if (inputData == null) return;
         inputData.ToolUsePressed = true;
+    }
+
+    // 누르고 있는 동안 벌목/채굴을 반복하기 위해 홀드 상태를 따로 기록한다.
+    private void OnToolUseStarted(InputAction.CallbackContext ctx)
+    {
+        if (inputData == null) return;
+        inputData.ToolUseHeld = true;
+    }
+
+    private void OnToolUseCanceled(InputAction.CallbackContext ctx)
+    {
+        if (inputData == null) return;
+        inputData.ToolUseHeld = false;
     }
 
     // Ctrl 키를 누르는 동안 시야 회전 활성화
