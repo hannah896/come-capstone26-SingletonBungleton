@@ -74,4 +74,12 @@ public class PlayerActionState : PlayerRootStateBase
     {
         (SubStateMachine.CurrentState as PlayerActionSubStateBase)?.OnActionEvent();
     }
+
+    /// <summary>
+    /// 액션 애니메이션의 스윙 시작 프레임 Animation Event(Player 경유)를 현재 하위 액션 상태로 전달.
+    /// </summary>
+    public void OnSwingEvent()
+    {
+        (SubStateMachine.CurrentState as PlayerActionSubStateBase)?.OnSwingEvent();
+    }
 }

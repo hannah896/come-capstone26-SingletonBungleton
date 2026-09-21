@@ -233,6 +233,16 @@ public class Player : MonoBehaviour, IDamageable
             action.OnActionEvent();
     }
 
+    /// <summary>
+    /// 액션 애니메이션의 스윙 시작 프레임 Animation Event(PlayerAnimEventRelay 경유)를
+    /// 현재 액션 상태로 전달한다. 도구 스윙 연출과 타격 판정의 공통 기준점이다.
+    /// </summary>
+    public void OnToolSwingAnimationEvent()
+    {
+        if (machine?.CurrentState is PlayerActionState action)
+            action.OnSwingEvent();
+    }
+
     #region Revive
 
     // 부활 지점의 지면을 찾을 때 사용하는 레이캐스트 파라미터

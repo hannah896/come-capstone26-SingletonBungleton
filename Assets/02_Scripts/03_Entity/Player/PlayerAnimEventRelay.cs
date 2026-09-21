@@ -15,12 +15,13 @@ public class PlayerAnimEventRelay : MonoBehaviour
     }
 
     /// <summary>
-    /// 도구 사용 액션(벌목/채굴/땅파기 등) 바디 클립의 타격 프레임 Animation Event가 호출.
-    /// 1인칭 도구 스윙을 바디 타격 순간과 동기화하여 재생한다.
+    /// 도구 사용 액션(벌목/채굴 등) 바디 클립의 스윙 시작 프레임 Animation Event가 호출.
+    /// 도구 스윙과 타격 타이머는 액션 상태 진입 시 이미 시작되므로, 여기서는 클립이 실제로
+    /// 재생되기 시작한 시점에 맞춰 타이밍을 한 번 보정해 준다.
     /// </summary>
     public void PlayerToolUse()
     {
-        player?.FPCameraController?.PlayChopSwing();
+        player?.OnToolSwingAnimationEvent();
     }
 
     /// <summary>

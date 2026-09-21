@@ -58,6 +58,9 @@ public class PlayerLocomotionState : PlayerRootStateBase
         {
             if (Entity.Inventory != null && Entity.Inventory.TryGetToolActionType(out ActionType actionType))
             {
+                // 도구 데미지는 액션 상태가 타격 프레임에 적용한다.
+                // 여기서 입력을 소비하지 않으면 같은 프레임의 PlayerInventory.Tick이 한 번 더 때린다.
+                Input.ToolUsePressed = false;
                 Machine.ChangeState(new PlayerActionState(Machine, actionType));
                 return;
             }
