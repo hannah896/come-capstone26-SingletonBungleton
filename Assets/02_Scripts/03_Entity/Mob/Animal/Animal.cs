@@ -57,7 +57,8 @@ public class Animal : Mob
     [Tooltip("도망 중 목적지를 다시 계산하는 주기(초)")]
     [SerializeField] private float fleeRepathInterval = 0.5f;
 
-    [Header("애니메이션 Bool 파라미터명 (둘 다 false면 Idle)")]
+    [Header("애니메이션 Bool 파라미터명 (항상 셋 중 하나만 true)")]
+    [SerializeField] private string idleBool = "Idle";
     [SerializeField] private string walkBool = "Walk";
     [SerializeField] private string runBool = "Run";
 
@@ -417,6 +418,7 @@ public class Animal : Mob
     #endregion
 
     #region Animation
+    private int idleHash;
     private int walkHash;
     private int runHash;
     private readonly HashSet<int> animBoolHashes = new HashSet<int>();
@@ -424,6 +426,7 @@ public class Animal : Mob
     // 컨트롤러에 실제 존재하는 Bool만 기록한다. 없는 이름에 SetBool을 걸면 경고가 난다.
     private void CacheAnimParams()
     {
+        idleHash = string.IsNullOrEmpty(idleBool) ? 0 : Animator.StringToHash(idleBool);
         walkHash = string.IsNullOrEmpty(walkBool) ? 0 : Animator.StringToHash(walkBool);
         runHash = string.IsNullOrEmpty(runBool) ? 0 : Animator.StringToHash(runBool);
 
@@ -437,7 +440,14 @@ public class Animal : Mob
         }
     }
 
-    /// <summary>Walk/Run Bool을 애니 ID에 맞게 켠다. 둘 다 끄면 컨트롤러 기본 상태(Idle)로 돌아간다.</summary>
+    /// <summary>
+    /// Idle/Walk/Run Bool을 애니 ID에 맞게 켠다. 항상 셋 중 하나만 true가 되도록 한다.
+    ///
+    /// Idle Bool이 필요한 이유: 컨트롤러의 idle 상태는 Idle == false 일 때만 Exit로 빠진다.
+    /// (예전처럼 조건 없이 ExitTime에만 기대면 idle 클립 11초가 거의 끝날 때까지 애니가 바뀌지 않아,
+    ///  NavMeshAgent는 이미 걷는데 화면에서는 가만히 서서 미끄러진다)
+    /// 셋 다 false가 되면 Entry가 갈 곳을 못 찾고 기본 상태(idle)와 Exit 사이를 오가므로 그런 조합을 만들지 말 것.
+    /// </summary>
     public void PlayAnim(AnimalAnimId animId)
     {
         CurrentAnimId = animId;
@@ -445,6 +455,7 @@ public class Animal : Mob
 
         SetBoolSafe(walkHash, animId == AnimalAnimId.Walk);
         SetBoolSafe(runHash, animId == AnimalAnimId.Run);
+        SetBoolSafe(idleHash, animId != AnimalAnimId.Walk && animId != AnimalAnimId.Run);
     }
 
     private void SetBoolSafe(int hash, bool value)
