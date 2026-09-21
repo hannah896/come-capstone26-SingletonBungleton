@@ -14,10 +14,10 @@ public class ChestUIBuilder : EditorWindow
 {
     const int Columns = 4;
     const int Rows = 4;
-    const float SlotSize = 64f;
-    const float SlotGap = 6f;
-    const float Pad = 12f;
-    const float TitleBarH = 40f;
+    const float SlotSize = 88f;
+    const float SlotGap = 8f;
+    const float Pad = 16f;
+    const float TitleBarH = 48f;
     const float PanelW = Columns * SlotSize + (Columns - 1) * SlotGap + Pad * 2;
     const float PanelH = TitleBarH + Rows * SlotSize + (Rows - 1) * SlotGap + Pad * 2;
 
@@ -94,13 +94,13 @@ public class ChestUIBuilder : EditorWindow
 
         var icon = MakeImg(root, "Icon", Color.white);
         icon.preserveAspect = true;
-        SetRect(RT(icon), V(0, 0), V(1, 1), V(.5f, .5f), V(6, 6), V(-6, -6));
+        SetRect(RT(icon), V(0, 0), V(1, 1), V(.5f, .5f), V(8, 8), V(-8, -8));
 
         var stackBG = Child(root, "StackBG");
         stackBG.AddComponent<Image>().color = new Color(0, 0, 0, 0.55f);
-        SetRect(RT(stackBG), V(1, 0), V(1, 0), V(1, 0), V(-22, 0), V(0, 16));
+        SetRect(RT(stackBG), V(1, 0), V(1, 0), V(1, 0), V(-28, 0), V(0, 20));
 
-        var stackTxt = MakeTMP(root, "StackText", 12f, cCream);
+        var stackTxt = MakeTMP(root, "StackText", 16f, cCream);
         stackTxt.alignment = TextAlignmentOptions.BottomRight;
         stackTxt.fontStyle = FontStyles.Bold;
         SetRect(RT(stackTxt), V(0, 0), V(1, 1), V(1, 0), V(0, 0), V(-3, 1));
@@ -130,7 +130,7 @@ public class ChestUIBuilder : EditorWindow
         titleBar.AddComponent<Image>().color = cTitleBar;
         SetRect(RT(titleBar), V(0, 1), V(1, 1), V(.5f, 1), V(0, -TitleBarH), V(0, 0));
 
-        var titleTxt = MakeTMP(titleBar, "titleText", 16f, cCream);
+        var titleTxt = MakeTMP(titleBar, "titleText", 20f, cCream);
         titleTxt.fontStyle = FontStyles.Bold;
         titleTxt.alignment = TextAlignmentOptions.MidlineLeft;
         titleTxt.text = "상자";

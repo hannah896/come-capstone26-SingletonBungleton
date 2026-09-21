@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1001 &1089051758065477823
+--- !u!1001 &3002000000000001
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -10,7 +10,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1646071707977394144, guid: 842306433d76b4248a604bbf4528923d, type: 3}
       propertyPath: m_Name
-      value: Chest
+      value: Refrigerator
       objectReference: {fileID: 0}
     - target: {fileID: 2342818106365629939, guid: 842306433d76b4248a604bbf4528923d, type: 3}
       propertyPath: m_LocalPosition.x
@@ -52,68 +52,62 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1073215106143359804, guid: 842306433d76b4248a604bbf4528923d, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value:
+      objectReference: {fileID: 2100000, guid: 8889bfaef22b43241831f5c9360ebee3, type: 2}
+    - target: {fileID: 3707705843847539266, guid: 842306433d76b4248a604bbf4528923d, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value:
+      objectReference: {fileID: 2100000, guid: 8889bfaef22b43241831f5c9360ebee3, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 1646071707977394144, guid: 842306433d76b4248a604bbf4528923d, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 4434845687968474571}
+      addedObject: {fileID: 3002000000000003}
     - targetCorrespondingSourceObject: {fileID: 1646071707977394144, guid: 842306433d76b4248a604bbf4528923d, type: 3}
       insertIndex: -1
-      addedObject: {fileID: -8538262934222988420}
+      addedObject: {fileID: 3002000000000004}
     - targetCorrespondingSourceObject: {fileID: 1646071707977394144, guid: 842306433d76b4248a604bbf4528923d, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 3001000000000001}
+      addedObject: {fileID: 3002000000000005}
     - targetCorrespondingSourceObject: {fileID: 1646071707977394144, guid: 842306433d76b4248a604bbf4528923d, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 3001000000000002}
+      addedObject: {fileID: 3002000000000006}
   m_SourcePrefab: {fileID: 100100000, guid: 842306433d76b4248a604bbf4528923d, type: 3}
---- !u!1 &1856912078889144159 stripped
+--- !u!1 &3002000000000002 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1646071707977394144, guid: 842306433d76b4248a604bbf4528923d, type: 3}
-  m_PrefabInstance: {fileID: 1089051758065477823}
+  m_PrefabInstance: {fileID: 3002000000000001}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &4434845687968474571
+--- !u!114 &3002000000000003
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1856912078889144159}
+  m_GameObject: {fileID: 3002000000000002}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5dd88353606655e479932f2d49039d2b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  proximityTrigger: {fileID: -8538262934222988420}
+  m_Script: {fileID: 11500000, guid: 9efc0a5e1b4d47c2ae3f8d61c07b52a4, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  proximityTrigger: {fileID: 3002000000000004}
   proximityRadius: 1
   slotCount: 16
-  slots:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  stackCounts: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
---- !u!135 &-8538262934222988420
+  slots: []
+  stackCounts: []
+  expirationTimestamps: []
+  rotItemSO: {fileID: 0}
+--- !u!135 &3002000000000004
 SphereCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1856912078889144159}
+  m_GameObject: {fileID: 3002000000000002}
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -128,28 +122,28 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1
   m_Center: {x: -0.0048671067, y: 0.29660526, z: -0.024790883}
---- !u!114 &3001000000000001
+--- !u!114 &3002000000000005
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1856912078889144159}
+  m_GameObject: {fileID: 3002000000000002}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9a48bdb136130994aaafe81874680ac8, type: 3}
   m_Name:
   m_EditorClassIdentifier:
-  _itemSO: {fileID: 11400000, guid: c4e57000c4e57000c4e57000c4e57000, type: 2}
+  _itemSO: {fileID: 11400000, guid: f61d9e00f61d9e00f61d9e00f61d9e00, type: 2}
   stackCount: 1
   _torchLight: {fileID: 0}
---- !u!54 &3001000000000002
+--- !u!54 &3002000000000006
 Rigidbody:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1856912078889144159}
+  m_GameObject: {fileID: 3002000000000002}
   serializedVersion: 4
   m_Mass: 1
   m_Drag: 0

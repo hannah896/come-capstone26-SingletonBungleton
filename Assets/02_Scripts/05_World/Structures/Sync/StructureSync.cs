@@ -108,6 +108,7 @@ public static class StructureSync
     {
         if (storage == null || inventory == null || itemData == null || amount <= 0) return;
         if (!inventory.HasItem(itemData, amount)) return;
+        if (!storage.CanAccept(itemData)) return;
 
 #if PHOTON_FUSION
         if (TryGetNetworkId(storage.gameObject, out int id))

@@ -13,6 +13,9 @@ public class Refrigerator : StorageStation
 
     protected override float ExpirationMultiplier => RefrigeratorExpirationMultiplier;
 
+    /// <summary>냉장고는 소비기한이 있는(부패하는) 음식만 보관할 수 있다.</summary>
+    public override bool CanAccept(ItemDataSO itemData) => itemData != null && itemData.expirationTime > 0f;
+
     protected override void Awake()
     {
         base.Awake();

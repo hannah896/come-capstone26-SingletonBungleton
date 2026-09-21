@@ -160,6 +160,21 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 020543893f9a63f4bbe0a32cbd262803
+    m_Address: Tool_Chest
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 66e27eeed8ba5144f84e39282295a53a
+    m_Address: Tool_Workbench
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f61dfab0f61dfab0f61dfab0f61dfab0
+    m_Address: Tool_Refrigerator
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 9e8825677fc895d419af53a07717203c
     m_Address: Armor_Helmet
     m_ReadOnly: 0

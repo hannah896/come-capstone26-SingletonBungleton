@@ -120,57 +120,57 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2001000000000002}
     m_Modifications:
-    - target: {fileID: 6600280341244968508, guid: 763fbf96d7cb5e547aa28171a1ffc65a, type: 3}
+    - target: {fileID: 4412223224010384202, guid: 5120f0c73af6ddb45bef307b795e04a3, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6600280341244968508, guid: 763fbf96d7cb5e547aa28171a1ffc65a, type: 3}
+    - target: {fileID: 4412223224010384202, guid: 5120f0c73af6ddb45bef307b795e04a3, type: 3}
       propertyPath: m_LocalPosition.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6600280341244968508, guid: 763fbf96d7cb5e547aa28171a1ffc65a, type: 3}
+    - target: {fileID: 4412223224010384202, guid: 5120f0c73af6ddb45bef307b795e04a3, type: 3}
       propertyPath: m_LocalPosition.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6600280341244968508, guid: 763fbf96d7cb5e547aa28171a1ffc65a, type: 3}
+    - target: {fileID: 4412223224010384202, guid: 5120f0c73af6ddb45bef307b795e04a3, type: 3}
       propertyPath: m_LocalRotation.w
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 6600280341244968508, guid: 763fbf96d7cb5e547aa28171a1ffc65a, type: 3}
+    - target: {fileID: 4412223224010384202, guid: 5120f0c73af6ddb45bef307b795e04a3, type: 3}
       propertyPath: m_LocalRotation.x
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6600280341244968508, guid: 763fbf96d7cb5e547aa28171a1ffc65a, type: 3}
+    - target: {fileID: 4412223224010384202, guid: 5120f0c73af6ddb45bef307b795e04a3, type: 3}
       propertyPath: m_LocalRotation.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6600280341244968508, guid: 763fbf96d7cb5e547aa28171a1ffc65a, type: 3}
+    - target: {fileID: 4412223224010384202, guid: 5120f0c73af6ddb45bef307b795e04a3, type: 3}
       propertyPath: m_LocalRotation.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6600280341244968508, guid: 763fbf96d7cb5e547aa28171a1ffc65a, type: 3}
+    - target: {fileID: 4412223224010384202, guid: 5120f0c73af6ddb45bef307b795e04a3, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6600280341244968508, guid: 763fbf96d7cb5e547aa28171a1ffc65a, type: 3}
+    - target: {fileID: 4412223224010384202, guid: 5120f0c73af6ddb45bef307b795e04a3, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6600280341244968508, guid: 763fbf96d7cb5e547aa28171a1ffc65a, type: 3}
+    - target: {fileID: 4412223224010384202, guid: 5120f0c73af6ddb45bef307b795e04a3, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 7909360915260148783, guid: 763fbf96d7cb5e547aa28171a1ffc65a, type: 3}
+    - target: {fileID: 1648569857757285282, guid: 5120f0c73af6ddb45bef307b795e04a3, type: 3}
       propertyPath: m_Name
-      value: P_PROP_cookingpot_interior_01
+      value: COMP_PROP_fireplace_interior_01
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 763fbf96d7cb5e547aa28171a1ffc65a, type: 3}
+  m_SourcePrefab: {fileID: 100100000, guid: 5120f0c73af6ddb45bef307b795e04a3, type: 3}
 --- !u!4 &6602263748920241723 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: 6600280341244968508, guid: 763fbf96d7cb5e547aa28171a1ffc65a, type: 3}
+  m_CorrespondingSourceObject: {fileID: 4412223224010384202, guid: 5120f0c73af6ddb45bef307b795e04a3, type: 3}
   m_PrefabInstance: {fileID: 2001000000000007}
   m_PrefabAsset: {fileID: 0}

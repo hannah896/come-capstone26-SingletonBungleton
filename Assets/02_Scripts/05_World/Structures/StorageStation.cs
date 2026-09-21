@@ -11,6 +11,9 @@ public abstract class StorageStation : StationBase
     /// <summary>보관함 UI 제목 등에 쓰는 표시 이름. 하위 클래스가 오버라이드한다.</summary>
     public virtual string DisplayName => StationType.ToString();
 
+    /// <summary>이 보관함이 해당 아이템을 받을 수 있는지. 하위 클래스가 오버라이드해서 보관 가능한 아이템을 제한한다.</summary>
+    public virtual bool CanAccept(ItemDataSO itemData) => itemData != null;
+
     [Header("보관 설정")]
     [SerializeField] private int slotCount = 16;
 

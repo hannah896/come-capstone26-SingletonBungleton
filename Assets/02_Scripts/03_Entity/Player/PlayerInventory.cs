@@ -129,10 +129,13 @@ public class PlayerInventory : MonoBehaviour
                 TryPickupNearest();
         }
 
-        // E: 조준한 구조물이 있으면 열고, 없으면 기존처럼 선택 슬롯 장착
+        // E: 보관함이 열려 있으면 조준 여부와 상관없이 닫기.
+        // 아니면 조준한 구조물이 있을 때 열고, 없으면 기존처럼 선택 슬롯 장착.
         if (inputData.EquipSelectedPressed)
         {
-            if (!TryInteractFocused())
+            if (UI_Popup_Chest.Current != null)
+                UI_Popup_Chest.Current.Close();
+            else if (!TryInteractFocused())
                 EquipSelectedSlot();
         }
 
@@ -879,6 +882,12 @@ public class PlayerInventory : MonoBehaviour
 
     private FocusKind ClassifyFocus(Collider col)
     {
+        // 상자·작업대·모닥불 같은 설치된 구조물은 Item을 겸해서 갖고 있어도
+        // "줍기"보다 "상호작용(E)"이 항상 우선이어야 한다 — 먼저 판정한다.
+        Structure structure = col.GetComponentInParent<Structure>();
+        if (structure != null && structure.CanInteract(BuildInteractionContext(structure.transform.position)))
+            return FocusKind.Structure;
+
         if (TryGetPickupCandidate(col, out _))
             return FocusKind.Pickup;
 
@@ -889,11 +898,6 @@ public class PlayerInventory : MonoBehaviour
         BonfireCooker bonfire = col.GetComponentInParent<BonfireCooker>();
         if (bonfire != null && bonfire.CanCookFromInventory(this))
             return FocusKind.Cook;
-
-        // 상자·냉장고 같은 상호작용 구조물 (E키로 연다)
-        Structure structure = col.GetComponentInParent<Structure>();
-        if (structure != null && structure.CanInteract(BuildInteractionContext(structure.transform.position)))
-            return FocusKind.Structure;
 
         return FocusKind.None;
     }
