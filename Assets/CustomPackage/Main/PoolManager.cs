@@ -332,7 +332,10 @@ public sealed class PoolManager : CoreManager
         if (_loadingTasks.TryGetValue(address, out var loadingTask))
             return await loadingTask;
 
-        var task = LoadInternal(address, token);
+        // 같은 키를 동시에 스폰하면 로딩 중인 태스크를 여러 곳에서 await한다.
+        // UniTask는 한 번만 await할 수 있고, Preserve도 완료 전 동시 await는 막는다.
+        // AsyncLazy는 UniTaskCompletionSource 기반이라 로딩 중에 여러 곳에서 await해도 된다.
+        var task = LoadInternal(address, token).ToAsyncLazy().Task;
         _loadingTasks[address] = task;
 
         try

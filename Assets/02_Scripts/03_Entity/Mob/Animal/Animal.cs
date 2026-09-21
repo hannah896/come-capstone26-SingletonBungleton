@@ -77,6 +77,12 @@ public class Animal : Mob
     private Vector3 lastHitFrom;
     private bool hasHitFrom;
 
+    // 마지막으로 때린 플레이어. 도망치는 동안 그 플레이어의 현재 위치 반대로 뛴다(쫓아와도 계속 멀어지도록).
+    private Player lastAttacker;
+
+    // 네트워크 보고로 들어온 공격자 위치에서 이 거리 안의 플레이어를 공격자로 본다
+    private const float AttackerMatchDistance = 2f;
+
     // 풀에서 꺼낸 인스턴스인지. OnSpawn은 풀 스폰에서만 불리므로 false면 씬에 직접 배치된 동물이다.
     private bool isPooled;
 
@@ -90,6 +96,7 @@ public class Animal : Mob
     public float IdleDuration => AnimalData != null ? AnimalData.IdleDuration : 5f;
     public float WanderRadius => AnimalData != null ? AnimalData.WanderRadius : 8f;
     public float FleeRange => AnimalData != null ? AnimalData.FleeRange : 12f;
+    public float MinFleeDuration => AnimalData != null ? AnimalData.MinFleeDuration : 4f;
     public float WalkSpeed => status != null ? status.MoveSpeed : 2f;
     public float RunSpeed => AnimalData != null ? AnimalData.RunSpeed : 6f;
     public float MinAirTime => minAirTime;
@@ -146,6 +153,7 @@ public class Animal : Mob
         NetSlot = -1;
         hasNetTarget = false;
         hasHitFrom = false;
+        lastAttacker = null;
         CurrentAnimId = AnimalAnimId.None;
         stateMachine = new AnimalStateMachine(this);
     }
@@ -185,10 +193,10 @@ public class Animal : Mob
     {
         if (!CanDamage(context)) return;
 
-        // 공격자 위치 기억: 플레이어 등 실제 공격자가 있으면 그 위치, 없으면(네트워크 보고) Point를 공격자 위치로 쓴다.
-        lastHitFrom = context.Instigator != null && context.Instigator.GetComponentInParent<Player>() != null
-            ? context.Instigator.transform.position
-            : context.Point;
+        // 공격자 기억: 플레이어가 직접 때렸으면 그 플레이어, 네트워크 보고(Point = 공격자 위치)면 그 자리에 있는 플레이어.
+        Player attacker = context.Instigator != null ? context.Instigator.GetComponentInParent<Player>() : null;
+        lastHitFrom = attacker != null ? attacker.transform.position : context.Point;
+        lastAttacker = attacker != null ? attacker : FindPlayerNear(context.Point, AttackerMatchDistance);
         hasHitFrom = true;
 
         base.ApplyDamage(context);
@@ -331,6 +339,38 @@ public class Animal : Mob
         }
 
         return nearest;
+    }
+
+    /// <summary>
+    /// 도망칠 기준 위치 = 마지막으로 때린 플레이어의 현재 위치. 그 플레이어를 못 찾으면 맞은 순간의 공격 위치.
+    /// 이 위치의 반대 방향(맞은 방향의 반대)으로 뛴다.
+    /// </summary>
+    public Vector3 GetAttackerPosition()
+    {
+        if (lastAttacker != null && lastAttacker.isActiveAndEnabled && lastAttacker.IsAlive)
+            return lastAttacker.transform.position;
+
+        return lastHitFrom;
+    }
+
+    // position 근처(maxDistance 이내)에서 가장 가까운 살아있는 플레이어를 찾는다.
+    private static Player FindPlayerNear(Vector3 position, float maxDistance)
+    {
+        Player best = null;
+        float bestSqr = maxDistance * maxDistance;
+
+        foreach (Player player in FindObjectsByType<Player>(FindObjectsSortMode.None))
+        {
+            if (!player.isActiveAndEnabled || !player.IsAlive) continue;
+
+            float sqr = (player.transform.position - position).sqrMagnitude;
+            if (sqr > bestSqr) continue;
+
+            bestSqr = sqr;
+            best = player;
+        }
+
+        return best;
     }
 
     /// <summary>도망 기준 위치: 주변 플레이어가 있으면 그 위치, 없으면 마지막 공격 위치.</summary>

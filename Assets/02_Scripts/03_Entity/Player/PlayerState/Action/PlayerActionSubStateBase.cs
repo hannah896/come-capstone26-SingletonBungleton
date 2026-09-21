@@ -61,6 +61,11 @@ public abstract class PlayerActionSubStateBase : PlayerSubStateBase
     {
         base.OnEnter();
         Machine.AnimData.PlayActionAnimation(ActionTrigger);
+
+        // 도구를 쓰는 액션이면 바디의 손에도 장착 도구를 들린다 (반복 타격 동안 유지)
+        if (UsesToolOnComplete)
+            Entity.ShowActionTool();
+
         StartSwing();
     }
 
@@ -68,6 +73,9 @@ public abstract class PlayerActionSubStateBase : PlayerSubStateBase
     {
         base.OnExit();
         Machine.AnimData.ResetActionTrigger(ActionTrigger);
+
+        if (UsesToolOnComplete)
+            Entity.HideActionTool();
     }
 
     public override void Update(float deltaTime = 1f)

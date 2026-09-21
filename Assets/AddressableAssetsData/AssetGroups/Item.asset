@@ -15,6 +15,11 @@ MonoBehaviour:
   m_GroupName: Item
   m_GUID: 32f67073428d6154e87a876b6c0ecdfa
   m_SerializeEntries:
+  - m_GUID: 020543893f9a63f4bbe0a32cbd262803
+    m_Address: Tool_Chest
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 0629e171a501f4346b4804f6e1cd9e73
     m_Address: Food_CookedEgg
     m_ReadOnly: 0
@@ -25,8 +30,28 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 0f6ae5c5e3864f4b9b8c58b1af3987e0
+    m_Address: Resource_Flower
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1285e0ab06204c6d988d514450274e05
+    m_Address: Resource_Carrot
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 14159bf9375720745b7db5cf8b2f5cb4
     m_Address: Tool_Axe_Gold
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 150e3bf97b844409a288d8c25dc29d1e
+    m_Address: Resource_Ice
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2691251d3c8f4b219428cdb5f544abe5
+    m_Address: Dish_FlowerTea
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -65,8 +90,18 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 41935a24714645659b3079086a37c116
+    m_Address: Dish_MeatStew
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 427752b4951672341aae668c15269636
     m_Address: Tool_FishingRod
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4290e3a1ffc44314a50b6f3850aec5ab
+    m_Address: Dish_Jerky
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -105,6 +140,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 563ac3f697064ed0895999f712e2d3cd
+    m_Address: Dish_MushroomSoup
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 61acb6983d8e45fcbfad83c0b9153eed
     m_Address: Food_RoastedCarrot
     m_ReadOnly: 0
@@ -130,8 +170,18 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 66e27eeed8ba5144f84e39282295a53a
+    m_Address: Tool_Workbench
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 6bcac75bfeaaafc42a1e39a298060882
     m_Address: Resource_Mineral_Coal
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6cddfdc27de14c48873d19f024cd3012
+    m_Address: Resource_Mushroom
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -155,11 +205,6 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: c00fca17c00fca17c00fca17c00fca17
-    m_Address: Tool_CookingPot
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 9e8825677fc895d419af53a07717203c
     m_Address: Armor_Helmet
     m_ReadOnly: 0
@@ -180,8 +225,23 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: af5dec69a4174df7b11069f3248aef7f
+    m_Address: Resource_Potato
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: b104807b5fd8a18429aa3084295c497d
     m_Address: Resource_Mineral_Flint
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b908d74335fa48089afefefe0235aa16
+    m_Address: Dish_Omelette
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bead81a75b6f44c194dc0264bc063847
+    m_Address: Special_Rot
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -200,8 +260,18 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c00fca17c00fca17c00fca17c00fca17
+    m_Address: Tool_CookingPot
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: c4d5c9e3be52a0e4296a1f2a9d7661a4
     m_Address: Tool_Pickaxe_Gold
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c5bfe8aeee1f461f8bd34fc090c5c011
+    m_Address: Dish_BerryPie
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -235,6 +305,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d5975a5aea84fd43915b4e14e1bbab7e
+    m_Address: Dish_FishSteak
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: d6f1a1fe544c5044b8fab84ed004468b
     m_Address: Tool_Shovel_Iron
     m_ReadOnly: 0
@@ -250,83 +325,23 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: ec526efbe3d7afb49981f535aef51076
-    m_Address: Weapon_Sword
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: fc5e71b6dadcc5a45b0a1ec18a9a0ae8
-    m_Address: Tool_Torch
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 6cddfdc27de14c48873d19f024cd3012
-    m_Address: Resource_Mushroom
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 1285e0ab06204c6d988d514450274e05
-    m_Address: Resource_Carrot
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: af5dec69a4174df7b11069f3248aef7f
-    m_Address: Resource_Potato
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 0f6ae5c5e3864f4b9b8c58b1af3987e0
-    m_Address: Resource_Flower
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 150e3bf97b844409a288d8c25dc29d1e
-    m_Address: Resource_Ice
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 41935a24714645659b3079086a37c116
-    m_Address: Dish_MeatStew
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e9a63fcecb254af6baee73fa41a3bcbe
     m_Address: Dish_BerryJam
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: c5bfe8aeee1f461f8bd34fc090c5c011
-    m_Address: Dish_BerryPie
+  - m_GUID: ec526efbe3d7afb49981f535aef51076
+    m_Address: Weapon_Sword
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: d5975a5aea84fd43915b4e14e1bbab7e
-    m_Address: Dish_FishSteak
+  - m_GUID: f61dfab0f61dfab0f61dfab0f61dfab0
+    m_Address: Tool_Refrigerator
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 563ac3f697064ed0895999f712e2d3cd
-    m_Address: Dish_MushroomSoup
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: b908d74335fa48089afefefe0235aa16
-    m_Address: Dish_Omelette
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 4290e3a1ffc44314a50b6f3850aec5ab
-    m_Address: Dish_Jerky
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 2691251d3c8f4b219428cdb5f544abe5
-    m_Address: Dish_FlowerTea
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: bead81a75b6f44c194dc0264bc063847
-    m_Address: Special_Rot
+  - m_GUID: fc5e71b6dadcc5a45b0a1ec18a9a0ae8
+    m_Address: Tool_Torch
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

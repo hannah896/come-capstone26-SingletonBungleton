@@ -14,7 +14,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_GroupName: Prefabs_Mob
   m_GUID: fee4175c263af4e44a04d3bea64eb0d6
-  m_SerializeEntries: []
+  m_SerializeEntries:
+  - m_GUID: 1b86649ae2dc1534aa0c55ead621a232
+    m_Address: Deer
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 562454c98d6edee43b9147b9c14a4218
+    m_Address: Chicken
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: d49714acbe7dc4846b65422625851c9a, type: 2}
   m_SchemaSet:

@@ -15,3 +15,5 @@ MonoBehaviour:
   entries:
   - addressableKey: Deer
     statData: {fileID: 11400000, guid: 6ad5a06f7c713ac44b8c78dfdfd4c3bc, type: 2}
+  - addressableKey: Chicken
+    statData: {fileID: 11400000, guid: e709c3a78a2a817489fd692afe2f75bc, type: 2}

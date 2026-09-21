@@ -9,13 +9,32 @@ using UnityEngine;
 /// </summary>
 public abstract class StorageStation : StationBase
 {
+    /// <summary>보관함 UI 제목 등에 쓰는 표시 이름. 하위 클래스가 오버라이드한다.</summary>
+    public virtual string DisplayName => StationType.ToString();
+
+    /// <summary>이 보관함이 해당 아이템을 받을 수 있는지. 하위 클래스가 오버라이드해서 보관 가능한 아이템을 제한한다.</summary>
+    public virtual bool CanAccept(ItemDataSO itemData) => itemData != null;
+
     [Header("보관 설정")]
     [SerializeField] private int slotCount = 16;
 
     [SerializeField] private List<ItemDataSO> slots = new();
     [SerializeField] private List<int> stackCounts = new();     // 각 슬롯에 있는 아이템의 개수 (0이면 빈 슬롯)
     private readonly List<float> _durabilities = new();
-    private readonly List<float> _spoilRemaining = new();
+    [SerializeField] private List<float> expirationTimestamps = new(); // 슬롯별 소비기한 만료 시각 (0이면 부패 없음)
+
+    [Header("소비기한")]
+    [Tooltip("소비기한이 지난 스택이 전환될 아이템 (SpecialType.Rot). 비워두면 이 보관함에서는 부패하지 않는다.")]
+    [SerializeField] private ItemDataSO rotItemSO;
+
+    private float nextExpirationCheckTime;
+    private const float ExpirationCheckInterval = 1f;
+
+    /// <summary>
+    /// 보관 중 소비기한이 느려지는 배수. 1 = 인벤토리와 동일 속도, 3 = 3배 오래 간다(냉장고).
+    /// 아이템이 들어올 때 남은 시간에 곱하고, 나갈 때 나눠서 되돌린다.
+    /// </summary>
+    protected virtual float ExpirationMultiplier => 1f;
 
     // 보관함 내용이 변경될 때마다 호출되는 이벤트 (UI 등에서 구독하여 업데이트에 활용)
     public event Action OnStorageChanged;
@@ -51,7 +70,78 @@ public abstract class StorageStation : StationBase
         return true;
     }
 
-    protected virtual void OnInteract(InteractionContext context) { }
+    /// <summary>보관함을 연다. 하위 클래스가 base.OnInteract(context)로 그대로 쓰면 된다.</summary>
+    protected virtual void OnInteract(InteractionContext context)
+    {
+        PlayerInventory inventory = context.Instigator != null
+            ? context.Instigator.GetComponent<PlayerInventory>()
+            : null;
+        if (inventory == null) return;
+
+        OpenStoragePopupAsync(inventory).Forget();
+    }
+
+    private async UniTask OpenStoragePopupAsync(PlayerInventory inventory)
+    {
+        UI_Popup_Chest popup = await Extensions.ShowPopup<UI_Popup_Chest>(clickClose: true);
+        popup.Bind(this, inventory);
+    }
+
+    private void Update()
+    {
+        if (SavePlayClock.Now < nextExpirationCheckTime) return;
+        nextExpirationCheckTime = SavePlayClock.Now + ExpirationCheckInterval;
+        CheckExpirations();
+    }
+
+    /// <summary>
+    /// 해당 슬롯 아이템의 남은 소비기한(초). 보관함 배수를 되돌린 "인벤토리 기준" 값이라
+    /// 그대로 다른 보관함이나 인벤토리로 넘기면 된다. 부패하지 않는 아이템이면 -1.
+    /// </summary>
+    public float GetRemainingSeconds(int index)
+    {
+        if (index < 0 || index >= expirationTimestamps.Count) return -1f;
+        if (expirationTimestamps[index] <= 0f) return -1f;
+
+        float storedRemaining = Mathf.Max(0f, expirationTimestamps[index] - SavePlayClock.Now);
+        return storedRemaining / Mathf.Max(0.0001f, ExpirationMultiplier);
+    }
+
+    /// <summary>남은 소비기한(초)을 이 보관함의 만료 시각으로 환산한다. remainingSeconds가 음수면 아이템 기본값으로 새로 채운다.</summary>
+    private float ToDeadline(ItemDataSO itemData, float remainingSeconds)
+    {
+        if (itemData == null) return 0f;
+
+        if (remainingSeconds < 0f)
+        {
+            if (itemData.expirationTime <= 0f) return 0f;
+            remainingSeconds = itemData.expirationTime * 60f;
+        }
+
+        if (remainingSeconds <= 0f) return 0f;
+        return SavePlayClock.Now + remainingSeconds * Mathf.Max(0.0001f, ExpirationMultiplier);
+    }
+
+    /// <summary>소비기한이 지난 스택을 rotItemSO로 전환한다.</summary>
+    private void CheckExpirations()
+    {
+        if (rotItemSO == null) return;
+
+        bool anyExpired = false;
+        for (int i = 0; i < slots.Count; i++)
+        {
+            if (slots[i] == null || stackCounts[i] <= 0) continue;
+            if (expirationTimestamps[i] <= 0f || SavePlayClock.Now < expirationTimestamps[i]) continue;
+
+            int rotAmount = stackCounts[i];
+            ClearSlot(i);
+            TryAddItemToSlots(rotItemSO, rotAmount, out _, -1f);
+            anyExpired = true;
+        }
+
+        if (anyExpired)
+            OnStorageChanged?.Invoke();
+    }
 
     // 상자에 아이템을 추가하는 메서드, 남은 개수 반환, 성공 여부 반환
     public bool AddItem(ItemDataSO itemData, int amount, out int remainingAmount)
@@ -60,11 +150,15 @@ public abstract class StorageStation : StationBase
     public bool AddItem(ItemDataSO itemData, int amount, out int remainingAmount,
         float durability, float spoilRemainingSeconds)
     {
-        int[] previousCounts = stackCounts.ToArray();
-        bool added = TryAddItemToSlots(itemData, amount, out remainingAmount);
-        for (int i = 0; i < slots.Count; i++)
-            if (slots[i] == itemData && stackCounts[i] > previousCounts[i])
-                MergeSlotState(i, previousCounts[i], durability, spoilRemainingSeconds);
+        bool added = TryAddItemToSlots(itemData, amount, out remainingAmount, durability, spoilRemainingSeconds);
+        OnStorageChanged?.Invoke();
+        return added;
+    }
+
+    // remainingSeconds: 넘겨받은 남은 소비기한(초). 음수면 아이템 기본 소비기한으로 새로 시작한다.
+    public bool AddItem(ItemDataSO itemData, int amount, out int remainingAmount, float remainingSeconds = -1f)
+    {
+        bool added = TryAddItemToSlots(itemData, amount, out remainingAmount, -1f, remainingSeconds);
         OnStorageChanged?.Invoke();
         return added;
     }
@@ -90,13 +184,24 @@ public abstract class StorageStation : StationBase
         if (space <= 0)
             return false; // 스택이 이미 가득 찬 경우
         int addAmount = Mathf.Min(space, remainingAmount);
+        bool wasEmpty = currentCount <= 0;
         slots[index] = itemData;
         stackCounts[index] += addAmount;
-        MergeSlotState(index, currentCount, durability, spoilRemainingSeconds);
+        MergeSlotState(index, currentCount, durability);
         remainingAmount -= addAmount;
+
+        // 스택에 합칠 때는 더 이른 기한을 남긴다 (신선한 걸 얹어서 기한을 되살리지 못하게)
+        float deadline = ToDeadline(itemData, spoilRemainingSeconds);
+        expirationTimestamps[index] = wasEmpty || expirationTimestamps[index] <= 0f
+            ? deadline
+            : (deadline <= 0f ? expirationTimestamps[index] : Mathf.Min(expirationTimestamps[index], deadline));
+
         OnStorageChanged?.Invoke();
         return true;
     }
+
+    public bool AddItemAt(ItemDataSO itemData, int index, int amount, out int remainingAmount, float remainingSeconds = -1f)
+        => AddItemAt(itemData, index, amount, out remainingAmount, -1f, remainingSeconds);
 
     // 슬롯 간 아이템 교환 또는 같은 아이템이면 스택 합치기, 인덱스 유효성 검사 포함
     public void SwapOrMergeSlots(int fromIndex, int toIndex)
@@ -106,29 +211,38 @@ public abstract class StorageStation : StationBase
         ItemDataSO tempItem = slots[fromIndex];
         int tempCount = stackCounts[fromIndex];
         float tempDurability = _durabilities[fromIndex];
-        float tempSpoil = _spoilRemaining[fromIndex];
+        float tempDeadline = expirationTimestamps[fromIndex];
+        int previousToCount = stackCounts[toIndex];
         if (slots[fromIndex] == slots[toIndex] && tempItem != null)
         {
-            // 같은 아이템이면 합치기
+            // 같은 아이템이면 합치기 — 기한은 둘 중 더 이른 쪽을 따른다
             int maxStack = Mathf.Max(1, tempItem.maxStack);
             int total = tempCount + stackCounts[toIndex];
             stackCounts[toIndex] = Mathf.Min(total, maxStack);
             stackCounts[fromIndex] = total - stackCounts[toIndex];
-            MergeSlotState(toIndex, 1, tempDurability, tempSpoil);
+            MergeSlotState(toIndex, previousToCount, tempDurability);
+
+            float merged = tempDeadline <= 0f ? expirationTimestamps[toIndex]
+                         : expirationTimestamps[toIndex] <= 0f ? tempDeadline
+                         : Mathf.Min(tempDeadline, expirationTimestamps[toIndex]);
+            expirationTimestamps[toIndex] = merged;
+
             if (stackCounts[fromIndex] <= 0)
                 ClearSlot(fromIndex);
+            else
+                expirationTimestamps[fromIndex] = tempDeadline;
         }
         else
         {
             // 다른 아이템이면 교환
             slots[fromIndex] = slots[toIndex];
             stackCounts[fromIndex] = stackCounts[toIndex];
+            _durabilities[fromIndex] = _durabilities[toIndex];
+            expirationTimestamps[fromIndex] = expirationTimestamps[toIndex];
             slots[toIndex] = tempItem;
             stackCounts[toIndex] = tempCount;
-            _durabilities[fromIndex] = _durabilities[toIndex];
-            _spoilRemaining[fromIndex] = _spoilRemaining[toIndex];
             _durabilities[toIndex] = tempDurability;
-            _spoilRemaining[toIndex] = tempSpoil;
+            expirationTimestamps[toIndex] = tempDeadline;
         }
         OnStorageChanged?.Invoke();
     }
@@ -245,16 +359,23 @@ public abstract class StorageStation : StationBase
         while (stackCounts.Count < slotCount)
             stackCounts.Add(0);
 
+        while (expirationTimestamps.Count < slotCount)
+            expirationTimestamps.Add(0f);
+
+        while (_durabilities.Count < slotCount)
+            _durabilities.Add(-1f);
+
         while (slots.Count > slotCount)
             slots.RemoveAt(slots.Count - 1);
 
         while (stackCounts.Count > slotCount)
             stackCounts.RemoveAt(stackCounts.Count - 1);
 
-        while (_durabilities.Count < slotCount) _durabilities.Add(-1f);
-        while (_spoilRemaining.Count < slotCount) _spoilRemaining.Add(-1f);
-        if (_durabilities.Count > slotCount) _durabilities.RemoveRange(slotCount, _durabilities.Count - slotCount);
-        if (_spoilRemaining.Count > slotCount) _spoilRemaining.RemoveRange(slotCount, _spoilRemaining.Count - slotCount);
+        while (expirationTimestamps.Count > slotCount)
+            expirationTimestamps.RemoveAt(expirationTimestamps.Count - 1);
+
+        while (_durabilities.Count > slotCount)
+            _durabilities.RemoveAt(_durabilities.Count - 1);
 
         for (int i = 0; i < slotCount; i++)
         {
@@ -262,7 +383,7 @@ public abstract class StorageStation : StationBase
             {
                 stackCounts[i] = 0;
                 _durabilities[i] = -1f;
-                _spoilRemaining[i] = -1f;
+                expirationTimestamps[i] = 0f;
                 continue;
             }
 
@@ -273,7 +394,7 @@ public abstract class StorageStation : StationBase
 
     // 이미 보관된 아이템과 같은 종류의 아이템이 있다면 먼저 그 스택을 채우는 시도,
     // 상자가 꽉 찬 경우 남은 개수 반환
-    private void FillExistingStacks(ItemDataSO itemData, ref int remainingAmount)
+    private void FillExistingStacks(ItemDataSO itemData, ref int remainingAmount, float deadline, float durability)
     {
         int maxStack = Mathf.Max(1, itemData.maxStack);
 
@@ -290,19 +411,30 @@ public abstract class StorageStation : StationBase
             if (space <= 0) continue;
 
             int addAmount = Mathf.Min(space, remainingAmount);
+            int previousCount = stackCounts[i];
             stackCounts[i] += addAmount;
             remainingAmount -= addAmount;
+            MergeSlotState(i, previousCount, durability);
+
+            // 합쳐지는 스택은 더 이른 기한을 따른다
+            if (deadline > 0f)
+                expirationTimestamps[i] = expirationTimestamps[i] > 0f
+                    ? Mathf.Min(expirationTimestamps[i], deadline)
+                    : deadline;
         }
     }
 
     // 가장 먼저 비어있는 슬롯부터 아이템을 추가하는 시도, 성공 여부와 남은 개수 반환
-    private bool TryAddItemToSlots(ItemDataSO itemData, int amount, out int remainingAmount)
+    private bool TryAddItemToSlots(ItemDataSO itemData, int amount, out int remainingAmount,
+        float durability = -1f, float remainingSeconds = -1f)
     {
         remainingAmount = amount;
         if (itemData == null || amount <= 0) return false;
 
+        float deadline = ToDeadline(itemData, remainingSeconds);
+
         if (itemData.isStackable)
-            FillExistingStacks(itemData, ref remainingAmount);
+            FillExistingStacks(itemData, ref remainingAmount, deadline, durability);
 
         // remainingAmount : 요청이 들어온 아이템 개수 중 아직 보관되지 않은 개수
         while (remainingAmount > 0)
@@ -318,6 +450,9 @@ public abstract class StorageStation : StationBase
 
             slots[emptyIndex] = itemData;
             stackCounts[emptyIndex] = stackSize;
+            _durabilities[emptyIndex] = itemData.hasDurability
+                ? (durability < 0f ? itemData.maxDurability : durability) : -1f;
+            expirationTimestamps[emptyIndex] = deadline;
             remainingAmount -= stackSize;
         }
 
@@ -340,14 +475,15 @@ public abstract class StorageStation : StationBase
         slots[index] = null;
         stackCounts[index] = 0;
         _durabilities[index] = -1f;
-        _spoilRemaining[index] = -1f;
+        if (index < expirationTimestamps.Count)
+            expirationTimestamps[index] = 0f;
     }
 
     public ItemStackSaveData CaptureSlot(int index)
     {
         if (index < 0 || index >= slots.Count || slots[index] == null || stackCounts[index] <= 0) return null;
         return ItemSaveCatalog.Create(slots[index], stackCounts[index], index,
-            _durabilities[index], _spoilRemaining[index]);
+            _durabilities[index], GetRemainingSeconds(index));
     }
 
     public List<ItemStackSaveData> CaptureSlots()
@@ -386,23 +522,21 @@ public abstract class StorageStation : StationBase
             ItemStackSaveData saved = savedSlots[i];
             slots[saved.slotIndex] = resolved[i];
             stackCounts[saved.slotIndex] = saved.count;
-            _durabilities[saved.slotIndex] = saved.durability;
-            _spoilRemaining[saved.slotIndex] = saved.spoilRemainingSeconds;
+            _durabilities[saved.slotIndex] = resolved[i].hasDurability
+                ? Mathf.Clamp(saved.durability < 0f ? resolved[i].maxDurability : saved.durability, 0f, resolved[i].maxDurability) : -1f;
+            expirationTimestamps[saved.slotIndex] = ToDeadline(resolved[i], saved.spoilRemainingSeconds);
         }
         OnStorageChanged?.Invoke();
     }
 
-    private void MergeSlotState(int index, int previousCount, float durability, float spoilRemainingSeconds)
+    private void MergeSlotState(int index, int previousCount, float durability)
     {
         if (previousCount <= 0)
         {
             _durabilities[index] = durability;
-            _spoilRemaining[index] = spoilRemainingSeconds;
             return;
         }
         if (durability >= 0f)
             _durabilities[index] = _durabilities[index] < 0f ? durability : Mathf.Min(_durabilities[index], durability);
-        if (spoilRemainingSeconds >= 0f)
-            _spoilRemaining[index] = _spoilRemaining[index] < 0f ? spoilRemainingSeconds : Mathf.Min(_spoilRemaining[index], spoilRemainingSeconds);
     }
 }

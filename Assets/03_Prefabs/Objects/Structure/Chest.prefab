@@ -62,6 +62,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1646071707977394144, guid: 842306433d76b4248a604bbf4528923d, type: 3}
       insertIndex: -1
       addedObject: {fileID: -8538262934222988420}
+    - targetCorrespondingSourceObject: {fileID: 1646071707977394144, guid: 842306433d76b4248a604bbf4528923d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3001000000000001}
+    - targetCorrespondingSourceObject: {fileID: 1646071707977394144, guid: 842306433d76b4248a604bbf4528923d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3001000000000002}
   m_SourcePrefab: {fileID: 100100000, guid: 842306433d76b4248a604bbf4528923d, type: 3}
 --- !u!1 &1856912078889144159 stripped
 GameObject:
@@ -122,3 +128,45 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1
   m_Center: {x: -0.0048671067, y: 0.29660526, z: -0.024790883}
+--- !u!114 &3001000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1856912078889144159}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a48bdb136130994aaafe81874680ac8, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _itemSO: {fileID: 11400000, guid: c4e57000c4e57000c4e57000c4e57000, type: 2}
+  stackCount: 1
+  _torchLight: {fileID: 0}
+--- !u!54 &3001000000000002
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1856912078889144159}
+  serializedVersion: 4
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0

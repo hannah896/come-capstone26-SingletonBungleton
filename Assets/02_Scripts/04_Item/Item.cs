@@ -169,6 +169,9 @@ public class Item : MonoBehaviour, IDisposeInitializable
         for (int i = 0; i < colliders.Length; i++)
         {
             colliders[i].enabled = true;
+
+            // 오목(convex 꺼진) MeshCollider는 트리거가 될 수 없다 — 설정하면 Unity가 에러를 찍고 무시한다.
+            if (colliders[i] is MeshCollider { convex: false }) continue;
             colliders[i].isTrigger = true;
         }
     }

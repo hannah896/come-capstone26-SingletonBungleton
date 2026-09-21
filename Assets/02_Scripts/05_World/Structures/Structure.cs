@@ -28,5 +28,6 @@ public enum StationType
     Bonfire,    // 모닥불
     Chest,       // 상자
     CookingPot,  // 요리솥
-    Furnace      // 화덕
+    Furnace,     // 화덕
+    Refrigerator // 냉장고 (보관 중 소비기한이 느리게 간다)
 }

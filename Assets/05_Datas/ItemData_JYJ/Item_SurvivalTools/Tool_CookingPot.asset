@@ -11,19 +11,22 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
   m_Name: Tool_CookingPot
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   itemID: CookingPot
-  itemName: "요리솔"
-  description: "요리솔. 근처에서 CookPot 레시피로 요리할 수 있음"
-  icon: {fileID: 0}
+  itemName: "\uC694\uB9AC\uC194"
+  description: "\uC694\uB9AC\uC194. \uADFC\uCC98\uC5D0\uC11C CookPot \uB808\uC2DC\uD53C\uB85C
+    \uC694\uB9AC\uD560 \uC218 \uC788\uC74C"
+  icon: {fileID: 21300000, guid: 1e70c93b00b636149b148ad338f1d29a, type: 3}
   prefab: {fileID: 2001000000000001, guid: c00fca17c00fca17c00fca17c00fca17, type: 3}
   itemType: 7
   survivalToolType: 0
-  harvestableResources:
+  harvestableNodeTypes: 
   combatGearType: 0
   resourceType: 0
   bootyType: 0
   foodType: 0
+  dishType: 0
+  specialType: 0
   isStackable: 1
   maxStack: 99
   equipSlot: 0
@@ -36,6 +39,8 @@ MonoBehaviour:
   hungerRestore: 0
   healthRestore: 0
   egoRestore: 0
+  expirationTime: 0
+  tags: 0
   isPlaceable: 1
   placementPrefab: {fileID: 2001000000000001, guid: c00fca17c00fca17c00fca17c00fca17, type: 3}
   placementFootprint: {x: 1, y: 1}

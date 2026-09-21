@@ -2,7 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// 플레이어 도구/상호작용 액션 상태입니다.
-/// Sub: Pick, Mine, Chop, Dig, Ignite, Cook, Inspect, Build
+/// Sub: Pick, Mine, Chop, Dig, Ignite, Cook, Inspect, Build, Attack
 /// </summary>
 public class PlayerActionState : PlayerRootStateBase
 {
@@ -34,6 +34,7 @@ public class PlayerActionState : PlayerRootStateBase
             ActionType.Cook => new PlayerCookState(Machine),
             ActionType.Inspect => new PlayerInspectState(Machine),
             ActionType.Build => new PlayerBuildState(Machine),
+            ActionType.Attack => new PlayerAttackActionState(Machine),
             _ => new PlayerPickState(Machine),
         };
 

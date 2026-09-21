@@ -11,7 +11,11 @@ using UnityEngine;
 /// 이 컴포넌트는 그 대신 캐릭터의 손 본에 아이템 프리팹을 실제로 붙여, 모든 피어의 메인 카메라에 렌더되게 한다.
 ///
 /// 표시할 아이템은 <see cref="NetworkPlayerSync"/>가 복제해 온 Addressable 키(= ItemDataSO 파일명)로 지정된다.
-/// 소유자 자신(입력 권한 보유)에게는 붙이지 않는다 — 1인칭 뷰모델과 겹쳐 보이기 때문.
+/// 소유자 자신(입력 권한 보유)에게는 평소엔 붙이지 않는다 — 1인칭 뷰모델과 겹쳐 보이기 때문.
+/// 단, 도구 액션 애니메이션 중에는 <see cref="Player"/>가 소유자 캐릭터에도 이 뷰를 띄워
+/// 바디의 손에도 같은 도구를 들린다 (1인칭에서는 그림자만 보인다).
+///
+/// 부착 위치는 손 본 밑의 "ToolPivot"이 있으면 그것을 쓴다 (모델별 손 방향 보정용).
 /// </summary>
 public class PlayerEquipmentView : MonoBehaviour
 {
@@ -43,6 +47,9 @@ public class PlayerEquipmentView : MonoBehaviour
     [SerializeField] private float torchLightRange = 7f;
     [SerializeField] private Color torchLightColor = new(1f, 0.45f, 0.18f, 1f);
 
+    // 손 본 밑에 두는 도구 부착 피벗 이름 (있으면 손 본 대신 사용)
+    private const string ToolPivotName = "ToolPivot";
+
     // 손 본 자동 탐색 실패 시 이름으로 찾을 후보 (Mixamo / UE / 일반 명명 규칙)
     private static readonly string[] HandBoneNameHints =
     {
@@ -59,6 +66,9 @@ public class PlayerEquipmentView : MonoBehaviour
 
     /// <summary>현재 표시 중인 아이템 키 (없으면 빈 문자열).</summary>
     public string CurrentKey => _currentKey;
+
+    /// <summary>손에 붙은 아이템이 새로 스폰되거나(오브젝트) 제거될 때(null) 호출된다.</summary>
+    public event Action<GameObject> OnViewChanged;
 
     /// <summary>
     /// 표시할 장착 아이템을 지정한다. 빈 문자열이면 해제.
@@ -113,12 +123,13 @@ public class PlayerEquipmentView : MonoBehaviour
         _spawnedObject = spawned;
         ApplyAttachTransform(itemKey);
         ApplyViewState(itemKey);
+        OnViewChanged?.Invoke(_spawnedObject);
     }
 
-    // 손 본을 찾는다. 인스펙터 지정 > 휴머노이드 본 > 이름 탐색 순.
+    // 손 본을 찾는다. 인스펙터 지정 > 휴머노이드 본 > 이름 탐색 순. 손 본 밑에 ToolPivot이 있으면 그걸 쓴다.
     private Transform ResolveAttachPoint()
     {
-        if (handAttachPoint != null) return handAttachPoint;
+        if (handAttachPoint != null) return FindToolPivot(handAttachPoint);
 
         Animator animator = GetComponentInChildren<Animator>(true);
         if (animator != null && animator.isHuman)
@@ -126,7 +137,7 @@ public class PlayerEquipmentView : MonoBehaviour
             Transform bone = animator.GetBoneTransform(HumanBodyBones.RightHand);
             if (bone != null)
             {
-                handAttachPoint = bone;
+                handAttachPoint = FindToolPivot(bone);
                 return handAttachPoint;
             }
         }
@@ -137,12 +148,18 @@ public class PlayerEquipmentView : MonoBehaviour
             for (int c = 0; c < children.Length; c++)
             {
                 if (children[c].name != HandBoneNameHints[i]) continue;
-                handAttachPoint = children[c];
+                handAttachPoint = FindToolPivot(children[c]);
                 return handAttachPoint;
             }
         }
 
         return null;
+    }
+
+    private static Transform FindToolPivot(Transform handBone)
+    {
+        Transform pivot = handBone.Find(ToolPivotName);
+        return pivot != null ? pivot : handBone;
     }
 
     private void ApplyAttachTransform(string itemKey)
@@ -235,5 +252,6 @@ public class PlayerEquipmentView : MonoBehaviour
             Extensions.Despawn(_spawnedObject);
 
         _spawnedObject = null;
+        OnViewChanged?.Invoke(null);
     }
 }

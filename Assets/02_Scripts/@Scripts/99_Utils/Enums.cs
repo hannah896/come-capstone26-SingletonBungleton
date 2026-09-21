@@ -22,4 +22,5 @@ public enum ActionType
     Inspect,    // 조사  — Kevin: HumanM@Loot01 - Begin/Loop/Stop
     Build,      // 설치  — Kevin: HumanM@HammeringWall01_R - Begin/Loop/Stop
     Hand,       // 맨손  — 도구 없이 나무/돌을 느리게 채집
+    Attack,     // 공격  — 손에 든 무기/도구로 몬스터·동물을 친다 (전용 클립이 없어 벌목 스윙을 재사용)
 }

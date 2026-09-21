@@ -15,11 +15,6 @@ MonoBehaviour:
   m_GroupName: Prefabs_Monster
   m_GUID: 764f8d166f763f54d92eb01489388fee
   m_SerializeEntries:
-  - m_GUID: 1b86649ae2dc1534aa0c55ead621a232
-    m_Address: Deer
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 4b67c5fea3661b34fbb200c375734954
     m_Address: Demon
     m_ReadOnly: 0

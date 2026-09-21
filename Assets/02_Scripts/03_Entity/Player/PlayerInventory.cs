@@ -56,6 +56,7 @@ public partial class PlayerInventory : MonoBehaviour
         Pickup,     // 주울 수 있는 월드 아이템 (G)
         HandPick,   // 맨손 채집 노드 — 풀 등 (G)
         Cook,       // 선택 슬롯의 날것을 구울 수 있는 모닥불 (우클릭)
+        Structure,  // 상자·냉장고 등 열 수 있는 구조물 (E)
     }
 
     private struct PickupCandidate
@@ -131,8 +132,15 @@ public partial class PlayerInventory : MonoBehaviour
                 TryPickupNearest();
         }
 
+        // E: 보관함이 열려 있으면 조준 여부와 상관없이 닫기.
+        // 아니면 조준한 구조물이 있을 때 열고, 없으면 기존처럼 선택 슬롯 장착.
         if (inputData.EquipSelectedPressed)
-            EquipSelectedSlot();
+        {
+            if (UI_Popup_Chest.Current != null)
+                UI_Popup_Chest.Current.Close();
+            else if (!TryInteractFocused())
+                EquipSelectedSlot();
+        }
 
         if (inputData.ToolUsePressed)
         {
@@ -182,6 +190,39 @@ public partial class PlayerInventory : MonoBehaviour
         bool added = TryAddItemToSlots(itemData, amount, out remainingAmount);
         OnInventoryChanged?.Invoke();
         return added;
+    }
+
+    /// <summary>
+    /// 남은 소비기한(초)을 지정해서 넣는다. 보관함에서 꺼낸 아이템처럼 기한을 이어받아야 할 때 사용.
+    /// remainingSeconds가 음수면 아이템 기본 소비기한으로 새로 시작한다.
+    /// </summary>
+    public bool AddItem(ItemDataSO itemData, int amount, out int remainingAmount, float remainingSeconds)
+    {
+        bool added = TryAddItemToSlots(itemData, amount, out remainingAmount, -1f, remainingSeconds);
+        OnInventoryChanged?.Invoke();
+        return added;
+    }
+
+    /// <summary>
+    /// 인벤토리에 있는 해당 아이템의 남은 소비기한(초) 중 가장 이른 값. 부패하지 않거나 없으면 -1.
+    /// 보관함에 넣을 때 기한을 넘겨주기 위해 사용한다 (신선한 걸로 세탁하지 못하게 가장 이른 값을 준다).
+    /// </summary>
+    public float GetRemainingExpirationSeconds(ItemDataSO itemData)
+    {
+        if (itemData == null || itemData.expirationTime <= 0f) return -1f;
+
+        float earliest = -1f;
+        for (int i = 0; i < slots.Count; i++)
+        {
+            if (slots[i] != itemData || stackCounts[i] <= 0) continue;
+            if (expirationTimestamps[i] <= 0f) continue;
+
+            float remaining = Mathf.Max(0f, expirationTimestamps[i] - SavePlayClock.Now);
+            if (earliest < 0f || remaining < earliest)
+                earliest = remaining;
+        }
+
+        return earliest;
     }
 
     /// <summary>
@@ -608,7 +649,7 @@ public partial class PlayerInventory : MonoBehaviour
         return Mathf.Clamp(quickSlotCount, 1, slots.Count);
     }
 
-    private void FillExistingStacks(ItemDataSO itemData, ref int remainingAmount, float spoilRemainingSeconds = -1f)
+    private void FillExistingStacks(ItemDataSO itemData, ref int remainingAmount, float newDeadline = -1f)
     {
         int maxStack = Mathf.Max(1, itemData.maxStack);
 
@@ -628,9 +669,8 @@ public partial class PlayerInventory : MonoBehaviour
             stackCounts[i] += addAmount;
             remainingAmount -= addAmount;
 
-            if (itemData.expirationTime > 0f)
+            if (newDeadline > 0f)
             {
-                float newDeadline = SavePlayClock.Now + (spoilRemainingSeconds < 0f ? itemData.expirationTime * 60f : spoilRemainingSeconds);
                 expirationTimestamps[i] = expirationTimestamps[i] > 0f
                     ? Mathf.Min(expirationTimestamps[i], newDeadline)
                     : newDeadline;
@@ -644,8 +684,16 @@ public partial class PlayerInventory : MonoBehaviour
         remainingAmount = amount;
         if (itemData == null || amount <= 0) return false;
 
+        // remainingSeconds가 음수면 아이템 기본 소비기한으로 새로 시작한다.
+        float deadline = 0f;
+        if (itemData.expirationTime > 0f)
+        {
+            float seconds = spoilRemainingSeconds >= 0f ? spoilRemainingSeconds : itemData.expirationTime * 60f;
+            deadline = SavePlayClock.Now + seconds;
+        }
+
         if (itemData.isStackable)
-            FillExistingStacks(itemData, ref remainingAmount, spoilRemainingSeconds);
+            FillExistingStacks(itemData, ref remainingAmount, deadline);
 
         while (remainingAmount > 0)
         {
@@ -661,9 +709,7 @@ public partial class PlayerInventory : MonoBehaviour
             stackCounts[emptyIndex] = stackSize;
             slotDurabilities[emptyIndex] = itemData.hasDurability
                 ? (durability < 0f ? itemData.maxDurability : durability) : -1f;
-            expirationTimestamps[emptyIndex] = itemData.expirationTime > 0f
-                ? SavePlayClock.Now + (spoilRemainingSeconds < 0f ? itemData.expirationTime * 60f : spoilRemainingSeconds)
-                : 0f;
+            expirationTimestamps[emptyIndex] = deadline;
             remainingAmount -= stackSize;
         }
 
@@ -760,8 +806,59 @@ public partial class PlayerInventory : MonoBehaviour
                 break;
         }
 
+        // 손 장비는 1인칭 뷰가 프리팹을 띄우며 인스턴스를 등록하지만,
+        // 머리/몸통 방어구는 띄울 프리팹이 없으므로 여기서 내구도 인스턴스를 직접 만든다.
+        if (itemData != null && equipSlot != EquipSlot.Hand)
+            RegisterEquippedItemInstance(equipSlot, ItemData.CreateFromSO(itemData) as IEquipable);
+
         OnEquippedItemChanged?.Invoke(equipSlot, itemData);
     }
+
+    #region Armor
+
+    // 방어구 방어력을 피해 감소율(%)로 읽는 슬롯. 방패는 손 슬롯이다.
+    private static readonly EquipSlot[] ArmorSlots = { EquipSlot.Head, EquipSlot.Chest, EquipSlot.Hand };
+
+    /// <summary>
+    /// 장착 방어구로 인한 받는 피해 배율 (1 = 감소 없음).
+    /// 방어구의 defense는 피해 감소율(%)로 취급하고, 여러 부위는 곱연산으로 겹친다.
+    /// 예) 투구 15 + 갑옷 30 → 0.85 × 0.70 = 0.595
+    /// </summary>
+    public float GetArmorDamageMultiplier()
+    {
+        float multiplier = 1f;
+        for (int i = 0; i < ArmorSlots.Length; i++)
+        {
+            if (!TryGetUsableArmor(ArmorSlots[i], out ItemDataSO armor, out _)) continue;
+            multiplier *= 1f - Mathf.Clamp(armor.defense, 0f, 95f) * 0.01f;
+        }
+
+        return multiplier;
+    }
+
+    /// <summary>피격 시 장착한 방어구들의 내구도를 한 번씩 깎는다. 다 닳으면 OnBroken으로 장착 해제된다.</summary>
+    public void ConsumeArmorDurabilityOnHit()
+    {
+        for (int i = 0; i < ArmorSlots.Length; i++)
+        {
+            if (TryGetUsableArmor(ArmorSlots[i], out _, out IEquipable instance))
+                instance?.UseDurability();
+        }
+    }
+
+    // 방어력이 있는 전투장비(투구/갑옷/방패)이고 부서지지 않았으면 true.
+    private bool TryGetUsableArmor(EquipSlot slot, out ItemDataSO armor, out IEquipable instance)
+    {
+        armor = GetEquippedItem(slot);
+        instance = GetEquippedItemInstance(slot);
+
+        if (armor == null || armor.itemType != ItemType.CombatGear || armor.defense <= 0f)
+            return false;
+
+        return instance == null || instance.IsUsable;
+    }
+
+    #endregion
 
     private void OnEquippedItemBroken(IEquipable brokenItem)
     {
@@ -869,6 +966,12 @@ public partial class PlayerInventory : MonoBehaviour
 
     private FocusKind ClassifyFocus(Collider col)
     {
+        // 상자·작업대·모닥불 같은 설치된 구조물은 Item을 겸해서 갖고 있어도
+        // "줍기"보다 "상호작용(E)"이 항상 우선이어야 한다 — 먼저 판정한다.
+        Structure structure = col.GetComponentInParent<Structure>();
+        if (structure != null && structure.CanInteract(BuildInteractionContext(structure.transform.position)))
+            return FocusKind.Structure;
+
         if (TryGetPickupCandidate(col, out _))
             return FocusKind.Pickup;
 
@@ -881,6 +984,28 @@ public partial class PlayerInventory : MonoBehaviour
             return FocusKind.Cook;
 
         return FocusKind.None;
+    }
+
+    private InteractionContext BuildInteractionContext(Vector3 point, Vector3 normal = default)
+        => new InteractionContext(gameObject, point, normal);
+
+    /// <summary>
+    /// 조준한 구조물(상자·냉장고 등)을 연다. 연 경우 true.
+    /// E키는 대상이 있으면 상호작용, 없으면 기존처럼 선택 슬롯 장착으로 동작한다.
+    /// </summary>
+    private bool TryInteractFocused()
+    {
+        if (!TryGetFocusedTarget(out RaycastHit hit, out FocusKind kind)) return false;
+        if (kind != FocusKind.Structure) return false;
+
+        Structure structure = hit.collider.GetComponentInParent<Structure>();
+        if (structure == null) return false;
+
+        InteractionContext ctx = BuildInteractionContext(hit.point, hit.normal);
+        if (!structure.CanInteract(ctx)) return false;
+
+        structure.Interact(ctx);
+        return true;
     }
 
     private sealed class RaycastDistanceComparer : IComparer<RaycastHit>
@@ -995,26 +1120,21 @@ public partial class PlayerInventory : MonoBehaviour
     }
 
     /// <summary>
-    /// 장착된 도구 타입으로 수행할 ActionType을 반환한다. 유효 타겟이 있을 때만 true.
+    /// 손에 든 아이템과 조준 대상으로 수행할 ActionType을 반환한다. 유효 타겟이 있을 때만 true.
+    /// 몬스터·동물을 조준하면 무엇을 들었든(도구/무기) Attack, 그 외에는 도구 고유 액션(벌목/채굴 등).
     /// </summary>
     public bool TryGetToolActionType(out ActionType actionType)
     {
         actionType = ActionType.None;
 
-        ItemDataSO handItem = EquippedHand;
-        if (handItem == null || handItem.itemType != ItemType.SurvivalTool)
+        if (!TryGetUsableHandItem(out ItemDataSO handItem, out _))
             return false;
 
-        IEquipable handTool = GetEquippedItemInstance(EquipSlot.Hand);
-        if (handTool != null && !handTool.IsUsable)
+        if (!TryRaycastToolTarget(GetHandRange(handItem), out RaycastHit hit))
             return false;
 
-        actionType = GetActionTypeForTool(handItem.survivalToolType);
+        actionType = ResolveHandAction(hit, handItem);
         if (actionType == ActionType.None)
-            return false;
-
-        float range = Mathf.Max(defaultToolUseRange, handItem.attackRange);
-        if (!TryRaycastToolTarget(range, out RaycastHit hit))
             return false;
 
         return TryDamageHitTarget(hit, handItem, actionType, apply: false);
@@ -1042,28 +1162,73 @@ public partial class PlayerInventory : MonoBehaviour
         return bonfire.TryCookFromInventory(this);
     }
 
-    /// <summary>손에 든 도구로 채집을 시도한다. 도구가 없으면 false를 반환해 맨손 공격으로 넘긴다.</summary>
+    /// <summary>
+    /// 손에 든 도구/무기로 조준 대상을 친다 (몬스터·동물 공격 또는 채집).
+    /// 손이 비었으면 false를 반환해 맨손 채집으로 넘긴다. 무기로 몬스터·동물 외의 것을 조준해도 맨손 채집으로 넘긴다.
+    /// </summary>
     private bool TryUseEquippedHandTool()
     {
         ItemDataSO handItem = EquippedHand;
-        if (handItem == null || handItem.itemType != ItemType.SurvivalTool)
+        if (!IsHandUsableItem(handItem))
             return false;
 
         IEquipable handTool = GetEquippedItemInstance(EquipSlot.Hand);
         if (handTool != null && !handTool.IsUsable)
             return true;
 
-        float range = Mathf.Max(defaultToolUseRange, handItem.attackRange);
-
-        if (!TryRaycastToolTarget(range, out RaycastHit hit))
+        if (!TryRaycastToolTarget(GetHandRange(handItem), out RaycastHit hit))
             return true;
 
-        ActionType actionType = GetActionTypeForTool(handItem.survivalToolType);
+        ActionType actionType = ResolveHandAction(hit, handItem);
+        if (actionType == ActionType.None)
+            return handItem.itemType == ItemType.SurvivalTool;
+
         if (!TryDamageHitTarget(hit, handItem, actionType, apply: true))
             return true;
 
         handTool?.UseDurability();
         return true;
+    }
+
+    // 공격/도구 사용에 쓸 수 있는 손 아이템 종류 (생존도구·전투장비)
+    private static bool IsHandUsableItem(ItemDataSO item)
+        => item != null && (item.itemType == ItemType.SurvivalTool || item.itemType == ItemType.CombatGear);
+
+    // 손에 쓸 수 있는 아이템이 있고 부서지지 않았으면 true.
+    private bool TryGetUsableHandItem(out ItemDataSO handItem, out IEquipable handTool)
+    {
+        handItem = EquippedHand;
+        handTool = GetEquippedItemInstance(EquipSlot.Hand);
+
+        if (!IsHandUsableItem(handItem)) return false;
+        return handTool == null || handTool.IsUsable;
+    }
+
+    private float GetHandRange(ItemDataSO handItem)
+        => Mathf.Max(defaultToolUseRange, handItem.attackRange);
+
+    // 몬스터·동물이면 무엇을 들었든 공격. 아니면 생존도구 고유 액션 (전투장비는 없음).
+    private static ActionType ResolveHandAction(RaycastHit hit, ItemDataSO handItem)
+    {
+        if (IsCombatTarget(hit.collider))
+            return ActionType.Attack;
+
+        return handItem.itemType == ItemType.SurvivalTool
+            ? GetActionTypeForTool(handItem.survivalToolType)
+            : ActionType.None;
+    }
+
+    private static bool IsCombatTarget(Collider collider)
+        => collider.GetComponentInParent<Monster>() != null || collider.GetComponentInParent<Animal>() != null;
+
+    /// <summary>
+    /// 전투 데미지 = 손 아이템 공격력 + 플레이어 기본 공격력. (도구는 공격력이 낮아 기본 공격력이 바닥을 받쳐준다)
+    /// </summary>
+    private DamageContext CreateCombatContext(RaycastHit hit, ItemDataSO handItem, ActionType actionType)
+    {
+        float baseAttack = owner != null && owner.Stat != null ? owner.Stat.Attack : 0f;
+        int damage = Mathf.Max(1, Mathf.RoundToInt(handItem.attackDamage + baseAttack));
+        return new DamageContext(gameObject, hit.point, damage, handItem.itemID, actionType, handItem.harvestableNodeTypes);
     }
 
     /// <summary>도구 없이 맨손으로 나무/돌 자원 노드를 느리게 친다.</summary>
@@ -1122,16 +1287,18 @@ public partial class PlayerInventory : MonoBehaviour
         Monster monster = hit.collider.GetComponentInParent<Monster>();
         if (monster != null)
         {
-            if (!monster.CanDamage(ctx)) return false;
-            if (apply) DamageMonster(monster, ctx, handItem, actionType);
+            DamageContext combatCtx = CreateCombatContext(hit, handItem, actionType);
+            if (!monster.CanDamage(combatCtx)) return false;
+            if (apply) DamageMonster(monster, combatCtx, handItem, actionType);
             return true;
         }
 
         Animal animal = hit.collider.GetComponentInParent<Animal>();
         if (animal != null)
         {
-            if (!animal.CanDamage(ctx)) return false;
-            if (apply) DamageAnimal(animal, ctx, handItem, actionType);
+            DamageContext combatCtx = CreateCombatContext(hit, handItem, actionType);
+            if (!animal.CanDamage(combatCtx)) return false;
+            if (apply) DamageAnimal(animal, combatCtx, handItem, actionType);
             return true;
         }
 

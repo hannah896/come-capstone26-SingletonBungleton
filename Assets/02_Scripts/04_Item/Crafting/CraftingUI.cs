@@ -371,14 +371,15 @@ public class CraftingUI : UI_Panel
         }
         else
         {
-            bool nearby = CraftingManager.Instance.GetNearbyStation() >= req;
+            bool nearby = CraftingManager.Instance.IsNearStation(req);
             string stationName = req switch
             {
                 CraftStation.Workbench => "작업대",
                 CraftStation.Forge     => "용광로",
+                CraftStation.CookPot   => "화덕",
                 _                      => req.ToString(),
             };
-            stationHintText.text  = nearby ? string.Empty : $"⚠ {stationName} 필요";
+            stationHintText.text  = nearby ? string.Empty : $"{stationName} 필요";
             stationHintText.color = nearby ? Color.yellow : new Color(1f, 0.5f, 0.3f);
         }
     }

@@ -25,8 +25,23 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 25e3fb3d755cd33469de15ad245f9cfc
+    m_Address: Armor_M
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 6fc96e8cee6bfdd49a47c31fcde580db
     m_Address: UI_Hud_Player
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8049b94fc3da2c94581ae0372c2412c1
+    m_Address: Helmet_F
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8490eab902b9c8f41a685b2ebdb7f74a
+    m_Address: Helmet_M
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -40,13 +55,8 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: eb3fa0c9027882b4084517c1a3342a1f
-    m_Address: pickaxe
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: ebd12dd249a9ef041ace0c801df7cb58
-    m_Address: axe
+  - m_GUID: db5e10f34d128604a9850a522cdf92ad
+    m_Address: Armor_F
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

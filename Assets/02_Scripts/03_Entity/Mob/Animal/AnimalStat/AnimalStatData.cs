@@ -10,8 +10,10 @@ public class AnimalStatData : EntityStatData
     public float WanderRadius = 8f;
 
     [Header("도망")]
-    [Tooltip("이 거리 안에 플레이어가 있으면 계속 도망친다. 벗어나면 Idle로 복귀")]
+    [Tooltip("공격한 플레이어와 이 거리 이상 벌어지면 도망을 멈춘다(최소 도망 시간이 지난 뒤)")]
     public float FleeRange = 12f;
+    [Tooltip("피격 후 최소한 이 시간(초)은 무조건 도망친다")]
+    public float MinFleeDuration = 4f;
     [Tooltip("도망칠 때 이동 속도. 걷기는 MoveSpeed를 쓴다")]
     public float RunSpeed = 6f;
 
