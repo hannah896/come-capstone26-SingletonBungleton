@@ -31,7 +31,7 @@ public abstract class PlayerActionSubStateBase : PlayerSubStateBase
     /// <summary>액션 효과 시 장착 도구를 사용할지 여부 (벌목/채굴/땅파기/철거 등)</summary>
     protected virtual bool UsesToolOnComplete => false;
 
-    /// <summary>효과 발생 후 타겟이 유효하면 계속 반복할지 여부</summary>
+    /// <summary>도구 사용 키를 누르고 있는 동안 타격을 반복할지 여부</summary>
     protected virtual bool ShouldLoop => false;
 
     #region 연출 구간 (바디 애니메이션 클립에서 실측한 값)
@@ -134,14 +134,18 @@ public abstract class PlayerActionSubStateBase : PlayerSubStateBase
         if (!hitApplied)
             ApplyHit();
 
-        // 루프 대상이고 타겟이 아직 유효하면 다음 타격 재생
+        // 도구 사용 키를 누르고 있고 타겟이 아직 유효하면 다음 타격을 재생한다.
+        // (키를 떼거나 시선을 돌려 타겟이 사라지면 Locomotion으로 복귀)
         if (ShouldLoop
             && LoopStateHash != 0
+            && Input != null
+            && Input.ToolUseHeld
             && Entity.Inventory != null
             && Entity.Inventory.TryGetToolActionType(out _))
         {
             Machine.AnimData.PlayCrossFade(LoopStateHash);
             StartSwing();
+            GetRootState<PlayerActionState>()?.ResetTimeout();
             return;
         }
 
