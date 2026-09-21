@@ -241,6 +241,16 @@ public class Player : MonoBehaviour, IDamageable
             action.OnActionEvent();
     }
 
+    /// <summary>
+    /// 액션 애니메이션의 스윙 시작 프레임 Animation Event(PlayerAnimEventRelay 경유)를
+    /// 현재 액션 상태로 전달한다. 도구 스윙 연출과 타격 판정의 공통 기준점이다.
+    /// </summary>
+    public void OnToolSwingAnimationEvent()
+    {
+        if (machine?.CurrentState is PlayerActionState action)
+            action.OnSwingEvent();
+    }
+
     #region Revive
 
     /// <summary>저장 복구는 사망 연출/아이템 드롭을 다시 실행하지 않는다.</summary>

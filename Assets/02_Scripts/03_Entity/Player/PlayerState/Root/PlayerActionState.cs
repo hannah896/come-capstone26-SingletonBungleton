@@ -62,6 +62,15 @@ public class PlayerActionState : PlayerRootStateBase
         }
     }
 
+    /// <summary>
+    /// 안전망 타이머를 되돌린다. 하위 상태가 타격을 반복할 때 호출한다.
+    /// 이걸 하지 않으면 키를 계속 누르고 있어도 maxActionDuration에서 액션이 잘린다.
+    /// </summary>
+    public void ResetTimeout()
+    {
+        elapsedTime = 0f;
+    }
+
     public void ChangeToLocomotion()
     {
         Machine.ChangeState(new PlayerLocomotionState(Machine));
@@ -73,5 +82,13 @@ public class PlayerActionState : PlayerRootStateBase
     public void OnActionEvent()
     {
         (SubStateMachine.CurrentState as PlayerActionSubStateBase)?.OnActionEvent();
+    }
+
+    /// <summary>
+    /// 액션 애니메이션의 스윙 시작 프레임 Animation Event(Player 경유)를 현재 하위 액션 상태로 전달.
+    /// </summary>
+    public void OnSwingEvent()
+    {
+        (SubStateMachine.CurrentState as PlayerActionSubStateBase)?.OnSwingEvent();
     }
 }

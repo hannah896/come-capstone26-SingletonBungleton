@@ -191,6 +191,24 @@ public class Main : MonoBehaviour
 
     #region MonoBehaviour Callbacks
 
+    /// <summary>
+    /// 씬에 Main이 직접 배치돼 있으면 Initializer가 만든 @Main과 중복된다.
+    /// 그대로 두면 Update가 프레임당 두 번 돌아 Loop 이벤트가 두 번 발행되고,
+    /// 타이머·이동·액션 연출이 전부 2배속이 된다. 중복된 쪽의 컴포넌트만 제거한다.
+    /// (매니저는 전부 코드에서 new 되므로 씬 인스턴스에는 인스펙터 설정이 없다)
+    /// </summary>
+    private void Awake()
+    {
+        if (_instance == null || _instance == this) return;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.LogWarning(
+            $"[Main] 씬에 중복된 Main이 있어 제거합니다: '{gameObject.name}'. " +
+            "Main은 Initializer가 @Main으로 자동 생성하므로 씬에 배치할 필요가 없습니다.", gameObject);
+#endif
+        Destroy(this);
+    }
+
     private void FixedUpdate()
     {
         if (!Loop.IsInitialized) return;

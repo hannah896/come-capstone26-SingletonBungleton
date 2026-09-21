@@ -82,6 +82,9 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     private float yaw;
     private float pitch;
     private float pitchOffset;
+
+    // 진행 중인 스윙 흔들림 트윈 (연타 시 중복 누적 방지용)
+    private Tween swingShakeTween;
     private PlayerInputData inputData;
     private Transform playerBody;
     private PlayerInventory playerInventory;
@@ -159,32 +162,45 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     }
 
     /// <summary>
-    /// 도끼 휘두르기 — 1인칭 도구 스윙 + 카메라 시야 흔들림
+    /// 도구 휘두르기 — 1인칭 도구 스윙 + 카메라 시야 흔들림.
+    ///
+    /// 구간 길이는 액션 하위 상태(PlayerActionSubStateBase)가 넘겨준다.
+    /// 바디 애니메이션(Begin→Loop→Stop)에서 실측한 값이므로, 도구가 최고점에 오르는 순간과
+    /// 내려찍는 순간이 캐릭터 모델의 동작과 일치한다. 임의로 상수를 박지 말 것.
     /// </summary>
-    public void PlayChopSwing()
+    /// <param name="riseDuration">도구를 최고점까지 들어올리는 시간</param>
+    /// <param name="strikeDuration">최고점에서 타격 지점까지 내려찍는 시간</param>
+    /// <param name="recoverDuration">타격 후 원위치로 돌아오는 시간</param>
+    public void PlayToolSwing(float riseDuration, float strikeDuration, float recoverDuration)
     {
         if (toolPivot == null) return;
+
+        riseDuration = Mathf.Max(0.01f, riseDuration);
+        strikeDuration = Mathf.Max(0.01f, strikeDuration);
+        recoverDuration = Mathf.Max(0.01f, recoverDuration);
 
         toolPivot.DOKill();
         Quaternion restRotation = toolPivot.localRotation;
 
         DOTween.Sequence()
-            // 1. 들어올리기 + 오른쪽으로 당기기 (0.4s)
-            .Append(toolPivot.DOLocalRotate(new Vector3(-45f, 20f, 8f), 0.4f, RotateMode.LocalAxisAdd)
+            // 1. 들어올리기 + 오른쪽으로 당기기 (Begin 클립 ~ Loop 클립의 최고점)
+            .Append(toolPivot.DOLocalRotate(new Vector3(-45f, 20f, 8f), riseDuration, RotateMode.LocalAxisAdd)
                 .SetEase(Ease.OutQuad))
-            // 2. 내려찍기 + 왼쪽 아크 (0.6s)
-            .Append(toolPivot.DOLocalRotate(new Vector3(100f, -35f, -12f), 0.6f, RotateMode.LocalAxisAdd)
+            // 2. 내려찍기 + 왼쪽 아크 (바디가 실제로 타격하는 순간에 끝난다)
+            .Append(toolPivot.DOLocalRotate(new Vector3(100f, -35f, -12f), strikeDuration, RotateMode.LocalAxisAdd)
                 .SetEase(Ease.InQuart))
-            // 3. 원위치 복귀 (1.0s)
-            .Append(toolPivot.DOLocalRotateQuaternion(restRotation, 1.0f)
+            // 3. 원위치 복귀 (Stop 클립이 끝나는 시점까지)
+            .Append(toolPivot.DOLocalRotateQuaternion(restRotation, recoverDuration)
                 .SetEase(Ease.OutQuad));
 
         // 카메라 시야: 내려찍는 타이밍에 흔들림
-        DOTween.To(() => pitchOffset, x => pitchOffset = x, 6f, 0.6f)
-            .SetDelay(0.4f)
+        // 연타(벌목 루프)로 트윈이 겹쳐 쌓이지 않도록 이전 흔들림은 먼저 걷어낸다.
+        swingShakeTween?.Kill();
+        swingShakeTween = DOTween.To(() => pitchOffset, x => pitchOffset = x, 6f, strikeDuration)
+            .SetDelay(riseDuration)
             .SetEase(Ease.InQuad)
             .OnComplete(() =>
-                DOTween.To(() => pitchOffset, x => pitchOffset = x, 0f, 0.9f)
+                swingShakeTween = DOTween.To(() => pitchOffset, x => pitchOffset = x, 0f, recoverDuration)
                     .SetEase(Ease.OutQuad));
     }
 
