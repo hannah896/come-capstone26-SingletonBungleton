@@ -4,20 +4,23 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-public class CraftingUI : UI_Panel
+/// <summary>
+/// 작업대(Workbench)를 E키로 상호작용했을 때 뜨는 무기/방어구 제작 전용 팝업.
+/// 화덕 팝업(UI_Popup_CookingPot)과 동일한 구조이되, 탭 2개(무기/방어구)로 카테고리를 전환한다.
+/// </summary>
+public class UI_Popup_Workbench : UI_Popup
 {
-    [Header("카테고리 탭 (순서: Tools, Light, Weapons, Armor, Survival, Structures, Medicine, Cooking, All)")]
+    [Header("카테고리 탭 (순서: Weapons, Armor)")]
     [SerializeField] private Button[] categoryTabButtons;
 
     [Header("레시피 목록")]
+    [SerializeField] private TextMeshProUGUI titleText;
+    [SerializeField] private Button closeButton;
     [SerializeField] private Transform recipeListContainer;
     [SerializeField] private GameObject recipeSlotPrefab;
 
     [Header("레시피 상세")]
     [SerializeField] private GameObject detailPanel;
-    [SerializeField] private Image resultIcon;
-    [SerializeField] private TextMeshProUGUI resultNameText;
-    [SerializeField] private TextMeshProUGUI resultAmountText;
     [SerializeField] private Transform ingredientContainer;
     [SerializeField] private GameObject ingredientSlotPrefab;
     [SerializeField] private Button craftButton;
@@ -27,42 +30,28 @@ public class CraftingUI : UI_Panel
     [SerializeField] private Button filterToggleButton;
     [SerializeField] private TextMeshProUGUI filterButtonText;
 
-    [Header("스테이션 안내 (선택)")]
-    [SerializeField] private TextMeshProUGUI stationHintText;
-
-    // 배열 인덱스 = Inspector categoryTabButtons 배열 순서와 반드시 일치
-    private static readonly RecipeCategory[] Categories =
-    {
-        RecipeCategory.Tools,      // [0] 도구
-        RecipeCategory.Light,      // [1] 광원
-        RecipeCategory.Weapons,    // [2] 무기
-        RecipeCategory.Armor,      // [3] 방어구
-        RecipeCategory.Survival,   // [4] 생존
-        RecipeCategory.Structures, // [5] 구조물
-        RecipeCategory.Medicine,   // [6] 치료제
-        RecipeCategory.Cooking,    // [7] 요리
-        RecipeCategory.All,        // [8] 전체
-    };
-
+    private static readonly RecipeCategory[] Categories = { RecipeCategory.Weapons, RecipeCategory.Armor };
     private static readonly Color TabSelectedColor = new(1f, 0.8f, 0.2f, 1f);
-    private static readonly Color TabDefaultColor  = Color.white;
+    private static readonly Color TabDefaultColor = Color.white;
 
     private readonly List<CraftingRecipeSlotUI> recipeSlotUIs = new();
-    private RecipeCategory selectedCategory = RecipeCategory.Tools;
+    private RecipeCategory selectedCategory = RecipeCategory.Weapons;
+    private int selectedCategoryIndex = 0;
     private RecipeDataSO selectedRecipe;
+    private int selectedRecipeIndex = 0;
+    private bool showOnlyCraftable = false;
     private PlayerInventory playerInventory;
 
-    private int selectedCategoryIndex = 0;
-    private int selectedRecipeIndex   = 0;
-    private bool showOnlyCraftable    = false;
-
-    public override bool Initialize()
+    protected override void Awake()
     {
-        if (!base.Initialize()) return false;
-        SetupCategoryTabs();
-        SetupFilterButton();
+        base.Awake();
+        closeButton?.onClick.AddListener(Close);
         craftButton?.onClick.AddListener(Craft);
-        return true;
+        filterToggleButton?.onClick.AddListener(ToggleFilter);
+        SetupCategoryTabs();
+        if (titleText != null)
+            titleText.text = "작업대";
+        RefreshFilterButton();
     }
 
     private void OnEnable()
@@ -75,8 +64,7 @@ public class CraftingUI : UI_Panel
     {
         if (CraftingManager.Instance != null)
             CraftingManager.Instance.OnCraftingChanged -= OnCraftingChanged;
-        if (playerInventory != null)
-            playerInventory.OnInventoryChanged -= OnCraftingChanged;
+        Unbind();
     }
 
     private void Update()
@@ -84,57 +72,45 @@ public class CraftingUI : UI_Panel
         var kb = Keyboard.current;
         if (kb == null) return;
 
-        // Tab / Shift+Tab: 카테고리 전환 (요리/무기/방어구는 화덕·작업대 전용 팝업으로 뺐으니 순환에서 제외)
         if (kb.tabKey.wasPressedThisFrame)
         {
             int dir = kb.shiftKey.isPressed ? -1 : 1;
-            int next = selectedCategoryIndex;
-            do { next = (next + dir + Categories.Length) % Categories.Length; }
-            while (IsHiddenCategory(Categories[next]));
-            SelectCategoryByIndex(next);
+            SelectCategoryByIndex((selectedCategoryIndex + dir + Categories.Length) % Categories.Length);
         }
 
-        // 방향키: 레시피 선택
         if (kb.downArrowKey.wasPressedThisFrame) MoveRecipeSelection(1);
-        if (kb.upArrowKey.wasPressedThisFrame)   MoveRecipeSelection(-1);
-
-        // Space / Enter: 제작
-        if (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame)
-            Craft();
-
-        // F: 필터 토글
-        if (kb.fKey.wasPressedThisFrame)
-            ToggleFilter();
+        if (kb.upArrowKey.wasPressedThisFrame) MoveRecipeSelection(-1);
+        if (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame) Craft();
+        if (kb.fKey.wasPressedThisFrame) ToggleFilter();
     }
-
-    // ── 공개 API ────────────────────────────────────────────────
 
     public void Bind(PlayerInventory inventory)
     {
-        if (playerInventory != null)
-            playerInventory.OnInventoryChanged -= OnCraftingChanged;
-
+        Unbind();
         playerInventory = inventory;
 
         if (playerInventory != null)
             playerInventory.OnInventoryChanged += OnCraftingChanged;
 
-        RefreshDetail();
+        SelectCategory(RecipeCategory.Weapons);
     }
 
-    public void OpenDefault() => SelectCategory(RecipeCategory.Tools);
-
-    public void Open(RecipeCategory category) => SelectCategory(category);
-
-    public void Toggle()
+    private void Unbind()
     {
-        gameObject.SetActive(!gameObject.activeSelf);
-        if (gameObject.activeSelf) OpenDefault();
+        if (playerInventory != null)
+            playerInventory.OnInventoryChanged -= OnCraftingChanged;
+        playerInventory = null;
+    }
+
+    public override void Close()
+    {
+        Unbind();
+        base.Close();
     }
 
     public void SelectCategory(RecipeCategory category)
     {
-        selectedCategory    = category;
+        selectedCategory = category;
         selectedRecipeIndex = 0;
 
         for (int i = 0; i < Categories.Length; i++)
@@ -175,9 +151,9 @@ public class CraftingUI : UI_Panel
 
     public void ToggleFilter()
     {
-        showOnlyCraftable   = !showOnlyCraftable;
+        showOnlyCraftable = !showOnlyCraftable;
         selectedRecipeIndex = 0;
-        selectedRecipe      = null;
+        selectedRecipe = null;
 
         if (CraftingManager.Instance != null)
         {
@@ -189,8 +165,6 @@ public class CraftingUI : UI_Panel
         RefreshRecipeList();
         RefreshDetail();
     }
-
-    // ── 내부 ────────────────────────────────────────────────────
 
     private void SelectCategoryByIndex(int index)
     {
@@ -212,7 +186,6 @@ public class CraftingUI : UI_Panel
 
     private void OnCraftingChanged()
     {
-        // 현재 selectedRecipe가 목록에서 사라진 경우 보정
         if (showOnlyCraftable && selectedRecipe != null && CraftingManager.Instance != null)
         {
             var recipes = CraftingManager.Instance.GetRecipesByCategory(selectedCategory, true);
@@ -233,26 +206,9 @@ public class CraftingUI : UI_Panel
         for (int i = 0; i < categoryTabButtons.Length && i < Categories.Length; i++)
         {
             if (categoryTabButtons[i] == null) continue;
-
-            // 요리/무기/방어구 탭은 화덕·작업대 E키 전용 팝업으로 옮겼으니 일반 제작창에서는 숨긴다
-            if (IsHiddenCategory(Categories[i]))
-            {
-                categoryTabButtons[i].gameObject.SetActive(false);
-                continue;
-            }
-
             int index = i;
             categoryTabButtons[i].onClick.AddListener(() => SelectCategory(Categories[index]));
         }
-    }
-
-    private static bool IsHiddenCategory(RecipeCategory category) =>
-        category == RecipeCategory.Cooking || category == RecipeCategory.Weapons || category == RecipeCategory.Armor;
-
-    private void SetupFilterButton()
-    {
-        filterToggleButton?.onClick.AddListener(ToggleFilter);
-        RefreshFilterButton();
     }
 
     private void RefreshCategoryTabs()
@@ -282,7 +238,7 @@ public class CraftingUI : UI_Panel
 
         while (recipeSlotUIs.Count < recipes.Count)
         {
-            var go   = Instantiate(recipeSlotPrefab, recipeListContainer);
+            var go = Instantiate(recipeSlotPrefab, recipeListContainer);
             var slot = go.GetComponent<CraftingRecipeSlotUI>() ?? go.AddComponent<CraftingRecipeSlotUI>();
             slot.OnSelected += SelectRecipe;
             recipeSlotUIs.Add(slot);
@@ -292,11 +248,9 @@ public class CraftingUI : UI_Panel
         {
             if (i < recipes.Count)
             {
-                bool canCraft  = CraftingManager.Instance.CanCraft(recipes[i]);
+                bool canCraft = CraftingManager.Instance.CanCraft(recipes[i]);
                 bool isSelected = recipes[i] == selectedRecipe;
-                bool isLocked  = CraftingManager.Instance.IsLocked(recipes[i]);
-                bool isLearned = CraftingManager.Instance.IsLearned(recipes[i]);
-                recipeSlotUIs[i].Bind(recipes[i], canCraft, isSelected, isLocked, isLearned);
+                recipeSlotUIs[i].Bind(recipes[i], canCraft, isSelected);
                 recipeSlotUIs[i].gameObject.SetActive(true);
             }
             else
@@ -313,21 +267,8 @@ public class CraftingUI : UI_Panel
 
         if (selectedRecipe == null) return;
 
-        if (resultIcon != null)
-        {
-            resultIcon.sprite  = selectedRecipe.resultItem?.icon;
-            resultIcon.enabled = resultIcon.sprite != null;
-        }
-
-        if (resultNameText != null)
-            resultNameText.text = selectedRecipe.resultItem?.itemName ?? string.Empty;
-
-        if (resultAmountText != null)
-            resultAmountText.text = selectedRecipe.resultAmount > 1 ? $"x{selectedRecipe.resultAmount}" : string.Empty;
-
         RefreshIngredients();
         RefreshCraftButton();
-        RefreshStationHint();
     }
 
     private void RefreshIngredients()
@@ -339,7 +280,7 @@ public class CraftingUI : UI_Panel
 
         foreach (var ingredient in selectedRecipe.ingredients)
         {
-            var go   = Instantiate(ingredientSlotPrefab, ingredientContainer);
+            var go = Instantiate(ingredientSlotPrefab, ingredientContainer);
             var slot = go.GetComponent<CraftingIngredientSlotUI>() ?? go.AddComponent<CraftingIngredientSlotUI>();
             int haveCount = playerInventory != null ? playerInventory.GetItemCount(ingredient.itemData) : 0;
             slot.Bind(ingredient, haveCount);
@@ -350,52 +291,10 @@ public class CraftingUI : UI_Panel
     {
         if (craftButton == null || CraftingManager.Instance == null) return;
 
-        bool isLocked  = CraftingManager.Instance.IsLocked(selectedRecipe);
-        bool canCraft  = !isLocked && CraftingManager.Instance.CanCraft(selectedRecipe);
-
+        bool canCraft = CraftingManager.Instance.CanCraft(selectedRecipe);
         craftButton.interactable = canCraft;
 
         if (craftButtonText != null)
-        {
-            if (isLocked)
-                craftButtonText.text = "잠김";
-            else if (canCraft)
-                craftButtonText.text = "제작 [Space]";
-            else
-                craftButtonText.text = "재료 부족";
-        }
-    }
-
-    private void RefreshStationHint()
-    {
-        if (stationHintText == null || selectedRecipe == null) return;
-
-        if (CraftingManager.Instance == null) { stationHintText.text = string.Empty; return; }
-
-        bool isLearned = CraftingManager.Instance.IsLearned(selectedRecipe);
-        var req = selectedRecipe.requiredStation;
-
-        if (req == CraftStation.None)
-        {
-            stationHintText.text = string.Empty;
-        }
-        else if (isLearned)
-        {
-            stationHintText.text = "해금됨";
-            stationHintText.color = new Color(0.4f, 1f, 0.4f);
-        }
-        else
-        {
-            bool nearby = CraftingManager.Instance.IsNearStation(req);
-            string stationName = req switch
-            {
-                CraftStation.Workbench => "작업대",
-                CraftStation.Forge     => "용광로",
-                CraftStation.CookPot   => "화덕",
-                _                      => req.ToString(),
-            };
-            stationHintText.text  = nearby ? string.Empty : $"{stationName} 필요";
-            stationHintText.color = nearby ? Color.yellow : new Color(1f, 0.5f, 0.3f);
-        }
+            craftButtonText.text = canCraft ? "제작 [Space]" : "재료 부족";
     }
 }

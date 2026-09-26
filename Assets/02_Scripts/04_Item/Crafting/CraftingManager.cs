@@ -175,8 +175,10 @@ public class CraftingManager : MonoBehaviour
         {
             if (category == RecipeCategory.All)
             {
-                // 요리는 화덕 전용 팝업(UI_Popup_CookingPot)에서만 다룬다 — 일반 제작창 "전체"에는 안 보인다
-                if (recipe.category == RecipeCategory.Cooking) continue;
+                // 요리는 화덕, 무기/방어구는 작업대 전용 팝업에서만 다룬다 — 일반 제작창 "전체"에는 안 보인다
+                if (recipe.category == RecipeCategory.Cooking
+                    || recipe.category == RecipeCategory.Weapons
+                    || recipe.category == RecipeCategory.Armor) continue;
             }
             else if (recipe.category != category) continue;
 
