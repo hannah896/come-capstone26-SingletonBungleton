@@ -15,7 +15,7 @@ MonoBehaviour:
   recipeID: Recipe_FlowerTea
   recipeName: 꽃차
   category: 8
-  requiredStation: 3
+  requiredStation: 0
   ingredients:
   - itemData: {fileID: 11400000, guid: 2fcec13ddff94cf7b60fb2a3aa4617b1, type: 2}
     amount: 2

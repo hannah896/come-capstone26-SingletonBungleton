@@ -84,11 +84,14 @@ public class CraftingUI : UI_Panel
         var kb = Keyboard.current;
         if (kb == null) return;
 
-        // Tab / Shift+Tab: 카테고리 전환
+        // Tab / Shift+Tab: 카테고리 전환 (요리는 화덕 전용 팝업으로 뺐으니 순환에서 제외)
         if (kb.tabKey.wasPressedThisFrame)
         {
             int dir = kb.shiftKey.isPressed ? -1 : 1;
-            SelectCategoryByIndex((selectedCategoryIndex + dir + Categories.Length) % Categories.Length);
+            int next = selectedCategoryIndex;
+            do { next = (next + dir + Categories.Length) % Categories.Length; }
+            while (Categories[next] == RecipeCategory.Cooking);
+            SelectCategoryByIndex(next);
         }
 
         // 방향키: 레시피 선택
@@ -229,8 +232,17 @@ public class CraftingUI : UI_Panel
         if (categoryTabButtons == null) return;
         for (int i = 0; i < categoryTabButtons.Length && i < Categories.Length; i++)
         {
+            if (categoryTabButtons[i] == null) continue;
+
+            // 요리 탭은 화덕 E키 전용 팝업(UI_Popup_CookingPot)으로 옮겼으니 일반 제작창에서는 숨긴다
+            if (Categories[i] == RecipeCategory.Cooking)
+            {
+                categoryTabButtons[i].gameObject.SetActive(false);
+                continue;
+            }
+
             int index = i;
-            categoryTabButtons[i]?.onClick.AddListener(() => SelectCategory(Categories[index]));
+            categoryTabButtons[i].onClick.AddListener(() => SelectCategory(Categories[index]));
         }
     }
 

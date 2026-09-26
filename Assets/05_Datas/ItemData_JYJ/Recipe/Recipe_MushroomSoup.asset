@@ -15,7 +15,7 @@ MonoBehaviour:
   recipeID: Recipe_MushroomSoup
   recipeName: 버섯 스프
   category: 8
-  requiredStation: 3
+  requiredStation: 0
   ingredients:
   - itemData: {fileID: 11400000, guid: b31cbed3d4a14b1eb22f49f28a0cca37, type: 2}
     amount: 3
