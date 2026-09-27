@@ -84,11 +84,14 @@ public class CraftingUI : UI_Panel
         var kb = Keyboard.current;
         if (kb == null) return;
 
-        // Tab / Shift+Tab: 카테고리 전환
+        // Tab / Shift+Tab: 카테고리 전환 (요리/무기/방어구는 화덕·작업대 전용 팝업으로 뺐으니 순환에서 제외)
         if (kb.tabKey.wasPressedThisFrame)
         {
             int dir = kb.shiftKey.isPressed ? -1 : 1;
-            SelectCategoryByIndex((selectedCategoryIndex + dir + Categories.Length) % Categories.Length);
+            int next = selectedCategoryIndex;
+            do { next = (next + dir + Categories.Length) % Categories.Length; }
+            while (IsHiddenCategory(Categories[next]));
+            SelectCategoryByIndex(next);
         }
 
         // 방향키: 레시피 선택
@@ -229,10 +232,22 @@ public class CraftingUI : UI_Panel
         if (categoryTabButtons == null) return;
         for (int i = 0; i < categoryTabButtons.Length && i < Categories.Length; i++)
         {
+            if (categoryTabButtons[i] == null) continue;
+
+            // 요리/무기/방어구 탭은 화덕·작업대 E키 전용 팝업으로 옮겼으니 일반 제작창에서는 숨긴다
+            if (IsHiddenCategory(Categories[i]))
+            {
+                categoryTabButtons[i].gameObject.SetActive(false);
+                continue;
+            }
+
             int index = i;
-            categoryTabButtons[i]?.onClick.AddListener(() => SelectCategory(Categories[index]));
+            categoryTabButtons[i].onClick.AddListener(() => SelectCategory(Categories[index]));
         }
     }
+
+    private static bool IsHiddenCategory(RecipeCategory category) =>
+        category == RecipeCategory.Cooking || category == RecipeCategory.Weapons || category == RecipeCategory.Armor;
 
     private void SetupFilterButton()
     {

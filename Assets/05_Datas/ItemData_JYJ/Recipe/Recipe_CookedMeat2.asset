@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 64f7e092734e07b468c75b5208bc1759, type: 3}
-  m_Name: Recipe_BerryJam
+  m_Name: Recipe_CookedMeat2
   m_EditorClassIdentifier:
-  recipeID: Recipe_BerryJam
-  recipeName: 베리잼
+  recipeID: Recipe_CookedMeat2
+  recipeName: 구운고기2
   category: 8
   requiredStation: 0
   ingredients:
-  - itemData: {fileID: 11400000, guid: aabab6fae27303b44a9620eb5a5d7311, type: 2}
-    amount: 4
-  resultItem: {fileID: 11400000, guid: 4fbe55fd8b9648bba803930ab35945dd, type: 2}
+  - itemData: {fileID: 11400000, guid: 4c4d488d8fd744d4ebaebcd3d4570fa1, type: 2}
+    amount: 1
+  resultItem: {fileID: 11400000, guid: a9865bef61580b84c92de6e430fedd3e, type: 2}
   resultAmount: 1
-  craftTime: 15
+  craftTime: 0

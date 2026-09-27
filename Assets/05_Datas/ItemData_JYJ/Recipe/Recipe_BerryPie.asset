@@ -15,7 +15,7 @@ MonoBehaviour:
   recipeID: Recipe_BerryPie
   recipeName: 베리 파이
   category: 8
-  requiredStation: 3
+  requiredStation: 0
   ingredients:
   - itemData: {fileID: 11400000, guid: aabab6fae27303b44a9620eb5a5d7311, type: 2}
     amount: 3

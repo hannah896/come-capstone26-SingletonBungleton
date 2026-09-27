@@ -23,8 +23,9 @@ public class UI_Popup_Chest : UI_Popup
     private StorageStation storage;
     private PlayerInventory inventory;
 
-    protected virtual void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         closeButton?.onClick.AddListener(Close);
     }
 

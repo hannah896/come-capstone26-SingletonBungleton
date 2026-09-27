@@ -173,7 +173,15 @@ public class CraftingManager : MonoBehaviour
         var result = new List<RecipeDataSO>();
         foreach (var recipe in allRecipes)
         {
-            if (category != RecipeCategory.All && recipe.category != category) continue;
+            if (category == RecipeCategory.All)
+            {
+                // 요리는 화덕, 무기/방어구는 작업대 전용 팝업에서만 다룬다 — 일반 제작창 "전체"에는 안 보인다
+                if (recipe.category == RecipeCategory.Cooking
+                    || recipe.category == RecipeCategory.Weapons
+                    || recipe.category == RecipeCategory.Armor) continue;
+            }
+            else if (recipe.category != category) continue;
+
             if (onlyCraftable && !CanCraft(recipe)) continue;
             result.Add(recipe);
         }

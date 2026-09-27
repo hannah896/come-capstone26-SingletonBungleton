@@ -5,12 +5,14 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 /// <summary>
-/// 화덕(CookingPot)을 E키로 상호작용했을 때 뜨는 요리 전용 팝업.
-/// 크래프팅 UI의 "요리" 카테고리를 그대로 떼어내 여기로 옮긴 것 — 로직은
-/// CraftingUI/CraftingManager를 그대로 재사용하고, 카테고리 탭 없이 Cooking 하나만 보여준다.
+/// 작업대(Workbench)를 E키로 상호작용했을 때 뜨는 무기/방어구 제작 전용 팝업.
+/// 화덕 팝업(UI_Popup_CookingPot)과 동일한 구조이되, 탭 2개(무기/방어구)로 카테고리를 전환한다.
 /// </summary>
-public class UI_Popup_CookingPot : UI_Popup
+public class UI_Popup_Workbench : UI_Popup
 {
+    [Header("카테고리 탭 (순서: Weapons, Armor)")]
+    [SerializeField] private Button[] categoryTabButtons;
+
     [Header("레시피 목록")]
     [SerializeField] private TextMeshProUGUI titleText;
     [SerializeField] private Button closeButton;
@@ -19,9 +21,6 @@ public class UI_Popup_CookingPot : UI_Popup
 
     [Header("레시피 상세")]
     [SerializeField] private GameObject detailPanel;
-    [SerializeField] private Image resultIcon;
-    [SerializeField] private TextMeshProUGUI resultNameText;
-    [SerializeField] private TextMeshProUGUI resultAmountText;
     [SerializeField] private Transform ingredientContainer;
     [SerializeField] private GameObject ingredientSlotPrefab;
     [SerializeField] private Button craftButton;
@@ -31,9 +30,13 @@ public class UI_Popup_CookingPot : UI_Popup
     [SerializeField] private Button filterToggleButton;
     [SerializeField] private TextMeshProUGUI filterButtonText;
 
-    private const RecipeCategory Category = RecipeCategory.Cooking;
+    private static readonly RecipeCategory[] Categories = { RecipeCategory.Weapons, RecipeCategory.Armor };
+    private static readonly Color TabSelectedColor = new(1f, 0.8f, 0.2f, 1f);
+    private static readonly Color TabDefaultColor = Color.white;
 
     private readonly List<CraftingRecipeSlotUI> recipeSlotUIs = new();
+    private RecipeCategory selectedCategory = RecipeCategory.Weapons;
+    private int selectedCategoryIndex = 0;
     private RecipeDataSO selectedRecipe;
     private int selectedRecipeIndex = 0;
     private bool showOnlyCraftable = false;
@@ -45,8 +48,9 @@ public class UI_Popup_CookingPot : UI_Popup
         closeButton?.onClick.AddListener(Close);
         craftButton?.onClick.AddListener(Craft);
         filterToggleButton?.onClick.AddListener(ToggleFilter);
+        SetupCategoryTabs();
         if (titleText != null)
-            titleText.text = "화덕";
+            titleText.text = "작업대";
         RefreshFilterButton();
     }
 
@@ -68,6 +72,12 @@ public class UI_Popup_CookingPot : UI_Popup
         var kb = Keyboard.current;
         if (kb == null) return;
 
+        if (kb.tabKey.wasPressedThisFrame)
+        {
+            int dir = kb.shiftKey.isPressed ? -1 : 1;
+            SelectCategoryByIndex((selectedCategoryIndex + dir + Categories.Length) % Categories.Length);
+        }
+
         if (kb.downArrowKey.wasPressedThisFrame) MoveRecipeSelection(1);
         if (kb.upArrowKey.wasPressedThisFrame) MoveRecipeSelection(-1);
         if (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame) Craft();
@@ -82,16 +92,7 @@ public class UI_Popup_CookingPot : UI_Popup
         if (playerInventory != null)
             playerInventory.OnInventoryChanged += OnCraftingChanged;
 
-        selectedRecipeIndex = 0;
-        selectedRecipe = null;
-        if (CraftingManager.Instance != null)
-        {
-            var recipes = CraftingManager.Instance.GetRecipesByCategory(Category, showOnlyCraftable);
-            if (recipes.Count > 0) selectedRecipe = recipes[0];
-        }
-
-        RefreshRecipeList();
-        RefreshDetail();
+        SelectCategory(RecipeCategory.Weapons);
     }
 
     private void Unbind()
@@ -107,13 +108,33 @@ public class UI_Popup_CookingPot : UI_Popup
         base.Close();
     }
 
+    public void SelectCategory(RecipeCategory category)
+    {
+        selectedCategory = category;
+        selectedRecipeIndex = 0;
+
+        for (int i = 0; i < Categories.Length; i++)
+            if (Categories[i] == category) { selectedCategoryIndex = i; break; }
+
+        selectedRecipe = null;
+        if (CraftingManager.Instance != null)
+        {
+            var recipes = CraftingManager.Instance.GetRecipesByCategory(category, showOnlyCraftable);
+            if (recipes.Count > 0) selectedRecipe = recipes[0];
+        }
+
+        RefreshCategoryTabs();
+        RefreshRecipeList();
+        RefreshDetail();
+    }
+
     public void SelectRecipe(RecipeDataSO recipe)
     {
         selectedRecipe = recipe;
 
         if (CraftingManager.Instance != null)
         {
-            var recipes = CraftingManager.Instance.GetRecipesByCategory(Category, showOnlyCraftable);
+            var recipes = CraftingManager.Instance.GetRecipesByCategory(selectedCategory, showOnlyCraftable);
             int idx = recipes.IndexOf(recipe);
             selectedRecipeIndex = idx >= 0 ? idx : 0;
         }
@@ -136,7 +157,7 @@ public class UI_Popup_CookingPot : UI_Popup
 
         if (CraftingManager.Instance != null)
         {
-            var recipes = CraftingManager.Instance.GetRecipesByCategory(Category, showOnlyCraftable);
+            var recipes = CraftingManager.Instance.GetRecipesByCategory(selectedCategory, showOnlyCraftable);
             if (recipes.Count > 0) selectedRecipe = recipes[0];
         }
 
@@ -145,10 +166,16 @@ public class UI_Popup_CookingPot : UI_Popup
         RefreshDetail();
     }
 
+    private void SelectCategoryByIndex(int index)
+    {
+        selectedCategoryIndex = index;
+        SelectCategory(Categories[index]);
+    }
+
     private void MoveRecipeSelection(int dir)
     {
         if (CraftingManager.Instance == null) return;
-        var recipes = CraftingManager.Instance.GetRecipesByCategory(Category, showOnlyCraftable);
+        var recipes = CraftingManager.Instance.GetRecipesByCategory(selectedCategory, showOnlyCraftable);
         if (recipes.Count == 0) return;
 
         selectedRecipeIndex = Mathf.Clamp(selectedRecipeIndex + dir, 0, recipes.Count - 1);
@@ -161,7 +188,7 @@ public class UI_Popup_CookingPot : UI_Popup
     {
         if (showOnlyCraftable && selectedRecipe != null && CraftingManager.Instance != null)
         {
-            var recipes = CraftingManager.Instance.GetRecipesByCategory(Category, true);
+            var recipes = CraftingManager.Instance.GetRecipesByCategory(selectedCategory, true);
             if (!recipes.Contains(selectedRecipe))
             {
                 selectedRecipeIndex = Mathf.Clamp(selectedRecipeIndex, 0, Mathf.Max(0, recipes.Count - 1));
@@ -171,6 +198,30 @@ public class UI_Popup_CookingPot : UI_Popup
 
         RefreshRecipeList();
         RefreshDetail();
+    }
+
+    private void SetupCategoryTabs()
+    {
+        if (categoryTabButtons == null) return;
+        for (int i = 0; i < categoryTabButtons.Length && i < Categories.Length; i++)
+        {
+            if (categoryTabButtons[i] == null) continue;
+            int index = i;
+            categoryTabButtons[i].onClick.AddListener(() => SelectCategory(Categories[index]));
+        }
+    }
+
+    private void RefreshCategoryTabs()
+    {
+        if (categoryTabButtons == null) return;
+        for (int i = 0; i < categoryTabButtons.Length && i < Categories.Length; i++)
+        {
+            if (categoryTabButtons[i] == null) continue;
+            bool selected = Categories[i] == selectedCategory;
+            var colors = categoryTabButtons[i].colors;
+            colors.normalColor = selected ? TabSelectedColor : TabDefaultColor;
+            categoryTabButtons[i].colors = colors;
+        }
     }
 
     private void RefreshFilterButton()
@@ -183,7 +234,7 @@ public class UI_Popup_CookingPot : UI_Popup
     {
         if (recipeListContainer == null || recipeSlotPrefab == null || CraftingManager.Instance == null) return;
 
-        var recipes = CraftingManager.Instance.GetRecipesByCategory(Category, showOnlyCraftable);
+        var recipes = CraftingManager.Instance.GetRecipesByCategory(selectedCategory, showOnlyCraftable);
 
         while (recipeSlotUIs.Count < recipes.Count)
         {
@@ -216,18 +267,6 @@ public class UI_Popup_CookingPot : UI_Popup
 
         if (selectedRecipe == null) return;
 
-        if (resultIcon != null)
-        {
-            resultIcon.sprite = selectedRecipe.resultItem?.icon;
-            resultIcon.enabled = resultIcon.sprite != null;
-        }
-
-        if (resultNameText != null)
-            resultNameText.text = selectedRecipe.resultItem?.itemName ?? string.Empty;
-
-        if (resultAmountText != null)
-            resultAmountText.text = selectedRecipe.resultAmount > 1 ? $"x{selectedRecipe.resultAmount}" : string.Empty;
-
         RefreshIngredients();
         RefreshCraftButton();
     }
@@ -256,6 +295,6 @@ public class UI_Popup_CookingPot : UI_Popup
         craftButton.interactable = canCraft;
 
         if (craftButtonText != null)
-            craftButtonText.text = canCraft ? "요리 [Space]" : "재료 부족";
+            craftButtonText.text = canCraft ? "제작 [Space]" : "재료 부족";
     }
 }

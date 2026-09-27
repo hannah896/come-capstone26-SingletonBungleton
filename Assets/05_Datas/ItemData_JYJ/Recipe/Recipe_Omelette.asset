@@ -15,7 +15,7 @@ MonoBehaviour:
   recipeID: Recipe_Omelette
   recipeName: 오믈렛
   category: 8
-  requiredStation: 3
+  requiredStation: 0
   ingredients:
   - itemData: {fileID: 11400000, guid: 5b13a9bd863b9e54eb8fd4b90bdc23ed, type: 2}
     amount: 2

@@ -45,6 +45,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7a80bc7b6c0c0864bb5084aabe0140fc
+    m_Address: UI_Popup_CookingPot
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 9ebcd66ab4045844187672673de88087
     m_Address: Canvas_Hud
     m_ReadOnly: 0

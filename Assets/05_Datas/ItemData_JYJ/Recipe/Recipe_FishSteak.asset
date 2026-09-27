@@ -15,7 +15,7 @@ MonoBehaviour:
   recipeID: Recipe_FishSteak
   recipeName: 생선 스테이크
   category: 8
-  requiredStation: 3
+  requiredStation: 0
   ingredients:
   - itemData: {fileID: 11400000, guid: 427f95e41199a5b46a4b5593752fcda1, type: 2}
     amount: 2

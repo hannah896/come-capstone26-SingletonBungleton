@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 64f7e092734e07b468c75b5208bc1759, type: 3}
-  m_Name: Recipe_BerryJam
+  m_Name: Recipe_RoastedMushroom
   m_EditorClassIdentifier:
-  recipeID: Recipe_BerryJam
-  recipeName: 베리잼
+  recipeID: Recipe_RoastedMushroom
+  recipeName: 구운버섯
   category: 8
   requiredStation: 0
   ingredients:
-  - itemData: {fileID: 11400000, guid: aabab6fae27303b44a9620eb5a5d7311, type: 2}
-    amount: 4
-  resultItem: {fileID: 11400000, guid: 4fbe55fd8b9648bba803930ab35945dd, type: 2}
+  - itemData: {fileID: 11400000, guid: b31cbed3d4a14b1eb22f49f28a0cca37, type: 2}
+    amount: 1
+  resultItem: {fileID: 11400000, guid: 2222ccaf2ef047009f3d448e1325c164, type: 2}
   resultAmount: 1
-  craftTime: 15
+  craftTime: 0
