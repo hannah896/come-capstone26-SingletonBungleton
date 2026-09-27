@@ -19,6 +19,7 @@ GameObject:
   - component: {fileID: 6613656404316520952}
   - component: {fileID: 3009027082736589027}
   - component: {fileID: 5049166734155591387}
+  - component: {fileID: -8491385269600252368}
   m_Layer: 31
   m_Name: Player_Femaie
   m_TagString: Player
@@ -104,7 +105,7 @@ MonoBehaviour:
     m_Bits: 8
   standableLayers:
     serializedVersion: 2
-    m_Bits: 4294966987
+    m_Bits: 3223263243
   steepSlopeSlideSpeed: 5
   airControl: 6
   airDrag: 0.2
@@ -295,6 +296,32 @@ MonoBehaviour:
     outfitKey: Helmet_F
   fallbackOutfitKey: 
   hideInFirstPerson: 1
+--- !u!114 &-8491385269600252368
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 291828927232711877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6fd276332e233d04996db18aec00d424, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  placementCamera: {fileID: 0}
+  playerInventory: {fileID: 0}
+  craftingManager: {fileID: 0}
+  placementValidatorBehaviour: {fileID: 0}
+  previewVisualizerBehaviour: {fileID: 0}
+  gridSize: 1
+  gridRadius: 4
+  ghostYOffset: 0.01
+  groundLayerMask:
+    serializedVersion: 2
+    m_Bits: 8
+  blockingLayerMask:
+    serializedVersion: 2
+    m_Bits: 3223263543
 --- !u!1 &385572181032873360
 GameObject:
   m_ObjectHideFlags: 0

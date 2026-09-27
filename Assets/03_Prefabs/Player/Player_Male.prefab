@@ -187,11 +187,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8879528566716807029, guid: 7ee7f2f5e3eff73419ef2b7e81577ece, type: 3}
   m_PrefabInstance: {fileID: 2706820106112576142}
   m_PrefabAsset: {fileID: 0}
---- !u!95 &8429079487374235423 stripped
-Animator:
-  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 7ee7f2f5e3eff73419ef2b7e81577ece, type: 3}
-  m_PrefabInstance: {fileID: 2706820106112576142}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &7573059033022059250
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -207,7 +202,7 @@ PrefabInstance:
     - target: {fileID: 1279754771551504528, guid: 9d20080a9d1637c43a9619f8fbc3666f, type: 3}
       propertyPath: animator
       value: 
-      objectReference: {fileID: 8429079487374235423}
+      objectReference: {fileID: 0}
     - target: {fileID: 2209426419262318571, guid: 9d20080a9d1637c43a9619f8fbc3666f, type: 3}
       propertyPath: eyePivot
       value: 
@@ -219,6 +214,10 @@ PrefabInstance:
     - target: {fileID: 3009027082736589027, guid: 9d20080a9d1637c43a9619f8fbc3666f, type: 3}
       propertyPath: outfitBindings.Array.data[0].outfitKey
       value: Armor_M
+      objectReference: {fileID: 0}
+    - target: {fileID: 3458799336253370163, guid: 9d20080a9d1637c43a9619f8fbc3666f, type: 3}
+      propertyPath: standableLayers.m_Bits
+      value: 3223263243
       objectReference: {fileID: 0}
     - target: {fileID: 4509351423220894105, guid: 9d20080a9d1637c43a9619f8fbc3666f, type: 3}
       propertyPath: m_Height

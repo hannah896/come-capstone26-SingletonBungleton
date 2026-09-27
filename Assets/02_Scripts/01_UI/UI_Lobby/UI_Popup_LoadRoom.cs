@@ -13,9 +13,11 @@ public class UI_Popup_LoadRoom : UI_Popup
     [SerializeField] private RectTransform SaveListContent;
     [SerializeField] private RectTransform LoadButtonRoot;
     [SerializeField] private RectTransform CloseButtonRoot;
+    [SerializeField] private Sprite SlotInactiveSprite;
+    [SerializeField] private Sprite SlotActiveSprite;
 
     private const int PageSize = 50;
-    private readonly List<(SaveCatalog.Entry entry, Button button)> rows = new();
+    private readonly List<(SaveCatalog.Entry entry, Button button, Button deleteButton)> rows = new();
     private readonly CancellationTokenSource lifetime = new();
     private List<SaveCatalog.Entry> entries;
     private SaveCatalog.Entry selected;
@@ -37,22 +39,34 @@ public class UI_Popup_LoadRoom : UI_Popup
         RefreshAsync().Forget();
     }
 
-    private async UniTaskVoid RefreshAsync()
+    private async UniTask RefreshAsync(string preferredPath = null, int visibleCount = PageSize)
     {
+        SetBusy(true);
+        foreach (Transform child in SaveListContent)
+        {
+            child.gameObject.SetActive(false);
+            Destroy(child.gameObject);
+        }
+        rows.Clear();
+        moreButton = null;
+        selected = null;
         Button status = CreateRow("저장 목록을 불러오는 중...");
         status.interactable = false;
         try
         {
             entries = await SaveCatalog.ListAsync(Main.Save.SaveDirectory, Main.Save.LocalPlayerId, lifetime.Token);
             if (closed || this == null) return;
+            status.gameObject.SetActive(false);
             Destroy(status.gameObject);
             if (entries.Count == 0)
             {
                 CreateRow("저장된 월드가 없습니다.").interactable = false;
                 return;
             }
-            AddPage();
-            Select(rows.Find(row => row.entry.CanLoad).entry);
+            do { AddPage(); }
+            while (rows.Count < Math.Min(visibleCount, entries.Count));
+            ApplySelection(rows.Find(row => row.entry.Path == preferredPath).entry ??
+                rows.Find(row => row.entry.CanLoad).entry);
         }
         catch (OperationCanceledException) { }
         catch (Exception error)
@@ -61,33 +75,54 @@ public class UI_Popup_LoadRoom : UI_Popup
             SetLabel(status, "저장 목록을 읽지 못했습니다.");
             SaveManager.ShowError(error.Message);
         }
+        finally { if (this != null && !closed) SetBusy(false); }
     }
 
     private void AddPage()
     {
-        if (moreButton != null) Destroy(moreButton.gameObject);
+        if (moreButton != null)
+        {
+            moreButton.gameObject.SetActive(false);
+            Destroy(moreButton.gameObject);
+            moreButton = null;
+        }
         int end = Math.Min(rows.Count + PageSize, entries.Count);
         for (int i = rows.Count; i < end; i++)
         {
             SaveCatalog.Entry entry = entries[i];
             Button row = CreateRow(Describe(entry));
             row.onClick.AddListener(() => Select(entry));
-            rows.Add((entry, row));
+            Button deleteButton = FindDeleteButton(row);
+            if (deleteButton != null)
+            {
+                deleteButton.gameObject.SetActive(true);
+                deleteButton.onClick.AddListener(() => DeleteEntryAsync(entry).Forget());
+            }
+            rows.Add((entry, row, deleteButton));
         }
         if (rows.Count < entries.Count)
         {
             moreButton = CreateRow($"더 보기 ({rows.Count} / {entries.Count})");
-            moreButton.onClick.AddListener(AddPage);
+            moreButton.onClick.AddListener(() => { if (!busy) AddPage(); });
         }
     }
 
     private void Select(SaveCatalog.Entry entry)
     {
-        if (busy) return;
-        selected = entry;
-        foreach (var row in rows) SetLabel(row.button, Describe(row.entry));
-        loadButton.interactable = selected != null && selected.CanLoad;
+        if (busy || closed) return;
+        ApplySelection(entry);
         if (entry != null && !entry.CanLoad) SaveManager.ShowError(entry.Error);
+    }
+
+    private void ApplySelection(SaveCatalog.Entry entry)
+    {
+        selected = entry;
+        foreach (var row in rows)
+        {
+            SetLabel(row.button, Describe(row.entry));
+            SetRowSelected(row.button, row.entry == selected);
+        }
+        loadButton.interactable = !busy && selected != null && selected.CanLoad;
     }
 
     private string Describe(SaveCatalog.Entry entry)
@@ -108,11 +143,68 @@ public class UI_Popup_LoadRoom : UI_Popup
         var row = Instantiate(SaveSlotTemplate, SaveListContent);
         ((RectTransform)row.transform).sizeDelta = new Vector2(670f, 96f);
         var button = row.GetComponent<Button>();
+        // 포커스가 Continue 버튼으로 옮겨져도 선택한 저장 슬롯의 테두리는 유지한다.
+        button.transition = Selectable.Transition.None;
         button.onClick = new Button.ButtonClickedEvent();
         var trigger = row.GetComponent<UnityEngine.EventSystems.EventTrigger>();
         if (trigger != null) trigger.triggers.Clear();
+        // 안내/더 보기 행에는 삭제 버튼을 표시하지 않는다.
+        Button deleteButton = FindDeleteButton(button);
+        if (deleteButton != null)
+        {
+            deleteButton.onClick = new Button.ButtonClickedEvent();
+            deleteButton.gameObject.SetActive(false);
+        }
         SetLabel(button, label);
+        SetRowSelected(button, false);
+        row.SetActive(true);
         return button;
+    }
+
+    private static Button FindDeleteButton(Button row) =>
+        row.transform.Find("UI_Button_Close")?.GetComponent<Button>();
+
+    private async UniTaskVoid DeleteEntryAsync(SaveCatalog.Entry entry)
+    {
+        if (busy || closed || entry == null) return;
+        SetBusy(true);
+        UI_Popup_ConfirmDelete popup = null;
+        bool attempted = false;
+        string selectedPath = selected?.Path;
+        int visibleCount = rows.Count;
+        try
+        {
+            popup = await Extensions.ShowPopup<UI_Popup_ConfirmDelete>(clickGuard: true, token: lifetime.Token);
+            lifetime.Token.ThrowIfCancellationRequested();
+            if (popup == null) throw new InvalidOperationException("삭제 확인창을 열지 못했습니다.");
+            if (!await popup.ConfirmAsync(entry.Name, lifetime.Token)) return;
+            lifetime.Token.ThrowIfCancellationRequested();
+            attempted = true;
+            await SaveCatalog.DeleteAsync(Main.Save.SaveDirectory, entry.Path, lifetime.Token);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception error)
+        {
+            if (this != null && !closed) SaveManager.ShowError("삭제하지 못했습니다. " + error.Message);
+        }
+        finally
+        {
+            if (popup != null) popup.Close();
+            if (this != null && !closed)
+            {
+                // 일부 파일만 지워진 오류 상황도 실제 디스크 상태로 다시 표시한다.
+                if (attempted) await RefreshAsync(selectedPath, visibleCount);
+                else SetBusy(false);
+            }
+        }
+    }
+
+    private void SetRowSelected(Button button, bool isSelected)
+    {
+        var image = button.targetGraphic as Image;
+        if (image == null) return;
+        image.overrideSprite = null;
+        image.sprite = isSelected ? SlotActiveSprite : SlotInactiveSprite;
     }
 
     private static void SetLabel(Button button, string label)
@@ -164,7 +256,11 @@ public class UI_Popup_LoadRoom : UI_Popup
         busy = value;
         closeButton.interactable = !value;
         loadButton.interactable = !value && selected != null && selected.CanLoad;
-        foreach (var row in rows) row.button.interactable = !value;
+        foreach (var row in rows)
+        {
+            row.button.interactable = !value;
+            if (row.deleteButton != null) row.deleteButton.interactable = !value;
+        }
         if (moreButton != null) moreButton.interactable = !value;
     }
 

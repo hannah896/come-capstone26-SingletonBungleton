@@ -41,6 +41,34 @@ public static class SaveCatalog
         return new List<string>(paths);
     }
 
+    public static async UniTask DeleteAsync(string directory, string path, CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
+        if (string.IsNullOrWhiteSpace(directory)) throw new ArgumentException("저장 폴더가 없습니다.", nameof(directory));
+        if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException("저장 파일 경로가 없습니다.", nameof(path));
+
+        string fullDirectory = System.IO.Path.GetFullPath(directory).TrimEnd(
+            System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
+        string fullPath = System.IO.Path.GetFullPath(path);
+        string parent = System.IO.Path.GetDirectoryName(fullPath)?.TrimEnd(
+            System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
+        StringComparison comparison = System.IO.Path.DirectorySeparatorChar == '\\'
+            ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        if (!string.Equals(parent, fullDirectory, comparison) ||
+            !string.Equals(System.IO.Path.GetExtension(fullPath), ".json", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("저장 폴더 바로 아래의 저장 파일만 삭제할 수 있습니다.", nameof(path));
+
+        await Task.Run(() =>
+        {
+            // 삭제가 시작되면 취소로 중단하지 않아 원본/백업 일부만 남거나 성공을 취소로 보고하지 않는다.
+            token.ThrowIfCancellationRequested();
+            File.Delete(fullPath + ".tmp");
+            // 백업이 남아 삭제한 슬롯이 다시 나타나지 않도록 원본보다 먼저 제거한다.
+            File.Delete(fullPath + ".bak");
+            File.Delete(fullPath);
+        }, token);
+    }
+
     public static async UniTask<LoadedSave> ReadAsync(string path, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();

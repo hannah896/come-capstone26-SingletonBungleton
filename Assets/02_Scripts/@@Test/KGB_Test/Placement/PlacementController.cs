@@ -24,6 +24,7 @@ public class PlacementController : MonoBehaviour
     [SerializeField] private LayerMask blockingLayerMask;
 
     public bool IsActive { get; private set; }
+    public bool UseCrosshairPlacement { get; private set; }
 
     private IPlacementValidator placementValidator;
     private IPreviewVisualizer previewVisualizer;
@@ -175,7 +176,10 @@ public class PlacementController : MonoBehaviour
 
     private void HandleSelectedSlotChanged(int slotIndex)
     {
-        if (IsActive || playerInventory == null)
+        // 슬롯 전환 시 이전 배치와 회전을 정리한 뒤 새 아이템을 확인한다.
+        CancelPlacement();
+
+        if (playerInventory == null)
             return;
 
         TryBeginPlacementFromSlot(slotIndex);
@@ -242,7 +246,11 @@ public class PlacementController : MonoBehaviour
             return;
         }
 
-        if (!TryGetMouseWorldPosition(out Vector3 worldPosition))
+        // 휠 버튼으로 배치 기준을 전환한다. 지면을 못 찾는 상태에서도 전환할 수 있다.
+        if (Mouse.current != null && Mouse.current.middleButton.wasPressedThisFrame)
+            UseCrosshairPlacement = !UseCrosshairPlacement;
+
+        if (!TryGetPlacementWorldPosition(out Vector3 worldPosition))
         {
             previewVisualizer?.SetVisible(false);
             return;
@@ -270,9 +278,6 @@ public class PlacementController : MonoBehaviour
 
         if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && currentPlacementValid)
             ConfirmPlacement();
-
-        if (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)
-            CancelPlacement();
     }
 
     private void ConfirmPlacement()
@@ -309,15 +314,25 @@ public class PlacementController : MonoBehaviour
             currentRotation *= Quaternion.Euler(0f, 90f, 0f);
     }
 
-    private bool TryGetMouseWorldPosition(out Vector3 worldPosition)
+    private bool TryGetPlacementWorldPosition(out Vector3 worldPosition)
     {
         worldPosition = Vector3.zero;
 
-        if (placementCamera == null || Mouse.current == null)
+        if (placementCamera == null)
             return false;
 
-        Vector2 screenPosition = Mouse.current.position.ReadValue();
-        Ray ray = placementCamera.ScreenPointToRay(screenPosition);
+        Ray ray;
+        if (UseCrosshairPlacement)
+        {
+            ray = placementCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        }
+        else
+        {
+            if (Mouse.current == null)
+                return false;
+
+            ray = placementCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+        }
 
         if (Physics.Raycast(ray, out RaycastHit hit, 1000f, groundLayerMask))
         {

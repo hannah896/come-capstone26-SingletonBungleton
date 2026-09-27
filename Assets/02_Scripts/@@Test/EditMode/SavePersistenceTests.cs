@@ -200,6 +200,98 @@ public class SavePersistenceTests
         Assert.That(paths.Contains(Path.Combine(directory, "orphan.json")), Is.True);
     }
 
+    [UnityTest]
+    public IEnumerator Catalog_DeleteCorruptedSave_RemovesAllCopies_AndKeepsOtherSlots()
+    {
+        Directory.CreateDirectory(directory);
+        string path = Path.Combine(directory, "broken.json");
+        foreach (string suffix in new[] { "", ".bak", ".tmp" }) File.WriteAllText(path + suffix, "corrupted");
+        string otherPath = Path.Combine(directory, "keep.json");
+        File.WriteAllText(otherPath, "other save");
+        File.WriteAllText(otherPath + ".bak", "other backup");
+
+        object awaiter = Call(Static("SaveCatalog", "DeleteAsync", directory, path, CancellationToken.None), "GetAwaiter");
+        while (!(bool)awaiter.GetType().GetProperty("IsCompleted").GetValue(awaiter)) yield return null;
+        Call(awaiter, "GetResult");
+
+        foreach (string suffix in new[] { "", ".bak", ".tmp" }) Assert.That(File.Exists(path + suffix), Is.False);
+        Assert.That(File.ReadAllText(otherPath), Is.EqualTo("other save"));
+        Assert.That(File.ReadAllText(otherPath + ".bak"), Is.EqualTo("other backup"));
+        var paths = (IList)Static("SaveCatalog", "EnumeratePaths", directory);
+        Assert.That(paths.Count, Is.EqualTo(1));
+        Assert.That(paths.Contains(otherPath), Is.True);
+    }
+
+    [UnityTest]
+    public IEnumerator Catalog_DeleteBackupOnlySlot_CannotReappear_AndCanBeRepeated()
+    {
+        Directory.CreateDirectory(directory);
+        string path = Path.Combine(directory, "orphan.json");
+        File.WriteAllText(path + ".bak", "backup");
+        File.WriteAllText(path + ".tmp", "partial write");
+        for (int attempt = 0; attempt < 2; attempt++)
+        {
+            object awaiter = Call(Static("SaveCatalog", "DeleteAsync", directory, path, CancellationToken.None), "GetAwaiter");
+            while (!(bool)awaiter.GetType().GetProperty("IsCompleted").GetValue(awaiter)) yield return null;
+            Call(awaiter, "GetResult");
+        }
+        Assert.That(Directory.GetFiles(directory), Is.Empty);
+        Assert.That((IList)Static("SaveCatalog", "EnumeratePaths", directory), Is.Empty);
+    }
+
+    [UnityTest]
+    public IEnumerator Catalog_DeleteRejectsOutsideNestedAndNonSavePaths_WithoutDeletingFiles()
+    {
+        string saveDirectory = Path.Combine(directory, "Saves");
+        string siblingDirectory = Path.Combine(directory, "SavesOther");
+        Directory.CreateDirectory(Path.Combine(saveDirectory, "nested"));
+        Directory.CreateDirectory(siblingDirectory);
+        string outsidePath = Path.Combine(directory, "outside.json");
+        string siblingPath = Path.Combine(siblingDirectory, "slot.json");
+        string nestedPath = Path.Combine(saveDirectory, "nested", "slot.json");
+        string nonSavePath = Path.Combine(saveDirectory, "config.txt");
+        foreach (string path in new[] { outsidePath, siblingPath, nestedPath, nonSavePath })
+            File.WriteAllText(path, "keep");
+
+        foreach (string path in new[] { outsidePath, siblingPath, nestedPath, nonSavePath,
+            Path.Combine(saveDirectory, "..", "outside.json") })
+        {
+            object awaiter = Call(Static("SaveCatalog", "DeleteAsync", saveDirectory, path, CancellationToken.None), "GetAwaiter");
+            while (!(bool)awaiter.GetType().GetProperty("IsCompleted").GetValue(awaiter)) yield return null;
+            AssertFailure<ArgumentException>(() => Call(awaiter, "GetResult"));
+        }
+        foreach (string path in new[] { outsidePath, siblingPath, nestedPath, nonSavePath })
+            Assert.That(File.ReadAllText(path), Is.EqualTo("keep"));
+    }
+
+    [UnityTest]
+    public IEnumerator Catalog_CancelledDelete_LeavesAllCopiesUntouched()
+    {
+        Directory.CreateDirectory(directory);
+        string path = Path.Combine(directory, "slot.json");
+        foreach (string suffix in new[] { "", ".bak", ".tmp" }) File.WriteAllText(path + suffix, "keep");
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        object awaiter = Call(Static("SaveCatalog", "DeleteAsync", directory, path, cancellation.Token), "GetAwaiter");
+        while (!(bool)awaiter.GetType().GetProperty("IsCompleted").GetValue(awaiter)) yield return null;
+        AssertFailure<OperationCanceledException>(() => Call(awaiter, "GetResult"));
+        foreach (string suffix in new[] { "", ".bak", ".tmp" })
+            Assert.That(File.ReadAllText(path + suffix), Is.EqualTo("keep"));
+    }
+
+    [UnityTest]
+    public IEnumerator Catalog_DeleteBackupFailure_IsReportedBeforeDeletingOriginal()
+    {
+        string path = Path.Combine(directory, "slot.json");
+        Directory.CreateDirectory(path + ".bak");
+        File.WriteAllText(path, "keep");
+        object awaiter = Call(Static("SaveCatalog", "DeleteAsync", directory, path, CancellationToken.None), "GetAwaiter");
+        while (!(bool)awaiter.GetType().GetProperty("IsCompleted").GetValue(awaiter)) yield return null;
+        var error = Assert.Throws<TargetInvocationException>(() => Call(awaiter, "GetResult"));
+        Assert.That(error.InnerException, Is.InstanceOf<IOException>().Or.InstanceOf<UnauthorizedAccessException>());
+        Assert.That(File.ReadAllText(path), Is.EqualTo("keep"));
+    }
+
     [Test]
     public void BeginNewGame_AssignsNewWorldPath_WithoutCreatingOrDeletingFiles()
     {

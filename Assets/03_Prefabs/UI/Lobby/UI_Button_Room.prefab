@@ -257,6 +257,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: UI_Button_Room
       objectReference: {fileID: 0}
+    - target: {fileID: 5187017762683151065, guid: 64e9af8e6d93a4292beefbe33a19f307, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6148482803329221284, guid: 64e9af8e6d93a4292beefbe33a19f307, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
