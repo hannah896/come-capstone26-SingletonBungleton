@@ -18,7 +18,8 @@ public class UI_Panel_WorldMap : UI_Panel
     [SerializeField, Min(1f)] private float _expandedMarkerSize = 50f;
 
     [Header("Viewport Settings")]
-    [SerializeField, Min(1f)] private float _zoom = 1f;
+    [Tooltip("인게임 진입 및 더블클릭 시 플레이어 주변을 보여 주는 기본 확대 배율이다.")]
+    [SerializeField, Min(1f)] private float _zoom = 4f;
     [SerializeField, Min(1f)] private float _maxZoom = 16f;
     [Tooltip("휠 한 칸마다 변경할 배율의 비율. 0.2이면 20%씩 확대한다.")]
     [SerializeField, Min(0.01f)] private float _zoomStep = 0.2f;
@@ -37,7 +38,7 @@ public class UI_Panel_WorldMap : UI_Panel
 
         // 배경 이미지와 지도 이미지를 혼동하지 않도록, 전체 지도용 UI_Image는 프리팹에서 명시적으로 연결한다.
         _navigation = UI_MapViewport.Create(_mapImage, null, _playerMarker,
-            _zoom, _maxZoom, _zoomStep, fillViewport: false, followTarget: false);
+            _zoom, _maxZoom, _zoomStep, fillViewport: false, followTarget: true);
         if (_navigation != null) _mapImage = _navigation.MapImage;
         SetExpanded(false);
         return true;
@@ -86,9 +87,18 @@ public class UI_Panel_WorldMap : UI_Panel
     /// <summary>외부에서 추적 대상을 명시적으로 지정할 때 사용한다.</summary>
     public void SetTarget(Transform target)
     {
+        bool targetChanged = _target != target;
         _target = target;
         RefreshVisibility();
         UpdatePlayerMarker();
+        if (targetChanged) _navigation?.ResetView();
+    }
+
+    /// <summary>현재 플레이어 위치를 중앙에 놓고 기본 확대 배율과 위치 추적을 복구한다.</summary>
+    public void ResetToDefault()
+    {
+        UpdatePlayerMarker();
+        _navigation?.ResetView();
     }
 
     public void Bind(WorldMap worldMap)
@@ -133,10 +143,12 @@ public class UI_Panel_WorldMap : UI_Panel
 
     private void HandleDataChanged(WorldMapData data)
     {
+        bool mapChanged = !ReferenceEquals(_mapData, data);
         _mapData = data;
         if (_mapImage != null) _mapImage.Sprite = _mapData?.Sprite;
         RefreshVisibility();
         UpdatePlayerMarker();
+        if (mapChanged) _navigation?.ResetView();
     }
 
     private void HandleDataCleared()
@@ -172,7 +184,13 @@ public class UI_Panel_WorldMap : UI_Panel
 
     private void UpdatePlayerMarker()
     {
-        _navigation?.Refresh();
+        if (_navigation != null)
+        {
+            _navigation.FocusPosition = _mapData != null && _target != null
+                ? _mapData.NormalizeWorldPosition(_target.position)
+                : new Vector2(0.5f, 0.5f);
+            _navigation.Refresh();
+        }
         if (_mapData == null || _target == null || _playerMarker == null) return;
 
         Vector3 position = _target.position;

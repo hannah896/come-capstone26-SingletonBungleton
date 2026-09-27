@@ -21,6 +21,7 @@ public class MapViewportInputTests
     private Transform _miniMap;
     private RectTransform _authoredMapRect;
     private Sprite _backgroundSprite;
+    private RectTransform _playerMarker;
 
     [SetUp]
     public void SetUp()
@@ -55,8 +56,9 @@ public class MapViewportInputTests
         var serializedPanel = new UnityEditor.SerializedObject(prefabPanel);
         Assert.That(serializedPanel.FindProperty("_mapImage").objectReferenceValue,
             Is.EqualTo(_authoredMapRect.GetComponent(FindType("UI_Image"))));
-        Assert.That(serializedPanel.FindProperty("_playerMarker").objectReferenceValue,
-            Is.EqualTo(_authoredMapRect.Find("PlayerIndicator")));
+        var prefabMarker = serializedPanel.FindProperty("_playerMarker").objectReferenceValue as RectTransform;
+        Assert.That(prefabMarker, Is.Not.Null);
+        Assert.That(prefabMarker.parent, Is.EqualTo(_authoredMapRect));
 
         var frame = UnityEngine.Object.Instantiate(miniMapPrefab.gameObject, canvasObject.transform, false);
         _miniMap = frame.transform;
@@ -66,6 +68,8 @@ public class MapViewportInputTests
         frameRect.sizeDelta = new Vector2(150f, 85f);
         var panel = frame.GetComponent(FindType("UI_Panel_WorldMap"));
         panel.GetType().GetMethod("Initialize").Invoke(panel, null);
+        _playerMarker = (RectTransform)new UnityEditor.SerializedObject(panel)
+            .FindProperty("_playerMarker").objectReferenceValue;
         _navigation = frame.GetComponentInChildren(FindType("UI_MapViewport"));
         Assert.That(_navigation, Is.Not.Null);
         _viewport = (RectTransform)_navigation.transform;
@@ -106,7 +110,8 @@ public class MapViewportInputTests
         Assert.That(_viewport.offsetMax, Is.EqualTo(_authoredMapRect.offsetMax));
         Assert.That(_miniMap.Find("BG").GetComponent<Image>().sprite, Is.EqualTo(_backgroundSprite));
         Assert.That(_miniMap.Find("MapViewport"), Is.Null, "추가 패딩 창을 생성하지 않아야 한다.");
-        Assert.That(_viewport.Find("PlayerIndicator"), Is.Not.Null);
+        Assert.That(_playerMarker, Is.Not.Null);
+        Assert.That(_playerMarker.parent, Is.EqualTo(_viewport));
     }
 
     [Test]
@@ -117,7 +122,7 @@ public class MapViewportInputTests
             position = RectTransformUtility.WorldToScreenPoint(_camera, _viewport.TransformPoint(_viewport.rect.center)),
             button = PointerEventData.InputButton.Left,
             pointerId = -1,
-            // 기본 전체 지도(1배)를 양쪽 축으로 드래그할 수 있을 만큼 확대한다.
+            // 기본 주변 지도에서 더 확대하여 양쪽 축 드래그 입력을 확인한다.
             scrollDelta = Vector2.up * 8f
         };
         var hits = new List<RaycastResult>();

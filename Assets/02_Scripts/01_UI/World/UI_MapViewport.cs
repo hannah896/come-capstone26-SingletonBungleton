@@ -109,7 +109,7 @@ public sealed class UI_MapViewport : MonoBehaviour, IScrollHandler, IBeginDragHa
         return navigation;
     }
 
-    /// <summary>기본 배율과 중심으로 복귀한다. 미니맵은 플레이어 추적도 재개한다.</summary>
+    /// <summary>기본 배율과 중심으로 복귀하고, 추적 지도는 플레이어를 다시 중앙에 유지한다.</summary>
     public void ResetView()
     {
         Zoom = _initialZoom;
@@ -127,9 +127,16 @@ public sealed class UI_MapViewport : MonoBehaviour, IScrollHandler, IBeginDragHa
 
         _contentSize = MapViewportGeometry.ContentSize(size, MapImage.Sprite.rect.size, Zoom, _fillViewport);
 
-        if (_followTarget && !IsNavigating) _center = FocusPosition;
-        // 지도 가장자리에서 더 끌어도 지도 바깥의 빈 공간이 늘어나지 않도록 제한한다.
-        _center = MapViewportGeometry.ClampCenter(_center, size, _contentSize);
+        if (_followTarget && !IsNavigating)
+        {
+            // 기본 추적 상태에서는 월드 가장자리에서도 플레이어가 중앙에 있어야 한다.
+            _center = FocusPosition;
+        }
+        else
+        {
+            // 직접 탐색할 때는 지도 바깥으로 계속 드래그하지 못하도록 제한한다.
+            _center = MapViewportGeometry.ClampCenter(_center, size, _contentSize);
+        }
 
         MapImage.Rect.sizeDelta = _contentSize;
         MapImage.Rect.anchoredPosition = Vector2.Scale(Middle - _center, _contentSize);

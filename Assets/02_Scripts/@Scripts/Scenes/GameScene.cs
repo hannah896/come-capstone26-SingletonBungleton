@@ -203,8 +203,15 @@ public class GameScene : SceneBase
         Player localPlayer = FindLocalPlayer();
         if (localPlayer == null) throw new InvalidOperationException("플레이어를 생성하지 못했습니다.");
         await PlayerSaveAdapter.WaitUntilReadyAsync(localPlayer, token);
-        await Main.UI.ShowHudOverlay<UI_Hud_WorldState>("UI_Hud_WorldState");
+        var worldStateHud = await Main.UI.ShowHudOverlay<UI_Hud_WorldState>("UI_Hud_WorldState");
         await NetworkSaveCoordinator.RestoreLocalPlayerAsync(localPlayer, token);
+        // 새 게임/방 생성/이어하기 모두 최종 복원된 플레이어 위치에서 지도를 시작한다.
+        if (worldStateHud != null)
+        {
+            worldStateHud.SetMapExpanded(false);
+            worldStateHud.SetTarget(localPlayer.transform);
+            worldStateHud.WorldMapView?.ResetToDefault();
+        }
         Main.Save.CompleteLoad();
 
         // 모든 복원과 초기화가 끝난 뒤 입력·시간·시뮬레이션을 시작한다.

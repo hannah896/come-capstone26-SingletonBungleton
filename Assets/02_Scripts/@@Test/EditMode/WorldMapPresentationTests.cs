@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
@@ -16,6 +17,7 @@ public class WorldMapPresentationTests : InputTestFixture
     private RectTransform _expanded;
     private Sprite _sprite;
     private Texture2D _texture;
+    private Vector3 _backgroundScale;
     private object _actions;
     private object _handler;
 
@@ -33,6 +35,7 @@ public class WorldMapPresentationTests : InputTestFixture
         _hud = instance.GetComponent(FindType("UI_Hud_WorldState"));
         Invoke(_hud, "Initialize");
         _map = (Component)Property(_hud, "WorldMapView");
+        _backgroundScale = _map.transform.Find("BG").localScale;
         _slot = (RectTransform)Field(_hud, "_mapSlot");
         _expanded = (RectTransform)Field(_hud, "_expandedMapRoot");
         _navigation = _map.GetComponentInChildren(FindType("UI_MapViewport"));
@@ -86,7 +89,7 @@ public class WorldMapPresentationTests : InputTestFixture
         var viewport = (RectTransform)_navigation.transform;
         Assert.That(viewport.rect.width, Is.EqualTo(width * 0.8f).Within(0.1f));
         Assert.That(viewport.rect.height, Is.EqualTo(height * 0.8f).Within(0.1f));
-        Assert.That(_map.transform.Find("BG").localScale.x, Is.EqualTo(0.95f));
+        Assert.That(_map.transform.Find("BG").localScale, Is.EqualTo(_backgroundScale));
         Assert.That(Vector3.Distance(clock.position, clockPosition), Is.LessThan(0.1f));
         Assert.That(Vector3.Distance(_slot.position, slotPosition), Is.LessThan(0.1f));
         Assert.That(_expanded.GetComponent<Image>().raycastTarget, Is.True);
@@ -171,6 +174,102 @@ public class WorldMapPresentationTests : InputTestFixture
         Invoke(_handler, "Connect");
         UnityEngine.Object.DestroyImmediate(_hud.gameObject);
         Assert.DoesNotThrow(() => Press(keyboard.mKey));
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void DefaultView_CentersPlayerRegardlessOfMapAndTargetArrivalOrder(bool targetFirst)
+    {
+        object data = Field(_map, "_mapData");
+        Invoke(_map, "ClearView");
+        var target = new GameObject("LateMapTarget").transform;
+        target.SetParent(_root.transform, false);
+        target.position = new Vector3(20f, 0f, 980f);
+
+        if (targetFirst) Invoke(_hud, "SetTarget", target);
+        Invoke(_map, "HandleDataChanged", data);
+        if (!targetFirst) Invoke(_hud, "SetTarget", target);
+        Layout();
+        AssertDefaultView();
+
+        // 저장된 위치가 HUD 생성 이후 복원되거나 이동해도 중심 추적을 유지한다.
+        target.position = new Vector3(800f, 0f, 100f);
+        Invoke(_map, "LateUpdate");
+        AssertDefaultView();
+        Invoke(_hud, "ToggleMap");
+        Layout();
+        AssertDefaultView();
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void DoubleClick_RestoresPlayerCenteredDefaultAfterExploration(bool expanded)
+    {
+        var target = new GameObject("ExploredMapTarget").transform;
+        target.SetParent(_root.transform, false);
+        target.position = new Vector3(700f, 0f, 400f);
+        Invoke(_hud, "SetTarget", target);
+        Invoke(_hud, "SetMapExpanded", expanded);
+        Layout();
+
+        var viewport = (RectTransform)_navigation.transform;
+        var eventsObject = new GameObject("MapEventSystem", typeof(EventSystem));
+        eventsObject.transform.SetParent(_root.transform, false);
+        var pointer = new PointerEventData(eventsObject.GetComponent<EventSystem>())
+        {
+            button = PointerEventData.InputButton.Left,
+            position = RectTransformUtility.WorldToScreenPoint(null, viewport.position),
+            scrollDelta = Vector2.up * 2f,
+            pointerId = -1
+        };
+        ((IScrollHandler)_navigation).OnScroll(pointer);
+        Assert.That((float)Property(_navigation, "Zoom"), Is.GreaterThan(4f));
+        ((IBeginDragHandler)_navigation).OnBeginDrag(pointer);
+        pointer.delta = new Vector2(12f, -8f);
+        pointer.position += pointer.delta;
+        ((IDragHandler)_navigation).OnDrag(pointer);
+        Assert.That(Property(_navigation, "IsNavigating"), Is.True);
+
+        target.position = new Vector3(5f, 0f, 995f);
+        Invoke(_map, "LateUpdate");
+        var marker = (RectTransform)Field(_map, "_playerMarker");
+        Assert.That(marker.anchoredPosition.sqrMagnitude, Is.GreaterThan(1f),
+            "직접 지도를 탐색하는 동안에는 플레이어에게 자동 복귀하지 않는다.");
+
+        pointer.Reset();
+        pointer.clickCount = 2;
+        ((IPointerClickHandler)_navigation).OnPointerClick(pointer);
+        Layout();
+        AssertDefaultView();
+        Assert.That(pointer.used, Is.True);
+    }
+
+    [Test]
+    public void InGameReset_UsesRestoredPositionEvenWhenReusingTheSameTarget()
+    {
+        var target = new GameObject("RestoredMapTarget").transform;
+        target.SetParent(_root.transform, false);
+        target.position = new Vector3(500f, 0f, 500f);
+        Invoke(_hud, "SetTarget", target);
+        ((IBeginDragHandler)_navigation).OnBeginDrag(new PointerEventData(null));
+        target.position = new Vector3(990f, 0f, 10f);
+
+        // GameScene에서 위치 복원을 마친 뒤 호출하는 순서다.
+        Invoke(_hud, "SetMapExpanded", false);
+        Invoke(_hud, "SetTarget", target);
+        Invoke(_map, "ResetToDefault");
+        Layout();
+        AssertDefaultView();
+        Assert.That(Property(_hud, "IsMapExpanded"), Is.False);
+    }
+
+    private void AssertDefaultView()
+    {
+        Assert.That((float)Property(_navigation, "Zoom"), Is.EqualTo(4f));
+        Assert.That(Property(_navigation, "IsNavigating"), Is.False);
+        var marker = (RectTransform)Field(_map, "_playerMarker");
+        Assert.That(marker.anchoredPosition.magnitude, Is.LessThan(0.001f),
+            "월드 가장자리에서도 플레이어가 표시 영역 중앙에 있어야 한다.");
     }
 
     private void Layout()
