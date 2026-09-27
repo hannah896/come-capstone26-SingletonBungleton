@@ -95,6 +95,7 @@ MonoBehaviour:
       m_Calls: []
   _mapImage: {fileID: 5857425911158792403}
   _playerMarker: {fileID: 7589650809471685778}
+  _remoteMarkerTemplate: {fileID: 2079476032701603517}
   _rotatePlayerMarker: 1
   _hideMarkerOutsideWorld: 1
   _compactMarkerSize: 15

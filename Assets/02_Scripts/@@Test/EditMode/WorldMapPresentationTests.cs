@@ -263,6 +263,142 @@ public class WorldMapPresentationTests : InputTestFixture
         Assert.That(Property(_hud, "IsMapExpanded"), Is.False);
     }
 
+    [Test]
+    public void RemoteMarkers_ReuseOnlyMarkerImageAndDoNotDuplicateTheLocalPlayer()
+    {
+        var local = CreateMapTarget("LocalTarget", new Vector3(500, 0, 500));
+        var remote = CreateMapTarget("RemoteTarget", new Vector3(550, 0, 500));
+        Invoke(_hud, "SetTarget", local);
+        Invoke(_map, "AddRemoteMarker", local);
+        Invoke(_map, "AddRemoteMarker", remote);
+        Invoke(_map, "AddRemoteMarker", remote);
+        Invoke(_map, "UpdateRemotePlayerMarkers");
+
+        Assert.That(RemoteMarkers.Count, Is.EqualTo(1));
+        var marker = (RectTransform)RemoteMarkers[remote];
+        var template = (RectTransform)Field(_map, "_remoteMarkerTemplate");
+        var images = marker.GetComponentsInChildren<Image>(true);
+        Assert.That(images.Length, Is.EqualTo(1), "원격 마커에는 시야선 이미지를 복제하지 않는다.");
+        Assert.That(images[0].sprite, Is.SameAs(template.GetComponent<Image>().sprite));
+        Assert.That(images[0].color, Is.EqualTo(template.GetComponent<Image>().color));
+        Assert.That(images[0].raycastTarget, Is.False);
+        Assert.That(images[0].maskable, Is.True);
+        Assert.That(marker.Find("SightArea"), Is.Null);
+        Assert.That(marker.parent, Is.SameAs(_navigation.transform));
+        Assert.That(marker.parent.GetComponent<RectMask2D>(), Is.Not.Null);
+        var localMarker = (RectTransform)Field(_map, "_playerMarker");
+        Assert.That(localMarker.Find("SightArea"), Is.Not.Null);
+        Assert.That(marker.GetSiblingIndex(), Is.LessThan(localMarker.GetSiblingIndex()));
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void RemoteMarkers_FollowMovementAndMapNavigationWithoutScalingWithZoom(bool expanded)
+    {
+        var local = CreateMapTarget("LocalTarget", new Vector3(500, 0, 500));
+        var remote = CreateMapTarget("RemoteTarget", new Vector3(530, 0, 540));
+        Invoke(_hud, "SetTarget", local);
+        Invoke(_map, "AddRemoteMarker", remote);
+        Invoke(_hud, "SetMapExpanded", expanded);
+        Layout();
+        AssertRemotePosition(remote);
+        var marker = (RectTransform)RemoteMarkers[remote];
+        Vector2 markerSize = marker.sizeDelta;
+
+        var eventsObject = new GameObject("RemoteMapEvents", typeof(EventSystem));
+        eventsObject.transform.SetParent(_root.transform, false);
+        var pointer = new PointerEventData(eventsObject.GetComponent<EventSystem>())
+        {
+            button = PointerEventData.InputButton.Left,
+            position = RectTransformUtility.WorldToScreenPoint(null, _navigation.transform.position),
+            scrollDelta = Vector2.up * 2f,
+            pointerId = -1
+        };
+        ((IScrollHandler)_navigation).OnScroll(pointer);
+        ((IBeginDragHandler)_navigation).OnBeginDrag(pointer);
+        pointer.delta = new Vector2(15f, 8f);
+        pointer.position += pointer.delta;
+        ((IDragHandler)_navigation).OnDrag(pointer);
+        remote.position = new Vector3(550, 0, 570);
+        AssertRemotePosition(remote);
+        Assert.That(marker.sizeDelta, Is.EqualTo(markerSize));
+
+        pointer.clickCount = 2;
+        ((IPointerClickHandler)_navigation).OnPointerClick(pointer);
+        AssertRemotePosition(remote);
+        Invoke(_hud, "ToggleMap");
+        Layout();
+        AssertRemotePosition(remote);
+        Assert.That(RemoteMarkers[remote], Is.SameAs(marker));
+        Assert.That(marker.sizeDelta, Is.EqualTo(((RectTransform)Field(_map, "_playerMarker")).sizeDelta));
+    }
+
+    [Test]
+    public void RemoteMarkers_HideOutsideWorldAndCleanUpDepartedPlayersAndClearedMap()
+    {
+        var remote = CreateMapTarget("RemoteTarget", new Vector3(400, 0, 400));
+        var departed = CreateMapTarget("DepartedTarget", new Vector3(600, 0, 600));
+        Invoke(_map, "AddRemoteMarker", remote);
+        Invoke(_map, "AddRemoteMarker", departed);
+        var marker = (RectTransform)RemoteMarkers[remote];
+        var departedMarker = (RectTransform)RemoteMarkers[departed];
+        remote.position = new Vector3(-1, 0, 400);
+        Invoke(_map, "UpdateRemotePlayerMarkers");
+        Assert.That(marker.gameObject.activeSelf, Is.False);
+        remote.position = new Vector3(400, 0, 400);
+        UnityEngine.Object.DestroyImmediate(departed.gameObject);
+        Invoke(_map, "UpdateRemotePlayerMarkers");
+        Assert.That(marker.gameObject.activeSelf, Is.True);
+        Assert.That(departedMarker == null, Is.True);
+        Assert.That(RemoteMarkers.Count, Is.EqualTo(1));
+        remote.gameObject.SetActive(false);
+        Invoke(_map, "UpdateRemotePlayerMarkers");
+        Assert.That(RemoteMarkers.Count, Is.Zero);
+        Assert.That(marker == null, Is.True);
+
+        remote.gameObject.SetActive(true);
+        Invoke(_map, "AddRemoteMarker", remote);
+        marker = (RectTransform)RemoteMarkers[remote];
+        Invoke(_map, "ClearView");
+        Assert.That(RemoteMarkers.Count, Is.Zero);
+        Assert.That(marker == null, Is.True);
+    }
+
+    [Test]
+    public void RemotePlayerDiscovery_ExcludesSinglePlayerAndRemovesUnregisteredTargets()
+    {
+        var local = CreateMapTarget("SinglePlayer", new Vector3(500, 0, 500));
+        local.gameObject.AddComponent(FindType("Player"));
+        var removed = CreateMapTarget("OldRemote", new Vector3(550, 0, 500));
+        Invoke(_map, "AddRemoteMarker", removed);
+        var marker = (RectTransform)RemoteMarkers[removed];
+        Invoke(_map, "RefreshRemotePlayers");
+        Assert.That(RemoteMarkers.Count, Is.Zero);
+        Assert.That(marker == null, Is.True);
+    }
+
+    private System.Collections.IDictionary RemoteMarkers =>
+        (System.Collections.IDictionary)Field(_map, "_remoteMarkers");
+
+    private Transform CreateMapTarget(string name, Vector3 position)
+    {
+        var target = new GameObject(name).transform;
+        target.SetParent(_root.transform, false);
+        target.position = position;
+        return target;
+    }
+
+    private void AssertRemotePosition(Transform target)
+    {
+        Invoke(_map, "UpdateRemotePlayerMarkers");
+        var marker = (RectTransform)RemoteMarkers[target];
+        var image = (Component)Property(_navigation, "MapImage");
+        var content = (RectTransform)image.transform;
+        Vector2 normalized = new Vector2(target.position.x, target.position.z) / 1000f;
+        Vector3 expected = content.TransformPoint(Vector2.Scale(normalized - Vector2.one * 0.5f, content.rect.size));
+        Assert.That(Vector3.Distance(marker.position, expected), Is.LessThan(0.01f));
+    }
+
     private void AssertDefaultView()
     {
         Assert.That((float)Property(_navigation, "Zoom"), Is.EqualTo(4f));

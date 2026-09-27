@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// <see cref="WorldMap"/>의 전체 지도를 HUD와 확대 화면에서 공유하는 View다.
@@ -9,6 +11,8 @@ public class UI_Panel_WorldMap : UI_Panel
     [Header("UI References")]
     [SerializeField] private UI_Image _mapImage;
     [SerializeField] private RectTransform _playerMarker;
+    [Tooltip("로컬 인디케이터의 Marker 이미지만 연결한다. 원격 플레이어에게는 시야선을 복제하지 않는다.")]
+    [SerializeField] private RectTransform _remoteMarkerTemplate;
 
     [Header("Marker Settings")]
     [Tooltip("Main Camera의 수평 시야 방향에 맞춰 마커와 시야선을 함께 회전한다.")]
@@ -29,12 +33,19 @@ public class UI_Panel_WorldMap : UI_Panel
     private WorldMapData _mapData;
     private Transform _target;
     private float _nextTargetSearchTime;
+    private float _nextRemoteSearchTime;
+    private readonly Dictionary<Transform, RectTransform> _remoteMarkers = new();
+    private readonly HashSet<Transform> _remoteTargets = new();
+    private readonly List<Transform> _removedTargets = new();
 
     public Transform Target => _target;
 
     public override bool Initialize()
     {
         if (!base.Initialize()) return false;
+
+        if (_remoteMarkerTemplate == null && _playerMarker != null)
+            _remoteMarkerTemplate = _playerMarker.Find("Marker") as RectTransform;
 
         // 배경 이미지와 지도 이미지를 혼동하지 않도록, 전체 지도용 UI_Image는 프리팹에서 명시적으로 연결한다.
         _navigation = UI_MapViewport.Create(_mapImage, null, _playerMarker,
@@ -47,13 +58,17 @@ public class UI_Panel_WorldMap : UI_Panel
     /// <summary>지도 배율은 유지하고 표시 모드에 맞는 마커 크기만 적용한다.</summary>
     public void SetExpanded(bool expanded)
     {
+        float markerSize = expanded ? _expandedMarkerSize : _compactMarkerSize;
         if (_playerMarker != null)
         {
             _playerMarker.localScale = Vector3.one;
-            _playerMarker.sizeDelta = Vector2.one * (expanded ? _expandedMarkerSize : _compactMarkerSize);
+            _playerMarker.sizeDelta = Vector2.one * markerSize;
         }
+        foreach (RectTransform marker in _remoteMarkers.Values)
+            if (marker != null) marker.sizeDelta = Vector2.one * markerSize;
         _navigation?.CancelDrag();
         _navigation?.Refresh();
+        UpdateRemotePlayerMarkers();
     }
 
     private void OnEnable()
@@ -61,13 +76,16 @@ public class UI_Panel_WorldMap : UI_Panel
         Initialize();
         TryBind();
         TryFindLocalPlayer();
+        _nextRemoteSearchTime = 0f;
         // Cinemachine이 카메라 회전을 마친 뒤, UI를 그리기 직전에 방향을 반영한다.
         Canvas.willRenderCanvases += UpdatePlayerMarkerRotation;
+        Canvas.willRenderCanvases += UpdateRemotePlayerMarkers;
     }
 
     private void OnDisable()
     {
         Canvas.willRenderCanvases -= UpdatePlayerMarkerRotation;
+        Canvas.willRenderCanvases -= UpdateRemotePlayerMarkers;
         Unbind();
     }
 
@@ -82,6 +100,13 @@ public class UI_Panel_WorldMap : UI_Panel
         }
 
         UpdatePlayerMarker();
+        // 참가자 검색만 간격을 두고 수행하고, 이미 찾은 캐릭터의 위치는 매 프레임 갱신한다.
+        if (Time.unscaledTime >= _nextRemoteSearchTime)
+        {
+            _nextRemoteSearchTime = Time.unscaledTime + 0.5f;
+            RefreshRemotePlayers();
+        }
+        UpdateRemotePlayerMarkers();
     }
 
     /// <summary>외부에서 추적 대상을 명시적으로 지정할 때 사용한다.</summary>
@@ -149,6 +174,7 @@ public class UI_Panel_WorldMap : UI_Panel
         RefreshVisibility();
         UpdatePlayerMarker();
         if (mapChanged) _navigation?.ResetView();
+        if (mapChanged) _nextRemoteSearchTime = 0f;
     }
 
     private void HandleDataCleared()
@@ -158,6 +184,7 @@ public class UI_Panel_WorldMap : UI_Panel
 
     private void ClearView()
     {
+        ClearRemoteMarkers();
         _mapData = null;
         if (_mapImage != null) _mapImage.Sprite = null;
         _navigation?.ResetView();
@@ -207,6 +234,87 @@ public class UI_Panel_WorldMap : UI_Panel
         Vector2 normalized = _mapData.NormalizeWorldPosition(position);
         _navigation?.SetMarkerPosition(normalized);
         UpdatePlayerMarkerRotation();
+    }
+
+    private void RefreshRemotePlayers()
+    {
+        if (_mapData?.Sprite == null || _navigation == null || _remoteMarkerTemplate == null) return;
+
+        _remoteTargets.Clear();
+        foreach (Player player in Object.FindObjectsByType<Player>(FindObjectsSortMode.None))
+        {
+            if (!player.isActiveAndEnabled || player.IsLocalPlayer || player.transform == _target) continue;
+            _remoteTargets.Add(player.transform);
+            AddRemoteMarker(player.transform);
+        }
+
+        _removedTargets.Clear();
+        foreach (Transform target in _remoteMarkers.Keys)
+            if (!_remoteTargets.Contains(target)) _removedTargets.Add(target);
+        foreach (Transform target in _removedTargets) RemoveRemoteMarker(target);
+    }
+
+    private void AddRemoteMarker(Transform target)
+    {
+        if (target == null || target == _target || _remoteMarkers.ContainsKey(target)
+            || _navigation == null || _playerMarker == null || _remoteMarkerTemplate == null) return;
+
+        var marker = new GameObject("RemotePlayerMarker", typeof(RectTransform)).GetComponent<RectTransform>();
+        marker.gameObject.layer = _playerMarker.gameObject.layer;
+        marker.SetParent(_navigation.Viewport, false);
+        marker.anchorMin = marker.anchorMax = Vector2.one * 0.5f;
+        marker.sizeDelta = _playerMarker.sizeDelta;
+        // 별도의 루트 아래 이미지 부분만 재사용하여 SightArea와 로컬 시야 회전을 제외한다.
+        Instantiate(_remoteMarkerTemplate, marker, false).gameObject.SetActive(true);
+        foreach (Graphic graphic in marker.GetComponentsInChildren<Graphic>(true))
+            graphic.raycastTarget = false;
+        marker.SetSiblingIndex(_playerMarker.GetSiblingIndex());
+        _remoteMarkers.Add(target, marker);
+    }
+
+    private void UpdateRemotePlayerMarkers()
+    {
+        if (_mapData?.Sprite == null || _navigation == null) return;
+
+        _removedTargets.Clear();
+        foreach (var pair in _remoteMarkers)
+        {
+            Transform target = pair.Key;
+            RectTransform marker = pair.Value;
+            if (target == null || !target.gameObject.activeInHierarchy || target == _target || marker == null)
+            {
+                _removedTargets.Add(target);
+                continue;
+            }
+
+            Vector3 position = target.position;
+            bool outsideWorld = position.x < 0f || position.z < 0f
+                || position.x > _mapData.TerrainSize.x || position.z > _mapData.TerrainSize.y;
+            bool visible = !_hideMarkerOutsideWorld || !outsideWorld;
+            if (marker.gameObject.activeSelf != visible) marker.gameObject.SetActive(visible);
+            if (visible)
+                marker.anchoredPosition = _navigation.NormalizedToViewportPosition(
+                    _mapData.NormalizeWorldPosition(position));
+        }
+        foreach (Transform target in _removedTargets) RemoveRemoteMarker(target);
+    }
+
+    private void RemoveRemoteMarker(Transform target)
+    {
+        if (!_remoteMarkers.Remove(target, out RectTransform marker) || marker == null) return;
+        marker.gameObject.SetActive(false);
+        if (Application.isPlaying) Destroy(marker.gameObject);
+        else DestroyImmediate(marker.gameObject);
+    }
+
+    private void ClearRemoteMarkers()
+    {
+        _removedTargets.Clear();
+        _removedTargets.AddRange(_remoteMarkers.Keys);
+        foreach (Transform target in _removedTargets) RemoveRemoteMarker(target);
+        _removedTargets.Clear();
+        _remoteTargets.Clear();
+        _nextRemoteSearchTime = 0f;
     }
 
     private void UpdatePlayerMarkerRotation()

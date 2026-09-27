@@ -141,15 +141,19 @@ public sealed class UI_MapViewport : MonoBehaviour, IScrollHandler, IBeginDragHa
         MapImage.Rect.sizeDelta = _contentSize;
         MapImage.Rect.anchoredPosition = Vector2.Scale(Middle - _center, _contentSize);
         if (_marker != null)
-            _marker.anchoredPosition = Vector2.Scale(_markerPosition - _center, _contentSize);
+            _marker.anchoredPosition = NormalizedToViewportPosition(_markerPosition);
     }
 
     public void SetMarkerPosition(Vector2 normalizedPosition)
     {
         _markerPosition = normalizedPosition;
         if (_marker != null)
-            _marker.anchoredPosition = Vector2.Scale(_markerPosition - _center, _contentSize);
+            _marker.anchoredPosition = NormalizedToViewportPosition(_markerPosition);
     }
+
+    /// <summary>로컬/원격 마커에 같은 지도 배율과 드래그 중심을 적용한다.</summary>
+    public Vector2 NormalizedToViewportPosition(Vector2 normalizedPosition) =>
+        Vector2.Scale(normalizedPosition - _center, _contentSize);
 
     public void OnScroll(PointerEventData eventData)
     {
