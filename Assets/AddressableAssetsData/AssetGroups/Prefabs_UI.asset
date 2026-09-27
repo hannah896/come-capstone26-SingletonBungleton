@@ -41,7 +41,7 @@ MonoBehaviour:
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 2f3f09661c91a894b83543e325211ba1
-    m_Address: UI_Popup_WorldMap
+    m_Address: UI_Panel_WorldMap
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

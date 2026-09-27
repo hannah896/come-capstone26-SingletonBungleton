@@ -202,6 +202,9 @@ public sealed class UI_MapViewport : MonoBehaviour, IScrollHandler, IBeginDragHa
             _dragPointerId = null;
     }
 
+    /// <summary>표시 영역이 전환되면 이전 영역에서 시작한 드래그를 끝낸다.</summary>
+    public void CancelDrag() => _dragPointerId = null;
+
     // PointerDown을 받아야 이 오브젝트에 더블클릭 이벤트가 전달된다.
     public void OnPointerDown(PointerEventData eventData) { }
 

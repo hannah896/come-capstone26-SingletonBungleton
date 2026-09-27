@@ -1,18 +1,21 @@
 using UnityEngine;
 
 /// <summary>
-/// <see cref="WorldMap"/>이 소유한 전체 지도 스프라이트를 표시하는 팝업 View다.
-/// 지도 생성은 하지 않으며, 열려 있는 동안에만 모델을 구독한다.
+/// <see cref="WorldMap"/>의 전체 지도를 HUD와 확대 화면에서 공유하는 View다.
+/// 표시 크기를 바꿔도 같은 지도, 탐색 상태와 플레이어 마커를 유지한다.
 /// </summary>
-public class UI_Popup_WorldMap : UI_Popup
+public class UI_Panel_WorldMap : UI_Panel
 {
     [Header("UI References")]
     [SerializeField] private UI_Image _mapImage;
     [SerializeField] private RectTransform _playerMarker;
 
     [Header("Marker Settings")]
-    [SerializeField] private bool _rotatePlayerMarker = false;
+    [Tooltip("Main Camera의 수평 시야 방향에 맞춰 마커와 시야선을 함께 회전한다.")]
+    [SerializeField] private bool _rotatePlayerMarker = true;
     [SerializeField] private bool _hideMarkerOutsideWorld = true;
+    [SerializeField, Min(1f)] private float _compactMarkerSize = 15f;
+    [SerializeField, Min(1f)] private float _expandedMarkerSize = 50f;
 
     [Header("Viewport Settings")]
     [SerializeField, Min(1f)] private float _zoom = 1f;
@@ -26,6 +29,8 @@ public class UI_Popup_WorldMap : UI_Popup
     private Transform _target;
     private float _nextTargetSearchTime;
 
+    public Transform Target => _target;
+
     public override bool Initialize()
     {
         if (!base.Initialize()) return false;
@@ -34,7 +39,20 @@ public class UI_Popup_WorldMap : UI_Popup
         _navigation = UI_MapViewport.Create(_mapImage, null, _playerMarker,
             _zoom, _maxZoom, _zoomStep, fillViewport: false, followTarget: false);
         if (_navigation != null) _mapImage = _navigation.MapImage;
+        SetExpanded(false);
         return true;
+    }
+
+    /// <summary>지도 배율은 유지하고 표시 모드에 맞는 마커 크기만 적용한다.</summary>
+    public void SetExpanded(bool expanded)
+    {
+        if (_playerMarker != null)
+        {
+            _playerMarker.localScale = Vector3.one;
+            _playerMarker.sizeDelta = Vector2.one * (expanded ? _expandedMarkerSize : _compactMarkerSize);
+        }
+        _navigation?.CancelDrag();
+        _navigation?.Refresh();
     }
 
     private void OnEnable()
@@ -42,10 +60,13 @@ public class UI_Popup_WorldMap : UI_Popup
         Initialize();
         TryBind();
         TryFindLocalPlayer();
+        // Cinemachine이 카메라 회전을 마친 뒤, UI를 그리기 직전에 방향을 반영한다.
+        Canvas.willRenderCanvases += UpdatePlayerMarkerRotation;
     }
 
     private void OnDisable()
     {
+        Canvas.willRenderCanvases -= UpdatePlayerMarkerRotation;
         Unbind();
     }
 
@@ -133,7 +154,7 @@ public class UI_Popup_WorldMap : UI_Popup
 
     private void RefreshVisibility()
     {
-        if (_mapImage != null) _mapImage.gameObject.SetActive(_mapData?.Sprite != null);
+        if (_mapImage != null) _mapImage.Image.enabled = _mapData?.Sprite != null;
         if (_playerMarker != null) _playerMarker.gameObject.SetActive(_mapData != null && _target != null);
     }
 
@@ -167,9 +188,21 @@ public class UI_Popup_WorldMap : UI_Popup
 
         Vector2 normalized = _mapData.NormalizeWorldPosition(position);
         _navigation?.SetMarkerPosition(normalized);
-        if (_rotatePlayerMarker)
-        {
-            _playerMarker.localRotation = Quaternion.Euler(0f, 0f, -_target.eulerAngles.y);
-        }
+        UpdatePlayerMarkerRotation();
+    }
+
+    private void UpdatePlayerMarkerRotation()
+    {
+        if (!_rotatePlayerMarker || !isActiveAndEnabled || _target == null
+            || _playerMarker == null || !_playerMarker.gameObject.activeInHierarchy) return;
+
+        Camera viewCamera = Camera.main;
+        Vector3 forward = viewCamera != null ? viewCamera.transform.forward : _target.forward;
+        // 지도 위쪽은 월드 +Z다. 상하 시선은 제외하고 수직을 바라볼 때는 마지막 방향을 유지한다.
+        Vector2 heading = new Vector2(forward.x, forward.z);
+        if (heading.sqrMagnitude < 0.000001f) return;
+
+        float yaw = Mathf.Atan2(heading.x, heading.y) * Mathf.Rad2Deg;
+        _playerMarker.localRotation = Quaternion.Euler(0f, 0f, -yaw);
     }
 }

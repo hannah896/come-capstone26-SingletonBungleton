@@ -45,25 +45,26 @@ public class MapViewportInputTests
         eventObject.transform.SetParent(_root.transform, false);
         _events = eventObject.GetComponent<EventSystem>();
 
-        // 실제 HUD 프리팹의 미니맵만 복제하여 참조와 레이아웃 변경도 함께 검증한다.
+        // 실제 HUD에 연결된 공용 월드맵을 복제하여 참조와 레이아웃도 검증한다.
         var hudPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(
             "Assets/03_Prefabs/UI/World/UI_Hud_WorldState.prefab");
-        Transform miniMapPrefab = hudPrefab.transform.Find("Top/UI_WorldMiniMap");
+        Transform miniMapPrefab = hudPrefab.transform.Find("WorldStateContent/Top/WorldMapSlot/UI_Panel_WorldMap");
         _authoredMapRect = (RectTransform)miniMapPrefab.Find("MapImage");
         _backgroundSprite = miniMapPrefab.Find("BG").GetComponent<Image>().sprite;
-        Component prefabPanel = miniMapPrefab.GetComponent(FindType("UI_Panel_WorldMiniMap"));
+        Component prefabPanel = miniMapPrefab.GetComponent(FindType("UI_Panel_WorldMap"));
         var serializedPanel = new UnityEditor.SerializedObject(prefabPanel);
         Assert.That(serializedPanel.FindProperty("_mapImage").objectReferenceValue,
             Is.EqualTo(_authoredMapRect.GetComponent(FindType("UI_Image"))));
         Assert.That(serializedPanel.FindProperty("_playerMarker").objectReferenceValue,
-            Is.EqualTo(_authoredMapRect.Find("PlayerMarker")));
+            Is.EqualTo(_authoredMapRect.Find("PlayerIndicator")));
 
         var frame = UnityEngine.Object.Instantiate(miniMapPrefab.gameObject, canvasObject.transform, false);
         _miniMap = frame.transform;
         var frameRect = (RectTransform)_miniMap;
         frameRect.anchorMin = frameRect.anchorMax = new Vector2(0.5f, 0.5f);
         frameRect.anchoredPosition = Vector2.zero;
-        var panel = frame.GetComponent(FindType("UI_Panel_WorldMiniMap"));
+        frameRect.sizeDelta = new Vector2(150f, 85f);
+        var panel = frame.GetComponent(FindType("UI_Panel_WorldMap"));
         panel.GetType().GetMethod("Initialize").Invoke(panel, null);
         _navigation = frame.GetComponentInChildren(FindType("UI_MapViewport"));
         Assert.That(_navigation, Is.Not.Null);
@@ -105,7 +106,7 @@ public class MapViewportInputTests
         Assert.That(_viewport.offsetMax, Is.EqualTo(_authoredMapRect.offsetMax));
         Assert.That(_miniMap.Find("BG").GetComponent<Image>().sprite, Is.EqualTo(_backgroundSprite));
         Assert.That(_miniMap.Find("MapViewport"), Is.Null, "추가 패딩 창을 생성하지 않아야 한다.");
-        Assert.That(_viewport.Find("PlayerMarker"), Is.Not.Null);
+        Assert.That(_viewport.Find("PlayerIndicator"), Is.Not.Null);
     }
 
     [Test]
@@ -116,7 +117,8 @@ public class MapViewportInputTests
             position = RectTransformUtility.WorldToScreenPoint(_camera, _viewport.TransformPoint(_viewport.rect.center)),
             button = PointerEventData.InputButton.Left,
             pointerId = -1,
-            scrollDelta = Vector2.up
+            // 기본 전체 지도(1배)를 양쪽 축으로 드래그할 수 있을 만큼 확대한다.
+            scrollDelta = Vector2.up * 8f
         };
         var hits = new List<RaycastResult>();
         _raycaster.Raycast(pointer, hits);
