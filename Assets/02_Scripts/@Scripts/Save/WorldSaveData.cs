@@ -14,6 +14,7 @@ public sealed class WorldSaveData
     public List<DestroyedObjectSaveData> destroyedObjects = new();
     public List<StructureSaveData> structures = new();
     public List<DroppedItemSaveData> droppedItems = new();
+    public MonsterSpawnSaveData monsterSpawns = new();
     public NetworkWorldSaveData network;
 }
 

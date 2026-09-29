@@ -21,7 +21,9 @@ public static class WorldSaveAdapter
             branch = settings.WorldBranch,
             loop = settings.WorldLoop,
             size = settings.WorldSize,
-            totalSeconds = WorldClock.Instance != null ? WorldClock.Instance.SaveTime() : 0f
+            totalSeconds = WorldClock.Instance != null ? WorldClock.Instance.SaveTime() : 0f,
+            monsterSpawns = world.WorldMonsterSpawnDirector != null
+                ? world.WorldMonsterSpawnDirector.Capture() : new MonsterSpawnSaveData()
         };
 
         foreach (ChunkData chunk in world.CurrentLogicData.GetAllChunks())
@@ -173,6 +175,10 @@ public static class WorldSaveAdapter
         if (data.destroyedObjects == null || data.structures == null || data.droppedItems == null)
             throw new InvalidOperationException("월드 저장 목록이 누락되었습니다.");
 
+        // 이전 저장 파일에는 몬스터 상태 항목이 없을 수 있습니다.
+        data.monsterSpawns ??= new MonsterSpawnSaveData();
+        ValidateMonsterSpawns(data.monsterSpawns);
+
         var placementIds = new HashSet<int>();
         foreach (var destroyed in data.destroyedObjects)
             if (destroyed == null || destroyed.instanceId == 0 || !placementIds.Add(destroyed.instanceId) ||
@@ -207,6 +213,31 @@ public static class WorldSaveAdapter
                     throw new InvalidOperationException("네트워크 아이템 ID 길이가 허용 범위를 넘었습니다.");
             }
         }
+    }
+
+    private static void ValidateMonsterSpawns(MonsterSpawnSaveData data)
+    {
+        if (data.initialMonsters == null || data.sources == null || data.periodic == null || data.members == null)
+            throw new InvalidOperationException("몬스터 스폰 저장 목록이 누락되었습니다.");
+        var ids = new HashSet<int>();
+        foreach (InitialMonsterSaveData entry in data.initialMonsters)
+            if (entry == null || entry.id == 0 || !ids.Add(entry.id) || (entry.dead && entry.hasLiveState) ||
+                (entry.hasLiveState && (!IsFinite(entry.position) || !IsFinite(entry.hp) || entry.hp <= 0f)))
+                throw new InvalidOperationException("초기 몬스터 저장 상태가 올바르지 않습니다.");
+        ids.Clear();
+        foreach (SpawnSourceSaveData entry in data.sources)
+            if (entry == null || entry.id == 0 || !ids.Add(entry.id) ||
+                !IsFinite(entry.nextSpawnTime) || entry.nextSpawnTime < 0f)
+                throw new InvalidOperationException("몬스터 스폰 오브젝트 저장 상태가 올바르지 않습니다.");
+        var ruleIds = new HashSet<string>();
+        foreach (PeriodicSpawnSaveData entry in data.periodic)
+            if (entry == null || string.IsNullOrWhiteSpace(entry.ruleId) || !ruleIds.Add(entry.ruleId) ||
+                !IsFinite(entry.nextSpawnTime) || entry.nextSpawnTime < 0f)
+                throw new InvalidOperationException("주기 스폰 저장 상태가 올바르지 않습니다.");
+        foreach (SpawnedMonsterSaveData entry in data.members)
+            if (entry == null || (entry.sourceId == 0) == string.IsNullOrWhiteSpace(entry.periodicRuleId) ||
+                !IsFinite(entry.position) || !IsFinite(entry.hp) || entry.hp <= 0f)
+                throw new InvalidOperationException("스폰 오브젝트 몬스터 저장 상태가 올바르지 않습니다.");
     }
 
     public static void ValidateStructures(List<StructureSaveData> structures)

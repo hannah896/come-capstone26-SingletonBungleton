@@ -39,6 +39,8 @@ public class WorldGraphDirector : MonoBehaviour
             new HeightBuilder(),
             new ObjectDisposer(),
             new ItemDisposer(),
+            new SpawnerDisposer(),
+            new InitialMonsterDisposer(),
             new ChunkSlicer(),
             new PoolPreloader()
         };

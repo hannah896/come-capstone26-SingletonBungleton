@@ -13,12 +13,14 @@ public class WorldDisposeData
     public List<DisposeData> ObjectDisposes = new();
     // 배치된 아이템에 대한 리스트
     public List<DisposeData> ItemDisposes = new();
+    public List<WorldInitialMonsterPlacement> InitialMonsterPlacements = new();
 
     public void Clear()
     {
         DisposeDatas.Clear();
         ObjectDisposes.Clear();
         ItemDisposes.Clear();
+        InitialMonsterPlacements.Clear();
     }
 
 }

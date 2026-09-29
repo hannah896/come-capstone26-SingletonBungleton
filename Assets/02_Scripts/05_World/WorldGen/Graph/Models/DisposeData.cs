@@ -7,6 +7,8 @@ public class DisposeData
 {
     public int instanceId;
     public string prefabName;
+    // 월드에 배치한 스폰 오브젝트만 사용합니다. 저장 파일에는 배치 결과를 쓰지 않고 시드로 재생성합니다.
+    public SourceSpawnRule monsterSpawnRule;
     public Vector2Int tilePosition;
     public Vector2 localOffset;     // 타일 중심에서의 로컬 오프셋
     public Quaternion rotation;

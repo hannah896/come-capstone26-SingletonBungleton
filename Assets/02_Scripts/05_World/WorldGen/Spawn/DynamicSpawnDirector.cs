@@ -20,7 +20,7 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
     private readonly List<Player> _players = new();
     private readonly HashSet<Vector2Int> _activeChunkCoords = new();
     private readonly List<SpawnedMonsterRecord> _spawnedMonsters = new();
-    private readonly Dictionary<Player, Dictionary<MonsterSpawnRule, RuleRuntimeState>> _ruleStates = new();
+    private readonly Dictionary<Player, Dictionary<NatureSpawnRule, RuleRuntimeState>> _ruleStates = new();
 
     private CancellationTokenSource _spawnCts;
     private float _targetRefreshCooldown;
@@ -177,7 +177,7 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
 
             for (int ruleIndex = 0; ruleIndex < ruleSet.MonsterRules.Count; ruleIndex++)
             {
-                MonsterSpawnRule rule = ruleSet.MonsterRules[ruleIndex];
+                NatureSpawnRule rule = ruleSet.MonsterRules[ruleIndex];
                 if (rule == null)
                     continue;
 
@@ -198,7 +198,7 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
         }
     }
 
-    private bool CanAttemptSpawn(MonsterSpawnRule rule)
+    private bool CanAttemptSpawn(NatureSpawnRule rule)
     {
         if (string.IsNullOrWhiteSpace(rule.monsterKey))
             return false;
@@ -220,11 +220,11 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
         return UnityEngine.Random.value <= Mathf.Clamp01(rule.spawnChance);
     }
 
-    private RuleRuntimeState GetRuleState(Player player, MonsterSpawnRule rule)
+    private RuleRuntimeState GetRuleState(Player player, NatureSpawnRule rule)
     {
-        if (!_ruleStates.TryGetValue(player, out Dictionary<MonsterSpawnRule, RuleRuntimeState> playerStates))
+        if (!_ruleStates.TryGetValue(player, out Dictionary<NatureSpawnRule, RuleRuntimeState> playerStates))
         {
-            playerStates = new Dictionary<MonsterSpawnRule, RuleRuntimeState>();
+            playerStates = new Dictionary<NatureSpawnRule, RuleRuntimeState>();
             _ruleStates.Add(player, playerStates);
         }
 
@@ -240,7 +240,7 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
     private async UniTaskVoid SpawnGroupAsync(
         Player sourcePlayer,
         SpawnRuleSet sourceRuleSet,
-        MonsterSpawnRule rule,
+        NatureSpawnRule rule,
         RuleRuntimeState state,
         CancellationToken cancellationToken)
     {
@@ -285,7 +285,7 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
                 if (sourcePlayer == null || !sourcePlayer.isActiveAndEnabled)
                     break;
 
-                if (!TryFindSpawnPosition(sourcePlayer, sourceRuleSet, rule, out Vector3 spawnPosition))
+                if (!TryFindSpawnPosition(sourcePlayer, sourceRuleSet, out Vector3 spawnPosition))
                     continue;
 
                 Monster monster = await Monster.SpawnAsync(
@@ -326,13 +326,12 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
     private bool TryFindSpawnPosition(
         Player sourcePlayer,
         SpawnRuleSet sourceRuleSet,
-        MonsterSpawnRule rule,
         out Vector3 spawnPosition)
     {
         spawnPosition = default;
 
-        float minDistance = Mathf.Max(0f, rule.minDistanceFromPlayer);
-        float maxDistance = Mathf.Max(minDistance, rule.maxDistanceFromPlayer);
+        float minDistance = Mathf.Max(0f, _settings.MinDistanceFromPlayer);
+        float maxDistance = Mathf.Max(minDistance, _settings.MaxDistanceFromPlayer);
         float minDistanceSqr = minDistance * minDistance;
         Vector3 playerPosition = sourcePlayer.transform.position;
 
@@ -502,7 +501,7 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
         return Mathf.Max(0, _settings.MaxSpawnSlots - usedSlots);
     }
 
-    private static int GetSlotCost(MonsterSpawnRule rule)
+    private static int GetSlotCost(NatureSpawnRule rule)
     {
         // 0 비용은 무제한 스폰으로 이어질 수 있으므로 런타임에서는 최소 1로 취급합니다.
         return Mathf.Max(1, rule.slotCost);
@@ -562,11 +561,11 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
     private sealed class SpawnedMonsterRecord
     {
         public readonly Monster Monster;
-        public readonly MonsterSpawnRule Rule;
+        public readonly NatureSpawnRule Rule;
         public readonly int SlotCost;
         public float OutOfRangeTime;
 
-        public SpawnedMonsterRecord(Monster monster, MonsterSpawnRule rule, int slotCost)
+        public SpawnedMonsterRecord(Monster monster, NatureSpawnRule rule, int slotCost)
         {
             Monster = monster;
             Rule = rule;

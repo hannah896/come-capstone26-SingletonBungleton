@@ -8,6 +8,10 @@ using UnityEngine;
 /// </summary>
 public class Monster : Mob
 {
+    /// <summary>풀 반환과 구별되는 실제 사망 알림입니다. 월드 배치 몬스터의 저장 상태에 사용합니다.</summary>
+    public event System.Action<Monster> Died;
+    public event System.Action<Monster> Despawned;
+
     /// <summary>
     /// 풀에서 몬스터를 스폰하고 SO 스탯을 주입해 반환한다.
     /// 프리팹은 모델/콜라이더/애니메이터만 갖추고, 스탯은 종류별 MonsterStatData로 이 시점에 채운다.
@@ -163,6 +167,14 @@ public class Monster : Mob
         stateMachine = CreateStateMachine();
     }
 
+    public override void OnDespawn()
+    {
+        Despawned?.Invoke(this);
+        Died = null;
+        Despawned = null;
+        base.OnDespawn();
+    }
+
     /// <summary>
     /// 상태머신 생성 팩토리. 종류별 몬스터는 오버라이드해 전용 머신(상태 그래프)으로 교체한다.
     /// </summary>
@@ -228,7 +240,10 @@ public class Monster : Mob
     }
 
     protected override void OnDeath()
-        => stateMachine.ToDead();
+    {
+        Died?.Invoke(this);
+        stateMachine.ToDead();
+    }
 
     // 드랍은 호스트만 스폰한다. 클라가 같이 만들면 아이템이 인원수만큼 중복된다.
     protected override bool CanSpawnDrops => IsSimulatedPeer;

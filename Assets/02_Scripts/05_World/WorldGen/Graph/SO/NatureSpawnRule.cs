@@ -5,8 +5,8 @@ using UnityEngine;
 /// 플레이어 좌표를 기준으로 한 종류의 몬스터를 스폰하기 위한 런타임 규칙입니다.
 /// monsterKey는 MonsterCatalog에 등록된 Addressable 키와 일치해야 합니다.
 /// </summary>
-[CreateAssetMenu(fileName = "MonsterSpawnRule", menuName = "Scriptable Objects/TestWorld/MonsterSpawnRule")]
-public class MonsterSpawnRule : ScriptableObject
+[CreateAssetMenu(fileName = "NatureSpawnRule", menuName = "Scriptable Objects/TestWorld/NatureSpawnRule")]
+public class NatureSpawnRule : ScriptableObject
 {
     [Header("대상")]
     [Tooltip("인스펙터에서 규칙을 구분하기 위한 이름입니다.")]
@@ -14,13 +14,6 @@ public class MonsterSpawnRule : ScriptableObject
 
     [Tooltip("MonsterCatalog에 등록된 몬스터의 Addressable 키입니다.")]
     public string monsterKey;
-
-    [Header("플레이어 기준 스폰 위치")]
-    [Tooltip("플레이어와 몬스터 사이에 반드시 확보할 최소 거리(m)입니다.")]
-    [Min(0f)] public float minDistanceFromPlayer = 12f;
-
-    [Tooltip("플레이어를 중심으로 스폰 위치를 탐색할 최대 거리(m)입니다.")]
-    [Min(0f)] public float maxDistanceFromPlayer = 25f;
 
     [Header("시간대 조건")]
     [Tooltip("스폰을 허용할 시간대입니다.")]

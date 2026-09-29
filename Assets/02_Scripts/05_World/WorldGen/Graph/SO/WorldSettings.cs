@@ -79,6 +79,9 @@ public class WorldSettings : ScriptableObject
     public PartitionSettings PartitionSettings = new PartitionSettings();
     public DisposeSettings DisposeSettings = new DisposeSettings();
     public DynamicSpawnSettings DynamicSpawnSettings = new DynamicSpawnSettings();
+    [Header("월드 공통 주기적 몬스터 스폰")]
+    [Tooltip("월드 시계의 누적 게임 시간으로 실행할 규칙입니다.")]
+    public List<PeriodicSpawnRule> PeriodicMonsterSpawnRules = new();
     #endregion
 
 
@@ -193,6 +196,20 @@ public class DisposeSettings
 [System.Serializable]
 public class DynamicSpawnSettings
 {
+    [Header("플레이어 기준 자연 스폰 위치")]
+    [Tooltip("모든 자연 스폰 규칙에 공통 적용합니다. 모든 플레이어와 몬스터 사이에 확보할 최소 거리(m)입니다.")]
+    [Min(0f)] public float MinDistanceFromPlayer = 12f;
+
+    [Tooltip("모든 자연 스폰 규칙에 공통 적용합니다. 기준 플레이어를 중심으로 스폰 위치를 탐색할 최대 거리(m)입니다.")]
+    [Min(0f)] public float MaxDistanceFromPlayer = 25f;
+
+    [Header("추가 스폰 방식 공통 제한")]
+    [Tooltip("집·월드 최초 배치·주기 스폰이 동시에 유지할 최대 몬스터 수입니다.")]
+    [Min(0)] public int MaxAdditionalMonsters = 30;
+    [Min(0f)] public float InitialMonsterActivationDistance = 80f;
+    [Min(0f)] public float InitialMonsterDespawnDistance = 120f;
+    [Min(0f)] public float AdditionalMonsterDespawnDistance = 140f;
+
     [Header("Spawn Budget")]
     [Tooltip("DynamicSpawnDirector가 동시에 유지할 수 있는 전체 스폰 슬롯입니다.")]
     [Min(0)] public int MaxSpawnSlots = 30;

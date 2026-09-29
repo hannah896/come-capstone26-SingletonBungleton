@@ -53,4 +53,8 @@ public class MobStatus
 
     public void RestoreHp(float amount)
         => CurrentHp = Mathf.Min(CurrentHp + amount, MaxHp);
+
+    /// <summary>저장된 살아 있는 몬스터의 체력을 복원합니다. 사망 이벤트는 발생시키지 않습니다.</summary>
+    public void SetCurrentHp(float value)
+        => CurrentHp = Mathf.Clamp(value, 0.001f, MaxHp);
 }

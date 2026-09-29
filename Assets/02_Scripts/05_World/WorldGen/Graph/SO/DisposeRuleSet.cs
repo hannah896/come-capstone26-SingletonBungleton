@@ -42,6 +42,9 @@ public class CountDisposeRule
     public string ruleName;
     public string prefabKey;
 
+    [Tooltip("SpawnerRules에서만 사용합니다. 이 배치물에서 몬스터를 생성할 규칙입니다.")]
+    public SourceSpawnRule monsterSpawnRule;
+
     [Header("Spawn Quantity")]
     [Min(0)] public int minCount; // 최소 보장 개수
     [Min(0)] public int maxCount; // 최대 스폰 개수

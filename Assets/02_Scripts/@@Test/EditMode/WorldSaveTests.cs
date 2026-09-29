@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Reflection;
+using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -60,6 +61,74 @@ public class WorldSaveTests
         var error = Assert.Throws<TargetInvocationException>(() =>
             FindType("WorldSaveAdapter").GetMethod("Validate").Invoke(null, new[] { data }));
         Assert.That(error.InnerException, Is.TypeOf<InvalidOperationException>());
+    }
+
+    [Test]
+    public void JsonRoundTrip_PreservesInitialDeathAndSpawnDeadlines()
+    {
+        object world = Create("WorldSaveData");
+        object spawns = Get(world, "monsterSpawns");
+        object initial = Create("InitialMonsterSaveData");
+        Set(initial, "id", 701);
+        Set(initial, "dead", true);
+        ((IList)Get(spawns, "initialMonsters")).Add(initial);
+        object source = Create("SpawnSourceSaveData");
+        Set(source, "id", 821);
+        Set(source, "nextSpawnTime", 1500f);
+        ((IList)Get(spawns, "sources")).Add(source);
+        object periodic = Create("PeriodicSpawnSaveData");
+        Set(periodic, "ruleId", "night-wave");
+        Set(periodic, "nextSpawnTime", 1800f);
+        ((IList)Get(spawns, "periodic")).Add(periodic);
+        object member = Create("SpawnedMonsterSaveData");
+        Set(member, "sourceId", 821);
+        Set(member, "position", new Vector3(10f, 2f, 20f));
+        Set(member, "hp", 27f);
+        ((IList)Get(spawns, "members")).Add(member);
+
+        object restored = JsonUtility.FromJson(JsonUtility.ToJson(world), world.GetType());
+        object restoredSpawns = Get(restored, "monsterSpawns");
+        Assert.That(Get(((IList)Get(restoredSpawns, "initialMonsters"))[0], "dead"), Is.True);
+        Assert.That(Get(((IList)Get(restoredSpawns, "sources"))[0], "nextSpawnTime"), Is.EqualTo(1500f));
+        Assert.That(Get(((IList)Get(restoredSpawns, "periodic"))[0], "ruleId"), Is.EqualTo("night-wave"));
+        Assert.That(Get(((IList)Get(restoredSpawns, "members"))[0], "hp"), Is.EqualTo(27f));
+    }
+
+    [Test]
+    public void Validate_RejectsDuplicateInitialMonsterIds()
+    {
+        object world = Create("WorldSaveData");
+        object spawns = Get(world, "monsterSpawns");
+        foreach (int _ in new[] { 0, 1 })
+        {
+            object entry = Create("InitialMonsterSaveData");
+            Set(entry, "id", 701);
+            Set(entry, "dead", true);
+            ((IList)Get(spawns, "initialMonsters")).Add(entry);
+        }
+
+        var error = Assert.Throws<TargetInvocationException>(() =>
+            FindType("WorldSaveAdapter").GetMethod("Validate").Invoke(null, new[] { world }));
+        Assert.That(error.InnerException, Is.TypeOf<InvalidOperationException>());
+    }
+
+    [Test]
+    public void WorldMonsterPlacementId_IsStableAndResolvesCollisions()
+    {
+        MethodInfo create = FindType("WorldMonsterPlacementId").GetMethod("Create",
+            BindingFlags.Public | BindingFlags.Static);
+        var firstWorld = new HashSet<int>();
+        var secondWorld = new HashSet<int>();
+        object[] argsA = { 12345, "Mischief", new Vector2Int(8, 12), 0, firstWorld };
+        object[] argsB = { 12345, "Mischief", new Vector2Int(8, 12), 0, secondWorld };
+
+        int first = (int)create.Invoke(null, argsA);
+        int replay = (int)create.Invoke(null, argsB);
+        int collision = (int)create.Invoke(null, argsA);
+
+        Assert.That(first, Is.Not.Zero);
+        Assert.That(replay, Is.EqualTo(first));
+        Assert.That(collision, Is.Not.EqualTo(first));
     }
 
     private static void AddPlacement(object chunk, int id)

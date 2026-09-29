@@ -30,6 +30,7 @@ public class WorldGenManager : MonoBehaviour
     [SerializeField] private WorldChunkDirector _worldChunkDirector;
     [SerializeField] private WorldRenderDirector _worldRenderDirector;
     [SerializeField] private DynamicSpawnDirector _dynamicSpawnDirector;
+    [SerializeField] private WorldMonsterSpawnDirector _worldMonsterSpawnDirector;
     [SerializeField] private WorldSettings _worldSettings;
 
     [SerializeField] private WorldSimulationManager _simulationManager;
@@ -54,6 +55,7 @@ public class WorldGenManager : MonoBehaviour
     public WorldGraphDirector GraphDirector => _worldGraphDirector;
     public WorldSettings WorldSettings => _worldSettings;
     public WorldChunkDirector ChunkDirector => _worldChunkDirector;
+    public WorldMonsterSpawnDirector WorldMonsterSpawnDirector => _worldMonsterSpawnDirector;
 
     /// <summary>현재 월드의 논리 데이터. 청크 디렉터 초기화 전에는 null (멀티 자원 동기화가 준비 여부로 사용).</summary>
     public WorldLogicData CurrentLogicData { get; private set; }
@@ -74,6 +76,7 @@ public class WorldGenManager : MonoBehaviour
     {
         _cts?.Cancel();
         _cts?.Dispose();
+        _worldMonsterSpawnDirector?.Shutdown(despawnOwnedMonsters: false);
         ClearCoastBoundaries();
     }
 
@@ -91,6 +94,8 @@ public class WorldGenManager : MonoBehaviour
             _worldChunkDirector = Extensions.GetOrAddComponent<WorldChunkDirector>(this.gameObject);
         if (_dynamicSpawnDirector == null)
             _dynamicSpawnDirector = Extensions.GetOrAddComponent<DynamicSpawnDirector>(this.gameObject);
+        if (_worldMonsterSpawnDirector == null)
+            _worldMonsterSpawnDirector = Extensions.GetOrAddComponent<WorldMonsterSpawnDirector>(this.gameObject);
         if (_worldMap == null)
             _worldMap = WorldMap.Instance ?? Extensions.GetOrAddComponent<WorldMap>(this.gameObject);
 
@@ -222,6 +227,7 @@ public class WorldGenManager : MonoBehaviour
     {
         _isStartedWorldGeneration = true;
         _dynamicSpawnDirector?.Shutdown();
+        _worldMonsterSpawnDirector?.Shutdown();
         _cts?.Cancel();
         _cts?.Dispose();
         _cts = external.CanBeCanceled
@@ -424,6 +430,13 @@ public class WorldGenManager : MonoBehaviour
                 graphData,
                 _worldChunkDirector,
                 _worldSettings.DynamicSpawnSettings,
+                _cts.Token);
+
+            _worldMonsterSpawnDirector.Initialize(
+                logicData,
+                _worldGraphDirector.GetWorldDisposeData(),
+                _worldSettings,
+                savedWorld?.monsterSpawns,
                 _cts.Token);
 
             ReportProgress(1f, "완료");

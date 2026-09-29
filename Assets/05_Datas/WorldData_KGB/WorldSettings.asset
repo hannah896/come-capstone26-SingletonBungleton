@@ -49,5 +49,22 @@ MonoBehaviour:
   DisposeSettings:
     minObjectDistance: 2
     maxSamplingAttempts: 30
+  DynamicSpawnSettings:
+    MinDistanceFromPlayer: 12
+    MaxDistanceFromPlayer: 25
+    MaxAdditionalMonsters: 30
+    InitialMonsterActivationDistance: 80
+    InitialMonsterDespawnDistance: 120
+    AdditionalMonsterDespawnDistance: 140
+    MaxSpawnSlots: 30
+    TargetRefreshInterval: 1
+    DespawnDistanceFromPlayers: 60
+    MaxPositionAttempts: 12
+    CollisionCheckRadius: 0.5
+    SpawnBlockingMask:
+      serializedVersion: 2
+      m_Bits: 0
+    SpawnHeightOffset: 0.1
+  PeriodicMonsterSpawnRules: []
   _enableStepByStep: 1
   _stepDelay: 0.1

@@ -9,17 +9,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 49e6a274f1b34bca9bf4a2df6a7c18e5, type: 3}
-  m_Name: MobSpawn
+  m_Script: {fileID: 11500000, guid: bd00db16347e40d78876e0bd469a98f7, type: 3}
+  m_Name: Source_MischiefExample
   m_EditorClassIdentifier: 
-  ruleName: 
-  monsterKey: 
-  minDistanceFromPlayer: 12
-  maxDistanceFromPlayer: 25
-  allowedTimePhases: -1
-  spawnInterval: 10
-  stayDuration: 30
+  monsterKey: Mischief
+  allowedTimePhases: 15
   spawnChance: 1
   minSpawnCount: 1
   maxSpawnCount: 1
-  slotCost: 1
+  maxAlive: 3
+  spawnRadius: 5
+  activationDistance: 60
+  intervalSeconds: 30
+  spawnImmediately: 1
+  placementRadius: 3
+  maxHeightDifference: 2
+  minDistanceFromWorldStart: 30
