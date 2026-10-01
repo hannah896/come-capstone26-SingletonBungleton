@@ -3,10 +3,13 @@ using UnityEngine;
 using UnityEngine.VFX;
 
 /// <summary>
-/// Demon의 운석 세례가 까는 개별 장판. 풀링으로 스폰되어 착탄 지점 바닥에 예고 이펙트를 띄우고,
-/// 예고 시간이 끝나면 그 자리에서 폭발해 반경 내 플레이어에게 광역 데미지를 준다.
-/// 폭발 이펙트가 잦아들 때까지 기다렸다가 풀로 반환된다.
+/// 지면 장판 공통 구현. 풀링으로 스폰되어 착탄 지점 바닥에 예고 이펙트를 띄우고,
+/// 예고 시간이 끝나면 그 자리에서 터져 반경 내 플레이어에게 광역 데미지와 부가 효과(도트/둔화)를 준다.
+/// 이펙트가 잦아들 때까지 기다렸다가 풀로 반환된다.
 /// Init() 호출 전까지는 동작하지 않는다.
+///
+/// 이름은 첫 사용처인 Demon의 운석 세례에서 왔지만, 실제로는 장판을 쓰는 모든 몬스터가 공유한다.
+/// (Demon 운석 / TreantMinion 뿌리 속박 등 — 프리팹의 VFX와 Init 파라미터만 갈아끼운다)
 /// </summary>
 public class Meteor : MonoBehaviour, IPoolable
 {
@@ -34,6 +37,8 @@ public class Meteor : MonoBehaviour, IPoolable
     private float dotDamage;       // 명중 시 거는 도트 틱 데미지 (0 이하면 도트 없음)
     private float dotDuration;
     private float dotInterval;
+    private float slowMultiplier;  // 명중 시 거는 이동 속도 배율 (1 이상이면 둔화 없음)
+    private float slowDuration;
     private float warningTimer;    // 예고 남은 시간
     private float lingerTimer;     // 폭발 후 회수까지 남은 시간
     private Phase phase = Phase.Idle;
@@ -49,9 +54,13 @@ public class Meteor : MonoBehaviour, IPoolable
         _vfx = GetComponentsInChildren<VisualEffect>(true);
     }
 
-    /// <summary>장판 파라미터를 주입하고 예고 → 폭발을 시작한다.</summary>
+    /// <summary>
+    /// 장판 파라미터를 주입하고 예고 → 폭발을 시작한다.
+    /// slowMultiplier가 1 미만이고 slowDuration이 0보다 크면 명중한 플레이어에게 이동 속도 둔화를 건다.
+    /// </summary>
     public void Init(GameObject owner, Vector3 impactPos, int damage, float impactRadius, float warningTime, float lingerTime,
-                     float dotDamage = 0f, float dotDuration = 0f, float dotInterval = 1f)
+                     float dotDamage = 0f, float dotDuration = 0f, float dotInterval = 1f,
+                     float slowMultiplier = 1f, float slowDuration = 0f)
     {
 #if PHOTON_FUSION
         // 멀티 호스트: 클라 화면에도 같은 장판을 띄운다 (판정은 이 원본만 한다).
@@ -60,17 +69,19 @@ public class Meteor : MonoBehaviour, IPoolable
             NetworkMonsterDirector.Instance.BroadcastMeteor(
                 Main.Pool.GetAddress(gameObject), impactPos, impactRadius, warningTime, lingerTime);
 #endif
-        Begin(owner, impactPos, damage, impactRadius, warningTime, lingerTime, dotDamage, dotDuration, dotInterval, visual: false);
+        Begin(owner, impactPos, damage, impactRadius, warningTime, lingerTime, dotDamage, dotDuration, dotInterval,
+              slowMultiplier, slowDuration, visual: false);
     }
 
     /// <summary>
     /// 멀티 클라 전용: 호스트가 깐 장판의 연출용 복제본. 예고/폭발 이펙트만 재생하고 데미지는 주지 않는다.
     /// </summary>
     public void InitVisual(Vector3 impactPos, float impactRadius, float warningTime, float lingerTime)
-        => Begin(null, impactPos, 0, impactRadius, warningTime, lingerTime, 0f, 0f, 1f, visual: true);
+        => Begin(null, impactPos, 0, impactRadius, warningTime, lingerTime, 0f, 0f, 1f, 1f, 0f, visual: true);
 
     private void Begin(GameObject owner, Vector3 impactPos, int damage, float impactRadius, float warningTime, float lingerTime,
-                       float dotDamage, float dotDuration, float dotInterval, bool visual)
+                       float dotDamage, float dotDuration, float dotInterval,
+                       float slowMultiplier, float slowDuration, bool visual)
     {
         visualOnly = visual;
         this.owner = owner;
@@ -80,6 +91,8 @@ public class Meteor : MonoBehaviour, IPoolable
         this.dotDamage = dotDamage;
         this.dotDuration = dotDuration;
         this.dotInterval = dotInterval;
+        this.slowMultiplier = slowMultiplier;
+        this.slowDuration = slowDuration;
         warningTimer = Mathf.Max(warningTime, 0f);
         lingerTimer = Mathf.Max(lingerTime, 0f);
 
@@ -175,6 +188,10 @@ public class Meteor : MonoBehaviour, IPoolable
             // 명중한 플레이어에게 도트 데미지를 건다 (이미 걸려 있으면 갱신)
             if (dotDamage > 0f && dotDuration > 0f)
                 player.ApplyDot(dotDamage, dotDuration, dotInterval);
+
+            // 뿌리 속박처럼 발을 묶는 장판이면 이동 속도 둔화도 함께 건다
+            if (slowMultiplier < 1f && slowDuration > 0f)
+                player.ApplySlow(slowMultiplier, slowDuration);
         }
     }
 

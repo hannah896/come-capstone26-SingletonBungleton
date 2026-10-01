@@ -19,3 +19,7 @@ MonoBehaviour:
     statData: {fileID: 11400000, guid: f28b96fc9ee7b79419661f84035d0cc1, type: 2}
   - addressableKey: Devil
     statData: {fileID: 11400000, guid: 83cfcb260ad2942428bbe8e9ffb025ca, type: 2}
+  - addressableKey: TreantMinionAutumn
+    statData: {fileID: 11400000, guid: 3e17ee23a129c8042a90d5de4d930fe3, type: 2}
+  - addressableKey: TreantMinionEvergreen
+    statData: {fileID: 11400000, guid: 3e17ee23a129c8042a90d5de4d930fe3, type: 2}

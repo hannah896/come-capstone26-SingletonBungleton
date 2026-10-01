@@ -35,4 +35,10 @@ public enum MonsterAnimId : byte
     TakeOff = 14,
     /// <summary>잠복 (Underground). ※ P3 예정 — 현재 미사용.</summary>
     Underground = 15,
+
+    // ── 이하 TreantMinion(트리앤트 미니언) 전용. 구르기로 이동하는 몬스터에서만 사용한다. ──
+    /// <summary>구르기 돌진 (Roll Attack).</summary>
+    RollAttack = 16,
+    /// <summary>주문 시전 — 뿌리 속박 (Cast Spell).</summary>
+    CastSpell = 17,
 }
