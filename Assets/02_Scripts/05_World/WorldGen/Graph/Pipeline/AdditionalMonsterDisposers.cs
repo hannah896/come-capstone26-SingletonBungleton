@@ -118,9 +118,9 @@ public sealed class InitialMonsterDisposer : IGraphPipelineStage
         foreach (Node node in context.GraphData.Nodes)
         {
             token.ThrowIfCancellationRequested();
-            if (node?.OwnedTiles == null || node.BiomeData?.BiomeSpawnRule?.InitialMonsterRules == null) continue;
+            if (node?.OwnedTiles == null || node.BiomeData?.BiomeSpawnRule?.InitialSpawnRules == null) continue;
 
-            foreach (InitialSpawnRule rule in node.BiomeData.BiomeSpawnRule.InitialMonsterRules)
+            foreach (InitialSpawnRule rule in node.BiomeData.BiomeSpawnRule.InitialSpawnRules)
             {
                 if (rule == null || string.IsNullOrWhiteSpace(rule.monsterKey)) continue;
                 int max = Mathf.Max(0, rule.maxCountPerRegion);

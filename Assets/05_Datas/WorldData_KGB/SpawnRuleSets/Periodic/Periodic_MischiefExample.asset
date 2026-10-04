@@ -16,7 +16,7 @@ MonoBehaviour:
   monsterKey: Mischief
   intervalSeconds: 300
   firstDelaySeconds: 300
-  allowedTimePhases: 15
+  allowedTimePhases: -1
   minSpawnCount: 1
   maxSpawnCount: 1
   maxAlive: 5

@@ -65,6 +65,6 @@ MonoBehaviour:
       serializedVersion: 2
       m_Bits: 0
     SpawnHeightOffset: 0.1
-  PeriodicMonsterSpawnRules: []
+  PeriodicSpawnRules: []
   _enableStepByStep: 1
   _stepDelay: 0.1

@@ -172,12 +172,12 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
             if (!TryGetSpawnRuleSetAt(player.transform.position, out SpawnRuleSet ruleSet))
                 continue;
 
-            if (ruleSet.MonsterRules == null)
+            if (ruleSet.NatureSpawnRules == null)
                 continue;
 
-            for (int ruleIndex = 0; ruleIndex < ruleSet.MonsterRules.Count; ruleIndex++)
+            for (int ruleIndex = 0; ruleIndex < ruleSet.NatureSpawnRules.Count; ruleIndex++)
             {
-                NatureSpawnRule rule = ruleSet.MonsterRules[ruleIndex];
+                NatureSpawnRule rule = ruleSet.NatureSpawnRules[ruleIndex];
                 if (rule == null)
                     continue;
 

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Source_MischiefExample
   m_EditorClassIdentifier: 
   monsterKey: Mischief
-  allowedTimePhases: 15
+  allowedTimePhases: -1
   spawnChance: 1
   minSpawnCount: 1
   maxSpawnCount: 1

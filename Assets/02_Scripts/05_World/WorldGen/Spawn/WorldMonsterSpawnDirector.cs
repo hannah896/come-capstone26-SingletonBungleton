@@ -58,8 +58,8 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
                             ? 0f : Mathf.Max(0.1f, placement.monsterSpawnRule.intervalSeconds))
                     };
 
-        if (worldSettings.PeriodicMonsterSpawnRules != null)
-            foreach (PeriodicSpawnRule rule in worldSettings.PeriodicMonsterSpawnRules)
+        if (worldSettings.PeriodicSpawnRules != null)
+            foreach (PeriodicSpawnRule rule in worldSettings.PeriodicSpawnRules)
             {
                 if (rule == null) continue;
                 if (string.IsNullOrWhiteSpace(rule.ruleId))

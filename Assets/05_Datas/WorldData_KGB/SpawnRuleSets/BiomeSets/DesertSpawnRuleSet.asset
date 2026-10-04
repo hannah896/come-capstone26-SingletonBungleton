@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e47ea1e5b5a0ecd439e18d5fc63e5aaa, type: 3}
   m_Name: DesertSpawnRuleSet
   m_EditorClassIdentifier: 
-  MonsterRules:
+  NatureSpawnRules:
   - {fileID: 11400000, guid: 424050e86cf85ba4295c894754b75f1a, type: 2}
-  - {fileID: 0}
-  InitialMonsterRules: []
+  InitialSpawnRules:
+  - {fileID: 11400000, guid: 6fc347e331ca43d088cfa33c2b7c670b, type: 2}

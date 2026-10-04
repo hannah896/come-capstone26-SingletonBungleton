@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 49e6a274f1b34bca9bf4a2df6a7c18e5, type: 3}
-  m_Name: Natural_MischiefExample
+  m_Name: Nature_MischiefExample
   m_EditorClassIdentifier: 
-  ruleName: Mischief Natural Example
+  ruleName: Mischief Nature Example
   monsterKey: Mischief
-  allowedTimePhases: 15
+  allowedTimePhases: -1
   spawnInterval: 30
   stayDuration: 30
   spawnChance: 0.5
