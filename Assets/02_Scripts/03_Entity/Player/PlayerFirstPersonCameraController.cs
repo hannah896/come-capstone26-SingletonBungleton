@@ -85,6 +85,9 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
 
     // 진행 중인 스윙 흔들림 트윈 (연타 시 중복 누적 방지용)
     private Tween swingShakeTween;
+    // 스윙 시작 시점의 도구 자세와 재생 여부 (캔슬 시 원위치 복귀용)
+    private Quaternion swingRestRotation = Quaternion.identity;
+    private bool isToolSwinging;
     private PlayerInputData inputData;
     private Transform playerBody;
     private PlayerInventory playerInventory;
@@ -184,6 +187,8 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
 
         toolPivot.DOKill();
         Quaternion restRotation = toolPivot.localRotation;
+        swingRestRotation = restRotation;
+        isToolSwinging = true;
 
         DOTween.Sequence()
             // 1. 들어올리기 + 오른쪽으로 당기기 (Begin 클립 ~ Loop 클립의 최고점)
@@ -194,7 +199,8 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
                 .SetEase(Ease.InQuart))
             // 3. 원위치 복귀 (Stop 클립이 끝나는 시점까지)
             .Append(toolPivot.DOLocalRotateQuaternion(restRotation, recoverDuration)
-                .SetEase(Ease.OutQuad));
+                .SetEase(Ease.OutQuad))
+            .OnComplete(() => isToolSwinging = false);
 
         // 카메라 시야: 내려찍는 타이밍에 흔들림
         // 연타(벌목 루프)로 트윈이 겹쳐 쌓이지 않도록 이전 흔들림은 먼저 걷어낸다.
@@ -205,6 +211,24 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
             .OnComplete(() =>
                 swingShakeTween = DOTween.To(() => pitchOffset, x => pitchOffset = x, 0f, recoverDuration)
                     .SetEase(Ease.OutQuad));
+    }
+
+    /// <summary>
+    /// 재생 중인 도구 스윙을 끊고 도구와 시야를 원위치로 빠르게 되돌린다.
+    /// 액션 도중 이동 입력으로 캔슬했을 때 호출한다. 스윙 중이 아니면 아무것도 하지 않는다.
+    /// </summary>
+    /// <param name="returnDuration">원위치로 돌아오는 시간</param>
+    public void CancelToolSwing(float returnDuration = 0.15f)
+    {
+        if (toolPivot == null || !isToolSwinging) return;
+        isToolSwinging = false;
+
+        toolPivot.DOKill();
+        toolPivot.DOLocalRotateQuaternion(swingRestRotation, returnDuration).SetEase(Ease.OutQuad);
+
+        swingShakeTween?.Kill();
+        swingShakeTween = DOTween.To(() => pitchOffset, x => pitchOffset = x, 0f, returnDuration)
+            .SetEase(Ease.OutQuad);
     }
 
     /// <summary>

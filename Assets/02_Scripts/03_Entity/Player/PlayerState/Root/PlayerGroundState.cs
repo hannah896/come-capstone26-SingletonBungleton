@@ -61,8 +61,14 @@ public class PlayerLocomotionState : PlayerRootStateBase
                 // 도구 데미지는 액션 상태가 타격 프레임에 적용한다.
                 // 여기서 입력을 소비하지 않으면 같은 프레임의 PlayerInventory.Tick이 한 번 더 때린다.
                 Input.ToolUsePressed = false;
-                Machine.ChangeState(new PlayerActionState(Machine, actionType));
-                return;
+
+                // 액션은 이동 입력으로 캔슬되므로, 움직이는 중에는 시작하지 않는다(시작하자마자 끊기는 깜빡임 방지).
+                // 멈춰 서야 휘두를 수 있다.
+                if (!Input.HasMoveInput)
+                {
+                    Machine.ChangeState(new PlayerActionState(Machine, actionType));
+                    return;
+                }
             }
         }
 

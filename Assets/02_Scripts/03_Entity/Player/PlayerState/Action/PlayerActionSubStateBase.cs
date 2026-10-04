@@ -111,6 +111,17 @@ public abstract class PlayerActionSubStateBase : PlayerSubStateBase
         Finish();
     }
 
+    /// <summary>
+    /// 이동 입력 등으로 액션을 중간에 끊는다. 아직 타격 전이면 타격은 적용되지 않는다.
+    /// 1인칭 도구 스윙도 함께 멈춘다. 상태 전환(Locomotion 복귀)은 호출한 쪽이 한다.
+    /// </summary>
+    public void Cancel()
+    {
+        if (finished) return;
+        finished = true;
+        Entity.FPCameraController?.CancelToolSwing();
+    }
+
     // 타격 타이머와 1인칭 도구 스윙을 같은 기준점에서 출발시킨다.
     private void StartSwing()
     {

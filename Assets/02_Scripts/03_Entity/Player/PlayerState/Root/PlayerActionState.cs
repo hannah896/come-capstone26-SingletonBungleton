@@ -77,6 +77,14 @@ public class PlayerActionState : PlayerRootStateBase
         Machine.ChangeState(new PlayerLocomotionState(Machine));
     }
 
+    /// <summary>진행 중인 액션을 끊고 Locomotion으로 돌아간다. 타격 전이면 타격은 나가지 않는다.</summary>
+    public void CancelAction()
+    {
+        (SubStateMachine.CurrentState as PlayerActionSubStateBase)?.Cancel();
+        Debug.Log($"[State] Action 캔슬 (이동 입력) - {actionType}");
+        ChangeToLocomotion();
+    }
+
     /// <summary>
     /// 액션 애니메이션의 효과 프레임 Animation Event(Player 경유)를 현재 하위 액션 상태로 전달.
     /// </summary>
