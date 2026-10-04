@@ -41,4 +41,16 @@ public enum MonsterAnimId : byte
     RollAttack = 16,
     /// <summary>주문 시전 — 뿌리 속박 (Cast Spell).</summary>
     CastSpell = 17,
+
+    // ── 이하 Treeguard(만월 보스 트리가드) 전용. 근접 5종 + 걷기/뛰기 2단 이동. ──
+    /// <summary>뛰기 (Run Forward In Place). 3페이즈 이동. 평소 이동(Walk)은 Move를 쓴다.</summary>
+    Run = 18,
+    /// <summary>고목 내려찍기 (Smack Attack).</summary>
+    Smack = 19,
+    /// <summary>밀쳐내기 (Kick Attack).</summary>
+    Kick = 20,
+    /// <summary>대지 울림 (Step Attack).</summary>
+    Step = 21,
+    /// <summary>박수 충격파 (Clap Attack).</summary>
+    Clap = 22,
 }
