@@ -5,6 +5,14 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
+/// <summary>1인칭 도구 스윙 모양. Overhead는 위로 들었다 내려찍기(도끼/검), Thrust는 뒤로 당겼다가 앞으로 찌르기(창), Draw는 시위를 당겼다 놓기(활).</summary>
+public enum ToolSwingKind
+{
+    Overhead,
+    Thrust,
+    Draw,
+}
+
 /// <summary>
 /// 1인칭 시점 카메라 컨트롤러 (Cinemachine 3.x 연동)
 /// - 마우스 X → 플레이어 몸체 Yaw 회전
@@ -91,6 +99,29 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
 
     // 진행 중인 스윙 흔들림 트윈 (연타 시 중복 누적 방지용)
     private Tween swingShakeTween;
+
+    [Header("창 찌르기 (1인칭 스윙)")]
+    [Tooltip("찌르기 전에 뒤로 당기는 이동량. ToolPivot 로컬 좌표(Z가 앞).")]
+    [SerializeField] private Vector3 thrustPullBackOffset = new(0f, 0f, -0.35f);
+    [Tooltip("찌를 때 앞으로 뻗는 이동량. 창이 들린 각도(Spear Mesh Local Euler)에 맞춰 창이 가리키는 방향으로 조정한다.")]
+    [SerializeField] private Vector3 thrustReachOffset = new(0f, 0f, 1f);
+    [Tooltip("당길 때 더하는 회전(도)")]
+    [SerializeField] private Vector3 thrustPullBackRotation = new(-12f, 0f, 0f);
+    [Tooltip("찌를 때 더하는 회전(도)")]
+    [SerializeField] private Vector3 thrustReachRotation = new(16f, 0f, 0f);
+
+    [Header("활 시위 당기기 (1인칭 스윙)")]
+    [Tooltip("시위를 당길 때 활이 이동하는 양. ToolPivot 로컬 좌표(Z가 앞, 음수면 몸 쪽으로 끌어당김).")]
+    [SerializeField] private Vector3 drawPullBackOffset = new(0f, 0.05f, -0.5f);
+    [Tooltip("시위를 당길 때 더하는 회전(도). 활이 떨리듯 살짝 기울어진다.")]
+    [SerializeField] private Vector3 drawPullBackRotation = new(-6f, 0f, 4f);
+    [Tooltip("시위를 놓는 순간 앞으로 튕기는 이동량")]
+    [SerializeField] private Vector3 drawReleaseOffset = new(0f, 0f, 0.12f);
+
+    // 스윙이 끊겨도 도구 피벗이 원래 자리로 돌아오도록 처음 자세를 기억해 둔다.
+    private Vector3 toolPivotRestPosition;
+    private Quaternion toolPivotRestRotation;
+    private bool toolPivotRestCaptured;
     private PlayerInputData inputData;
     private Transform playerBody;
     private PlayerInventory playerInventory;
@@ -160,7 +191,9 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         if (playerInventory == inventory) return;
 
         if (playerInventory != null)
+        {
             playerInventory.OnEquippedItemChanged -= OnEquippedItemChanged;
+        }
 
         playerInventory = inventory;
 
@@ -180,7 +213,8 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     /// <param name="riseDuration">도구를 최고점까지 들어올리는 시간</param>
     /// <param name="strikeDuration">최고점에서 타격 지점까지 내려찍는 시간</param>
     /// <param name="recoverDuration">타격 후 원위치로 돌아오는 시간</param>
-    public void PlayToolSwing(float riseDuration, float strikeDuration, float recoverDuration)
+    public void PlayToolSwing(float riseDuration, float strikeDuration, float recoverDuration,
+        ToolSwingKind kind = ToolSwingKind.Overhead)
     {
         if (toolPivot == null) return;
 
@@ -188,19 +222,67 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         strikeDuration = Mathf.Max(0.01f, strikeDuration);
         recoverDuration = Mathf.Max(0.01f, recoverDuration);
 
-        toolPivot.DOKill();
-        Quaternion restRotation = toolPivot.localRotation;
+        // 찌르기는 위치도 움직이므로, 도중에 끊겨도 원점이 밀리지 않게 처음 한 번 잡아둔 기준 자세로 되돌려 시작한다.
+        if (!toolPivotRestCaptured)
+        {
+            toolPivotRestPosition = toolPivot.localPosition;
+            toolPivotRestRotation = toolPivot.localRotation;
+            toolPivotRestCaptured = true;
+        }
 
-        DOTween.Sequence()
-            // 1. 들어올리기 + 오른쪽으로 당기기 (Begin 클립 ~ Loop 클립의 최고점)
-            .Append(toolPivot.DOLocalRotate(new Vector3(-45f, 20f, 8f), riseDuration, RotateMode.LocalAxisAdd)
-                .SetEase(Ease.OutQuad))
-            // 2. 내려찍기 + 왼쪽 아크 (바디가 실제로 타격하는 순간에 끝난다)
-            .Append(toolPivot.DOLocalRotate(new Vector3(100f, -35f, -12f), strikeDuration, RotateMode.LocalAxisAdd)
-                .SetEase(Ease.InQuart))
-            // 3. 원위치 복귀 (Stop 클립이 끝나는 시점까지)
-            .Append(toolPivot.DOLocalRotateQuaternion(restRotation, recoverDuration)
-                .SetEase(Ease.OutQuad));
+        toolPivot.DOKill();
+        toolPivot.localPosition = toolPivotRestPosition;
+        toolPivot.localRotation = toolPivotRestRotation;
+        Quaternion restRotation = toolPivotRestRotation;
+
+        if (kind == ToolSwingKind.Thrust)
+        {
+            DOTween.Sequence()
+                // 1. 창을 살짝 뒤로 당기며 끝을 들어올리기
+                .Append(toolPivot.DOLocalMove(toolPivotRestPosition + thrustPullBackOffset, riseDuration)
+                    .SetEase(Ease.OutQuad))
+                .Join(toolPivot.DOLocalRotate(thrustPullBackRotation, riseDuration, RotateMode.LocalAxisAdd)
+                    .SetEase(Ease.OutQuad))
+                // 2. 앞으로 쭉 찌르기 (바디가 실제로 타격하는 순간에 끝난다)
+                .Append(toolPivot.DOLocalMove(toolPivotRestPosition + thrustReachOffset, strikeDuration)
+                    .SetEase(Ease.InQuart))
+                .Join(toolPivot.DOLocalRotate(thrustReachRotation, strikeDuration, RotateMode.LocalAxisAdd)
+                    .SetEase(Ease.InQuart))
+                // 3. 원위치 복귀
+                .Append(toolPivot.DOLocalMove(toolPivotRestPosition, recoverDuration)
+                    .SetEase(Ease.OutQuad))
+                .Join(toolPivot.DOLocalRotateQuaternion(restRotation, recoverDuration)
+                    .SetEase(Ease.OutQuad));
+        }
+        else if (kind == ToolSwingKind.Draw)
+        {
+            DOTween.Sequence()
+                // 1. 활을 몸 쪽으로 끌어당기며 시위 당기기 (이 구간이 끝나는 순간 화살이 나간다)
+                .Append(toolPivot.DOLocalMove(toolPivotRestPosition + drawPullBackOffset, riseDuration)
+                    .SetEase(Ease.OutCubic))
+                .Join(toolPivot.DOLocalRotate(drawPullBackRotation, riseDuration, RotateMode.LocalAxisAdd)
+                    .SetEase(Ease.OutCubic))
+                // 2. 시위를 놓으며 앞으로 튕김
+                .Append(toolPivot.DOLocalMove(toolPivotRestPosition + drawReleaseOffset, strikeDuration)
+                    .SetEase(Ease.OutQuad))
+                .Join(toolPivot.DOLocalRotateQuaternion(restRotation, strikeDuration))
+                // 3. 원위치 복귀
+                .Append(toolPivot.DOLocalMove(toolPivotRestPosition, recoverDuration)
+                    .SetEase(Ease.OutQuad));
+        }
+        else
+        {
+            DOTween.Sequence()
+                // 1. 들어올리기 + 오른쪽으로 당기기 (Begin 클립 ~ Loop 클립의 최고점)
+                .Append(toolPivot.DOLocalRotate(new Vector3(-45f, 20f, 8f), riseDuration, RotateMode.LocalAxisAdd)
+                    .SetEase(Ease.OutQuad))
+                // 2. 내려찍기 + 왼쪽 아크 (바디가 실제로 타격하는 순간에 끝난다)
+                .Append(toolPivot.DOLocalRotate(new Vector3(100f, -35f, -12f), strikeDuration, RotateMode.LocalAxisAdd)
+                    .SetEase(Ease.InQuart))
+                // 3. 원위치 복귀 (Stop 클립이 끝나는 시점까지)
+                .Append(toolPivot.DOLocalRotateQuaternion(restRotation, recoverDuration)
+                    .SetEase(Ease.OutQuad));
+        }
 
         // 카메라 시야: 내려찍는 타이밍에 흔들림
         // 연타(벌목 루프)로 트윈이 겹쳐 쌓이지 않도록 이전 흔들림은 먼저 걷어낸다.
@@ -261,7 +343,9 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         Main.Loop.OnLateUpdate -= OnLateUpdateLoop;
 
         if (playerInventory != null)
+        {
             playerInventory.OnEquippedItemChanged -= OnEquippedItemChanged;
+        }
 
         ClearEquippedToolView();
         RemoveToolCameraFromStack();

@@ -156,7 +156,7 @@ MonoBehaviour:
   weaponLocalPosition: {x: -1, y: 0, z: 3.2}
   weaponLocalEuler: {x: 0, y: 0, z: 0}
   weaponLocalScale: {x: 1, y: 1, z: 1}
-  swordMeshLocalPosition: {x: 1.38, y: -2.5, z: 2.56}
+  swordMeshLocalPosition: {x: 1.2, y: -2.5, z: 2.56}
   swordMeshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
   swordMeshLocalScale: {x: 7, y: 7, z: 7}
   spearMeshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
@@ -175,6 +175,10 @@ MonoBehaviour:
   equippedTorchLightIntensity: 3.5
   equippedTorchLightRange: 7
   equippedTorchLightColor: {r: 1, g: 0.45, b: 0.18, a: 1}
+  thrustPullBackOffset: {x: 0, y: 0, z: -0.35}
+  thrustReachOffset: {x: 0, y: 0, z: 1}
+  thrustPullBackRotation: {x: -12, y: 0, z: 0}
+  thrustReachRotation: {x: 16, y: 0, z: 0}
 --- !u!114 &5601182068425426865
 MonoBehaviour:
   m_ObjectHideFlags: 0
