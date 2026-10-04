@@ -806,11 +806,6 @@ public partial class PlayerInventory : MonoBehaviour
                 break;
         }
 
-        // 손 장비는 1인칭 뷰가 프리팹을 띄우며 인스턴스를 등록하지만,
-        // 머리/몸통 방어구는 띄울 프리팹이 없으므로 여기서 내구도 인스턴스를 직접 만든다.
-        if (itemData != null && equipSlot != EquipSlot.Hand)
-            RegisterEquippedItemInstance(equipSlot, ItemData.CreateFromSO(itemData) as IEquipable);
-
         OnEquippedItemChanged?.Invoke(equipSlot, itemData);
     }
 

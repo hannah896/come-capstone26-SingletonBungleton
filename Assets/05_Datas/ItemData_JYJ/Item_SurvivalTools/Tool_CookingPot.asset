@@ -17,7 +17,7 @@ MonoBehaviour:
   description: "\uC694\uB9AC\uC194. \uADFC\uCC98\uC5D0\uC11C CookPot \uB808\uC2DC\uD53C\uB85C
     \uC694\uB9AC\uD560 \uC218 \uC788\uC74C"
   icon: {fileID: 21300000, guid: 1e70c93b00b636149b148ad338f1d29a, type: 3}
-  prefab: {fileID: 2001000000000001, guid: c00fca17c00fca17c00fca17c00fca17, type: 3}
+  prefab: {fileID: 2001000000000001, guid: 13a5c8965c9d77c4c836b95ed45b2e50, type: 3}
   itemType: 7
   survivalToolType: 0
   harvestableNodeTypes: 
@@ -30,7 +30,7 @@ MonoBehaviour:
   isStackable: 1
   maxStack: 99
   equipSlot: 0
-  hasDurability: 1
+  hasDurability: 0
   maxDurability: 100
   costPerDurability: 1
   attackDamage: 0
@@ -42,7 +42,7 @@ MonoBehaviour:
   expirationTime: 0
   tags: 0
   isPlaceable: 1
-  placementPrefab: {fileID: 2001000000000001, guid: c00fca17c00fca17c00fca17c00fca17, type: 3}
+  placementPrefab: {fileID: 2001000000000001, guid: 13a5c8965c9d77c4c836b95ed45b2e50, type: 3}
   placementFootprint: {x: 1, y: 1}
   placementPivotOffset: {x: 0, y: 0, z: 0}
   placementSnapToGrid: 1

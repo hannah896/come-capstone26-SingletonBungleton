@@ -15,6 +15,12 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnte
     [SerializeField] private Image durabilityBar;
     [SerializeField] private Outline focusOutline;
 
+    private const float StackTextFontSize = 22f;
+
+    private DurabilityBarView durabilityView;
+    private bool trackDurability;
+    private bool stackTextNormalized;
+
     private int slotIndex;
     private PlayerInventory playerInventory;
     private EquipSlot equipSlot = EquipSlot.None;
@@ -156,6 +162,8 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnte
             iconImage.sprite = itemData.icon;
         }
 
+        NormalizeStackText();
+
         bool showStack = showStackCount && itemData.isStackable && stack > 1;
         if (stackBG != null) stackBG.SetActive(showStack);
         if (stackText != null)
@@ -164,8 +172,11 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnte
             stackText.text = showStack ? stack.ToString() : string.Empty;
         }
 
-        if (durabilityBar != null)
-            durabilityBar.gameObject.SetActive(itemData.hasDurability);
+        trackDurability = itemData.hasDurability;
+        if (trackDurability)
+            UpdateDurabilityBar();
+        else
+            DurabilityView.Hide();
     }
 
     private void Clear()
@@ -179,7 +190,50 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnte
 
         if (stackBG != null) stackBG.SetActive(false);
         if (stackText != null) stackText.text = string.Empty;
-        if (durabilityBar != null) durabilityBar.gameObject.SetActive(false);
+        trackDurability = false;
+        DurabilityView.Hide();
+    }
+
+    // 사용/횃불 소모로 내구도가 계속 변하므로 이벤트 대신 매 프레임 비율만 확인한다 (바뀔 때만 갱신).
+    private void Update()
+    {
+        if (trackDurability)
+            UpdateDurabilityBar();
+    }
+
+    // 슬롯마다 프리팹 오버라이드로 숫자 위치/크기가 제각각이라, 런타임에 전부 같은 규칙으로 맞춘다:
+    // 슬롯 칸 오른쪽 바깥의 빈 공간, 칸 아래쪽 줄에 맞춰서 고정 크기로 표시.
+    private void NormalizeStackText()
+    {
+        if (stackTextNormalized || stackText == null) return;
+        stackTextNormalized = true;
+
+        RectTransform rect = stackText.rectTransform;
+        rect.anchorMin = new Vector2(1f, 0f);
+        rect.anchorMax = new Vector2(1f, 0f);
+        rect.pivot = new Vector2(0f, 0f);
+        rect.anchoredPosition = new Vector2(4f, 0f);
+        rect.sizeDelta = new Vector2(44f, 28f);
+        rect.localRotation = Quaternion.identity;
+        rect.localScale = Vector3.one;
+
+        stackText.margin = Vector4.zero;
+        stackText.enableAutoSizing = false;
+        stackText.fontSize = StackTextFontSize;
+        stackText.alignment = TextAlignmentOptions.BottomLeft;
+        stackText.textWrappingMode = TextWrappingModes.NoWrap;
+        stackText.overflowMode = TextOverflowModes.Overflow;
+    }
+
+    private DurabilityBarView DurabilityView => durabilityView ??= new DurabilityBarView(transform, durabilityBar);
+
+    private void UpdateDurabilityBar()
+    {
+        if (!trackDurability || playerInventory == null) return;
+
+        DurabilityView.Set(isEquipmentSlot
+            ? playerInventory.GetEquippedDurabilityPercent(equipSlot)
+            : playerInventory.GetSlotDurabilityPercent(slotIndex));
     }
 
     private void ResolveReferences()

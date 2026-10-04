@@ -28,7 +28,7 @@ MonoBehaviour:
   maxStack: 99
   equipSlot: 3
   hasDurability: 1
-  maxDurability: 100
+  maxDurability: 300
   costPerDurability: 1
   attackDamage: 0
   attackRange: 0

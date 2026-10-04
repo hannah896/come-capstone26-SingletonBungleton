@@ -200,7 +200,7 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 9dbefc22cc191c9439f079d99d9b2354
+  - m_GUID: 37a5b198d8189914eaecc56ef4418063
     m_Address: Tool_Bonfire
     m_ReadOnly: 0
     m_SerializedLabels: []
@@ -260,7 +260,7 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: c00fca17c00fca17c00fca17c00fca17
+  - m_GUID: 13a5c8965c9d77c4c836b95ed45b2e50
     m_Address: Tool_CookingPot
     m_ReadOnly: 0
     m_SerializedLabels: []

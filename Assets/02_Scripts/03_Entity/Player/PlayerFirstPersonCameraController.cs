@@ -63,9 +63,15 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     [SerializeField] private Vector3 weaponLocalPosition = new(-1f, 0f, 3.2f);
     [SerializeField] private Vector3 weaponLocalEuler = Vector3.zero;
     [SerializeField] private Vector3 weaponLocalScale = Vector3.one;
-    [SerializeField] private Vector3 weaponMeshLocalPosition = new(1.38f, -1.5f, 2.56f);
-    [SerializeField] private Vector3 weaponMeshLocalEuler = new(26.14f, -168.4f, -12.8f);
-    [SerializeField] private Vector3 weaponMeshLocalScale = new(7f, 7f, 7f);
+    [SerializeField] private Vector3 swordMeshLocalPosition = new(1.38f, -1.5f, 2.56f);
+    [SerializeField] private Vector3 swordMeshLocalEuler = new(26.14f, -168.4f, -12.8f);
+    [SerializeField] private Vector3 swordMeshLocalScale = new(7f, 7f, 7f);
+    [SerializeField] private Vector3 spearMeshLocalPosition = new(1.38f, -1.5f, 2.56f);
+    [SerializeField] private Vector3 spearMeshLocalEuler = new(26.14f, -168.4f, -12.8f);
+    [SerializeField] private Vector3 spearMeshLocalScale = new(7f, 7f, 7f);
+    [SerializeField] private Vector3 bowMeshLocalPosition = new(1.38f, -1.5f, 2.56f);
+    [SerializeField] private Vector3 bowMeshLocalEuler = new(26.14f, -168.4f, -12.8f);
+    [SerializeField] private Vector3 bowMeshLocalScale = new(7f, 7f, 7f);
     [SerializeField] private Vector3 shieldLocalPosition = new(-1f, 0f, 3.2f);
     [SerializeField] private Vector3 shieldLocalEuler = Vector3.zero;
     [SerializeField] private Vector3 shieldLocalScale = Vector3.one;
@@ -503,7 +509,18 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
             toolTransform.localPosition = weaponLocalPosition;
             toolTransform.localRotation = Quaternion.Euler(weaponLocalEuler);
             toolTransform.localScale = weaponLocalScale;
-            ApplyChildMeshTransform(weaponMeshLocalPosition, weaponMeshLocalEuler, weaponMeshLocalScale);
+            switch (itemData.combatGearType)
+            {
+                case CombatGearType.Sword:
+                    ApplyChildMeshTransform(swordMeshLocalPosition, swordMeshLocalEuler, swordMeshLocalScale);
+                    break;
+                case CombatGearType.Spear:
+                    ApplyChildMeshTransform(spearMeshLocalPosition, spearMeshLocalEuler, spearMeshLocalScale);
+                    break;
+                case CombatGearType.Bow:
+                    ApplyChildMeshTransform(bowMeshLocalPosition, bowMeshLocalEuler, bowMeshLocalScale);
+                    break;
+            }
             return;
         }
 
