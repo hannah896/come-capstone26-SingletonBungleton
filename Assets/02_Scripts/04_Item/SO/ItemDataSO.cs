@@ -79,6 +79,10 @@ public class ItemDataSO : ScriptableObject
     [Tooltip("공격 범위")]
     public float attackRange = 1.5f;
 
+    [Tooltip("근접 무기(검/창)의 부채꼴 각도(도). 정면 기준 좌우 합친 전체 각도. 활/도구는 쓰지 않는다.")]
+    [Range(10f, 360f)]
+    public float attackAngle = 90f;
+
     [Tooltip("방어력")]
     public float defense = 0f;
 

@@ -479,6 +479,15 @@ public abstract class StorageStation : StationBase
             expirationTimestamps[index] = 0f;
     }
 
+    /// <summary>해당 칸 아이템의 내구도 비율(0~1). 빈 칸이거나 내구도가 없는 아이템이면 -1.</summary>
+    public float GetDurabilityPercent(int index)
+    {
+        if (index < 0 || index >= slots.Count || slots[index] == null || stackCounts[index] <= 0) return -1f;
+        if (!slots[index].hasDurability) return -1f;
+        if (_durabilities[index] < 0f) return 1f; // 값 없음 = 새 아이템(만땅)
+        return Mathf.Clamp01(_durabilities[index] / Mathf.Max(0.001f, slots[index].maxDurability));
+    }
+
     public ItemStackSaveData CaptureSlot(int index)
     {
         if (index < 0 || index >= slots.Count || slots[index] == null || stackCounts[index] <= 0) return null;

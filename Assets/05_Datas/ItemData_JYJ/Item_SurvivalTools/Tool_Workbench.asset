@@ -30,7 +30,7 @@ MonoBehaviour:
   isStackable: 1
   maxStack: 99
   equipSlot: 0
-  hasDurability: 1
+  hasDurability: 0
   maxDurability: 100
   costPerDurability: 1
   attackDamage: 0

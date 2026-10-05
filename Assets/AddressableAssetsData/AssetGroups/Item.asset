@@ -40,6 +40,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 13a5c8965c9d77c4c836b95ed45b2e50
+    m_Address: Tool_CookingPot
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 14159bf9375720745b7db5cf8b2f5cb4
     m_Address: Tool_Axe_Gold
     m_ReadOnly: 0
@@ -62,6 +67,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 3700a27fbb9b3294cbf0d5fd13a83831
     m_Address: Food_CookedMeat2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 37a5b198d8189914eaecc56ef4418063
+    m_Address: Tool_Bonfire
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -200,11 +210,6 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 9dbefc22cc191c9439f079d99d9b2354
-    m_Address: Tool_Bonfire
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 9e8825677fc895d419af53a07717203c
     m_Address: Armor_Helmet
     m_ReadOnly: 0
@@ -257,11 +262,6 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: bfd2819a276da864ab3f272d424e04e5
     m_Address: Booty_Meat2
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: c00fca17c00fca17c00fca17c00fca17
-    m_Address: Tool_CookingPot
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

@@ -58,7 +58,7 @@ public class UI_Popup_Chest : UI_Popup
             if (slotUIs[i] == null) continue;
 
             if (i < storage.SlotCount)
-                slotUIs[i].Refresh(storage.Slots[i], storage.StackCounts[i]);
+                slotUIs[i].Refresh(storage.Slots[i], storage.StackCounts[i], storage.GetDurabilityPercent(i));
             else
                 slotUIs[i].Refresh(null, 0);
         }

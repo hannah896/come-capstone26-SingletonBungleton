@@ -15,6 +15,9 @@ public class StorageSlotUI : MonoBehaviour, IPointerClickHandler
 
     private UI_Popup_Chest owner;
     private int slotIndex = -1;
+    private DurabilityBarView durabilityView;
+
+    private DurabilityBarView DurabilityView => durabilityView ??= new DurabilityBarView(transform);
 
     public void Bind(UI_Popup_Chest popup, int index)
     {
@@ -22,8 +25,8 @@ public class StorageSlotUI : MonoBehaviour, IPointerClickHandler
         slotIndex = index;
     }
 
-    /// <summary>슬롯 내용을 갱신한다. itemData가 null이면 빈 칸으로 표시.</summary>
-    public void Refresh(ItemDataSO itemData, int stack)
+    /// <summary>슬롯 내용을 갱신한다. itemData가 null이면 빈 칸으로 표시. durabilityPercent는 0~1, 음수면 바 숨김.</summary>
+    public void Refresh(ItemDataSO itemData, int stack, float durabilityPercent = -1f)
     {
         if (itemData == null || stack <= 0)
         {
@@ -45,10 +48,13 @@ public class StorageSlotUI : MonoBehaviour, IPointerClickHandler
             stackText.enabled = showStack;
         }
         if (stackBG != null) stackBG.SetActive(showStack);
+
+        DurabilityView.Set(durabilityPercent);
     }
 
     private void Clear()
     {
+        DurabilityView.Hide();
         if (iconImage != null)
         {
             iconImage.sprite = null;
