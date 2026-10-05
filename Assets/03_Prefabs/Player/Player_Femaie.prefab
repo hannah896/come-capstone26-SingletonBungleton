@@ -138,7 +138,7 @@ MonoBehaviour:
   equippedToolLocalPosition: {x: -1, y: 0, z: 3.2}
   equippedToolLocalEuler: {x: 0, y: 0, z: 0}
   equippedToolLocalScale: {x: 1, y: 1, z: 1}
-  axeMeshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
+  axeMeshLocalPosition: {x: 1.38, y: -0.86, z: 2.56}
   axeMeshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
   axeMeshLocalScale: {x: 7, y: 7, z: 7}
   pickaxeLocalPosition: {x: -0.07, y: -0.86, z: 2.33}
@@ -147,19 +147,25 @@ MonoBehaviour:
   torchLocalPosition: {x: -0.8, y: -0.11, z: -1.09}
   torchLocalEuler: {x: -3.579, y: -30.16, z: 18.332}
   torchLocalScale: {x: 1, y: 1, z: 1}
-  hammerMeshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
+  hammerMeshLocalPosition: {x: 1.38, y: -0.86, z: 2.56}
   hammerMeshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
   hammerMeshLocalScale: {x: 7, y: 7, z: 7}
-  shovelLocalPosition: {x: -0.07, y: -0.86, z: 2.33}
+  shovelLocalPosition: {x: -0.07, y: -3, z: 2.33}
   shovelLocalEuler: {x: 6.952, y: -148.7, z: -5.915}
   shovelLocalScale: {x: 7, y: 7, z: 7}
   weaponLocalPosition: {x: -1, y: 0, z: 3.2}
   weaponLocalEuler: {x: 0, y: 0, z: 0}
   weaponLocalScale: {x: 1, y: 1, z: 1}
-  weaponMeshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
-  weaponMeshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
-  weaponMeshLocalScale: {x: 7, y: 7, z: 7}
-  shieldLocalPosition: {x: -1, y: 0, z: 3.2}
+  swordMeshLocalPosition: {x: 1.2, y: -2.5, z: 2.56}
+  swordMeshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
+  swordMeshLocalScale: {x: 7, y: 7, z: 7}
+  spearMeshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
+  spearMeshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
+  spearMeshLocalScale: {x: 7, y: 7, z: 7}
+  bowMeshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
+  bowMeshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
+  bowMeshLocalScale: {x: 7, y: 7, z: 7}
+  shieldLocalPosition: {x: -1, y: 1, z: 3.2}
   shieldLocalEuler: {x: 0, y: 0, z: 0}
   shieldLocalScale: {x: 1, y: 1, z: 1}
   shieldMeshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
@@ -169,6 +175,10 @@ MonoBehaviour:
   equippedTorchLightIntensity: 3.5
   equippedTorchLightRange: 7
   equippedTorchLightColor: {r: 1, g: 0.45, b: 0.18, a: 1}
+  thrustPullBackOffset: {x: 0, y: 0, z: -0.35}
+  thrustReachOffset: {x: 0, y: 0, z: 1}
+  thrustPullBackRotation: {x: -12, y: 0, z: 0}
+  thrustReachRotation: {x: 16, y: 0, z: 0}
 --- !u!114 &5601182068425426865
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -718,10 +728,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: 7ba053ea9b532bd4784dc795612d69e0, type: 3}
       propertyPath: m_WarningMessage
-      value: "\nBinding warning: Some generic clip(s) animate transforms that are
-        already bound by a Humanoid avatar. These transforms can only be changed
-        by Humanoid clips.\n\tTransform 'RightHandIndex1'\n\tFrom animation clip
-        'HumanF@Mining - Begin'"
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: 7ba053ea9b532bd4784dc795612d69e0, type: 3}
       propertyPath: m_ApplyRootMotion

@@ -221,9 +221,16 @@ public class Player : MonoBehaviour, IDamageable
         if (!IsLocalPlayerObject())
             return;
 
-        // 액션 연출 중에는 카메라 외 모든 입력 차단
-        if (IsLocalPlayerObject() && machine.CurrentState is PlayerActionState)
-            inputData?.SuppressAllInputs();
+        // 액션 연출 중에는 카메라 외 모든 입력 차단.
+        // 단, 이동 입력이 들어오면 액션을 캔슬한다(휘두르는 도중에도 빠질 수 있어야 맞딜이 아니라 치고 빠지는 전투가 된다).
+        // 차단이 MoveInput을 0으로 지우므로 반드시 차단보다 먼저 판정하고, 캔슬 시에는 이동 입력을 남겨 바로 움직이게 한다.
+        if (IsLocalPlayerObject() && machine.CurrentState is PlayerActionState actionState && inputData != null)
+        {
+            if (inputData.HasMoveInput)
+                actionState.CancelAction();
+            else
+                inputData.SuppressAllInputs();
+        }
 
         machine.OnUpdate(deltaTime);
         motor.Tick(deltaTime);  // 중력 시뮬레이션, 착지 감지, 이동 수행
@@ -239,6 +246,7 @@ public class Player : MonoBehaviour, IDamageable
             stat.UpdateHunger(deltaTime);
             stat.UpdateEgo(deltaTime);
             stat.UpdateDot(deltaTime);
+            stat.UpdateSlow(deltaTime);
 
             // 자연사 감지 (허기·Ego·도트로 HP가 0이 된 경우)
             if (stat.IsDead
@@ -364,6 +372,7 @@ public class Player : MonoBehaviour, IDamageable
         stat.RestoreHunger(stat.MaxHunger);
         stat.RestoreEgo(stat.MaxEgo);
         stat.ClearDot();
+        stat.ClearSlow();
 
         // 리스폰 지점으로 이동. 지점을 못 구하면(테스트 씬 등) 제자리에서 부활한다.
         if (TryGetRespawnPosition(out Vector3 respawnPosition))
@@ -465,6 +474,16 @@ public class Player : MonoBehaviour, IDamageable
         ApplyLocalDot(damagePerTick, duration, tickInterval);
     }
 
+    /// <summary>이동 속도 둔화를 건다. (트리앤트 뿌리 속박 장판 등)</summary>
+    public void ApplySlow(float multiplier, float duration)
+    {
+        if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
+        if (!IsAlive) return;
+        if (TryForwardToOwner(sync => sync.ForwardSlow(multiplier, duration))) return;
+
+        ApplyLocalSlow(multiplier, duration);
+    }
+
     /// <summary>이 피어의 스탯에 데미지를 적용한다. 네트워크로 전달받은 데미지도 여기로 들어온다.</summary>
     public void ApplyLocalDamage(int amount)
     {
@@ -489,6 +508,14 @@ public class Player : MonoBehaviour, IDamageable
         if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
         if (stat == null || stat.IsDead) return;
         stat.ApplyDot(damagePerTick, duration, tickInterval);
+    }
+
+    /// <summary>이 피어의 스탯에 둔화를 건다. 네트워크로 전달받은 둔화도 여기로 들어온다.</summary>
+    public void ApplyLocalSlow(float multiplier, float duration)
+    {
+        if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
+        if (stat == null || stat.IsDead) return;
+        stat.ApplySlow(multiplier, duration);
     }
 
     // 원격 캐릭터면 소유자 피어로 전달하고 true. 로컬 캐릭터(싱글 포함)면 false.

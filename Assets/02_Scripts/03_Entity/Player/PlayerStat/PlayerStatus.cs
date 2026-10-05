@@ -21,7 +21,10 @@ public class PlayerStatus
     #endregion
 
     #region 이동
-    public float MoveSpeed { get; private set; }
+    /// <summary>둔화가 걸리지 않은 본래 이동 속도.</summary>
+    public float BaseMoveSpeed { get; private set; }
+    /// <summary>실제 이동에 쓰는 속도. 둔화(뿌리 속박 등)가 걸려 있으면 그만큼 느려진다.</summary>
+    public float MoveSpeed => BaseMoveSpeed * SlowMultiplier;
     public float SprintMultiplier { get; private set; }
     public float JumpForce { get; private set; }
     #endregion
@@ -62,6 +65,14 @@ public class PlayerStatus
     /// <summary>도트 데미지가 걸려 있는지.</summary>
     public bool IsDotActive => dotTicksLeft > 0;
     #endregion
+
+    #region 둔화 (이동 속도 저하)
+    private float slowRemaining;   // 둔화 남은 시간
+    /// <summary>이동 속도에 곱해지는 배율. 둔화가 없으면 1.</summary>
+    public float SlowMultiplier { get; private set; } = 1f;
+    /// <summary>둔화가 걸려 있는지. UI 표시 등에 사용한다.</summary>
+    public bool IsSlowed => slowRemaining > 0f;
+    #endregion
     #endregion
 
     public PlayerStatus(PlayerStatData data)
@@ -72,7 +83,7 @@ public class PlayerStatus
         Attack = data.AttackDamage;
         Defense = data.Defense;
         MinAttackPeriod = data.MinAttackPeriod;
-        MoveSpeed = data.MoveSpeed;
+        BaseMoveSpeed = data.MoveSpeed;
         SprintMultiplier = data.SprintMultiplier;
         JumpForce = data.JumpForce;
 
@@ -184,6 +195,39 @@ public class PlayerStatus
 
     /// <summary>걸려 있는 도트 데미지를 제거한다.</summary>
     public void ClearDot() => dotTicksLeft = 0;
+
+    /// <summary>
+    /// 이동 속도 둔화를 건다(트리앤트 뿌리 속박 등). multiplier는 0~1 사이의 배율이다.
+    /// 이미 걸려 있으면 중첩하지 않고, 더 센 둔화와 더 긴 남은 시간을 각각 유지한다.
+    /// 장판처럼 매 프레임 갱신해 거는 효과를 위해 duration은 짧게(0.2초 등) 주고 계속 재호출하면 된다.
+    /// </summary>
+    public void ApplySlow(float multiplier, float duration)
+    {
+        if (duration <= 0f) return;
+
+        multiplier = Mathf.Clamp(multiplier, 0f, 1f);
+
+        // 더 센 둔화(작은 배율)가 이긴다. 시간은 긴 쪽으로 늘린다.
+        SlowMultiplier = IsSlowed ? Mathf.Min(SlowMultiplier, multiplier) : multiplier;
+        slowRemaining = Mathf.Max(slowRemaining, duration);
+    }
+
+    /// <summary>둔화 지속 시간을 흘려보낸다. 다 되면 이동 속도가 원래대로 돌아온다.</summary>
+    public void UpdateSlow(float deltaTime)
+    {
+        if (!IsSlowed) return;
+
+        slowRemaining -= deltaTime;
+        if (slowRemaining <= 0f)
+            ClearSlow();
+    }
+
+    /// <summary>걸려 있는 둔화를 즉시 해제한다.</summary>
+    public void ClearSlow()
+    {
+        slowRemaining = 0f;
+        SlowMultiplier = 1f;
+    }
 
     public void RestoreHunger(float amount)
         => CurrentHunger = Mathf.Clamp(CurrentHunger + amount, 0f, MaxHunger);

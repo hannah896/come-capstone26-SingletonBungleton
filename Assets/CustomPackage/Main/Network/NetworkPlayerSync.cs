@@ -493,6 +493,13 @@ public class NetworkPlayerSync : NetworkBehaviour
         else if (Object.HasStateAuthority) Rpc_ReceiveDot(damagePerTick, duration, tickInterval);
     }
 
+    /// <summary>호스트 → 소유자: 이동 속도 둔화를 전달한다. (트리앤트 뿌리 속박 등)</summary>
+    public void ForwardSlow(float multiplier, float duration)
+    {
+        if (Object.HasInputAuthority) _player?.ApplyLocalSlow(multiplier, duration);
+        else if (Object.HasStateAuthority) Rpc_ReceiveSlow(multiplier, duration);
+    }
+
     [Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority)]
     private void Rpc_ReceiveDamage(int amount)
     {
@@ -503,6 +510,12 @@ public class NetworkPlayerSync : NetworkBehaviour
     private void Rpc_ReceiveDot(float damagePerTick, float duration, float tickInterval)
     {
         _player?.ApplyLocalDot(damagePerTick, duration, tickInterval);
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority)]
+    private void Rpc_ReceiveSlow(float multiplier, float duration)
+    {
+        _player?.ApplyLocalSlow(multiplier, duration);
     }
 
     // 소유자: 사망/부활이 바뀐 순간에만 호스트에 보고한다

@@ -24,6 +24,10 @@ public partial class PlayerInventory : MonoBehaviour
     [SerializeField] private LayerMask toolUseLayer = ~0;
     [Tooltip("맨손으로 나무/돌을 칠 때의 데미지 (도구보다 느리게 채집되도록 낮게 유지). 임시값.")]
     [SerializeField] private int bareHandDamage = 1;
+    [Tooltip("화살 속도(m/s). 임시값.")]
+    [SerializeField] private float arrowSpeed = 40f;
+    [Tooltip("화살이 날아가는 최대 거리. 활 attackRange와 별개. 임시값.")]
+    [SerializeField] private float arrowMaxDistance = 60f;
 
     [SerializeField] private List<ItemDataSO> slots = new();
     [SerializeField] private List<int> stackCounts = new();
@@ -806,11 +810,6 @@ public partial class PlayerInventory : MonoBehaviour
                 break;
         }
 
-        // 손 장비는 1인칭 뷰가 프리팹을 띄우며 인스턴스를 등록하지만,
-        // 머리/몸통 방어구는 띄울 프리팹이 없으므로 여기서 내구도 인스턴스를 직접 만든다.
-        if (itemData != null && equipSlot != EquipSlot.Hand)
-            RegisterEquippedItemInstance(equipSlot, ItemData.CreateFromSO(itemData) as IEquipable);
-
         OnEquippedItemChanged?.Invoke(equipSlot, itemData);
     }
 
@@ -1130,6 +1129,20 @@ public partial class PlayerInventory : MonoBehaviour
         if (!TryGetUsableHandItem(out ItemDataSO handItem, out _))
             return false;
 
+        // 활: 대상이 없어도 쏠 수 있다
+        if (IsBow(handItem))
+        {
+            actionType = ActionType.Attack;
+            return true;
+        }
+
+        // 검/창: 정면 부채꼴 안에 칠 대상이 있으면 공격 시작
+        if (UsesAreaAttack(handItem) && HitAreaTargets(handItem, apply: false))
+        {
+            actionType = ActionType.Attack;
+            return true;
+        }
+
         if (!TryRaycastToolTarget(GetHandRange(handItem), out RaycastHit hit))
             return false;
 
@@ -1176,6 +1189,20 @@ public partial class PlayerInventory : MonoBehaviour
         if (handTool != null && !handTool.IsUsable)
             return true;
 
+        // 활: 시위를 놓는 순간 화살을 날린다. 맞은 대상 데미지는 화살이 처리하고, 내구도는 쏠 때마다 소모.
+        if (IsBow(handItem))
+        {
+            FireArrow(handItem);
+            handTool?.UseDurability();
+            return true;
+        }
+
+        if (UsesAreaAttack(handItem) && HitAreaTargets(handItem, apply: true))
+        {
+            handTool?.UseDurability();
+            return true;
+        }
+
         if (!TryRaycastToolTarget(GetHandRange(handItem), out RaycastHit hit))
             return true;
 
@@ -1211,11 +1238,26 @@ public partial class PlayerInventory : MonoBehaviour
     private static ActionType ResolveHandAction(RaycastHit hit, ItemDataSO handItem)
     {
         if (IsCombatTarget(hit.collider))
-            return ActionType.Attack;
+            return CanAttackWith(handItem) ? ActionType.Attack : ActionType.None;
 
         return handItem.itemType == ItemType.SurvivalTool
             ? GetActionTypeForTool(handItem.survivalToolType)
             : ActionType.None;
+    }
+
+    // 몬스터·동물을 칠 수 있는 손 아이템인지. 횃불과 방패/투구/갑옷은 들고 있어도 공격하지 않는다.
+    private static bool CanAttackWith(ItemDataSO handItem)
+    {
+        if (handItem == null) return false;
+
+        if (handItem.itemType == ItemType.CombatGear)
+        {
+            return handItem.combatGearType == CombatGearType.Sword
+                || handItem.combatGearType == CombatGearType.Spear
+                || handItem.combatGearType == CombatGearType.Bow;
+        }
+
+        return handItem.survivalToolType != SurvivalToolType.Torch;
     }
 
     private static bool IsCombatTarget(Collider collider)
@@ -1225,11 +1267,130 @@ public partial class PlayerInventory : MonoBehaviour
     /// 전투 데미지 = 손 아이템 공격력 + 플레이어 기본 공격력. (도구는 공격력이 낮아 기본 공격력이 바닥을 받쳐준다)
     /// </summary>
     private DamageContext CreateCombatContext(RaycastHit hit, ItemDataSO handItem, ActionType actionType)
+        => CreateCombatContext(hit.point, handItem, actionType);
+
+    private DamageContext CreateCombatContext(Vector3 point, ItemDataSO handItem, ActionType actionType)
     {
         float baseAttack = owner != null && owner.Stat != null ? owner.Stat.Attack : 0f;
         int damage = Mathf.Max(1, Mathf.RoundToInt(handItem.attackDamage + baseAttack));
-        return new DamageContext(gameObject, hit.point, damage, handItem.itemID, actionType, handItem.harvestableNodeTypes);
+        return new DamageContext(gameObject, point, damage, handItem.itemID, actionType, handItem.harvestableNodeTypes);
     }
+
+    #region 활
+
+    private static bool IsBow(ItemDataSO handItem)
+        => handItem != null && handItem.itemType == ItemType.CombatGear && handItem.combatGearType == CombatGearType.Bow;
+
+    // 화살은 카메라 정면으로 날아간다. 화살은 무한이고, 맞았는지는 투사체가 판정한다.
+    private void FireArrow(ItemDataSO bow)
+    {
+        Camera camera = Camera.main;
+        Vector3 direction = camera != null ? camera.transform.forward : transform.forward;
+        Vector3 origin = camera != null
+            ? camera.transform.position + direction * 0.6f
+            : transform.position + Vector3.up * 1.5f + direction * 0.6f;
+
+        PlayerArrowProjectile.Spawn(origin, direction, arrowSpeed, arrowMaxDistance, toolUseLayer, transform,
+            hit => ApplyArrowHit(hit, bow));
+    }
+
+    private void ApplyArrowHit(RaycastHit hit, ItemDataSO bow)
+    {
+        Monster monster = hit.collider.GetComponentInParent<Monster>();
+        if (monster != null)
+        {
+            DamageContext ctx = CreateCombatContext(hit.point, bow, ActionType.Attack);
+            if (monster.CanDamage(ctx)) DamageMonster(monster, ctx, bow, ActionType.Attack);
+            return;
+        }
+
+        Animal animal = hit.collider.GetComponentInParent<Animal>();
+        if (animal != null)
+        {
+            DamageContext ctx = CreateCombatContext(hit.point, bow, ActionType.Attack);
+            if (animal.CanDamage(ctx)) DamageAnimal(animal, ctx, bow, ActionType.Attack);
+        }
+    }
+
+    #endregion
+
+    #region 근접 무기 부채꼴 판정
+
+    private const int AreaBufferSize = 48;
+    private readonly Collider[] areaBuffer = new Collider[AreaBufferSize];
+    private readonly List<Monster> areaMonsters = new();
+    private readonly List<Animal> areaAnimals = new();
+
+    // 검/창은 화면 중앙 한 줄 레이가 아니라 정면 부채꼴 안의 몬스터·동물을 모두 친다. (활은 조준한 한 대상을 즉발로 맞춘다)
+    private static bool UsesAreaAttack(ItemDataSO handItem)
+        => handItem != null
+           && handItem.itemType == ItemType.CombatGear
+           && (handItem.combatGearType == CombatGearType.Sword || handItem.combatGearType == CombatGearType.Spear);
+
+    // 몸 기준 가슴 높이에서 attackRange 반경 안에 있고, 카메라가 보는 수평 방향 기준 attackAngle/2 안에 든 몬스터·동물을 모은다.
+    private void CollectAreaTargets(ItemDataSO handItem)
+    {
+        areaMonsters.Clear();
+        areaAnimals.Clear();
+
+        Vector3 origin = transform.position + Vector3.up;
+        Vector3 forward = Camera.main != null ? Camera.main.transform.forward : transform.forward;
+        forward.y = 0f;
+        if (forward.sqrMagnitude < 0.0001f) forward = transform.forward;
+        forward.Normalize();
+
+        float halfAngle = Mathf.Clamp(handItem.attackAngle, 10f, 360f) * 0.5f;
+        int count = Physics.OverlapSphereNonAlloc(origin, GetHandRange(handItem), areaBuffer, toolUseLayer, QueryTriggerInteraction.Collide);
+
+        for (int i = 0; i < count; i++)
+        {
+            Collider collider = areaBuffer[i];
+            if (collider == null) continue;
+
+            Monster monster = collider.GetComponentInParent<Monster>();
+            Animal animal = monster == null ? collider.GetComponentInParent<Animal>() : null;
+            if (monster == null && animal == null) continue;
+
+            // Collider.ClosestPoint는 볼록하지 않은 메쉬 콜라이더에서 에러가 나므로 바운즈 기준으로 잰다
+            Vector3 toTarget = collider.bounds.ClosestPoint(origin) - origin;
+            toTarget.y = 0f;
+            if (toTarget.sqrMagnitude > 0.0001f && Vector3.Angle(forward, toTarget) > halfAngle) continue;
+
+            if (monster != null && !areaMonsters.Contains(monster)) areaMonsters.Add(monster);
+            else if (animal != null && !areaAnimals.Contains(animal)) areaAnimals.Add(animal);
+        }
+    }
+
+    /// <summary>부채꼴 안에서 데미지를 줄 수 있는 대상이 하나라도 있으면 true. apply가 true면 실제로 모두 친다.</summary>
+    private bool HitAreaTargets(ItemDataSO handItem, bool apply)
+    {
+        CollectAreaTargets(handItem);
+        bool any = false;
+
+        for (int i = 0; i < areaMonsters.Count; i++)
+        {
+            Monster monster = areaMonsters[i];
+            DamageContext ctx = CreateCombatContext(monster.transform.position, handItem, ActionType.Attack);
+            if (!monster.CanDamage(ctx)) continue;
+
+            any = true;
+            if (apply) DamageMonster(monster, ctx, handItem, ActionType.Attack);
+        }
+
+        for (int i = 0; i < areaAnimals.Count; i++)
+        {
+            Animal animal = areaAnimals[i];
+            DamageContext ctx = CreateCombatContext(animal.transform.position, handItem, ActionType.Attack);
+            if (!animal.CanDamage(ctx)) continue;
+
+            any = true;
+            if (apply) DamageAnimal(animal, ctx, handItem, ActionType.Attack);
+        }
+
+        return any;
+    }
+
+    #endregion
 
     /// <summary>도구 없이 맨손으로 나무/돌 자원 노드를 느리게 친다.</summary>
     private void TryBareHandHit()

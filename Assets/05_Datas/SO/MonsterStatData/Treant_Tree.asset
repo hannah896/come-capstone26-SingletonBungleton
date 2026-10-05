@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e32f6c24f9514f96b7fe7fa39f0d3845, type: 3}
+  m_Name: Treant_Tree
+  m_EditorClassIdentifier: 
+  MaxHP: 120
+  CurHP: 120
+  MoveSpeed: 2.5
+  AttackDamage: 12
+  Defense: 2
+  MinAttackPeriod: 1.5
+  FOV: 360
+  DetectRange: 14
+  AttackRange: 10
+  TurnSpeed: 240
+  DropTable: {fileID: 0}
+  PunchRange: 2.2
+  PunchCooldown: 2.5
+  PunchHitTime: 0.4
+  PunchDuration: 0.9
+  PunchAngle: 120
+  PunchDamage: 0
+  PunchKnockback: 14
+  PunchKnockbackDuration: 0.4
+  ProjectileKey: TreantProjectile
+  ProjectileCooldown: 3.5
+  ProjectileCastTime: 0.8
+  ProjectileSpeed: 11
+  ProjectileLifeTime: 3
+  ProjectileDamage: 0
+  MuzzleHeight: 1.2

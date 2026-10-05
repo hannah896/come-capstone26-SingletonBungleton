@@ -45,6 +45,9 @@ public abstract class PlayerActionSubStateBase : PlayerSubStateBase
     /// <summary>타격 후 원위치로 돌아오는 시간 (Stop 클립이 끝날 때까지)</summary>
     protected virtual float SwingRecoverDuration => 0f;
 
+    /// <summary>1인칭에서 보이는 도구 스윙 모양 (기본: 위로 들었다 내려찍기)</summary>
+    protected virtual ToolSwingKind SwingKind => ToolSwingKind.Overhead;
+
     /// <summary>액션 시작부터 바디가 실제로 내려찍는 순간까지의 시간</summary>
     protected float HitTime => SwingRiseDuration + SwingStrikeDuration;
 
@@ -57,10 +60,16 @@ public abstract class PlayerActionSubStateBase : PlayerSubStateBase
     private bool hitApplied;
     private bool finished;
 
+    /// <summary>액션 애니메이션을 재생한다. 기본은 ActionTrigger 발동. 트리거 없이 상태로 직접 들어가는 액션은 오버라이드한다.</summary>
+    protected virtual void PlayAnimation() => Machine.AnimData.PlayActionAnimation(ActionTrigger);
+
+    /// <summary>OnExit에서 미발동 트리거를 치운다. PlayAnimation을 오버라이드했다면 같이 오버라이드한다.</summary>
+    protected virtual void ResetAnimation() => Machine.AnimData.ResetActionTrigger(ActionTrigger);
+
     public override void OnEnter()
     {
         base.OnEnter();
-        Machine.AnimData.PlayActionAnimation(ActionTrigger);
+        PlayAnimation();
 
         // 도구를 쓰는 액션이면 바디의 손에도 장착 도구를 들린다 (반복 타격 동안 유지)
         if (UsesToolOnComplete)
@@ -72,7 +81,7 @@ public abstract class PlayerActionSubStateBase : PlayerSubStateBase
     public override void OnExit()
     {
         base.OnExit();
-        Machine.AnimData.ResetActionTrigger(ActionTrigger);
+        ResetAnimation();
 
         if (UsesToolOnComplete)
             Entity.HideActionTool();
@@ -111,6 +120,17 @@ public abstract class PlayerActionSubStateBase : PlayerSubStateBase
         Finish();
     }
 
+    /// <summary>
+    /// 이동 입력 등으로 액션을 중간에 끊는다. 아직 타격 전이면 타격은 적용되지 않는다.
+    /// 1인칭 도구 스윙도 함께 멈춘다. 상태 전환(Locomotion 복귀)은 호출한 쪽이 한다.
+    /// </summary>
+    public void Cancel()
+    {
+        if (finished) return;
+        finished = true;
+        Entity.FPCameraController?.CancelToolSwing();
+    }
+
     // 타격 타이머와 1인칭 도구 스윙을 같은 기준점에서 출발시킨다.
     private void StartSwing()
     {
@@ -123,7 +143,8 @@ public abstract class PlayerActionSubStateBase : PlayerSubStateBase
             Entity.FPCameraController?.PlayToolSwing(
                 SwingRiseDuration,
                 SwingStrikeDuration,
-                SwingRecoverDuration);
+                SwingRecoverDuration,
+                SwingKind);
         }
     }
 

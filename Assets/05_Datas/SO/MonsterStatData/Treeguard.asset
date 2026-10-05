@@ -1,0 +1,101 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc7dfe3aae5046c7be363e7dcdf2ee85, type: 3}
+  m_Name: Treeguard
+  m_EditorClassIdentifier: 
+  MaxHP: 1200
+  CurHP: 1200
+  MoveSpeed: 2
+  AttackDamage: 18
+  Defense: 8
+  MinAttackPeriod: 1.5
+  FOV: 360
+  DetectRange: 30
+  AttackRange: 14
+  TurnSpeed: 90
+  DropTable: {fileID: 0}
+  Phase2HpRatio: 0.6
+  Phase3HpRatio: 0.3
+  Phase2MoveSpeed: 2.4
+  Phase3RunSpeed: 4.5
+  Phase3CooldownMultiplier: 0.7
+  PhaseShiftDuration: 2
+  SkillGap: 0.8
+  Phase3SkillGap: 0.5
+  PoiseMax: 100
+  PoiseRegenDelay: 4
+  PoiseRegenPerSecond: 15
+  GroggyDuration: 3
+  GroggyDamageMultiplier: 1.5
+  GroggyClipLength: 0.83
+  ZoneKey: RootSnare
+  MeleeClipLength: 1.17
+  ZoneLingerTime: 1
+  SwingCooldown: 4
+  SwingRange: 4
+  SwingAngle: 180
+  SwingHitTime: 0.6
+  SwingDuration: 2
+  SwingDamage: 18
+  SwingKnockback: 10
+  SmackCooldown: 7
+  SmackRange: 3.5
+  SmackForwardOffset: 3
+  SmackRadius: 2.5
+  SmackHitTime: 0.9
+  SmackDuration: 2.9
+  SmackDamage: 35
+  KickCooldown: 5
+  KickRange: 2.5
+  KickTriggerRange: 1.8
+  KickAngle: 60
+  KickHitTime: 0.45
+  KickDuration: 1.6
+  KickDamage: 10
+  KickKnockback: 16
+  StepCooldown: 8
+  StepFrontAngle: 120
+  StepTriggerRange: 3
+  StepRadius: 4.5
+  StepHitTime: 0.7
+  StepDuration: 2.3
+  StepDamage: 15
+  StepSlowMultiplier: 0.5
+  StepSlowDuration: 2
+  ClapCooldown: 10
+  ClapMinRange: 6
+  ClapWaveCount: 5
+  ClapWaveRadius: 1.5
+  ClapWaveSpacing: 2
+  ClapWaveInterval: 0.15
+  ClapHitTime: 0.6
+  ClapDuration: 2.2
+  ClapDamage: 25
+  ProjectileCooldown: 5
+  ProjectileMinRange: 8
+  ProjectileRadius: 2
+  ProjectileWarningTime: 1
+  ProjectileDuration: 1.3
+  ProjectileDamage: 15
+  MinionKeys:
+  - TreantMinionAutumn
+  - TreantMinionEvergreen
+  SummonCooldown: 20
+  Phase3SummonCooldown: 14
+  SummonCountPerPhase: 020000000300000004000000
+  MaxAliveMinions: 6
+  SummonWhenFewerThan: 2
+  SummonRadius: 5
+  SummonHitTime: 0.6
+  SummonDuration: 2
+  Phase3ComboChance: 0.5
+  ComboSwingDuration: 3.1

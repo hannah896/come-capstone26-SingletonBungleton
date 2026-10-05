@@ -18,6 +18,27 @@ public partial class PlayerInventory
         return added;
     }
 
+    /// <summary>인벤토리 슬롯 아이템의 내구도 비율(0~1). 비었거나 내구도가 없는 아이템이면 -1.</summary>
+    public float GetSlotDurabilityPercent(int index)
+    {
+        if (!IsValidSlot(index) || slots[index] == null || !slots[index].hasDurability) return -1f;
+
+        // 음수는 "값 없음 = 새 아이템(만땅)"이다. 시작 인벤토리처럼 인스펙터에 미리 넣어둔 아이템은 이 값이라
+        // (CaptureSlot/TryAddItemToSlots도 같은 규칙으로 만땅 처리한다) 0%로 읽으면 빨갛게 보인다.
+        float durability = slotDurabilities[index];
+        if (durability < 0f) return 1f;
+        return Mathf.Clamp01(durability / Mathf.Max(0.001f, slots[index].maxDurability));
+    }
+
+    /// <summary>장착 중인 아이템의 내구도 비율(0~1). 비었거나 내구도가 없는 아이템이면 -1.</summary>
+    public float GetEquippedDurabilityPercent(EquipSlot slot)
+    {
+        ItemDataSO itemData = GetEquippedItem(slot);
+        if (itemData == null || !itemData.hasDurability) return -1f;
+        IEquipable instance = GetEquippedItemInstance(slot);
+        return instance != null ? instance.GetDurabilityPercent() : 1f;
+    }
+
     public ItemStackSaveData CaptureSlot(int index)
     {
         if (!IsValidSlot(index) || slots[index] == null || stackCounts[index] <= 0) return null;
