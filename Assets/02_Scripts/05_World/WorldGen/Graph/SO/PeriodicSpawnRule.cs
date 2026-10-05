@@ -1,12 +1,18 @@
 using UnityEngine;
 
+public enum PeriodicMonsterScheduleMode
+{
+    Interval = 0,
+    FullMoon = 1
+}
+
 public enum PeriodicMonsterPositionMode
 {
     PlayerRing,
     FixedWorldPoint
 }
 
-/// <summary>월드 시계의 누적 게임 시간에 따라 반복해서 실행할 규칙입니다.</summary>
+/// <summary>월드 시계의 시간 간격 또는 만월에 실행할 규칙입니다.</summary>
 [CreateAssetMenu(fileName = "PeriodicSpawnRule", menuName = "Scriptable Objects/TestWorld/PeriodicSpawnRule")]
 public sealed class PeriodicSpawnRule : ScriptableObject
 {
@@ -16,6 +22,9 @@ public sealed class PeriodicSpawnRule : ScriptableObject
 
     [Tooltip("MonsterCatalog에 등록된 몬스터의 Addressable 키입니다.")]
     public string monsterKey;
+
+    [Tooltip("게임 시간 간격 또는 만월 중 규칙을 실행할 시점을 선택합니다.")]
+    public PeriodicMonsterScheduleMode scheduleMode = PeriodicMonsterScheduleMode.Interval;
 
     [Tooltip("월드 시계의 게임 시간 기준 간격(초)입니다.")]
     [Min(0.1f)] public float intervalSeconds = 300f;

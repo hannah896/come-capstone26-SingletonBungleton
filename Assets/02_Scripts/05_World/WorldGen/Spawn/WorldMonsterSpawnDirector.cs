@@ -12,6 +12,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
 {
     private WorldLogicData _logic;
     private DynamicSpawnSettings _settings;
+    private WorldClock _clock;
     private CancellationTokenSource _cancellation;
     private readonly List<Player> _players = new();
     private readonly Dictionary<int, InitialState> _initial = new();
@@ -86,7 +87,14 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             throw;
         }
         _checkCooldown = 0f;
+        _clock = WorldClock.Instance;
         _initialized = true;
+        if (_clock != null)
+        {
+            _clock.OnDayPassed += HandleDayPassed;
+            if (Monster.IsSimulatedPeer && _clock.CurrentMoonPhase == MoonPhase.Full)
+                QueueFullMoon(_clock.CurrentDay);
+        }
         Main.Loop.OnGameUpdate += OnGameUpdate;
     }
 
@@ -115,7 +123,13 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         foreach (KeyValuePair<int, SourceState> pair in _sources)
             data.sources.Add(new SpawnSourceSaveData { id = pair.Key, nextSpawnTime = pair.Value.NextTime });
         foreach (KeyValuePair<string, PeriodicState> pair in _periodic)
-            data.periodic.Add(new PeriodicSpawnSaveData { ruleId = pair.Key, nextSpawnTime = pair.Value.NextTime });
+            data.periodic.Add(new PeriodicSpawnSaveData
+            {
+                ruleId = pair.Key,
+                nextSpawnTime = pair.Value.NextTime,
+                lastFullMoonDay = pair.Value.LastFullMoonDay,
+                pendingFullMoonDay = pair.Value.PendingFullMoonDay
+            });
         foreach (MemberState member in _dormantMembers)
             data.members.Add(member.ToSaveData());
         data.initialMonsters.Sort((a, b) => a.id.CompareTo(b.id));
@@ -153,6 +167,8 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
                     if (!_periodic.TryGetValue(entry.ruleId, out PeriodicState state))
                         throw new InvalidOperationException($"저장한 주기 스폰 규칙을 찾을 수 없습니다: {entry.ruleId}");
                     state.NextTime = entry.nextSpawnTime;
+                    state.LastFullMoonDay = entry.lastFullMoonDay;
+                    state.PendingFullMoonDay = entry.pendingFullMoonDay;
                 }
         if (saved.members != null)
             foreach (SpawnedMonsterSaveData entry in saved.members)
@@ -175,6 +191,8 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
     {
         _epoch++;
         if (Main.Loop != null) Main.Loop.OnGameUpdate -= OnGameUpdate;
+        if (_clock != null) _clock.OnDayPassed -= HandleDayPassed;
+        _clock = null;
         _initialized = false;
         _cancellation?.Cancel();
         _cancellation?.Dispose();
@@ -300,7 +318,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             state.Spawning = true;
             _pendingCount += count;
             SpawnGroupAsync(rule.monsterKey, count, center, Mathf.Min(rule.placementRadius, rule.spawnRadius),
-                rule.spawnRadius, pair.Key, null, () => state.Spawning = false, _epoch, _cancellation.Token).Forget();
+                rule.spawnRadius, pair.Key, null, _ => state.Spawning = false, _epoch, _cancellation.Token).Forget();
         }
     }
 
@@ -310,7 +328,13 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         {
             PeriodicState state = pair.Value;
             PeriodicSpawnRule rule = state.Rule;
-            if (state.Spawning || now < state.NextTime) continue;
+            if (state.Spawning) continue;
+            if (rule.scheduleMode == PeriodicMonsterScheduleMode.FullMoon)
+            {
+                UpdateFullMoonPeriodic(pair.Key, state);
+                continue;
+            }
+            if (now < state.NextTime) continue;
             // 시간 건너뛰기로 여러 회차가 지났어도 한 번만 검사합니다.
             state.NextTime = now + Mathf.Max(0.1f, rule.intervalSeconds);
             if (!TimeAllowed(rule.allowedTimePhases) || !ValidMonsterKey(rule.monsterKey)) continue;
@@ -339,8 +363,73 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             state.Spawning = true;
             _pendingCount += count;
             SpawnGroupAsync(rule.monsterKey, count, center, minRadius, maxRadius, 0,
-                pair.Key, () => state.Spawning = false, _epoch, _cancellation.Token).Forget();
+                pair.Key, _ => state.Spawning = false, _epoch, _cancellation.Token).Forget();
         }
+    }
+
+    private void UpdateFullMoonPeriodic(string ruleId, PeriodicState state)
+    {
+        int fullMoonDay = state.PendingFullMoonDay;
+        if (fullMoonDay <= state.LastFullMoonDay) return;
+
+        PeriodicSpawnRule rule = state.Rule;
+        if (!TimeAllowed(rule.allowedTimePhases) || !ValidMonsterKey(rule.monsterKey)) return;
+
+        // 이전 만월의 보스가 살아 있거나 비활성 상태로 저장돼 있다면 이번 만월은 소비한다.
+        int existing = CountActiveForPeriodic(ruleId);
+        if (existing > 0)
+        {
+            state.LastFullMoonDay = fullMoonDay;
+            return;
+        }
+
+        // 보스 한 마리는 일반 추가 몬스터 예산이 가득 차도 생성한다.
+        int available = Mathf.Max(0, rule.maxAlive);
+        int count = Mathf.Min(available, RandomCount(rule.minSpawnCount, rule.maxSpawnCount));
+        if (count <= 0 || _players.Count == 0) return;
+
+        Vector3 center;
+        float minRadius;
+        float maxRadius;
+        if (rule.positionMode == PeriodicMonsterPositionMode.PlayerRing)
+        {
+            center = _players[UnityEngine.Random.Range(0, _players.Count)].transform.position;
+            minRadius = Mathf.Max(0f, rule.minDistanceFromPlayer);
+            maxRadius = Mathf.Max(minRadius, rule.maxDistanceFromPlayer);
+        }
+        else
+        {
+            center = rule.fixedWorldPoint;
+            minRadius = 0f;
+            maxRadius = rule.spawnRadius;
+            if (!AnyPlayerNear(center, Mathf.Max(_settings.InitialMonsterActivationDistance, maxRadius))) return;
+        }
+
+        state.Spawning = true;
+        _pendingCount += count;
+        SpawnGroupAsync(rule.monsterKey, count, center, minRadius, maxRadius, 0, ruleId,
+            spawnedCount =>
+            {
+                state.Spawning = false;
+                // 위치 탐색이나 비동기 생성이 실패하면 다음 갱신에서 다시 시도한다.
+                if (spawnedCount > 0) state.LastFullMoonDay = Mathf.Max(state.LastFullMoonDay, fullMoonDay);
+            }, _epoch, _cancellation.Token,
+            rule.positionMode == PeriodicMonsterPositionMode.PlayerRing ? minRadius : 0f).Forget();
+    }
+
+    private void HandleDayPassed(int daysPassed)
+    {
+        if (!_initialized || !Monster.IsSimulatedPeer ||
+            (Main.Save != null && Main.Save.IsRestoring) ||
+            daysPassed % WorldClock.MoonCycleDays != (int)MoonPhase.Full) return;
+        QueueFullMoon(daysPassed + 1);
+    }
+
+    private void QueueFullMoon(int currentDay)
+    {
+        foreach (PeriodicState state in _periodic.Values)
+            if (state.Rule.scheduleMode == PeriodicMonsterScheduleMode.FullMoon)
+                state.PendingFullMoonDay = Mathf.Max(state.PendingFullMoonDay, currentDay);
     }
 
     private async UniTaskVoid SpawnInitialAsync(InitialState state, Vector3 position, int epoch, CancellationToken token)
@@ -390,16 +479,21 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
     }
 
     private async UniTaskVoid SpawnGroupAsync(string key, int count, Vector3 center, float minRadius,
-        float maxRadius, int sourceId, string periodicId, Action completed, int epoch, CancellationToken token)
+        float maxRadius, int sourceId, string periodicId, Action<int> completed, int epoch, CancellationToken token,
+        float minDistanceFromPlayers = 0f)
     {
+        int spawnedCount = 0;
         try
         {
             for (int i = 0; i < count; i++)
             {
                 token.ThrowIfCancellationRequested();
-                if (!TrySamplePosition(center, minRadius, maxRadius, out Vector3 position)) continue;
+                if (!TrySamplePosition(center, minRadius, maxRadius, out Vector3 position,
+                        minDistanceFromPlayers)) continue;
                 Monster monster = await SpawnRegisteredAsync(key, position, token);
-                if (monster != null) Track(monster, 0, sourceId, periodicId);
+                if (monster == null) continue;
+                Track(monster, 0, sourceId, periodicId);
+                spawnedCount++;
             }
         }
         catch (OperationCanceledException) { }
@@ -409,7 +503,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             if (epoch == _epoch)
             {
                 _pendingCount = Mathf.Max(0, _pendingCount - count);
-                completed?.Invoke();
+                completed?.Invoke(spawnedCount);
             }
         }
     }
@@ -517,7 +611,8 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             hp = active.Monster.Status.CurrentHp
         };
 
-    private bool TrySamplePosition(Vector3 center, float minRadius, float maxRadius, out Vector3 position)
+    private bool TrySamplePosition(Vector3 center, float minRadius, float maxRadius, out Vector3 position,
+        float minDistanceFromPlayers = 0f)
     {
         position = default;
         minRadius = Mathf.Max(0f, minRadius);
@@ -533,6 +628,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             int z = Mathf.FloorToInt(candidate.z);
             if (_logic.OccupiedWorld[x, z]) continue;
             candidate.y = _logic.GetHeightAt(x, z) + _settings.SpawnHeightOffset;
+            if (minDistanceFromPlayers > 0f && AnyPlayerNear(candidate, minDistanceFromPlayers)) continue;
             if (_settings.SpawnBlockingMask.value != 0 && _settings.CollisionCheckRadius > 0f &&
                 Physics.CheckSphere(candidate + Vector3.up * _settings.CollisionCheckRadius,
                     _settings.CollisionCheckRadius, _settings.SpawnBlockingMask, QueryTriggerInteraction.Ignore))
@@ -648,6 +744,8 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
     {
         public PeriodicSpawnRule Rule;
         public float NextTime;
+        public int LastFullMoonDay;
+        public int PendingFullMoonDay;
         public bool Spawning;
     }
 

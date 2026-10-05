@@ -29,7 +29,7 @@ public class WorldClock : MonoBehaviour
     [Header("Time Settings")]
     private const float SECONDS_PER_DAY = 1440f; // 기본값: 현실 24분
     
-    private const int MOON_CYCLE_DAYS = 8;
+    public const int MoonCycleDays = 8;
 
     private NyoTimer _dayTimer;
     private int _daysPassed = 0;
@@ -192,7 +192,7 @@ public class WorldClock : MonoBehaviour
 
     private void UpdateMoonPhase(bool forceInvoke)
     {
-        int phaseIndex = _daysPassed % MOON_CYCLE_DAYS;
+        int phaseIndex = _daysPassed % MoonCycleDays;
         MoonPhase newPhase = (MoonPhase)phaseIndex;
 
         if (forceInvoke || newPhase != CurrentMoonPhase)

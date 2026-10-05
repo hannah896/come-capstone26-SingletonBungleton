@@ -377,6 +377,72 @@ public class WorldMapPresentationTests : InputTestFixture
         Assert.That(marker == null, Is.True);
     }
 
+    [Test]
+    public void ResourceMarkers_UseFiveIconsAndFollowVisibilityAndDestroyedState()
+    {
+        var logic = Activator.CreateInstance(FindType("WorldLogicData"), new Vector2Int(100, 100), 10);
+        var chunk = Invoke(logic, "GetOrCreateChunk", new Vector2Int(5, 5));
+        var placements = (System.Collections.IList)Property(chunk, "DisposeDatas");
+        string[] names = { "Branch", "Bush", "Fir", "Grass", "Rock" };
+        int[] worldX = { 54, 50, 53, 51, 52 }; // 배치 목록 순서와 화면의 좌우 순서를 다르게 둔다.
+        var resources = new object[names.Length];
+        for (int i = 0; i < names.Length; i++)
+        {
+            var dispose = Activator.CreateInstance(FindType("DisposeData"));
+            dispose.GetType().GetField("instanceId").SetValue(dispose, i + 1);
+            dispose.GetType().GetField("prefabName").SetValue(dispose, "ResourceNode_" + names[i]);
+            dispose.GetType().GetField("tilePosition").SetValue(dispose, new Vector2Int(worldX[i], 50));
+            placements.Add(dispose);
+            resources[i] = dispose;
+        }
+
+        var target = CreateMapTarget("ResourceMapTarget", new Vector3(50, 0, 50));
+        Invoke(_map, "SetTarget", target);
+        var data = Activator.CreateInstance(FindType("WorldMapData"),
+            _texture, _sprite, new Vector2Int(100, 100), logic);
+        Invoke(_map, "HandleDataChanged", data);
+        Layout();
+        Invoke(_map, "RefreshResourceMarkers");
+
+        var markers = (System.Collections.IDictionary)Field(_map, "_resourceMarkers");
+        Assert.That(markers.Count, Is.EqualTo(5));
+        for (int i = 0; i < names.Length; i++)
+        {
+            var marker = (RectTransform)markers[resources[i]];
+            var expected = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(
+                $"Assets/Sprites/Icons/ResourceNode/ResourceNode_{names[i]}_icon.png");
+            Assert.That(marker.GetComponent<Image>().sprite, Is.SameAs(expected));
+            Assert.That(marker.sizeDelta, Is.EqualTo(Vector2.one * 16f));
+        }
+        int[] leftToRight = { 1, 3, 4, 2, 0 };
+        for (int i = 1; i < leftToRight.Length; i++)
+            Assert.That(((RectTransform)markers[resources[leftToRight[i]]]).GetSiblingIndex(),
+                Is.GreaterThan(((RectTransform)markers[resources[leftToRight[i - 1]]]).GetSiblingIndex()));
+
+        Invoke(chunk, "MarkObjectDestroyed", 1, 100f);
+        Invoke(_map, "RefreshResourceMarkers");
+        Assert.That(markers.Contains(resources[0]), Is.False);
+        ((System.Collections.IDictionary)Field(chunk, "DestroyedObjects")).Remove(1);
+        Invoke(_map, "RefreshResourceMarkers");
+        Assert.That(markers.Contains(resources[0]), Is.True);
+
+        var distantTarget = CreateMapTarget("DistantMapTarget", new Vector3(10, 0, 10));
+        Invoke(_map, "SetTarget", distantTarget);
+        Invoke(_map, "RefreshResourceMarkers");
+        Assert.That(markers.Count, Is.Zero);
+        Invoke(_map, "SetTarget", target);
+        Invoke(_map, "RefreshResourceMarkers");
+        Assert.That(markers.Count, Is.EqualTo(5));
+
+        Invoke(_hud, "ToggleMap");
+        Layout();
+        Invoke(_map, "RefreshResourceMarkers");
+        Assert.That(((RectTransform)markers[resources[0]]).sizeDelta, Is.EqualTo(Vector2.one * 30f));
+
+        Invoke(_map, "ClearView");
+        Assert.That(markers.Count, Is.Zero);
+    }
+
     private System.Collections.IDictionary RemoteMarkers =>
         (System.Collections.IDictionary)Field(_map, "_remoteMarkers");
 

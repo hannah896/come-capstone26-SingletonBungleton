@@ -114,7 +114,7 @@ public class WorldMap : MonoBehaviour
 
         Sprite sprite = Sprite.Create(texture, new Rect(0f, 0f, textureWidth, textureHeight), new Vector2(0.5f, 0.5f));
         sprite.name = "Runtime_WorldMap_Sprite";
-        SetData(new WorldMapData(texture, sprite, terrainSize));
+        SetData(new WorldMapData(texture, sprite, terrainSize, logicData));
     }
 
     public void SetData(WorldMapData data)
@@ -292,12 +292,17 @@ public sealed class WorldMapData : IDisposable
     public Texture2D Texture { get; }
     public Sprite Sprite { get; }
     public Vector2Int TerrainSize { get; }
+    public WorldLogicData LogicData { get; }
 
     public WorldMapData(Texture2D texture, Sprite sprite, Vector2Int terrainSize)
+        : this(texture, sprite, terrainSize, null) { }
+
+    public WorldMapData(Texture2D texture, Sprite sprite, Vector2Int terrainSize, WorldLogicData logicData)
     {
         Texture = texture;
         Sprite = sprite;
         TerrainSize = terrainSize;
+        LogicData = logicData;
     }
 
     public Vector2 NormalizeWorldPosition(Vector3 worldPosition)

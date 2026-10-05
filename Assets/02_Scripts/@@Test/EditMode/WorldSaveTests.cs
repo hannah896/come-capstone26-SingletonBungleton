@@ -79,6 +79,8 @@ public class WorldSaveTests
         object periodic = Create("PeriodicSpawnSaveData");
         Set(periodic, "ruleId", "night-wave");
         Set(periodic, "nextSpawnTime", 1800f);
+        Set(periodic, "lastFullMoonDay", 13);
+        Set(periodic, "pendingFullMoonDay", 21);
         ((IList)Get(spawns, "periodic")).Add(periodic);
         object member = Create("SpawnedMonsterSaveData");
         Set(member, "sourceId", 821);
@@ -91,6 +93,8 @@ public class WorldSaveTests
         Assert.That(Get(((IList)Get(restoredSpawns, "initialMonsters"))[0], "dead"), Is.True);
         Assert.That(Get(((IList)Get(restoredSpawns, "sources"))[0], "nextSpawnTime"), Is.EqualTo(1500f));
         Assert.That(Get(((IList)Get(restoredSpawns, "periodic"))[0], "ruleId"), Is.EqualTo("night-wave"));
+        Assert.That(Get(((IList)Get(restoredSpawns, "periodic"))[0], "lastFullMoonDay"), Is.EqualTo(13));
+        Assert.That(Get(((IList)Get(restoredSpawns, "periodic"))[0], "pendingFullMoonDay"), Is.EqualTo(21));
         Assert.That(Get(((IList)Get(restoredSpawns, "members"))[0], "hp"), Is.EqualTo(27f));
     }
 

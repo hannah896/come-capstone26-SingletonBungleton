@@ -192,6 +192,10 @@ public class DisposeSettings
     [Header("Poisson Disk Sampling")]
     public float minObjectDistance = 1f;     // 오브젝트 간 최소 거리
     public int maxSamplingAttempts = 30;     // 푸아송 샘플링 시도 횟수
+
+    [Header("Object Placement")]
+    [Tooltip("나무·바위 등 ObjectRules의 최대 지형 경사각입니다. 90도면 경사를 제한하지 않습니다.")]
+    [Range(0f, 90f)] public float maxObjectSlopeDegrees = 35f;
 }
 #endregion
 #region Spawn Settings

@@ -34,6 +34,8 @@ public sealed class PeriodicSpawnSaveData
 {
     public string ruleId;
     public float nextSpawnTime;
+    public int lastFullMoonDay;
+    public int pendingFullMoonDay;
 }
 
 [Serializable]

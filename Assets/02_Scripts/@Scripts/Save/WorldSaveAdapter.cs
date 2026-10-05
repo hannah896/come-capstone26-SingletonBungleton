@@ -232,7 +232,8 @@ public static class WorldSaveAdapter
         var ruleIds = new HashSet<string>();
         foreach (PeriodicSpawnSaveData entry in data.periodic)
             if (entry == null || string.IsNullOrWhiteSpace(entry.ruleId) || !ruleIds.Add(entry.ruleId) ||
-                !IsFinite(entry.nextSpawnTime) || entry.nextSpawnTime < 0f)
+                !IsFinite(entry.nextSpawnTime) || entry.nextSpawnTime < 0f ||
+                entry.lastFullMoonDay < 0 || entry.pendingFullMoonDay < 0)
                 throw new InvalidOperationException("주기 스폰 저장 상태가 올바르지 않습니다.");
         foreach (SpawnedMonsterSaveData entry in data.members)
             if (entry == null || (entry.sourceId == 0) == string.IsNullOrWhiteSpace(entry.periodicRuleId) ||

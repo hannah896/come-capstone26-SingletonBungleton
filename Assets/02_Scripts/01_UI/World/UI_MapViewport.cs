@@ -32,6 +32,19 @@ public sealed class UI_MapViewport : MonoBehaviour, IScrollHandler, IBeginDragHa
     public float Zoom { get; private set; }
     public bool IsNavigating { get; private set; }
     public Vector2 FocusPosition { get; set; } = Middle;
+    /// <summary>현재 표시 영역이 지도에서 차지하는 정규화 좌표 범위다.</summary>
+    public Rect VisibleNormalizedRect
+    {
+        get
+        {
+            if (_viewport == null || _contentSize.x <= 0f || _contentSize.y <= 0f) return Rect.zero;
+            Vector2 half = new Vector2(_viewport.rect.width / _contentSize.x,
+                _viewport.rect.height / _contentSize.y) * 0.5f;
+            return Rect.MinMaxRect(
+                Mathf.Clamp01(_center.x - half.x), Mathf.Clamp01(_center.y - half.y),
+                Mathf.Clamp01(_center.x + half.x), Mathf.Clamp01(_center.y + half.y));
+        }
+    }
 
     /// <summary>기존의 단일 이미지 프리팹도 고정 표시 영역과 이동할 지도 이미지로 분리한다.</summary>
     public static UI_MapViewport Create(UI_Image source, RectTransform viewport,

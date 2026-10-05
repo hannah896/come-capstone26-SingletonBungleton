@@ -100,6 +100,13 @@ MonoBehaviour:
   _hideMarkerOutsideWorld: 1
   _compactMarkerSize: 15
   _expandedMarkerSize: 50
+  _branchIcon: {fileID: 21300000, guid: 9f3cb58a72c470043b03b698c7222913, type: 3}
+  _bushIcon: {fileID: 21300000, guid: 0a6870f562485c445b6b035283f7dc88, type: 3}
+  _firIcon: {fileID: 21300000, guid: 48f957c96a7fd2f4c8bb1ca0d39c061d, type: 3}
+  _grassIcon: {fileID: 21300000, guid: c0698360febc38442aa2dade8cf1533d, type: 3}
+  _rockIcon: {fileID: 21300000, guid: 2dfec2705713c1246bcb7c81761098e1, type: 3}
+  _compactResourceIconSize: 16
+  _expandedResourceIconSize: 30
   _zoom: 4
   _maxZoom: 16
   _zoomStep: 0.2

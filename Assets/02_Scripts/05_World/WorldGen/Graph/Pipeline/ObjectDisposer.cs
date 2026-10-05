@@ -4,6 +4,8 @@ using System.Threading;
 using UnityEngine;
 public class ObjectDisposer : IGraphPipelineStage
 {
+    private const float DIAGONAL_TILE_DISTANCE = 1.41421356f;
+
     private WorldSettings _worldSettings;
     private DisposeSettings _disposeSettings;
     private WorldDisposeData _disposeData;
@@ -11,6 +13,7 @@ public class ObjectDisposer : IGraphPipelineStage
     private CancellationToken _ct;
 
     private System.Random _prng;
+    private float _maxRisePerUnit;
     private int _placementSequence;
     private System.Diagnostics.Stopwatch _stopwatch = new System.Diagnostics.Stopwatch();
 
@@ -19,6 +22,10 @@ public class ObjectDisposer : IGraphPipelineStage
         _worldSettings = settings;
         _disposeSettings = _worldSettings.DisposeSettings;
         _prng = new System.Random(_worldSettings.WorldSeed + (int)WorldSeedChannel.ObjectDisposer);
+        float maxSlopeDegrees = Mathf.Clamp(_disposeSettings.maxObjectSlopeDegrees, 0f, 90f);
+        _maxRisePerUnit = maxSlopeDegrees >= 90f
+            ? float.PositiveInfinity
+            : Mathf.Tan(maxSlopeDegrees * Mathf.Deg2Rad);
 
         _placementSequence = 0;
         // Sequence is reset for each world-generation request.
@@ -78,8 +85,11 @@ public class ObjectDisposer : IGraphPipelineStage
                 _prng,
                 _ct);
 
+            // 급경사 후보를 제외한 뒤 밀도를 계산해 평탄한 후보에만 배치한다.
+            poissonPoints.RemoveAll(tile => !IsSlopeAllowed(tile));
             int targetCount = GetTargetCount(poissonPoints.Count, density);
-            for (int i = 0; i < targetCount && poissonPoints.Count > 0; i++)
+            int placedCount = 0;
+            while (placedCount < targetCount && poissonPoints.Count > 0)
             {
                 _ct.ThrowIfCancellationRequested();
 
@@ -87,6 +97,7 @@ public class ObjectDisposer : IGraphPipelineStage
                 if (!IsOccupied(tile))
                 {
                     PlaceAndOccupy(prefabKey, tile);
+                    placedCount++;
                 }
             }
         }
@@ -99,6 +110,35 @@ public class ObjectDisposer : IGraphPipelineStage
             return true;
 
         return _logicData.OccupiedWorld[pos.x, pos.y];
+    }
+
+    private bool IsSlopeAllowed(Vector2Int pos)
+    {
+        if (_logicData?.HeightWorld == null) return false;
+
+        int width = _logicData.TerrainSize.x;
+        int height = _logicData.TerrainSize.y;
+        if (pos.x < 0 || pos.x >= width || pos.y < 0 || pos.y >= height) return false;
+
+        float[,] heights = _logicData.HeightWorld;
+        float centerHeight = heights[pos.x, pos.y];
+        for (int dx = -1; dx <= 1; dx++)
+        {
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                if (dx == 0 && dy == 0) continue;
+
+                int nx = pos.x + dx;
+                int ny = pos.y + dy;
+                if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+
+                float distance = dx != 0 && dy != 0 ? DIAGONAL_TILE_DISTANCE : 1f;
+                if (Mathf.Abs(heights[nx, ny] - centerHeight) > _maxRisePerUnit * distance)
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     private void PlaceAndOccupy(string prefabKey, Vector2Int tile)

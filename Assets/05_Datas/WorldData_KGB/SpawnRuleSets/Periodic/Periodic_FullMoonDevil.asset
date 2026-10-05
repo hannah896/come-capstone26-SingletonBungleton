@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f85485575214782b090b1cda532e569, type: 3}
+  m_Name: Periodic_FullMoonDevil
+  m_EditorClassIdentifier: 
+  ruleId: full-moon-devil
+  monsterKey: Devil
+  scheduleMode: 1
+  intervalSeconds: 300
+  firstDelaySeconds: 300
+  allowedTimePhases: -1
+  minSpawnCount: 1
+  maxSpawnCount: 1
+  maxAlive: 1
+  positionMode: 0
+  minDistanceFromPlayer: 25
+  maxDistanceFromPlayer: 40
+  fixedWorldPoint: {x: 0, y: 0, z: 0}
+  spawnRadius: 5
