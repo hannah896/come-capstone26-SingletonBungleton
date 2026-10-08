@@ -16,6 +16,10 @@ public class UI_Popup_Chest : UI_Popup
     /// <summary>지금 열려 있는 보관함 팝업. 없으면 null. 인벤토리 슬롯 클릭이 이걸 보고 보관함으로 넣는다.</summary>
     public static UI_Popup_Chest Current { get; private set; }
 
+    // 상자는 일반 팝업 소리 대신 자물쇠 여닫는 소리
+    protected override AudioLibrarySounds? OpenSound => AudioLibrarySounds.ChestOpen;
+    protected override AudioLibrarySounds? CloseSound => AudioLibrarySounds.ChestClose;
+
     [SerializeField] private TextMeshProUGUI titleText;
     [SerializeField] private Button closeButton;
     [SerializeField] private List<StorageSlotUI> slotUIs = new();

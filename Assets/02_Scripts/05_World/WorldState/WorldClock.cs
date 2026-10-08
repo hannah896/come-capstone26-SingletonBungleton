@@ -88,7 +88,11 @@ public class WorldClock : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance == null) Instance = this;
+        if (Instance == null)
+        {
+            Instance = this;
+            gameObject.GetOrAddComponent<WorldAmbienceAudio>(); // 환경음·시간 이벤트 소리
+        }
         else Destroy(gameObject);
     }
 

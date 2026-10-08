@@ -317,6 +317,7 @@ public partial class PlayerInventory : MonoBehaviour
         owner.Stat.RestoreHp(itemData.healthRestore);
         owner.Stat.RestoreEgo(itemData.egoRestore);
 
+        Extensions.PlaySFX(AudioLibrarySounds.Eat);
         return RemoveItem(itemData, 1);
     }
 
@@ -348,6 +349,7 @@ public partial class PlayerInventory : MonoBehaviour
         OnInventoryChanged?.Invoke();
 
         SpawnDroppedItem(itemData, amount, dropPosition, saved);
+        Extensions.PlaySFX(AudioLibrarySounds.ItemDrop);
         return true;
     }
 
@@ -474,6 +476,8 @@ public partial class PlayerInventory : MonoBehaviour
 
         SetEquippedItem(itemData.equipSlot, itemData, nextState.durability, nextState.spoilRemainingSeconds);
         OnInventoryChanged?.Invoke();
+        // 방어구는 갑옷 소리, 손 도구는 물건 집는 소리
+        Extensions.PlaySFX(itemData.equipSlot == EquipSlot.Hand ? AudioLibrarySounds.ItemPickup : AudioLibrarySounds.EquipArmor);
         return true;
     }
 
@@ -490,6 +494,7 @@ public partial class PlayerInventory : MonoBehaviour
         if (selectedSlotIndex == clampedIndex) return;
 
         selectedSlotIndex = clampedIndex;
+        Extensions.PlaySFX(AudioLibrarySounds.UISelect);
         OnSelectedSlotChanged?.Invoke(selectedSlotIndex);
         OnInventoryChanged?.Invoke();
     }
@@ -1071,6 +1076,7 @@ public partial class PlayerInventory : MonoBehaviour
     private void PickupWorldItem(PickupCandidate candidate)
     {
         Item worldItem = candidate.GameObject.GetComponent<Item>();
+        Extensions.PlaySFX(AudioLibrarySounds.ItemPickup);
 
         // 멀티: 바닥/월드 배치 아이템은 호스트 승인 후 지급된다 (다른 플레이어와 동시에 주워도 한 번만)
         if (WorldItemSync.TryRequestPickup(this, worldItem))
@@ -1292,6 +1298,7 @@ public partial class PlayerInventory : MonoBehaviour
 
         PlayerArrowProjectile.Spawn(origin, direction, arrowSpeed, arrowMaxDistance, toolUseLayer, transform,
             hit => ApplyArrowHit(hit, bow));
+        Extensions.PlaySFX(AudioLibrarySounds.BowShoot);
     }
 
     private void ApplyArrowHit(RaycastHit hit, ItemDataSO bow)

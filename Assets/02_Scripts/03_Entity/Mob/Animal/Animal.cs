@@ -62,6 +62,12 @@ public class Animal : Mob
     [SerializeField] private string walkBool = "Walk";
     [SerializeField] private string runBool = "Run";
 
+    [Header("소리")]
+    [Tooltip("울음소리 (AudioLibrarySounds 이름, 예: Chicken). 비우면 소리 없음")]
+    [SerializeField] private string vocalSound = "";
+    [Tooltip("혼자 우는 간격(초) 최소~최대")]
+    [SerializeField] private Vector2 idleVocalInterval = new Vector2(8f, 16f);
+
     [Header("클라이언트 보간")]
     [Tooltip("호스트가 보낸 위치로 따라붙는 속도. 클수록 빠르게 스냅한다.")]
     [SerializeField] private float netLerpSpeed = 12f;
@@ -166,6 +172,8 @@ public class Animal : Mob
 
     protected override void OnGameUpdate(float deltaTime)
     {
+        TickIdleVocal(deltaTime);
+
         // 클라이언트는 AI를 돌리지 않는다. 돌리면 호스트가 보낸 위치/애니와 서로 싸운다.
         if (!IsSimulatedPeer)
         {
@@ -205,6 +213,7 @@ public class Animal : Mob
     // 피격 시 넉백 상태로. 이번 공격으로 죽었다면 곧바로 OnDead가 이어지므로 넉백하지 않는다.
     private void HandleDamaged(float amount)
     {
+        PlayVocal(); // 맞으면 운다 (클라는 도망 애니로 바뀔 때 ApplyNetState에서 재현)
         if (stateMachine == null || status == null || status.IsDead) return;
         stateMachine.ToKnockback();
     }
@@ -539,8 +548,51 @@ public class Animal : Mob
         }
 
         if (animId != CurrentAnimId)
+        {
+            // 클라는 피격 이벤트를 받지 않으므로, 맞고 도망치기 시작하는 순간(Run)에 운다
+            if (animId == AnimalAnimId.Run) PlayVocal();
             PlayAnim(animId);
+        }
     }
+
+    #region Sound
+    private bool vocalParsed;
+    private bool hasVocal;
+    private AudioLibrarySounds vocalKey;
+    private float idleVocalTimer = -1f;
+
+    private bool TryGetVocal(out AudioLibrarySounds key)
+    {
+        if (!vocalParsed)
+        {
+            vocalParsed = true;
+            hasVocal = !string.IsNullOrEmpty(vocalSound) && System.Enum.TryParse(vocalSound, out vocalKey);
+        }
+        key = vocalKey;
+        return hasVocal;
+    }
+
+    private void PlayVocal()
+    {
+        if (TryGetVocal(out var key))
+            Extensions.PlaySFXAt(key, transform.position);
+    }
+
+    // 살아 있는 동안 가끔 혼자 운다 (모든 피어에서 각자 — 타이밍이 달라도 무방한 분위기 소리)
+    private void TickIdleVocal(float deltaTime)
+    {
+        if (!TryGetVocal(out _) || status == null || status.IsDead) return;
+
+        if (idleVocalTimer < 0f)
+            idleVocalTimer = Random.Range(idleVocalInterval.x, idleVocalInterval.y);
+
+        idleVocalTimer -= deltaTime;
+        if (idleVocalTimer > 0f) return;
+
+        idleVocalTimer = Random.Range(idleVocalInterval.x, idleVocalInterval.y);
+        PlayVocal();
+    }
+    #endregion
 
     // 호스트가 보낸 목표로 부드럽게 따라붙는다. 너무 벌어지면 스냅.
     private void NetInterpolateStep(float deltaTime)

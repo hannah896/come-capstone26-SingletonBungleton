@@ -80,6 +80,13 @@ public class PlayerAttackActionState : PlayerActionSubStateBase
         base.OnEnter();
     }
 
+    // 칼·창·도구 공격은 내려치기 시작에 휘두르는 소리. 활은 화살이 나갈 때(PlayerInventory.FireArrow) 따로 낸다.
+    protected override void OnStrikeStart()
+    {
+        if (style != Style.Shoot)
+            Extensions.PlaySFX(AudioLibrarySounds.SwordSwing);
+    }
+
     protected override void PlayAnimation()
     {
         if (style == Style.Chop)

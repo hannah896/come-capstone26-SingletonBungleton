@@ -1704,6 +1704,7 @@ MonoBehaviour:
     m_Bits: 2147483648
   idleBool: Idle
   moveBool: Run
+  chaseBool: 
   attackBool: 
   deadBool: Die
   hitBool: Hit
@@ -1711,6 +1712,7 @@ MonoBehaviour:
   attackMotionArmorTime: 0.6
   knockbackSpeed: 10
   knockbackDamping: 7
+  hitSound: HitWood
   wanderRadius: 6
   wanderIdleTime: 3
   wanderSpeedMultiplier: 0.6

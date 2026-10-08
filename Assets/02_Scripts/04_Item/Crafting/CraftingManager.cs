@@ -100,7 +100,15 @@ public class CraftingManager : MonoBehaviour
     public bool Craft(RecipeDataSO recipe)
     {
         if (Application.isPlaying && Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return false;
-        if (!CanCraft(recipe)) return false;
+        if (!CanCraft(recipe))
+        {
+            Extensions.PlaySFX(AudioLibrarySounds.UIDenied);
+            return false;
+        }
+
+        // 제작 시작: 작업 소리(톱질) + 완료 알림음
+        Extensions.PlaySFX(AudioLibrarySounds.CraftSaw);
+        Extensions.PlaySFX(AudioLibrarySounds.UICraftDone);
 
         foreach (var ingredient in recipe.ingredients)
             inventory.RemoveItem(ingredient.itemData, ingredient.amount);

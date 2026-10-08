@@ -58,7 +58,11 @@ public abstract class PlayerActionSubStateBase : PlayerSubStateBase
 
     private float elapsedTime;
     private bool hitApplied;
+    private bool strikeStarted;
     private bool finished;
+
+    /// <summary>들어올리기가 끝나고 내려치기가 시작되는 순간 호출된다(휘두르는 소리 등). 기본은 아무것도 하지 않는다.</summary>
+    protected virtual void OnStrikeStart() { }
 
     /// <summary>액션 애니메이션을 재생한다. 기본은 ActionTrigger 발동. 트리거 없이 상태로 직접 들어가는 액션은 오버라이드한다.</summary>
     protected virtual void PlayAnimation() => Machine.AnimData.PlayActionAnimation(ActionTrigger);
@@ -92,6 +96,12 @@ public abstract class PlayerActionSubStateBase : PlayerSubStateBase
         if (finished) return;
 
         elapsedTime += deltaTime;
+
+        if (!strikeStarted && SwingRiseDuration > 0f && elapsedTime >= SwingRiseDuration)
+        {
+            strikeStarted = true;
+            OnStrikeStart();
+        }
 
         if (!hitApplied && elapsedTime >= HitTime)
             ApplyHit();
@@ -135,6 +145,7 @@ public abstract class PlayerActionSubStateBase : PlayerSubStateBase
     private void StartSwing()
     {
         elapsedTime = 0f;
+        strikeStarted = false;
         hitApplied = !UsesToolOnComplete; // 도구를 쓰지 않는 액션은 타격 판정이 없다
         finished = false;
 

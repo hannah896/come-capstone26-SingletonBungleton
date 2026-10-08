@@ -33,6 +33,9 @@ public static class StructureSync
     {
         if (itemData == null || itemData.placementPrefab == null) return;
 
+        // 설치한 본인이 바로 듣도록 요청 시점에 재생한다 (멀티 승인 대기와 무관하게)
+        Extensions.PlaySFXAt(AudioLibrarySounds.BuildPlace, position);
+
 #if PHOTON_FUSION
         if (IsNetworked)
         {
@@ -59,6 +62,8 @@ public static class StructureSync
     public static void Demolish(GameObject target)
     {
         if (!CanDemolish(target)) return;
+
+        Extensions.PlaySFXAt(AudioLibrarySounds.Demolish, target.transform.position);
 
 #if PHOTON_FUSION
         if (TryGetNetworkId(target, out int id))

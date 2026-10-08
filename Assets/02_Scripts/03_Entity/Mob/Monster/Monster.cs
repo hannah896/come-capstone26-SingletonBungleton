@@ -51,6 +51,10 @@ public class Monster : Mob
     [Tooltip("넉백 감속. 클수록 빨리 멈춘다. 대략 밀리는 거리 = knockbackSpeed / knockbackDamping")]
     [SerializeField] private float knockbackDamping = 7f;
 
+    [Header("소리")]
+    [Tooltip("맞을 때 소리 (AudioLibrarySounds 이름, 예: HitWood). 비우면 소리 없음")]
+    [SerializeField] private string hitSound = "";
+
     [Header("배회")]
     [Tooltip("첫 대기 위치(홈)에서 이 반경(m) 안을 돌아다닌다. 0이면 배회하지 않고 제자리에서 대기만 한다.")]
     [SerializeField] private float wanderRadius = 6f;
@@ -210,6 +214,7 @@ public class Monster : Mob
     {
         // 공격 모션 중이라 경직이 없더라도 맞은 건 보여주고 밀어낸다
         hitFlash?.Flash();
+        PlayHitSound();
         BeginKnockback();
 
         if (stateMachine == null || stateMachine.CurrentState == null) return;
@@ -283,7 +288,10 @@ public class Monster : Mob
         // 클라는 데미지/회복 이벤트를 받지 않으므로 체력 변화를 보고 깜빡임을 재현한다
         // (몬스터에는 자연 회복이 없어서 체력이 늘었다면 회복 스킬을 받은 것)
         if (hasNetTarget && hpRatio < netHpRatio - 0.001f)
+        {
             hitFlash?.Flash();
+            PlayHitSound();
+        }
         else if (hasNetTarget && hpRatio > netHpRatio + 0.001f)
             hitFlash?.FlashHeal();
         netHpRatio = hpRatio;
@@ -354,6 +362,22 @@ public class Monster : Mob
         float healed = status.CurrentHp - before;
         if (healed > 0f) hitFlash?.FlashHeal();
         return healed;
+    }
+
+    private bool hitSoundParsed;
+    private bool hasHitSound;
+    private AudioLibrarySounds hitSoundKey;
+
+    // 피격음: 호스트는 HandleDamaged, 클라는 복제된 체력이 줄어든 것을 보고 재생한다
+    private void PlayHitSound()
+    {
+        if (!hitSoundParsed)
+        {
+            hitSoundParsed = true;
+            hasHitSound = !string.IsNullOrEmpty(hitSound) && System.Enum.TryParse(hitSound, out hitSoundKey);
+        }
+        if (hasHitSound)
+            Extensions.PlaySFXAt(hitSoundKey, transform.position + Vector3.up);
     }
 
     /// <summary>넉백을 받지 않는 몬스터(보스 등)는 오버라이드해 true로 둔다.</summary>

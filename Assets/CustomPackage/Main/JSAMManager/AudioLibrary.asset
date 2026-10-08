@@ -15,6 +15,14 @@ MonoBehaviour:
   soundCategories:
   - Walk
   - UI
+  - Player
+  - Gather
+  - Combat
+  - Structure
+  - Fishing
+  - Animal
+  - Ambience
+  - Event
   musicCategories:
   - BGM
   Sounds:
@@ -23,6 +31,55 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 5842858484e744340a2dbaa032fd8c84, type: 2}
   - {fileID: 11400000, guid: 5188ecd482bd99e458da7c756290bf25, type: 2}
   - {fileID: 11400000, guid: f28371ab8d284a047b1c0ce52103b128, type: 2}
+  - {fileID: 11400000, guid: 312120cd721072c4480cf9277cf85d31, type: 2}
+  - {fileID: 11400000, guid: d9d44b1aa04cf05489703e876c9d84e6, type: 2}
+  - {fileID: 11400000, guid: 49ca63b63c4fec542b675da7241d9b46, type: 2}
+  - {fileID: 11400000, guid: 8ab7d044c049d734fb07d07b36c4f0aa, type: 2}
+  - {fileID: 11400000, guid: cbd581e41d033ab428a6d23c92d48611, type: 2}
+  - {fileID: 11400000, guid: 128a85f2ebbb8ab4c966d271657e8828, type: 2}
+  - {fileID: 11400000, guid: 0d10da4903679c442bcd3d612759e2c2, type: 2}
+  - {fileID: 11400000, guid: d92a87e4231352f4abc47977d42231f5, type: 2}
+  - {fileID: 11400000, guid: 73c9ca3a752583b44be9ff5f88f7212e, type: 2}
+  - {fileID: 11400000, guid: bdac83841b797a9499228cea0627acc1, type: 2}
+  - {fileID: 11400000, guid: 55161b10f17312d4eacb287818e5e27a, type: 2}
+  - {fileID: 11400000, guid: 2b107792c6895ce4083cd5ee70f54975, type: 2}
+  - {fileID: 11400000, guid: 09ebef8a881f9e845a92141ddf244358, type: 2}
+  - {fileID: 11400000, guid: eee3722334f779c45b014e486f9aa94f, type: 2}
+  - {fileID: 11400000, guid: 433f5b16bc06b024b8ca30114e702ad6, type: 2}
+  - {fileID: 11400000, guid: 581d56591681e8b4f8594ee80f79fb2d, type: 2}
+  - {fileID: 11400000, guid: 7d56816cf442dc94da5999f8f5eee948, type: 2}
+  - {fileID: 11400000, guid: 6c779398467deeb4784d4b3b32509818, type: 2}
+  - {fileID: 11400000, guid: ce3a7548f6bf5404c86a6e637b7b5c51, type: 2}
+  - {fileID: 11400000, guid: f381c35c7c49c4a479b6a8269a0ba9e3, type: 2}
+  - {fileID: 11400000, guid: d9ba3876bde28c54fa0fec9c873b0d0f, type: 2}
+  - {fileID: 11400000, guid: ab8f8f0ecb326c947b755b7be6df209d, type: 2}
+  - {fileID: 11400000, guid: 0506df77bfe24ae4db225416d7bf8736, type: 2}
+  - {fileID: 11400000, guid: 92abbe50b3df6dc4b93ce919d77c51fb, type: 2}
+  - {fileID: 11400000, guid: 3efa836242dd524488872a1464851576, type: 2}
+  - {fileID: 11400000, guid: 33326b72d7f5e8d4b834817655ca752d, type: 2}
+  - {fileID: 11400000, guid: 57f73ef939829124bbcd9ac274a58939, type: 2}
+  - {fileID: 11400000, guid: e3ee2ac60210a4e4398285bed3c2cf56, type: 2}
+  - {fileID: 11400000, guid: 127e8ed317a9a284db66358190e14d6c, type: 2}
+  - {fileID: 11400000, guid: f26840718f6dddb4784cf159a2d05177, type: 2}
+  - {fileID: 11400000, guid: 5b639eb1f51d9f54882bc7d5b9a4be8b, type: 2}
+  - {fileID: 11400000, guid: 697502899086da542a9b6355c08202eb, type: 2}
+  - {fileID: 11400000, guid: af5e92811658e7547a5848c95b243012, type: 2}
+  - {fileID: 11400000, guid: be287afa6f319644ea26516fc53630cd, type: 2}
+  - {fileID: 11400000, guid: b090ca120f9a90747b8e9c5f0a92fefb, type: 2}
+  - {fileID: 11400000, guid: 22d27f8daf3635a4d86755b27a878ab0, type: 2}
+  - {fileID: 11400000, guid: 6df423fef900c1541804daa17b899108, type: 2}
+  - {fileID: 11400000, guid: 76c4363d6cc10fe4eb22f0b97ca1ea7c, type: 2}
+  - {fileID: 11400000, guid: 4a387588cce195c40b6a2778a664f208, type: 2}
+  - {fileID: 11400000, guid: f705023a333c253458957c3da3a7fda8, type: 2}
+  - {fileID: 11400000, guid: 436e1f67843406c4592b6170e4e76d2c, type: 2}
+  - {fileID: 11400000, guid: a6a9cb96b47685e4eaf47b145ad10750, type: 2}
+  - {fileID: 11400000, guid: 36f03272ce377654a9e6832e18f9b247, type: 2}
+  - {fileID: 11400000, guid: 1adae830a4c58904fb2c961edbc071ed, type: 2}
+  - {fileID: 11400000, guid: 37417dc03072f134992ae2e9b63c3dec, type: 2}
+  - {fileID: 11400000, guid: 398149f24c350074d8c224203ef08abb, type: 2}
+  - {fileID: 11400000, guid: 3856fdccdcd30d640961964dcd7b511a, type: 2}
+  - {fileID: 11400000, guid: 5ce92bff8c0eade41978ad223384a32a, type: 2}
+  - {fileID: 11400000, guid: 98adcccc9b9e74740855ecac3d4dc9dd, type: 2}
   Music:
   - {fileID: 11400000, guid: ac7e7dcb1aa399f42b361b9898075bbd, type: 2}
   useCustomNames: 0
@@ -46,6 +103,79 @@ MonoBehaviour:
   - name: UI
     files:
     - {fileID: 11400000, guid: f28371ab8d284a047b1c0ce52103b128, type: 2}
+    - {fileID: 11400000, guid: 36f03272ce377654a9e6832e18f9b247, type: 2}
+    - {fileID: 11400000, guid: 1adae830a4c58904fb2c961edbc071ed, type: 2}
+    - {fileID: 11400000, guid: 37417dc03072f134992ae2e9b63c3dec, type: 2}
+    - {fileID: 11400000, guid: 398149f24c350074d8c224203ef08abb, type: 2}
+    - {fileID: 11400000, guid: 3856fdccdcd30d640961964dcd7b511a, type: 2}
+    - {fileID: 11400000, guid: 5ce92bff8c0eade41978ad223384a32a, type: 2}
+    - {fileID: 11400000, guid: 98adcccc9b9e74740855ecac3d4dc9dd, type: 2}
+    foldout: 1
+  - name: Player
+    files:
+    - {fileID: 11400000, guid: 312120cd721072c4480cf9277cf85d31, type: 2}
+    - {fileID: 11400000, guid: d9d44b1aa04cf05489703e876c9d84e6, type: 2}
+    - {fileID: 11400000, guid: 49ca63b63c4fec542b675da7241d9b46, type: 2}
+    - {fileID: 11400000, guid: 8ab7d044c049d734fb07d07b36c4f0aa, type: 2}
+    - {fileID: 11400000, guid: cbd581e41d033ab428a6d23c92d48611, type: 2}
+    foldout: 1
+  - name: Gather
+    files:
+    - {fileID: 11400000, guid: 128a85f2ebbb8ab4c966d271657e8828, type: 2}
+    - {fileID: 11400000, guid: 0d10da4903679c442bcd3d612759e2c2, type: 2}
+    - {fileID: 11400000, guid: d92a87e4231352f4abc47977d42231f5, type: 2}
+    - {fileID: 11400000, guid: 73c9ca3a752583b44be9ff5f88f7212e, type: 2}
+    - {fileID: 11400000, guid: bdac83841b797a9499228cea0627acc1, type: 2}
+    - {fileID: 11400000, guid: 55161b10f17312d4eacb287818e5e27a, type: 2}
+    - {fileID: 11400000, guid: 2b107792c6895ce4083cd5ee70f54975, type: 2}
+    - {fileID: 11400000, guid: 09ebef8a881f9e845a92141ddf244358, type: 2}
+    foldout: 1
+  - name: Combat
+    files:
+    - {fileID: 11400000, guid: eee3722334f779c45b014e486f9aa94f, type: 2}
+    - {fileID: 11400000, guid: 433f5b16bc06b024b8ca30114e702ad6, type: 2}
+    - {fileID: 11400000, guid: 581d56591681e8b4f8594ee80f79fb2d, type: 2}
+    foldout: 1
+  - name: Structure
+    files:
+    - {fileID: 11400000, guid: 7d56816cf442dc94da5999f8f5eee948, type: 2}
+    - {fileID: 11400000, guid: 6c779398467deeb4784d4b3b32509818, type: 2}
+    - {fileID: 11400000, guid: ce3a7548f6bf5404c86a6e637b7b5c51, type: 2}
+    - {fileID: 11400000, guid: f381c35c7c49c4a479b6a8269a0ba9e3, type: 2}
+    - {fileID: 11400000, guid: d9ba3876bde28c54fa0fec9c873b0d0f, type: 2}
+    - {fileID: 11400000, guid: ab8f8f0ecb326c947b755b7be6df209d, type: 2}
+    - {fileID: 11400000, guid: 0506df77bfe24ae4db225416d7bf8736, type: 2}
+    - {fileID: 11400000, guid: 92abbe50b3df6dc4b93ce919d77c51fb, type: 2}
+    - {fileID: 11400000, guid: 3efa836242dd524488872a1464851576, type: 2}
+    - {fileID: 11400000, guid: 33326b72d7f5e8d4b834817655ca752d, type: 2}
+    foldout: 1
+  - name: Fishing
+    files:
+    - {fileID: 11400000, guid: 57f73ef939829124bbcd9ac274a58939, type: 2}
+    - {fileID: 11400000, guid: e3ee2ac60210a4e4398285bed3c2cf56, type: 2}
+    foldout: 1
+  - name: Animal
+    files:
+    - {fileID: 11400000, guid: 127e8ed317a9a284db66358190e14d6c, type: 2}
+    - {fileID: 11400000, guid: f26840718f6dddb4784cf159a2d05177, type: 2}
+    - {fileID: 11400000, guid: 5b639eb1f51d9f54882bc7d5b9a4be8b, type: 2}
+    - {fileID: 11400000, guid: 697502899086da542a9b6355c08202eb, type: 2}
+    foldout: 1
+  - name: Ambience
+    files:
+    - {fileID: 11400000, guid: af5e92811658e7547a5848c95b243012, type: 2}
+    - {fileID: 11400000, guid: be287afa6f319644ea26516fc53630cd, type: 2}
+    - {fileID: 11400000, guid: b090ca120f9a90747b8e9c5f0a92fefb, type: 2}
+    - {fileID: 11400000, guid: 22d27f8daf3635a4d86755b27a878ab0, type: 2}
+    - {fileID: 11400000, guid: 6df423fef900c1541804daa17b899108, type: 2}
+    - {fileID: 11400000, guid: 76c4363d6cc10fe4eb22f0b97ca1ea7c, type: 2}
+    - {fileID: 11400000, guid: 4a387588cce195c40b6a2778a664f208, type: 2}
+    foldout: 1
+  - name: Event
+    files:
+    - {fileID: 11400000, guid: f705023a333c253458957c3da3a7fda8, type: 2}
+    - {fileID: 11400000, guid: 436e1f67843406c4592b6170e4e76d2c, type: 2}
+    - {fileID: 11400000, guid: a6a9cb96b47685e4eaf47b145ad10750, type: 2}
     foldout: 1
   musicCategoriesToList:
   - name: BGM

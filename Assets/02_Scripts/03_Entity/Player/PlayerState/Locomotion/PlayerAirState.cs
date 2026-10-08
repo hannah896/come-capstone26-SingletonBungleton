@@ -42,6 +42,7 @@ public class PlayerAirState : PlayerSubStateBase
         // 착지 감지
         if (Entity.Motor.IsGrounded && Entity.Motor.VerticalVelocity <= 0f)
         {
+            Extensions.PlaySFX(AudioLibrarySounds.Land);
             var locomotion = GetRootState<PlayerLocomotionState>();
             if (locomotion != null)
                 locomotion.ChangeToIdle();

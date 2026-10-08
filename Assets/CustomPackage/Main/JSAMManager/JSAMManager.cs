@@ -145,12 +145,40 @@ public class JSAMManager : PrimaryManager
     /// </summary>
     public void PlaySFX(AudioLibrarySounds clip, float vol = 0.8f)
     {
-        if (!SetSFX) return;
+        if (!CanPlaySFX) return; // 초기화 전 호출(세이브 복원 중 슬롯 선택 등) 방어
         // 채널 볼륨(SoundVolume)은 설정(UI_Popup_SettingUI)에서 관리하므로 여기서 덮어쓰지 않는다.
         AudioManager.PlaySound(clip);
 #if UNITY_EDITOR
         Debug.Log($"PlaySFX: {clip}");
 #endif
+    }
+
+    // 씬 로딩 중(모닥불 OnEnable, 세이브 복원 중 슬롯 선택 등) 초기화 전에 불릴 수 있으므로, 준비 전이면 조용히 무시한다.
+    private bool CanPlaySFX => AudioManager.Instance != null && _settingPrefs != null && SetSFX;
+
+    /// <summary>
+    /// 월드 위치에서 SFX를 재생합니다(3D). 사운드 에셋의 spatialize가 켜져 있어야 거리 감쇠가 적용됩니다.
+    /// </summary>
+    public void PlaySFXAt(AudioLibrarySounds clip, Vector3 position)
+    {
+        if (!CanPlaySFX) return;
+        AudioManager.PlaySound(clip, position);
+    }
+
+    /// <summary>
+    /// 대상 Transform을 따라가며 SFX를 재생합니다(3D). 루프 사운드(모닥불 등)는 StopSFXOn으로 끕니다.
+    /// </summary>
+    public void PlaySFXOn(AudioLibrarySounds clip, Transform target)
+    {
+        if (!CanPlaySFX || target == null) return;
+        AudioManager.PlaySound(clip, target);
+    }
+
+    /// <summary>대상 Transform에 붙어 재생 중인 SFX를 정지합니다. 재생 중이 아니면 아무것도 하지 않습니다.</summary>
+    public void StopSFXOn(AudioLibrarySounds clip, Transform target, bool instantly = false)
+    {
+        if (AudioManager.Instance == null) return;
+        AudioManager.StopSoundIfPlaying(clip, target, instantly);
     }
 
     /// <summary>
