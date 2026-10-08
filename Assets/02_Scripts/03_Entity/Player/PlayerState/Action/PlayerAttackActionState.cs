@@ -10,8 +10,10 @@ public class PlayerAttackActionState : PlayerActionSubStateBase
     private static readonly int s_chopBeginHash = Animator.StringToHash("Action_Chop_Begin");
 
     // 실제로 보면서 어긋나면 Rise 값만 조정할 것. (Strike는 타격 연출 길이)
-    private const float SlashRise = 0.45f;
-    private const float SlashStrike = 0.10f;
+    // 칼: 타격 시점(Rise+Strike = 0.55s)은 유지하고 내려치기를 0.25s로 늘렸다.
+    // Strike가 0.1s면 1인칭에서 칼이 내려오는 장면이 안 보여서 "클릭하자마자 맞는" 느낌이 났다.
+    private const float SlashRise = 0.30f;
+    private const float SlashStrike = 0.25f;
     private const float SlashLength = 1.467f;
 
     private const float ThrustRise = 0.50f;

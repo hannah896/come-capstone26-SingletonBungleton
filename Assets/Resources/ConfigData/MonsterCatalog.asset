@@ -29,3 +29,5 @@ MonoBehaviour:
     statData: {fileID: 11400000, guid: c5f26888401a4ab3bcc9c88e0135cc67, type: 2}
   - addressableKey: Treeguard
     statData: {fileID: 11400000, guid: 724f56129f28413aafddec349c2f481d, type: 2}
+  - addressableKey: TreeguardAutumn
+    statData: {fileID: 11400000, guid: 724f56129f28413aafddec349c2f481d, type: 2}

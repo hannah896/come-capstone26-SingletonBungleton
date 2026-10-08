@@ -73,6 +73,8 @@ public class Devil : Monster
     #region Properties (상태 클래스에서 사용)
     public DevilStance Stance { get; private set; } = DevilStance.Ground;
     public bool IsFlying => Stance == DevilStance.Fly;
+    /// <summary>비행 중에는 지상 배회(걷기)를 하지 않는다.</summary>
+    public override bool CanWander => !IsFlying && base.CanWander;
 
     public float SlashRange => DevilData != null ? DevilData.SlashRange : 2f;
     public float FireballCastTime => DevilData != null ? DevilData.FireballCastTime : 0.8f;

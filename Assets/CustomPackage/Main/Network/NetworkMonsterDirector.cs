@@ -77,6 +77,7 @@ public class NetworkMonsterDirector : NetworkBehaviour
                 Id = _nextId++,
                 CatalogId = catalogId,
                 AnimId = (byte)monster.CurrentAnimId,
+                HpRatio = 255,
                 Position = monster.transform.position,
                 Yaw = monster.transform.eulerAngles.y,
             });
@@ -150,6 +151,8 @@ public class NetworkMonsterDirector : NetworkBehaviour
 
             MonsterNetState state = Slots[i];
             state.AnimId = (byte)monster.CurrentAnimId;
+            // 살아 있는 몬스터가 0으로 보이지 않도록 올림
+            state.HpRatio = (byte)Mathf.CeilToInt(Mathf.Clamp01(monster.HpRatio) * 255f);
             state.Position = monster.transform.position;
             state.Yaw = monster.transform.eulerAngles.y;
             Slots.Set(i, state);
@@ -188,7 +191,7 @@ public class NetworkMonsterDirector : NetworkBehaviour
             Monster monster = _monsters[i];
             if (monster == null) continue; // 스폰 대기 중
 
-            monster.ApplyNetState(state.Position, state.Yaw, (MonsterAnimId)state.AnimId);
+            monster.ApplyNetState(state.Position, state.Yaw, (MonsterAnimId)state.AnimId, state.HpRatio / 255f);
         }
     }
 
@@ -216,7 +219,7 @@ public class NetworkMonsterDirector : NetworkBehaviour
 
         monster.NetSlot = slot;
         _monsters[slot] = monster;
-        monster.ApplyNetState(state.Position, state.Yaw, (MonsterAnimId)state.AnimId);
+        monster.ApplyNetState(state.Position, state.Yaw, (MonsterAnimId)state.AnimId, state.HpRatio / 255f);
     }
 
     private void DespawnLocal(int slot)
@@ -291,31 +294,32 @@ public class NetworkMonsterDirector : NetworkBehaviour
     /// 클라이언트가 몬스터를 때렸을 때 호스트에 보고한다. 호스트는 직접 적용한다.
     /// 데미지 확정은 호스트 전담이라 클라는 절대 로컬로 HP를 깎지 않는다(치트/불일치 방지).
     /// </summary>
-    public void ReportDamage(Monster monster, int amount, string toolId, ActionType actionType)
+    public void ReportDamage(Monster monster, int amount, Vector3 attackerPosition, string toolId, ActionType actionType)
     {
         ushort id = GetNetId(monster);
         if (id == 0) return;
 
         if (HasStateAuthority)
-            ApplyDamageOnHost(id, amount, toolId, actionType);
+            ApplyDamageOnHost(id, amount, attackerPosition, toolId, actionType);
         else
-            Rpc_ReportDamage(id, amount, toolId ?? string.Empty, (byte)actionType);
+            Rpc_ReportDamage(id, amount, attackerPosition, toolId ?? string.Empty, (byte)actionType);
     }
 
     [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
-    private void Rpc_ReportDamage(ushort id, int amount, string toolId, byte actionType, RpcInfo info = default)
+    private void Rpc_ReportDamage(ushort id, int amount, Vector3 attackerPosition, string toolId, byte actionType, RpcInfo info = default)
     {
-        ApplyDamageOnHost(id, amount, toolId, (ActionType)actionType);
+        ApplyDamageOnHost(id, amount, attackerPosition, toolId, (ActionType)actionType);
     }
 
-    private void ApplyDamageOnHost(ushort id, int amount, string toolId, ActionType actionType)
+    // point에 공격자 위치를 실어 보낸다 → Monster.ApplyDamage가 넉백 방향으로 사용
+    private void ApplyDamageOnHost(ushort id, int amount, Vector3 attackerPosition, string toolId, ActionType actionType)
     {
         Monster monster = FindById(id);
         if (monster == null) return;
 
         var ctx = new DamageContext(
             instigator: gameObject,
-            point: monster.transform.position,
+            point: attackerPosition,
             amount: amount,
             toolId: toolId,
             actionType: actionType);

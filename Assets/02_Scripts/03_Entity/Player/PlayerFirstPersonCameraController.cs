@@ -73,7 +73,7 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     [SerializeField] private Vector3 weaponLocalScale = Vector3.one;
     [SerializeField] private Vector3 swordMeshLocalPosition = new(1.38f, -1.5f, 2.56f);
     [SerializeField] private Vector3 swordMeshLocalEuler = new(26.14f, -168.4f, -12.8f);
-    [SerializeField] private Vector3 swordMeshLocalScale = new(7f, 7f, 7f);
+    [SerializeField] private Vector3 swordMeshLocalScale = new(4f, 4f, 4f); // 칼 원본 메시가 2.04로 창(1.37)보다 길어서 창보다 작게 잡는다
     [SerializeField] private Vector3 spearMeshLocalPosition = new(1.38f, -1.5f, 2.56f);
     [SerializeField] private Vector3 spearMeshLocalEuler = new(26.14f, -168.4f, -12.8f);
     [SerializeField] private Vector3 spearMeshLocalScale = new(7f, 7f, 7f);

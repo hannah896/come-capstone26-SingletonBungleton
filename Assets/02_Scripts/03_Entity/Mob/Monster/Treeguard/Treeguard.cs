@@ -29,6 +29,9 @@ public enum TreeguardSkill
 /// </summary>
 public class Treeguard : Monster
 {
+    // 거대 보스라 칼 한 방에 밀리면 어색하다. 경직(Hit)도 없는 슈퍼아머와 맞춘다.
+    protected override bool ResistsKnockback => true;
+
     #region Inspector
     [Header("트리가드 - 애니메이션 Bool 파라미터명 (Treant_Forest 컨트롤러 기준, 없으면 비워둠)")]
     [Tooltip("3페이즈 이동 (Run Forward In Place). 평소 이동은 베이스 moveBool(Walk)")]

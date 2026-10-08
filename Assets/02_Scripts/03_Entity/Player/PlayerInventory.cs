@@ -1476,7 +1476,7 @@ public partial class PlayerInventory : MonoBehaviour
         var director = NetworkMonsterDirector.Instance;
         if (director != null)
         {
-            director.ReportDamage(monster, ctx.Amount, handItem.itemID, actionType);
+            director.ReportDamage(monster, ctx.Amount, transform.position, handItem.itemID, actionType);
             return;
         }
 #endif

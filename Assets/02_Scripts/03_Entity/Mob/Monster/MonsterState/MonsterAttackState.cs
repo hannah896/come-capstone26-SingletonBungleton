@@ -12,7 +12,8 @@ public class MonsterAttackState : MobState<Monster>
         sm = machine;
     }
 
-    public override bool IsAttackState => true;
+    // 교전 상태 전체가 아니라 실제 공격/시전 모션 중일 때만 Hit를 막는다. (쿨다운·접근 중에는 Hit로 끊긴다)
+    public override bool IsAttackState => Owner.IsInAttackMotion;
 
     public override void OnEnter()
     {

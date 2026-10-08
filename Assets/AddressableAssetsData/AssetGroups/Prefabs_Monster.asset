@@ -30,13 +30,18 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: b24453ec774141144a9fa96256244de3
-    m_Address: TreantMinionAutumn
+  - m_GUID: 89a9f3f196ea353448be92b47df32883
+    m_Address: TreeguardAutumn
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: e2ab6be43ea8e2a409b0e508381126b9
-    m_Address: TreantMinionEvergreen
+  - m_GUID: 975499cd89c44b6bb20ec7f76a5baa0d
+    m_Address: Treeguard
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b24453ec774141144a9fa96256244de3
+    m_Address: TreantMinionAutumn
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -45,13 +50,13 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: ed0e000784bf450c99cf1598a5ad7c12
-    m_Address: TreantTreeEvergreen
+  - m_GUID: e2ab6be43ea8e2a409b0e508381126b9
+    m_Address: TreantMinionEvergreen
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 975499cd89c44b6bb20ec7f76a5baa0d
-    m_Address: Treeguard
+  - m_GUID: ed0e000784bf450c99cf1598a5ad7c12
+    m_Address: TreantTreeEvergreen
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
