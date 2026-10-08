@@ -36,6 +36,8 @@ public sealed class PeriodicSpawnSaveData
     public float nextSpawnTime;
     public int lastFullMoonDay;
     public int pendingFullMoonDay;
+    /// <summary>직전 회차에 고른 몬스터 키 (후보가 여러 개인 규칙에서 연속 중복을 피하는 데 사용). 예전 세이브는 비어 있음.</summary>
+    public string lastMonsterKey;
 }
 
 [Serializable]
@@ -45,4 +47,6 @@ public sealed class SpawnedMonsterSaveData
     public string periodicRuleId;
     public Vector3 position;
     public float hp;
+    /// <summary>실제로 스폰된 몬스터 키. 후보가 여러 개인 규칙에서 어떤 몬스터였는지 복원하는 데 사용. 예전 세이브는 비어 있음(규칙 기본 키 사용).</summary>
+    public string monsterKey;
 }

@@ -621,6 +621,11 @@ MonoBehaviour:
   hitBool: Hit
   hitDuration: 0.4
   attackMotionArmorTime: 0.6
+  knockbackSpeed: 10
+  knockbackDamping: 7
+  wanderRadius: 6
+  wanderIdleTime: 3
+  wanderSpeedMultiplier: 0.6
   useSpawnAnim: 1
   spawnFallbackTimeout: 0.75
   netLerpSpeed: 12

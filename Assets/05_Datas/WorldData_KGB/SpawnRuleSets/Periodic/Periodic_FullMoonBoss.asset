@@ -10,10 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9f85485575214782b090b1cda532e569, type: 3}
-  m_Name: Periodic_FullMoonDevil
+  m_Name: Periodic_FullMoonBoss
   m_EditorClassIdentifier: 
   ruleId: full-moon-devil
   monsterKey: Devil
+  alternateMonsterKeys:
+  - Treeguard
+  - CyclopsBatMage
   scheduleMode: 1
   intervalSeconds: 300
   firstDelaySeconds: 300

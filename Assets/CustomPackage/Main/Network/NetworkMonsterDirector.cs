@@ -259,6 +259,46 @@ public class NetworkMonsterDirector : NetworkBehaviour
         Rpc_SpawnMeteor(key, impactPos, impactRadius, warningTime, lingerTime);
     }
 
+    /// <summary>호스트가 깐 메이지의 별 레이저를 클라에도 연출용으로 띄운다. 데미지 판정은 호스트 원본만 한다.</summary>
+    public void BroadcastStarLaser(string key, Vector3 center, float yawDeg, float radius, float width, float warningTime, float laserTime)
+    {
+        if (!HasStateAuthority || string.IsNullOrEmpty(key)) return;
+        Rpc_SpawnStarLaser(key, center, yawDeg, radius, width, warningTime, laserTime);
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.Proxies)]
+    private void Rpc_SpawnStarLaser(string key, Vector3 center, float yawDeg, float radius, float width, float warningTime, float laserTime)
+    {
+        SpawnStarLaserVisualAsync(key, center, yawDeg, radius, width, warningTime, laserTime).Forget();
+    }
+
+    private static async UniTaskVoid SpawnStarLaserVisualAsync(string key, Vector3 center, float yawDeg, float radius, float width, float warningTime, float laserTime)
+    {
+        var laser = await Extensions.SpawnAsync<MageStarLaser>(key);
+        if (laser == null) return;
+        laser.InitVisual(center, yawDeg, radius, width, warningTime, laserTime);
+    }
+
+    /// <summary>호스트가 띄운 메이지 회복 연출(초록 원)을 클라에도 띄운다. 회복 자체는 호스트가 HP로 처리하고 HpRatio로 복제된다.</summary>
+    public void BroadcastHealCircle(string key, Vector3 center, float radius)
+    {
+        if (!HasStateAuthority || string.IsNullOrEmpty(key)) return;
+        Rpc_SpawnHealCircle(key, center, radius);
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.Proxies)]
+    private void Rpc_SpawnHealCircle(string key, Vector3 center, float radius)
+    {
+        SpawnHealCircleVisualAsync(key, center, radius).Forget();
+    }
+
+    private static async UniTaskVoid SpawnHealCircleVisualAsync(string key, Vector3 center, float radius)
+    {
+        var circle = await Extensions.SpawnAsync<MageHealCircle>(key);
+        if (circle == null) return;
+        circle.PlayVisual(center, radius);
+    }
+
     // Proxies = 호스트(StateAuthority)를 제외한 모든 피어
     [Rpc(RpcSources.StateAuthority, RpcTargets.Proxies)]
     private void Rpc_SpawnProjectile(string key, Vector3 origin, Vector3 direction, float speed, float lifeTime)

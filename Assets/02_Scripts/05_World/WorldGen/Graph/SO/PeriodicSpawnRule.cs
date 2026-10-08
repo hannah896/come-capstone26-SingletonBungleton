@@ -23,6 +23,10 @@ public sealed class PeriodicSpawnRule : ScriptableObject
     [Tooltip("MonsterCatalog에 등록된 몬스터의 Addressable 키입니다.")]
     public string monsterKey;
 
+    [Tooltip("추가 후보 몬스터 키입니다. 비어 있지 않으면 실행할 때마다 monsterKey와 이 목록 중 하나를 무작위로 고릅니다. " +
+             "직전 회차와 같은 몬스터는 후보가 둘 이상일 때 피합니다. (예: 만월 보스 3종 중 하나)")]
+    public string[] alternateMonsterKeys;
+
     [Tooltip("게임 시간 간격 또는 만월 중 규칙을 실행할 시점을 선택합니다.")]
     public PeriodicMonsterScheduleMode scheduleMode = PeriodicMonsterScheduleMode.Interval;
 

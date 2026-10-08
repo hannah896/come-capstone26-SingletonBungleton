@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45015d97a4980754cb75744492c36432, type: 3}
+  m_Name: CyclopsBat
+  m_EditorClassIdentifier: 
+  MaxHP: 40
+  CurHP: 40
+  MoveSpeed: 3.5
+  AttackDamage: 6
+  Defense: 0
+  MinAttackPeriod: 1.5
+  FOV: 360
+  DetectRange: 12
+  AttackRange: 8
+  TurnSpeed: 540
+  DropTable: {fileID: 0}
+  BiteRange: 1.6
+  BiteHitTime: 0.3
+  BiteDuration: 0.75
+  BiteAngle: 120
+  ProjectileKey: MischiefProjectile
+  ProjectileCooldown: 3.5
+  ProjectileReleaseTime: 0.4
+  ProjectileCastTime: 0.85
+  ProjectileSpeed: 11
+  ProjectileLifeTime: 2.5
+  ProjectileDamage: 0
+  MuzzleHeight: 1.9
+  AimHeight: 1

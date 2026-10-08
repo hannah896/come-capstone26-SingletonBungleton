@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50deb265a8f5b2243bf7ad48f710d0ff, type: 3}
+  m_Name: CyclopsBatMage
+  m_EditorClassIdentifier: 
+  MaxHP: 900
+  CurHP: 900
+  MoveSpeed: 3
+  AttackDamage: 20
+  Defense: 6
+  MinAttackPeriod: 1.5
+  FOV: 360
+  DetectRange: 25
+  AttackRange: 12
+  TurnSpeed: 360
+  DropTable: {fileID: 0}
+  StaggerCooldown: 5
+  SkillGap: 0.6
+  Phase2HpRatio: 0.5
+  SlashRange: 2.8
+  SlashDamage: 20
+  SlashHitTime: 0.35
+  SlashDuration: 0.8
+  SlashAngle: 100
+  SlashCooldown: 1.6
+  SpinRadius: 3.5
+  SpinDamage: 12
+  SpinDuration: 1.8
+  SpinHitTimes:
+  - 0.4
+  - 1
+  - 1.6
+  SpinKnockback: 12
+  SpinKnockbackDuration: 0.3
+  SpinMoveMultiplier: 0.5
+  SpinCooldown: 8
+  StarLaserKey: MageStarLaser
+  StarRadius: 8
+  StarLaserWidth: 1
+  StarDamage: 25
+  StarWarningTime: 1.2
+  StarLaserTime: 0.6
+  SpellCastPoint: 0.5
+  SpellDuration: 1
+  Phase2SecondStarDelay: 0.9
+  SpellCooldown: 10
+  HealCircleKey: MageHealCircle
+  HealRadius: 10
+  HealTriggerHpRatio: 0.6
+  HealAmountRatio: 0.3
+  HealSelf: 0
+  HealCastPoint: 0.5
+  HealDuration: 1
+  HealCooldown: 15

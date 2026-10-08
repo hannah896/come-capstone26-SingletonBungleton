@@ -53,4 +53,18 @@ public enum MonsterAnimId : byte
     Step = 21,
     /// <summary>박수 충격파 (Clap Attack).</summary>
     Clap = 22,
+
+    // ── 이하 공용 확장 ──
+    /// <summary>타깃 추적 이동. 몬스터에 chaseBool이 없으면 Move와 같은 Bool을 쓴다(배회와 같은 모션).</summary>
+    Chase = 23,
+
+    // ── 이하 BatMage(만월 보스 외눈 박쥐 메이지) 전용 ──
+    /// <summary>회전 공격 (Spin Attack). 주변 플레이어 전원 타격.</summary>
+    Spin = 24,
+    /// <summary>주변 아군 몬스터 회복 (Summon Attack 클립).</summary>
+    Heal = 25,
+
+    // ── 이하 BatWizard(외눈 박쥐 위저드) 전용 ──
+    /// <summary>두 번째 근접 베기 (Slice Attack). Slash(Attack)와 번갈아 쓴다.</summary>
+    Slice = 26,
 }

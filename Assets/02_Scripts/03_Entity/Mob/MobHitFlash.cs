@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 피격 시 모델을 잠깐 빨갛게 물들였다가 원래 색으로 되돌린다 (마인크래프트식 피격 표시).
+/// 피격 시 모델을 잠깐 빨갛게 물들였다가 원래 색으로 되돌린다 (마인크래프트식 피격 표시). 회복 시에는 초록빛(FlashHeal).
 ///
 /// 머티리얼을 복제하지 않고 MaterialPropertyBlock으로 _BaseColor만 덮어쓴다(URP Lit 기준).
 /// 프리팹을 건드릴 필요가 없도록 Monster.Awake에서 자동으로 붙는다.
@@ -19,6 +19,11 @@ public class MobHitFlash : MonoBehaviour
 
     private static readonly Color FlashColor = new Color(1f, 0.25f, 0.25f, 1f);
 
+    /// <summary>회복 연출용 초록빛. 1보다 큰 값으로 살짝 밝게 빛나 보이게 한다.</summary>
+    public static readonly Color HealColor = new Color(0.45f, 1.6f, 0.55f, 1f);
+    private const float HealHoldTime = 0.25f;
+    private const float HealFadeTime = 0.5f;
+
     private struct Target
     {
         public Renderer Renderer;
@@ -29,6 +34,8 @@ public class MobHitFlash : MonoBehaviour
     private readonly List<Target> _targets = new List<Target>();
     private MaterialPropertyBlock _block;
     private float _timer;
+    private float _fadeTime = FadeTime;
+    private Color _color = FlashColor;
     private bool _flashing;
     private bool _subscribed;
     #endregion
@@ -60,10 +67,17 @@ public class MobHitFlash : MonoBehaviour
     }
 
     /// <summary>빨간색 깜빡임을 시작한다. 깜빡이는 중에 다시 맞으면 처음부터 다시 시작한다.</summary>
-    public void Flash()
+    public void Flash() => Flash(FlashColor, HoldTime, FadeTime);
+
+    /// <summary>회복 연출: 초록빛으로 조금 더 길게 물들였다가 돌아온다.</summary>
+    public void FlashHeal() => Flash(HealColor, HealHoldTime, HealFadeTime);
+
+    private void Flash(Color color, float hold, float fade)
     {
         if (_targets.Count == 0) return;
-        _timer = HoldTime + FadeTime;
+        _color = color;
+        _fadeTime = Mathf.Max(fade, 0.01f);
+        _timer = hold + _fadeTime;
         _flashing = true;
         Apply(1f);
     }
@@ -90,8 +104,8 @@ public class MobHitFlash : MonoBehaviour
             return;
         }
 
-        // 유지 구간은 완전히 빨갛게, 이후 FadeTime 동안 원래 색으로
-        float t = _timer >= FadeTime ? 1f : _timer / FadeTime;
+        // 유지 구간은 완전히 물들이고, 이후 페이드 시간 동안 원래 색으로
+        float t = _timer >= _fadeTime ? 1f : _timer / _fadeTime;
         Apply(t);
     }
 
@@ -101,7 +115,7 @@ public class MobHitFlash : MonoBehaviour
         {
             if (t.Renderer == null) continue;
             t.Renderer.GetPropertyBlock(_block, t.MaterialIndex);
-            _block.SetColor(BaseColorId, Color.Lerp(t.BaseColor, t.BaseColor * FlashColor, strength));
+            _block.SetColor(BaseColorId, Color.Lerp(t.BaseColor, t.BaseColor * _color, strength));
             t.Renderer.SetPropertyBlock(_block, t.MaterialIndex);
         }
     }

@@ -128,7 +128,8 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
                 ruleId = pair.Key,
                 nextSpawnTime = pair.Value.NextTime,
                 lastFullMoonDay = pair.Value.LastFullMoonDay,
-                pendingFullMoonDay = pair.Value.PendingFullMoonDay
+                pendingFullMoonDay = pair.Value.PendingFullMoonDay,
+                lastMonsterKey = pair.Value.LastMonsterKey
             });
         foreach (MemberState member in _dormantMembers)
             data.members.Add(member.ToSaveData());
@@ -169,6 +170,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
                     state.NextTime = entry.nextSpawnTime;
                     state.LastFullMoonDay = entry.lastFullMoonDay;
                     state.PendingFullMoonDay = entry.pendingFullMoonDay;
+                    state.LastMonsterKey = entry.lastMonsterKey;
                 }
         if (saved.members != null)
             foreach (SpawnedMonsterSaveData entry in saved.members)
@@ -181,6 +183,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
                     {
                         SourceId = entry.sourceId,
                         PeriodicId = entry.periodicRuleId,
+                        MonsterKey = entry.monsterKey,
                         Position = entry.position,
                         Hp = entry.hp
                     });
@@ -337,7 +340,9 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             if (now < state.NextTime) continue;
             // 시간 건너뛰기로 여러 회차가 지났어도 한 번만 검사합니다.
             state.NextTime = now + Mathf.Max(0.1f, rule.intervalSeconds);
-            if (!TimeAllowed(rule.allowedTimePhases) || !ValidMonsterKey(rule.monsterKey)) continue;
+            if (!TimeAllowed(rule.allowedTimePhases)) continue;
+            string key = PickPeriodicKey(state);
+            if (key == null) continue;
             int available = Mathf.Min(AvailableCount, Mathf.Max(0, rule.maxAlive - CountActiveForPeriodic(pair.Key)));
             int count = Mathf.Min(available, RandomCount(rule.minSpawnCount, rule.maxSpawnCount));
             if (count <= 0) continue;
@@ -362,8 +367,12 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
 
             state.Spawning = true;
             _pendingCount += count;
-            SpawnGroupAsync(rule.monsterKey, count, center, minRadius, maxRadius, 0,
-                pair.Key, _ => state.Spawning = false, _epoch, _cancellation.Token).Forget();
+            SpawnGroupAsync(key, count, center, minRadius, maxRadius, 0, pair.Key,
+                spawnedCount =>
+                {
+                    state.Spawning = false;
+                    if (spawnedCount > 0) state.LastMonsterKey = key;
+                }, _epoch, _cancellation.Token).Forget();
         }
     }
 
@@ -373,7 +382,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         if (fullMoonDay <= state.LastFullMoonDay) return;
 
         PeriodicSpawnRule rule = state.Rule;
-        if (!TimeAllowed(rule.allowedTimePhases) || !ValidMonsterKey(rule.monsterKey)) return;
+        if (!TimeAllowed(rule.allowedTimePhases)) return;
 
         // 이전 만월의 보스가 살아 있거나 비활성 상태로 저장돼 있다면 이번 만월은 소비한다.
         int existing = CountActiveForPeriodic(ruleId);
@@ -387,6 +396,10 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         int available = Mathf.Max(0, rule.maxAlive);
         int count = Mathf.Min(available, RandomCount(rule.minSpawnCount, rule.maxSpawnCount));
         if (count <= 0 || _players.Count == 0) return;
+
+        // 후보가 여러 개면(만월 보스 3종 등) 이번 만월의 몬스터를 고른다. 직전 만월과 같은 몬스터는 피한다.
+        string key = PickPeriodicKey(state);
+        if (key == null) return;
 
         Vector3 center;
         float minRadius;
@@ -407,12 +420,16 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
 
         state.Spawning = true;
         _pendingCount += count;
-        SpawnGroupAsync(rule.monsterKey, count, center, minRadius, maxRadius, 0, ruleId,
+        SpawnGroupAsync(key, count, center, minRadius, maxRadius, 0, ruleId,
             spawnedCount =>
             {
                 state.Spawning = false;
                 // 위치 탐색이나 비동기 생성이 실패하면 다음 갱신에서 다시 시도한다.
-                if (spawnedCount > 0) state.LastFullMoonDay = Mathf.Max(state.LastFullMoonDay, fullMoonDay);
+                if (spawnedCount > 0)
+                {
+                    state.LastFullMoonDay = Mathf.Max(state.LastFullMoonDay, fullMoonDay);
+                    state.LastMonsterKey = key;
+                }
             }, _epoch, _cancellation.Token,
             rule.positionMode == PeriodicMonsterPositionMode.PlayerRing ? minRadius : 0f).Forget();
     }
@@ -430,6 +447,25 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         foreach (PeriodicState state in _periodic.Values)
             if (state.Rule.scheduleMode == PeriodicMonsterScheduleMode.FullMoon)
                 state.PendingFullMoonDay = Mathf.Max(state.PendingFullMoonDay, currentDay);
+    }
+
+    /// <summary>
+    /// 주기 규칙에서 이번에 스폰할 몬스터 키를 고른다. monsterKey와 alternateMonsterKeys 중 카탈로그에 있는 것만 후보로 삼고,
+    /// 후보가 둘 이상이면 직전 회차에 고른 키는 제외한다. 후보가 없으면 null.
+    /// </summary>
+    private string PickPeriodicKey(PeriodicState state)
+    {
+        PeriodicSpawnRule rule = state.Rule;
+        var candidates = new List<string>();
+        if (ValidMonsterKey(rule.monsterKey)) candidates.Add(rule.monsterKey);
+        if (rule.alternateMonsterKeys != null)
+            foreach (string key in rule.alternateMonsterKeys)
+                if (!candidates.Contains(key) && ValidMonsterKey(key)) candidates.Add(key);
+
+        if (candidates.Count == 0) return null;
+        if (candidates.Count > 1 && !string.IsNullOrEmpty(state.LastMonsterKey))
+            candidates.Remove(state.LastMonsterKey);
+        return candidates[UnityEngine.Random.Range(0, candidates.Count)];
     }
 
     private async UniTaskVoid SpawnInitialAsync(InitialState state, Vector3 position, int epoch, CancellationToken token)
@@ -457,13 +493,15 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
     {
         try
         {
-            string key = member.SourceId != 0
-                ? _sources[member.SourceId].Placement.monsterSpawnRule.monsterKey
-                : _periodic[member.PeriodicId].Rule.monsterKey;
+            // 저장할 때 기록한 실제 키를 우선 쓴다(후보가 여러 개인 규칙). 예전 세이브는 비어 있으므로 규칙 기본 키.
+            string key = !string.IsNullOrEmpty(member.MonsterKey) ? member.MonsterKey
+                : member.SourceId != 0
+                    ? _sources[member.SourceId].Placement.monsterSpawnRule.monsterKey
+                    : _periodic[member.PeriodicId].Rule.monsterKey;
             Monster monster = await SpawnRegisteredAsync(key, member.Position, token);
             if (monster == null) return;
             if (member.Hp > 0f) monster.Status?.SetCurrentHp(member.Hp);
-            Track(monster, 0, member.SourceId, member.PeriodicId);
+            Track(monster, 0, member.SourceId, member.PeriodicId, key);
             _dormantMembers.Remove(member);
         }
         catch (OperationCanceledException) { }
@@ -492,7 +530,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
                         minDistanceFromPlayers)) continue;
                 Monster monster = await SpawnRegisteredAsync(key, position, token);
                 if (monster == null) continue;
-                Track(monster, 0, sourceId, periodicId);
+                Track(monster, 0, sourceId, periodicId, key);
                 spawnedCount++;
             }
         }
@@ -533,10 +571,10 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         return monster;
     }
 
-    private void Track(Monster monster, int initialId, int sourceId, string periodicId)
+    private void Track(Monster monster, int initialId, int sourceId, string periodicId, string monsterKey = null)
     {
         var active = new ActiveMonster { Monster = monster, InitialId = initialId, SourceId = sourceId,
-            PeriodicId = periodicId };
+            PeriodicId = periodicId, MonsterKey = monsterKey };
         _active.Add(monster, active);
         if (initialId != 0) _activeInitialIds.Add(initialId);
         monster.Died += HandleDied;
@@ -571,6 +609,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             {
                 SourceId = active.SourceId,
                 PeriodicId = active.PeriodicId,
+                MonsterKey = active.MonsterKey,
                 Position = monster.transform.position,
                 Hp = monster.Status.CurrentHp
             });
@@ -608,7 +647,8 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             sourceId = active.SourceId,
             periodicRuleId = active.PeriodicId,
             position = active.Monster.transform.position,
-            hp = active.Monster.Status.CurrentHp
+            hp = active.Monster.Status.CurrentHp,
+            monsterKey = active.MonsterKey
         };
 
     private bool TrySamplePosition(Vector3 center, float minRadius, float maxRadius, out Vector3 position,
@@ -746,6 +786,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         public float NextTime;
         public int LastFullMoonDay;
         public int PendingFullMoonDay;
+        public string LastMonsterKey;   // 직전 회차에 스폰한 키 (후보가 여럿일 때 연속 중복 회피)
         public bool Spawning;
     }
 
@@ -755,6 +796,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         public int InitialId;
         public int SourceId;
         public string PeriodicId;
+        public string MonsterKey;       // 실제로 스폰한 키 (후보가 여럿인 규칙에서 세이브 복원용)
         public bool Dead;
     }
 
@@ -762,6 +804,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
     {
         public int SourceId;
         public string PeriodicId;
+        public string MonsterKey;
         public Vector3 Position;
         public float Hp;
         public bool Pending;
@@ -771,7 +814,8 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             sourceId = SourceId,
             periodicRuleId = PeriodicId,
             position = Position,
-            hp = Hp
+            hp = Hp,
+            monsterKey = MonsterKey
         };
     }
 }

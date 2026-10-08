@@ -34,6 +34,8 @@ public class Monster : Mob
     [Header("애니메이션 Bool 파라미터명 (컨트롤러가 Entry에서 이 Bool로 분기한다. 없으면 비워둠 - 비어 있으면 건드리지 않음)")]
     [SerializeField] private string idleBool = "";
     [SerializeField] private string moveBool = "";
+    [Tooltip("타깃 추적 이동 Bool. 비우면 moveBool을 쓴다(배회와 추적이 같은 모션)")]
+    [SerializeField] private string chaseBool = "";
     [SerializeField] private string attackBool = "";
     [SerializeField] private string deadBool = "";
     [SerializeField] private string hitBool = "";
@@ -150,6 +152,7 @@ public class Monster : Mob
     #region Animation Bool Hash (Awake 시 1회 계산해 캐싱)
     private int idleBoolHash;
     private int moveBoolHash;
+    private int chaseBoolHash;
     private int attackBoolHash;
     private int deadBoolHash;
     private int hitBoolHash;
@@ -166,6 +169,7 @@ public class Monster : Mob
     {
         MonsterAnimId.Idle   => idleBoolHash,
         MonsterAnimId.Move   => moveBoolHash,
+        MonsterAnimId.Chase  => chaseBoolHash != 0 ? chaseBoolHash : moveBoolHash,
         MonsterAnimId.Attack => attackBoolHash,
         MonsterAnimId.Hit    => hitBoolHash,
         MonsterAnimId.Dead   => deadBoolHash,
@@ -178,6 +182,7 @@ public class Monster : Mob
         base.Awake();
         idleBoolHash = ToAnimHash(idleBool);
         moveBoolHash = ToAnimHash(moveBool);
+        chaseBoolHash = ToAnimHash(chaseBool);
         attackBoolHash = ToAnimHash(attackBool);
         deadBoolHash = ToAnimHash(deadBool);
         hitBoolHash = ToAnimHash(hitBool);
@@ -275,9 +280,12 @@ public class Monster : Mob
         netTargetPos = position;
         netTargetYaw = yaw;
 
-        // 클라는 데미지 이벤트를 받지 않으므로 체력이 줄어든 걸 보고 피격 깜빡임을 재현한다
+        // 클라는 데미지/회복 이벤트를 받지 않으므로 체력 변화를 보고 깜빡임을 재현한다
+        // (몬스터에는 자연 회복이 없어서 체력이 늘었다면 회복 스킬을 받은 것)
         if (hasNetTarget && hpRatio < netHpRatio - 0.001f)
             hitFlash?.Flash();
+        else if (hasNetTarget && hpRatio > netHpRatio + 0.001f)
+            hitFlash?.FlashHeal();
         netHpRatio = hpRatio;
 
         // 첫 수신은 보간 없이 그 자리에서 시작
@@ -332,6 +340,20 @@ public class Monster : Mob
         hasHitFrom = true;
 
         base.ApplyDamage(context);
+    }
+
+    /// <summary>
+    /// 체력을 회복한다(호스트/싱글 전용). 실제로 회복된 양을 돌려준다. 죽었거나 가득 차 있으면 0.
+    /// 초록빛 깜빡임은 여기서, 클라는 ApplyNetState에서 체력 증가를 보고 재현한다.
+    /// </summary>
+    public float ReceiveHeal(float amount)
+    {
+        if (status == null || status.IsDead || amount <= 0f) return 0f;
+        float before = status.CurrentHp;
+        status.RestoreHp(amount);
+        float healed = status.CurrentHp - before;
+        if (healed > 0f) hitFlash?.FlashHeal();
+        return healed;
     }
 
     /// <summary>넉백을 받지 않는 몬스터(보스 등)는 오버라이드해 true로 둔다.</summary>
@@ -531,7 +553,9 @@ public class Monster : Mob
     /// </summary>
     public void PlayAnim(MonsterAnimId animId)
     {
+        MonsterAnimId prev = CurrentAnimId;
         CurrentAnimId = animId;
+        if (prev != animId) OnAnimChanged(animId);
         if (IsAttackAnim(animId))
             attackMotionTimer = attackMotionArmorTime;
 
@@ -543,13 +567,20 @@ public class Monster : Mob
             animator.SetBool(hash, hash == boolHash);
     }
 
+    /// <summary>
+    /// 재생 애니 ID가 바뀌었을 때 호출된다. 호스트(직접 재생)와 클라(ApplyNetState로 재현) 양쪽에서 불리므로
+    /// 효과음처럼 모든 피어에서 나와야 하는 연출을 여기에 둔다.
+    /// </summary>
+    protected virtual void OnAnimChanged(MonsterAnimId animId) { }
+
     /// <summary>공격 모션으로 취급할 애니 ID. 이 애니를 틀면 attackMotionArmorTime 동안 Hit로 끊기지 않는다.</summary>
     private static bool IsAttackAnim(MonsterAnimId animId) => animId switch
     {
         MonsterAnimId.Attack or MonsterAnimId.RangeAttack or
         MonsterAnimId.FlyAttack or MonsterAnimId.FlyRangeAttack or MonsterAnimId.FlyTail or MonsterAnimId.FlyCast or
         MonsterAnimId.RollAttack or MonsterAnimId.CastSpell or
-        MonsterAnimId.Smack or MonsterAnimId.Kick or MonsterAnimId.Step or MonsterAnimId.Clap => true,
+        MonsterAnimId.Smack or MonsterAnimId.Kick or MonsterAnimId.Step or MonsterAnimId.Clap or
+        MonsterAnimId.Spin or MonsterAnimId.Slice => true,
         _ => false,
     };
 

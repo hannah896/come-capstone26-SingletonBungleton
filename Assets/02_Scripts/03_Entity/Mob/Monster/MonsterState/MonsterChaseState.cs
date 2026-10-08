@@ -10,8 +10,9 @@ public class MonsterChaseState : MobState<Monster>
         sm = machine;
     }
 
+    // chaseBool이 없는 몬스터는 Move와 같은 Bool로 매핑되므로 기존과 동일하게 재생된다.
     public override void OnEnter()
-        => Owner.PlayAnim(MonsterAnimId.Move);
+        => Owner.PlayAnim(MonsterAnimId.Chase);
 
     public override void Update(float time = 1.0f)
     {

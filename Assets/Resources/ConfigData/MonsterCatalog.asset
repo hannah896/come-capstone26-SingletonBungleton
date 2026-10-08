@@ -31,3 +31,9 @@ MonoBehaviour:
     statData: {fileID: 11400000, guid: 724f56129f28413aafddec349c2f481d, type: 2}
   - addressableKey: TreeguardAutumn
     statData: {fileID: 11400000, guid: 724f56129f28413aafddec349c2f481d, type: 2}
+  - addressableKey: CyclopsBat
+    statData: {fileID: 11400000, guid: 8e5990167b384214d91a90c58f516365, type: 2}
+  - addressableKey: CyclopsBatMage
+    statData: {fileID: 11400000, guid: 59f430f1c70661849a6972ca75b31232, type: 2}
+  - addressableKey: CyclopsBatWizard
+    statData: {fileID: 11400000, guid: 3f706b252b049144ea018f49c40e9f03, type: 2}

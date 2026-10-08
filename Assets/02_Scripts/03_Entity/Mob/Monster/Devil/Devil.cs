@@ -117,9 +117,7 @@ public class Devil : Monster
             return false;
         }
     }
-
-    private float HpRatio
-        => status != null && status.MaxHp > 0f ? status.CurrentHp / status.MaxHp : 1f;
+    // 체력 비율은 베이스 Monster.HpRatio를 쓴다 (호스트에서는 status 기준으로 같은 값)
     #endregion
 
     protected override void Awake()
