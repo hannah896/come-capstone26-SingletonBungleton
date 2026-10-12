@@ -60,8 +60,18 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2eca0f12ea2cd5447ada7209f6b369be
+    m_Address: Booty_DemonHorn_Red
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 302388d3b2a2dae4a8d0b99fd84ea529
     m_Address: Tool_Hammer_Gold
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 35d9cb3018647d749875713e4cc29310
+    m_Address: Booty_GreenMagicStone
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -117,6 +127,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 43186e8a344219746a4fc2625e321839
     m_Address: Booty_Egg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 43b6422448bf3ec438cea5924c90c46a
+    m_Address: Booty_TreeSap
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -205,6 +220,16 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8bae5b84197d58e498f5db430f99e312
+    m_Address: Booty_Wing
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8bca69e5d85b4ae4495ab97fca5b730a
+    m_Address: Booty_DemonHeart
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 9415e2b532c743745889e8e76738a981
     m_Address: Booty_Meat1
     m_ReadOnly: 0
@@ -217,6 +242,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: a2c6d75b65c27024c9f5833ed11e82a5
     m_Address: Resource_Mineral_Iron
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a8555962e0fb8bc4682829323febd9c6
+    m_Address: Booty_DemonHorn_Black
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -242,6 +272,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: b908d74335fa48089afefefe0235aa16
     m_Address: Dish_Omelette
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bc20d3c2818da294a8a50caf25a47031
+    m_Address: Booty_MonsterTail
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -290,6 +325,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cea5758ce4ed32441ac53dd098bfbf6d
+    m_Address: Booty_ThickSap
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: d333d65ac1ba90b4bb88e4cd12d525a7
     m_Address: Tool_Axe_Iron
     m_ReadOnly: 0
@@ -315,6 +355,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: dc1fbaaf2ae105942a607dc54d705f37
+    m_Address: Booty_GreenMagicDust
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: decbc6357436d154e9e0afe9a9df1c32
     m_Address: Resource_Wood_Branch
     m_ReadOnly: 0
@@ -332,6 +377,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: ec526efbe3d7afb49981f535aef51076
     m_Address: Weapon_Sword
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f2e2860512448a24d9d64e610777fde3
+    m_Address: Booty_MagicDust
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

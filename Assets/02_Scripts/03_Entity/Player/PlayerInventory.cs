@@ -124,6 +124,8 @@ public partial class PlayerInventory : MonoBehaviour
 
         if (inputData == null) return;
 
+        UpdateBlocking();
+
         if (inputData.QuickSlotIndex >= 0)
             SelectSlot(inputData.QuickSlotIndex);
 
@@ -815,8 +817,45 @@ public partial class PlayerInventory : MonoBehaviour
 
     #region Armor
 
-    // 방어구 방어력을 피해 감소율(%)로 읽는 슬롯. 방패는 손 슬롯이다.
-    private static readonly EquipSlot[] ArmorSlots = { EquipSlot.Head, EquipSlot.Chest, EquipSlot.Hand };
+    // 방어구 방어력을 피해 감소율(%)로 읽는 슬롯. 방패(손 슬롯)는 여기 넣지 않는다 — 우클릭으로 막을 때만 효과가 있다.
+    private static readonly EquipSlot[] ArmorSlots = { EquipSlot.Head, EquipSlot.Chest };
+
+    /// <summary>방패를 들고 우클릭을 누르고 있어 공격을 막는 중인지.</summary>
+    public bool IsBlocking { get; private set; }
+
+    /// <summary>막기 시작/종료 시 발생한다 (1인칭 방패 자세 전환용).</summary>
+    public event Action<bool> OnBlockingChanged;
+
+    private bool IsShieldReady()
+    {
+        if (EquippedHand == null || EquippedHand.itemType != ItemType.CombatGear
+            || EquippedHand.combatGearType != CombatGearType.Shield)
+            return false;
+
+        IEquipable instance = GetEquippedItemInstance(EquipSlot.Hand);
+        return instance == null || instance.IsUsable;
+    }
+
+    private void UpdateBlocking()
+    {
+        bool block = Mouse.current != null && Mouse.current.rightButton.isPressed
+            && IsShieldReady() && !IsPointerOverUI();
+        if (block == IsBlocking) return;
+
+        IsBlocking = block;
+        OnBlockingChanged?.Invoke(block);
+    }
+
+    /// <summary>
+    /// 막는 중이면 이번 피해를 완전히 막고(true) 방패 내구도를 1 깎는다. 막는 중이 아니면 false (피해도 내구도도 그대로).
+    /// </summary>
+    public bool TryBlockDamage()
+    {
+        if (!IsBlocking || !IsShieldReady()) return false;
+
+        GetEquippedItemInstance(EquipSlot.Hand)?.UseDurability();
+        return true;
+    }
 
     /// <summary>
     /// 장착 방어구로 인한 받는 피해 배율 (1 = 감소 없음).
@@ -1292,7 +1331,13 @@ public partial class PlayerInventory : MonoBehaviour
 
         PlayerArrowProjectile.Spawn(origin, direction, arrowSpeed, arrowMaxDistance, toolUseLayer, transform,
             hit => ApplyArrowHit(hit, bow));
+
+        // 남의 화면에도 화살이 날아가 보이도록 네트워크 계층에 알린다 (데미지는 위 투사체가 쏜 쪽에서만 처리)
+        OnArrowFired?.Invoke(origin, direction, arrowSpeed, arrowMaxDistance);
     }
+
+    /// <summary>화살을 쐈을 때 발생한다 (출발점, 방향, 속도, 최대 거리). 원격 피어에 모양만 재현하는 용도.</summary>
+    public event Action<Vector3, Vector3, float, float> OnArrowFired;
 
     private void ApplyArrowHit(RaycastHit hit, ItemDataSO bow)
     {

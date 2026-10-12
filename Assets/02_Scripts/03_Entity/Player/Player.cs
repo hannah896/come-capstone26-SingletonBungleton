@@ -490,6 +490,9 @@ public class Player : MonoBehaviour, IDamageable
         if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
         if (stat == null || stat.IsDead || amount <= 0) return;
 
+        // 방패로 막는 중이면(우클릭 유지) 피해를 완전히 막는다. 방패 내구도만 깎이고 피격 연출도 없다.
+        if (playerInventory != null && !stat.Invincible && playerInventory.TryBlockDamage()) return;
+
         // 방어구 감소율을 먼저 적용하고, 실제로 맞았을 때만 방어구 내구도를 깎는다.
         float damage = amount;
         if (playerInventory != null && !stat.Invincible)
