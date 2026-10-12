@@ -34,6 +34,7 @@ MonoBehaviour:
   costPerDurability: 1
   attackDamage: 0
   attackRange: 0
+  attackAngle: 90
   defense: 15
   hungerRestore: 0
   healthRestore: 0

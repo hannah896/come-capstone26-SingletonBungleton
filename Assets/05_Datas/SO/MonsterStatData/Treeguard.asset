@@ -22,7 +22,7 @@ MonoBehaviour:
   DetectRange: 30
   AttackRange: 14
   TurnSpeed: 90
-  DropTable: {fileID: 0}
+  DropTable: {fileID: 11400000, guid: 8df67eaf41ff429793c399536066e317, type: 2}
   Phase2HpRatio: 0.6
   Phase3HpRatio: 0.3
   Phase2MoveSpeed: 2.4

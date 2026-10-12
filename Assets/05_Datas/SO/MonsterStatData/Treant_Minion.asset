@@ -22,7 +22,7 @@ MonoBehaviour:
   DetectRange: 12
   AttackRange: 9
   TurnSpeed: 360
-  DropTable: {fileID: 0}
+  DropTable: {fileID: 11400000, guid: b58a9aee77214943b5b5eb050e64fd12, type: 2}
   RollRange: 8
   RollCooldown: 4
   RollSpeed: 9

@@ -1,0 +1,26 @@
+{
+    "name": "SingletonBungleton.BossTraining.Agent",
+    "rootNamespace": "SingletonBungleton.BossTraining",
+    "references": [
+        "SingletonBungleton.BossTraining",
+        "Unity.ML-Agents"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "BOSS_MLAGENTS"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.ml-agents",
+            "expression": "1.0.0",
+            "define": "BOSS_MLAGENTS"
+        }
+    ],
+    "noEngineReferences": false
+}
+

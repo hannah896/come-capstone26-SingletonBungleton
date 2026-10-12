@@ -147,7 +147,18 @@ public class JSAMManager : PrimaryManager
     {
         if (!CanPlaySFX) return; // 초기화 전 호출(세이브 복원 중 슬롯 선택 등) 방어
         // 채널 볼륨(SoundVolume)은 설정(UI_Popup_SettingUI)에서 관리하므로 여기서 덮어쓰지 않는다.
-        AudioManager.PlaySound(clip);
+        // 라이브러리에 등록되지 않은 효과음이면 KeyNotFoundException이 난다. 이 예외가 Loop.Update까지 올라가면
+        // 같은 프레임의 Loop.GameUpdate(몬스터 AI·사망 타이머)가 통째로 건너뛰어지므로 여기서 막고 경고만 남긴다.
+        try
+        {
+            AudioManager.PlaySound(clip);
+        }
+        catch (System.Collections.Generic.KeyNotFoundException)
+        {
+            if (_missingSfxWarned.Add(clip))
+                Debug.LogWarning($"[JSAM] 오디오 라이브러리에 없는 효과음입니다: {clip} (Audio Library를 갱신하세요)");
+            return;
+        }
 #if UNITY_EDITOR
         Debug.Log($"PlaySFX: {clip}");
 #endif
@@ -180,6 +191,8 @@ public class JSAMManager : PrimaryManager
         if (AudioManager.Instance == null) return;
         AudioManager.StopSoundIfPlaying(clip, target, instantly);
     }
+
+    private readonly System.Collections.Generic.HashSet<AudioLibrarySounds> _missingSfxWarned = new();
 
     /// <summary>
     /// 랜덤 SFX를 재생합니다.

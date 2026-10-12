@@ -113,6 +113,25 @@ public class PlayerOutfitView : MonoBehaviour
         Equip(itemData);
     }
 
+    /// <summary>이 뷰가 반응하는 장착 슬롯.</summary>
+    public EquipSlot WatchedSlot => watchedSlot;
+
+    /// <summary>
+    /// 아이템 키(ItemDataSO 파일명)로 방어구를 입힌다. 빈 키면 벗긴다.
+    /// 원격 플레이어처럼 인벤토리를 바인딩하지 않는 뷰가 네트워크로 받은 키를 반영할 때 쓴다.
+    /// </summary>
+    public void EquipByItemKey(string itemKey)
+    {
+        Unequip();
+
+        if (string.IsNullOrEmpty(itemKey)) return;
+
+        string outfitKey = ResolveOutfitKey(itemKey);
+        if (string.IsNullOrWhiteSpace(outfitKey)) return;
+
+        EquipAsync(outfitKey, ++requestSeq).Forget();
+    }
+
     /// <summary>방어구를 입힌다. itemData가 null이면 벗긴다.</summary>
     public void Equip(ItemDataSO itemData)
     {
