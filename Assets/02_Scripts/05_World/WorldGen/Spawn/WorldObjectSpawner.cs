@@ -25,13 +25,19 @@ public class WorldObjectSpawner
 
     private readonly Dictionary<Vector2Int, List<SpawnedObject>> _activeChunkObjects = new Dictionary<Vector2Int, List<SpawnedObject>>();
     private readonly Dictionary<Vector2Int, Transform> _activeChunkRoots = new Dictionary<Vector2Int, Transform>();
+    private readonly HashSet<int> _spawnExcludedIds = new HashSet<int>();
+
+    public bool IsSpawnExcluded(int instanceId) => _spawnExcludedIds.Contains(instanceId);
 
     private int _chunkSize;
+    private WorldLogicData _logicData;
     private Transform _root;
 
     public void Initialize(WorldLogicData logicData, Transform root)
     {
         _chunkSize = logicData != null ? logicData.ChunkSize : 0;
+        _logicData = logicData;
+        _spawnExcludedIds.Clear();
         _root = root;
     }
 
@@ -54,6 +60,14 @@ public class WorldObjectSpawner
             if (dispose == null || string.IsNullOrEmpty(dispose.prefabName)) continue;
             if (chunk.IsObjectDestroyed(dispose.instanceId)) continue;
 
+            // 배치 ID와 시드 난수열은 유지하고 실제 생성만 막아 이전 저장본도 복원할 수 있게 한다.
+            Vector3 position = GetDisposeWorldPosition(chunk, dispose, _chunkSize);
+            if (WorldSpawnArea.Contains(_logicData, position))
+            {
+                _spawnExcludedIds.Add(dispose.instanceId);
+                continue;
+            }
+
             GameObject instance = await Extensions.SpawnAsync(dispose.prefabName, chunkRoot, ct);
             if (instance == null) continue;
 
@@ -64,10 +78,15 @@ public class WorldObjectSpawner
                 continue;
             }
 
-            Vector3 position = GetDisposeWorldPosition(chunk, dispose, _chunkSize);
-
             instance.transform.SetPositionAndRotation(position, dispose.rotation);
             instance.transform.localScale = dispose.scale;
+
+            if (WorldSpawnArea.Intersects(_logicData, instance))
+            {
+                _spawnExcludedIds.Add(dispose.instanceId);
+                Extensions.Despawn(instance);
+                continue;
+            }
 
             InitializeDisposeComponents(instance, dispose, chunk);
 
@@ -85,8 +104,14 @@ public class WorldObjectSpawner
     /// </summary>
     public async UniTask SpawnSingleObjectAsync(ChunkData chunk, DisposeData dispose)
     {
-        if (dispose == null || string.IsNullOrEmpty(dispose.prefabName)) return;
+        if (chunk == null || dispose == null || string.IsNullOrEmpty(dispose.prefabName)) return;
         if (_chunkSize <= 0) return;
+        Vector3 position = GetDisposeWorldPosition(chunk, dispose, _chunkSize);
+        if (WorldSpawnArea.Contains(_logicData, position))
+        {
+            _spawnExcludedIds.Add(dispose.instanceId);
+            return;
+        }
 
         // 1. 해당 청크의 부모 Transform 가져오기 (없으면 생성)
         Transform chunkRoot = GetOrCreateChunkRoot(chunk.ChunkCoord, _root);
@@ -97,9 +122,14 @@ public class WorldObjectSpawner
         if (instance == null) return;
 
         // 3. 기존 로직을 재사용하여 정확한 높이(HeightMap)와 위치, 회전, 크기 적용
-        Vector3 position = GetDisposeWorldPosition(chunk, dispose, _chunkSize);
         instance.transform.SetPositionAndRotation(position, dispose.rotation);
         instance.transform.localScale = dispose.scale;
+        if (WorldSpawnArea.Intersects(_logicData, instance))
+        {
+            _spawnExcludedIds.Add(dispose.instanceId);
+            Extensions.Despawn(instance);
+            return;
+        }
 
         // 4. 초기화 인터페이스 (IDisposeInitializable) 실행
         InitializeDisposeComponents(instance, dispose, chunk);
@@ -170,6 +200,7 @@ public class WorldObjectSpawner
 
     public void Clear()
     {
+        _spawnExcludedIds.Clear();
         List<Vector2Int> coords = new List<Vector2Int>(_activeChunkObjects.Keys);
         foreach (Vector2Int coord in coords)
         {

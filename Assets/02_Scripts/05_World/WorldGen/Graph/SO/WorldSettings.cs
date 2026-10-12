@@ -84,6 +84,9 @@ public class WorldSettings : ScriptableObject
     [Tooltip("바이옴별 SpawnRuleSet과 관계없이 월드 전체에서 월드 시계의 누적 게임 시간으로 실행할 규칙입니다.")]
     [FormerlySerializedAs("PeriodicMonsterSpawnRules")]
     public List<PeriodicSpawnRule> PeriodicSpawnRules = new();
+    [Header("월드 공통 만월 보스")]
+    [Tooltip("만월 횟수에 따라 #1~#8을 순서대로 선택하고, 플레이어 주변에 월드당 한 마리만 생성합니다.")]
+    public BossSpawnRule BossSpawnRule;
     #endregion
 
 

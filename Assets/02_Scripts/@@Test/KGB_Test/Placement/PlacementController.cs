@@ -289,6 +289,10 @@ public class PlacementController : MonoBehaviour
             return;
         }
 
+        // 커스텀 배치 검증기를 사용하더라도 제단의 연출 공간은 항상 보존한다.
+        if (WorldSpawnArea.IntersectsStructure(WorldGenManager.Instance?.CurrentLogicData,
+            activeItemData, currentPosition, currentRotation, gridSize)) return;
+
         if (!playerInventory.RemoveItem(activeItemData, 1))
         {
             CancelPlacement();

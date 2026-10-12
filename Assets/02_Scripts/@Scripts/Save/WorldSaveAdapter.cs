@@ -137,6 +137,22 @@ public static class WorldSaveAdapter
             ItemDataSO source = structureItems[index];
             GameObject instance = UnityEngine.Object.Instantiate(source.placementPrefab, saved.position, saved.rotation);
             instance.transform.localScale = saved.scale;
+            WorldLogicData logic = WorldGenManager.Instance?.CurrentLogicData;
+            if (WorldSpawnArea.IntersectsStructure(logic, source, saved.position, saved.rotation, scale: saved.scale) ||
+                WorldSpawnArea.Intersects(logic, instance))
+            {
+                float footprintMargin = WorldSpawnArea.GetFootprintMargin(instance);
+                instance.SetActive(false);
+                if (!WorldSpawnArea.TryRelocateStructure(logic, source, saved.position, saved.rotation, saved.scale,
+                    out Vector3 relocated, footprintMargin))
+                {
+                    UnityEngine.Object.Destroy(instance);
+                    throw new InvalidOperationException($"제단 근처의 저장된 건축물을 옮길 빈 지면이 없습니다: {saved.sourceItem.itemKey}");
+                }
+                instance.transform.position = relocated;
+                instance.SetActive(true);
+                Physics.SyncTransforms();
+            }
             Extensions.GetOrAddComponent<PersistentStructure>(instance).Initialize(source, saved.id);
             StorageStation storage = instance.GetComponentInChildren<StorageStation>(true);
             if (saved.slotCount > 0)
@@ -235,10 +251,31 @@ public static class WorldSaveAdapter
                 !IsFinite(entry.nextSpawnTime) || entry.nextSpawnTime < 0f ||
                 entry.lastFullMoonDay < 0 || entry.pendingFullMoonDay < 0)
                 throw new InvalidOperationException("주기 스폰 저장 상태가 올바르지 않습니다.");
+
+        // 이전 저장 파일에는 독립된 보스 상태가 없을 수 있습니다.
+        // Unity의 인라인 직렬화가 null 대신 만든 빈 상태도 보스 미설정으로 처리합니다.
+        if (data.boss != null && string.IsNullOrEmpty(data.boss.ruleId) &&
+            data.boss.lastFullMoonDay == 0 && data.boss.pendingFullMoonDay == 0)
+            data.boss = null;
+        if (data.boss != null && (string.IsNullOrWhiteSpace(data.boss.ruleId) ||
+            data.boss.lastFullMoonDay < 0 || data.boss.pendingFullMoonDay < 0))
+            throw new InvalidOperationException("보스 스폰 저장 상태가 올바르지 않습니다.");
+
+        int bossMemberCount = 0;
         foreach (SpawnedMonsterSaveData entry in data.members)
-            if (entry == null || (entry.sourceId == 0) == string.IsNullOrWhiteSpace(entry.periodicRuleId) ||
+        {
+            if (entry == null)
+                throw new InvalidOperationException("스폰 오브젝트 몬스터 저장 상태가 올바르지 않습니다.");
+
+            bool isBoss = !string.IsNullOrWhiteSpace(entry.bossRuleId);
+            int originCount = (entry.sourceId != 0 ? 1 : 0) +
+                (!string.IsNullOrWhiteSpace(entry.periodicRuleId) ? 1 : 0) + (isBoss ? 1 : 0);
+            if (originCount != 1 || (isBoss && string.IsNullOrWhiteSpace(entry.monsterKey)) ||
                 !IsFinite(entry.position) || !IsFinite(entry.hp) || entry.hp <= 0f)
                 throw new InvalidOperationException("스폰 오브젝트 몬스터 저장 상태가 올바르지 않습니다.");
+            if (isBoss && (data.boss == null || entry.bossRuleId != data.boss.ruleId || ++bossMemberCount > 1))
+                throw new InvalidOperationException("보스 몬스터 저장 상태가 올바르지 않습니다.");
+        }
     }
 
     public static void ValidateStructures(List<StructureSaveData> structures)

@@ -11,6 +11,8 @@ public class PhysicsBoxValidator : IPlacementValidator
     public bool IsPlacementValid(ItemDataSO item, Vector3 position, Quaternion rotation, float gridSize)
     {
         if (item == null) return false;
+        if (WorldSpawnArea.IntersectsStructure(WorldGenManager.Instance?.CurrentLogicData,
+            item, position, rotation, gridSize)) return false;
 
         var fp = item.placementFootprint;
         int fx = Mathf.Max(1, fp.x);
@@ -27,6 +29,8 @@ public class PhysicsBoxValidator : IPlacementValidator
 
     public bool IsCellValid(Vector3 cellPosition, float cellSize)
     {
+        if (WorldSpawnArea.Intersects(WorldGenManager.Instance?.CurrentLogicData,
+            new Bounds(cellPosition, new Vector3(cellSize, 1f, cellSize)))) return false;
         Vector3 half = new(cellSize * 0.5f, 0.5f, cellSize * 0.5f);
         return !Physics.CheckBox(cellPosition, half, Quaternion.identity, blockingMask, QueryTriggerInteraction.Ignore);
     }

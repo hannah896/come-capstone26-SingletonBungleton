@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9f85485575214782b090b1cda532e569, type: 3}
-  m_Name: Periodic_MischiefExample
+  m_Name: Periodic_Mischief
   m_EditorClassIdentifier: 
-  ruleId: example-mischief-periodic
+  ruleId: Periodic_Mischief
   monsterKey: Mischief
-  intervalSeconds: 300
-  firstDelaySeconds: 300
-  allowedTimePhases: -1
+  intervalDays: 7
+  firstDelayDays: 3
+  allowedTimePhases: 13
   minSpawnCount: 1
-  maxSpawnCount: 1
-  maxAlive: 5
+  maxSpawnCount: 10
+  maxAlive: 10
   positionMode: 0
   minDistanceFromPlayer: 25
   maxDistanceFromPlayer: 40

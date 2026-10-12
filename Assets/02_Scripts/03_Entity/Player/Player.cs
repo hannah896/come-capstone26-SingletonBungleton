@@ -57,6 +57,9 @@ public class Player : MonoBehaviour, IDamageable
     public bool IsGrounded => motor != null && motor.IsGrounded;
     public bool IsLocalPlayer => IsLocalPlayerObject();
     public bool IsSaveReady { get; private set; }
+    public bool IsSpawnIntroPlaying => _spawnIntroRequested || _spawnIntro != null;
+    private bool _spawnIntroRequested;
+    private PlayerSpawnIntro _spawnIntro;
 
     /// <summary>
     /// 사망 처리 중인지. 스탯(HP 0)이 아니라 <b>상태</b> 기준이라,
@@ -221,6 +224,24 @@ public class Player : MonoBehaviour, IDamageable
         if (!IsLocalPlayerObject())
             return;
 
+        if (IsSpawnIntroPlaying)
+        {
+            // 로딩과 초기화가 끝나기 전에는 낙하하지 않고 제단 위에서 대기한다.
+            inputData?.SuppressAllInputs();
+            if (inputData != null) inputData.ToolUseHeld = false;
+            if (!IsSaveReady || GameScene.GameProcessing == GameProcessing.Stopping) return;
+            if (_spawnIntroRequested)
+            {
+                StartSofa sofa = WorldGenManager.Instance != null ? WorldGenManager.Instance.SpawnSofa : null;
+                if (sofa == null) return;
+                BeginSpawnIntro(sofa);
+            }
+            machine.OnUpdate(deltaTime);
+            if (!_spawnIntro.Tick(deltaTime)) _spawnIntro = null;
+            inputData?.ConsumeEventInputs();
+            return;
+        }
+
         // 액션 연출 중에는 카메라 외 모든 입력 차단.
         // 단, 이동 입력이 들어오면 액션을 캔슬한다(휘두르는 도중에도 빠질 수 있어야 맞딜이 아니라 치고 빠지는 전투가 된다).
         // 차단이 MoveInput을 0으로 지우므로 반드시 차단보다 먼저 판정하고, 캔슬 시에는 이동 입력을 남겨 바로 움직이게 한다.
@@ -265,7 +286,19 @@ public class Player : MonoBehaviour, IDamageable
         if (!IsLocalPlayerObject())
             return;
 
+        if (IsSpawnIntroPlaying) return;
+
         machine.OnGameUpdate(deltaTime);
+    }
+
+    /// <summary>네트워크 캐릭터가 제단보다 먼저 복제되어도 로컬 월드 준비까지 기다린다.</summary>
+    public void RequestSpawnIntro() => _spawnIntroRequested = true;
+
+    public void BeginSpawnIntro(StartSofa sofa)
+    {
+        if (sofa == null || motor == null) return;
+        _spawnIntroRequested = false;
+        _spawnIntro = new PlayerSpawnIntro(this, sofa);
     }
 
     /// <summary>
@@ -406,6 +439,9 @@ public class Player : MonoBehaviour, IDamageable
 
         if (!TryGetRespawnPosition(out Vector3 position)) return false;
 
+        _spawnIntroRequested = false;
+        _spawnIntro = null;
+
         // Teleport가 남은 낙하 속도까지 초기화한다 (무한 낙하 중이면 이게 핵심).
         motor.Teleport(position);
 
@@ -430,6 +466,12 @@ public class Player : MonoBehaviour, IDamageable
         if (world == null || !world.HasPlayerSpawnPosition)
             return false;
 
+        if (world.SpawnSofa != null)
+        {
+            position = world.SpawnSofa.GetSafeReturnPosition(this);
+            return true;
+        }
+
         Vector3 spawn = world.PlayerSpawnPosition;
         Vector3 rayOrigin = new Vector3(spawn.x, spawn.y + RespawnRayHeight, spawn.z);
         int groundMask = LayerMask.GetMask(GroundLayerName);
@@ -451,7 +493,7 @@ public class Player : MonoBehaviour, IDamageable
     #region IDamageable
     // 몬스터 등 외부 공격 수신구. 자원 채집과 동일한 DamageContext 계약을 사용한다.
     public bool CanDamage(DamageContext damageCtx)
-        => IsAlive && damageCtx.Amount > 0;
+        => IsAlive && !IsSpawnIntroPlaying && damageCtx.Amount > 0;
 
     public void ApplyDamage(DamageContext damageCtx)
     {
@@ -488,7 +530,7 @@ public class Player : MonoBehaviour, IDamageable
     public void ApplyLocalDamage(int amount)
     {
         if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
-        if (stat == null || stat.IsDead || amount <= 0) return;
+        if (IsSpawnIntroPlaying || stat == null || stat.IsDead || amount <= 0) return;
 
         // 방어구 감소율을 먼저 적용하고, 실제로 맞았을 때만 방어구 내구도를 깎는다.
         float damage = amount;

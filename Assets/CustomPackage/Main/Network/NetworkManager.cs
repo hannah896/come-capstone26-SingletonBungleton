@@ -588,7 +588,12 @@ public class NetworkManager : CoreManager
             ? WorldGenManager.Instance.PlayerSpawnPosition : _spawnPoint;
         Vector3 position = savedPlayer != null ? savedPlayer.position : defaultPosition;
         Quaternion rotation = savedPlayer != null ? Quaternion.Euler(0f, savedPlayer.yaw, 0f) : Quaternion.identity;
-        var character = _runner.Spawn(netObj, position, rotation, inputAuthority: player);
+        var character = _runner.Spawn(netObj, position, rotation, inputAuthority: player,
+            onBeforeSpawned: (_, spawned) =>
+            {
+                if (spawned.TryGetComponent(out NetworkPlayerSync sync))
+                    sync.ConfigureSpawnIntro(savedPlayer == null);
+            });
         _characters[player] = character;
 
         // 호스트 자신의 캐릭터는 입력 수집 대상으로도 등록

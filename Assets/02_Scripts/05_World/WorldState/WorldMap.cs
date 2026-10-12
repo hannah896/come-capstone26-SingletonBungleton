@@ -6,11 +6,11 @@ using UnityEngine;
 
 /// <summary>
 /// 월드 전체 지도를 한 번 생성하고 소유하는 모델이다.
-/// HUD 미니맵과 전체 지도 팝업은 모두 이 데이터만 표시한다.
+/// 하나의 지도 UI가 이 데이터를 표시하며, HUD 크기와 확대 크기 사이에서 전환한다.
 /// </summary>
 public class WorldMap : MonoBehaviour
 {
-    // 전체 지도와 미니맵이 한 장의 원본을 공유하므로 HUD 전용 해상도보다 높게 둔다.
+    // HUD와 확대 화면이 한 장의 원본을 공유하므로 확대 표시에도 충분한 해상도로 둔다.
     public const int DefaultMaxResolution = 1024;
     private const string MapSpriteAddressPrefix = "MiniMap_";
 

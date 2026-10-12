@@ -37,13 +37,4 @@ public sealed class SourceSpawnRule : ScriptableObject
     [Tooltip("새 월드에서 첫 스폰 검사를 즉시 시작할지 지정합니다. 저장된 월드에서는 다음 검사 시간을 복원합니다.")]
     public bool spawnImmediately = true;
 
-    [Header("월드 배치")]
-    [Tooltip("스폰 오브젝트를 배치할 때 필요한 빈 공간의 반경(m)입니다. 몬스터 생성 위치는 이 거리 바깥부터 찾되, spawnRadius가 더 작으면 그 반경을 사용합니다.")]
-    [Min(0f)] public float placementRadius = 3f;
-
-    [Tooltip("배치 중심과 주변 타일 사이에 허용할 최대 높이 차이(m)입니다.")]
-    [Min(0f)] public float maxHeightDifference = 2f;
-
-    [Tooltip("월드 시작 위치에서 스폰 오브젝트까지 확보할 최소 거리(m)입니다.")]
-    [Min(0f)] public float minDistanceFromWorldStart = 30f;
 }

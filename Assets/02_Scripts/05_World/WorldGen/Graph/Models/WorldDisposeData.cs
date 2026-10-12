@@ -14,6 +14,8 @@ public class WorldDisposeData
     // 배치된 아이템에 대한 리스트
     public List<DisposeData> ItemDisposes = new();
     public List<WorldInitialMonsterPlacement> InitialMonsterPlacements = new();
+    // 프리팹 메타데이터에서 읽은 스폰 소스입니다. 청크 인스턴스 생성 여부와 무관합니다.
+    public List<WorldMonsterSpawnSourcePlacement> MonsterSpawnSources = new();
 
     public void Clear()
     {
@@ -21,6 +23,7 @@ public class WorldDisposeData
         ObjectDisposes.Clear();
         ItemDisposes.Clear();
         InitialMonsterPlacements.Clear();
+        MonsterSpawnSources.Clear();
     }
 
 }

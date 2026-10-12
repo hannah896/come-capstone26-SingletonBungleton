@@ -369,6 +369,9 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
                 _logicData.GetHeightAt(tileX, tileZ) + _settings.SpawnHeightOffset,
                 worldZ);
 
+            if (WorldSpawnArea.Contains(_logicData, candidate, _settings.CollisionCheckRadius))
+                continue;
+
             if (IsTooCloseToAnyPlayer(candidate, minDistanceSqr))
                 continue;
 

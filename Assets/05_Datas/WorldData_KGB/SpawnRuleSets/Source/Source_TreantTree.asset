@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bd00db16347e40d78876e0bd469a98f7, type: 3}
-  m_Name: Source_MischiefExample
+  m_Name: Source_TreantTree
   m_EditorClassIdentifier: 
-  monsterKey: Mischief
-  allowedTimePhases: -1
+  monsterKey: TreantTreeEvergreen
+  allowedTimePhases: 6
   spawnChance: 1
   minSpawnCount: 1
   maxSpawnCount: 1
@@ -22,6 +22,3 @@ MonoBehaviour:
   activationDistance: 60
   intervalSeconds: 30
   spawnImmediately: 1
-  placementRadius: 3
-  maxHeightDifference: 2
-  minDistanceFromWorldStart: 30

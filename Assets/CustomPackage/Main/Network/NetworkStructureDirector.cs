@@ -166,6 +166,8 @@ public class NetworkStructureDirector : NetworkBehaviour
                 bool destroyed = !view.Loading && !view.Failed && view.Root == null;
                 if (!destroyed)
                 {
+                    if (view.Root != null)
+                        view.Root.transform.SetPositionAndRotation(pair.Value.Position, pair.Value.Rotation);
                     // 요리 상태 (호스트는 원본이 이미 그 상태다)
                     if (!HasStateAuthority && view.Pot != null && view.Pot.IsCooking != pair.Value.IsCooking)
                         view.Pot.ApplyNetworkCooking(pair.Value.IsCooking);
@@ -211,6 +213,30 @@ public class NetworkStructureDirector : NetworkBehaviour
         GameObject root = Instantiate(itemData.placementPrefab, state.Position, state.Rotation);
         if (state.Scale.x > 0f && state.Scale.y > 0f && state.Scale.z > 0f)
             root.transform.localScale = state.Scale;
+        if (HasStateAuthority)
+        {
+            WorldLogicData logic = WorldGenManager.Instance?.CurrentLogicData;
+            Vector3 scale = root.transform.localScale;
+            if (WorldSpawnArea.IntersectsStructure(logic, itemData, state.Position, state.Rotation, scale: scale) ||
+                WorldSpawnArea.Intersects(logic, root))
+            {
+                float footprintMargin = WorldSpawnArea.GetFootprintMargin(root);
+                root.SetActive(false);
+                if (!WorldSpawnArea.TryRelocateStructure(logic, itemData, state.Position, state.Rotation, scale,
+                    out Vector3 relocated, footprintMargin))
+                {
+                    Destroy(root);
+                    view.Failed = true;
+                    Debug.LogError($"[StructureDirector] 제단 근처 건축물을 옮길 빈 지면이 없습니다: {key}");
+                    return;
+                }
+                state.Position = relocated;
+                Structures.Set(id, state);
+                root.transform.position = relocated;
+                root.SetActive(true);
+                Physics.SyncTransforms();
+            }
+        }
         PlacedStructure placed = Extensions.GetOrAddComponent<PlacedStructure>(root);
         placed.NetworkId = id;
         placed.ItemKey = key;
@@ -572,6 +598,29 @@ public class NetworkStructureDirector : NetworkBehaviour
     private void HostPlace(PlayerRef requester, string itemKey, Vector3 position, Quaternion rotation)
     {
         if (!HasStateAuthority || string.IsNullOrEmpty(itemKey)) return;
+        HostPlaceAsync(requester, itemKey, position, rotation).Forget();
+    }
+
+    private async UniTaskVoid HostPlaceAsync(PlayerRef requester, string itemKey, Vector3 position, Quaternion rotation)
+    {
+        ItemDataSO itemData;
+        try
+        {
+            itemData = await GetItemDataAsync(itemKey);
+        }
+        catch (System.Exception exception)
+        {
+            UnityEngine.Debug.LogException(exception, this);
+            if (HasStateAuthority) Grant(requester, itemKey, 1, position);
+            return;
+        }
+        if (!HasStateAuthority) return;
+        if (itemData == null || itemData.placementPrefab == null ||
+            WorldSpawnArea.IntersectsStructure(WorldGenManager.Instance?.CurrentLogicData, itemData, position, rotation))
+        {
+            Grant(requester, itemKey, 1, position);
+            return;
+        }
 
         // 설치 불가 — 요청자가 이미 인벤토리에서 뺀 아이템을 돌려준다
         if (Structures.Count >= Structures.Capacity

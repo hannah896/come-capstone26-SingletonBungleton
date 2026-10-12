@@ -28,7 +28,6 @@ MonoBehaviour:
   ItemRules:
   - ruleName: Flower
     prefabKey: Resource_Flower
-    monsterSpawnRule: {fileID: 0}
     minCount: 6
     maxCount: 12
   SpawnerRules: []

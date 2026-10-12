@@ -8,11 +8,13 @@ public sealed class SpawnerDisposer : IGraphPipelineStage
 {
     private WorldSettings _settings;
     private System.Random _random;
+    private readonly Dictionary<string, MonsterSpawnSourceDefinition> _sourceDefinitions = new();
 
     public void Initialize(WorldSettings settings)
     {
         _settings = settings;
         _random = new System.Random(settings.WorldSeed + 801);
+        _sourceDefinitions.Clear();
     }
 
     public async UniTask ExecuteAsync(WorldGenContext context, CancellationToken token)
@@ -31,15 +33,19 @@ public sealed class SpawnerDisposer : IGraphPipelineStage
             foreach (CountDisposeRule rule in node.BiomeData.BiomeDisposeRule.SpawnerRules)
             {
                 token.ThrowIfCancellationRequested();
-                if (rule == null || rule.monsterSpawnRule == null || string.IsNullOrWhiteSpace(rule.prefabKey)) continue;
+                if (rule == null || string.IsNullOrWhiteSpace(rule.prefabKey)) continue;
                 int max = Mathf.Max(0, rule.maxCount);
                 int min = Mathf.Clamp(rule.minCount, 0, max);
+                if (max == 0) continue;
+                MonsterSpawnSourceDefinition definition = await GetSourceDefinitionAsync(rule.prefabKey, token);
+                if (definition == null) continue;
+                SpawnerPlacementSettings placementSettings = definition.PlacementSettings;
                 int count = max > min ? _random.Next(min, max + 1) : max;
                 if (count == 0) continue;
 
                 List<Vector2Int> candidates = await PointSampler.GeneratePoissonPointsAsync(
                     node.OwnedTiles, Mathf.Min(node.OwnedTiles.Count, count * 12),
-                    Mathf.Max(_settings.DisposeSettings.minObjectDistance, rule.monsterSpawnRule.placementRadius * 2f),
+                    Mathf.Max(_settings.DisposeSettings.minObjectDistance, placementSettings.placementRadius * 2f),
                     _settings.DisposeSettings.maxSamplingAttempts, _random, token);
 
                 int placed = 0;
@@ -47,21 +53,25 @@ public sealed class SpawnerDisposer : IGraphPipelineStage
                 {
                     token.ThrowIfCancellationRequested();
                     if (placed >= count) break;
-                    if (!CanPlace(logic, tile, rule.monsterSpawnRule)) continue;
+                    if (!CanPlace(logic, tile, placementSettings)) continue;
 
                     int id = WorldMonsterPlacementId.Create(_settings.WorldSeed, rule.prefabKey, tile, placed, usedIds);
                     var placement = new DisposeData
                     {
                         instanceId = id,
                         prefabName = rule.prefabKey,
-                        monsterSpawnRule = rule.monsterSpawnRule,
                         tilePosition = tile,
                         rotation = Quaternion.Euler(0f, _random.Next(0, 360), 0f),
                         scale = Vector3.one
                     };
                     context.DisposeData.DisposeDatas.Add(placement);
                     context.DisposeData.ObjectDisposes.Add(placement);
-                    MarkOccupied(logic, tile, rule.monsterSpawnRule.placementRadius);
+                    context.DisposeData.MonsterSpawnSources.Add(new WorldMonsterSpawnSourcePlacement
+                    {
+                        Placement = placement,
+                        Definition = definition
+                    });
+                    MarkOccupied(logic, tile, placementSettings.placementRadius);
                     placed++;
                 }
             }
@@ -69,20 +79,34 @@ public sealed class SpawnerDisposer : IGraphPipelineStage
         }
     }
 
-    private static bool CanPlace(WorldLogicData logic, Vector2Int tile, SourceSpawnRule rule)
+    private async UniTask<MonsterSpawnSourceDefinition> GetSourceDefinitionAsync(string prefabKey, CancellationToken token)
+    {
+        if (_sourceDefinitions.TryGetValue(prefabKey, out MonsterSpawnSourceDefinition cached)) return cached;
+
+        // 에셋의 설정만 읽습니다. 생성하거나 활성화하지 않아 로컬 청크에 의존하지 않습니다.
+        GameObject prefab = await Extensions.LoadAssetAsync<GameObject>(prefabKey, token: token);
+        MonsterSpawnSource source = prefab != null ? prefab.GetComponent<MonsterSpawnSource>() : null;
+        MonsterSpawnSourceDefinition definition = source != null ? source.GetDefinition() : null;
+        _sourceDefinitions[prefabKey] = definition;
+        if (definition == null)
+            Debug.LogWarning($"[SpawnerDisposer] '{prefabKey}' 프리팹 루트의 MonsterSpawnSource와 Spawn Rule 연결을 확인하세요.");
+        return definition;
+    }
+
+    private static bool CanPlace(WorldLogicData logic, Vector2Int tile, SpawnerPlacementSettings settings)
     {
         if (logic?.OccupiedWorld == null || logic.HeightWorld == null) return false;
-        int radius = Mathf.CeilToInt(Mathf.Max(0f, rule.placementRadius));
+        int radius = Mathf.CeilToInt(Mathf.Max(0f, settings.placementRadius));
         if (tile.x - radius < 0 || tile.y - radius < 0 ||
             tile.x + radius >= logic.TerrainSize.x || tile.y + radius >= logic.TerrainSize.y) return false;
         if (logic.SpawnTile.x >= 0 && (tile - logic.SpawnTile).sqrMagnitude <
-            rule.minDistanceFromWorldStart * rule.minDistanceFromWorldStart) return false;
+            settings.minDistanceFromWorldStart * settings.minDistanceFromWorldStart) return false;
 
         float centerHeight = logic.HeightWorld[tile.x, tile.y];
         for (int x = tile.x - radius; x <= tile.x + radius; x++)
             for (int y = tile.y - radius; y <= tile.y + radius; y++)
                 if (logic.OccupiedWorld[x, y] || logic.TerritoryWorld[x, y] < 0 ||
-                    Mathf.Abs(logic.HeightWorld[x, y] - centerHeight) > rule.maxHeightDifference)
+                    Mathf.Abs(logic.HeightWorld[x, y] - centerHeight) > settings.maxHeightDifference)
                     return false;
         return true;
     }

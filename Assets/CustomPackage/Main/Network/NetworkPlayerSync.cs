@@ -56,6 +56,9 @@ public class NetworkPlayerSync : NetworkBehaviour
     // 소유자가 보고한 사망 상태. 원격 피어의 몬스터 타게팅/피격 판정에 쓴다 (HP는 소유자 피어에만 있다).
     [Networked] private NetworkBool NetIsDead { get; set; }
 
+    // 최초 등장만 제단 연출을 재생한다. 저장된 위치로 복원하는 캐릭터는 false.
+    [Networked] private NetworkBool NetPlaySpawnIntro { get; set; }
+
     #endregion
 
     #region Fields
@@ -186,6 +189,10 @@ public class NetworkPlayerSync : NetworkBehaviour
                 transform.position = NetPosition;
         }
 
+        // 로컬 월드의 제단이 아직 준비되지 않았다면 Player가 준비될 때까지 요청을 보관한다.
+        if (Object.HasInputAuthority && NetPlaySpawnIntro)
+            _player?.RequestSpawnIntro();
+
         // 뒤늦게 합류한 피어가 이미 지나간 트리거를 다시 재생하지 않도록 현재 시퀀스를 기준점으로 삼는다
         _appliedTriggerSeq = NetAnimTriggerSeq;
     }
@@ -276,6 +283,22 @@ public class NetworkPlayerSync : NetworkBehaviour
     }
 
     #endregion
+
+    /// <summary>호스트가 onBeforeSpawned에서 저장 유무를 확정한다.</summary>
+    public void ConfigureSpawnIntro(bool playIntro) => NetPlaySpawnIntro = playIntro;
+
+    /// <summary>소유자의 제단 착지 연출을 모든 피어의 동일한 제단에서 재생한다.</summary>
+    public void BroadcastSpawnBounce()
+    {
+        if (Object == null || !Object.IsValid || !Object.HasInputAuthority) return;
+        Rpc_PlaySpawnBounce();
+    }
+
+    [Rpc(RpcSources.InputAuthority, RpcTargets.All)]
+    private void Rpc_PlaySpawnBounce()
+    {
+        WorldGenManager.Instance?.SpawnSofa?.PlayBounce();
+    }
 
     #region 애니메이션 동기화
 

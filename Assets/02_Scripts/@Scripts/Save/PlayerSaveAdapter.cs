@@ -7,6 +7,8 @@ public static class PlayerSaveAdapter
 {
     public static PlayerSaveData Capture(Player player, string playerId, int characterIndex)
     {
+        if (player != null && player.IsSpawnIntroPlaying)
+            throw new InvalidOperationException("스폰 연출이 끝난 뒤 저장해 주세요.");
         if (player == null || !player.IsSaveReady)
             throw new InvalidOperationException("플레이어 초기화가 아직 완료되지 않았습니다.");
         bool hasLocalStructures = Main.Network == null || !Main.Network.IsInRoom;

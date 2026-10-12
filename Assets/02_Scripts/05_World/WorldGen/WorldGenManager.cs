@@ -37,6 +37,7 @@ public class WorldGenManager : MonoBehaviour
     [SerializeField] private WorldMap _worldMap;
 
     private const string PLAYER_ADDRESSKEY = "Player_Female";
+    private const string START_SOFA_ADDRESSKEY = "StartSofa";
     private const string GROUND_LAYER_NAME = "Ground";
     private const string INVISIBLE_WALL_ADDRESSKEY = "InvisibleWall";
     private const float COAST_WALL_THICKNESS = 2.0f;            //벽 두께
@@ -56,6 +57,9 @@ public class WorldGenManager : MonoBehaviour
     public WorldSettings WorldSettings => _worldSettings;
     public WorldChunkDirector ChunkDirector => _worldChunkDirector;
     public WorldMonsterSpawnDirector WorldMonsterSpawnDirector => _worldMonsterSpawnDirector;
+
+    /// <summary>청크 스트리밍과 별개로 월드에 유지되는 플레이어 스폰 제단.</summary>
+    public StartSofa SpawnSofa { get; private set; }
 
     /// <summary>현재 월드의 논리 데이터. 청크 디렉터 초기화 전에는 null (멀티 자원 동기화가 준비 여부로 사용).</summary>
     public WorldLogicData CurrentLogicData { get; private set; }
@@ -78,6 +82,7 @@ public class WorldGenManager : MonoBehaviour
         _cts?.Dispose();
         _worldMonsterSpawnDirector?.Shutdown(despawnOwnedMonsters: false);
         ClearCoastBoundaries();
+        ClearSpawnSofa();
     }
 
     async void Start()
@@ -235,6 +240,8 @@ public class WorldGenManager : MonoBehaviour
             : new CancellationTokenSource();
 
         ClearCoastBoundaries();
+        ClearSpawnSofa();
+        HasPlayerSpawnPosition = false;
 
         if (!_isWorldSettingsLoaded || _worldSettings == null)
         {
@@ -319,9 +326,7 @@ public class WorldGenManager : MonoBehaviour
 
             // 부활 지점은 원래 시작 지역으로 유지하고, 이어하기에서는 저장 위치 주변부터 준비한다.
             float spawnTileHeight = logicData.GetHeightAt(startingX, startingZ);
-            Vector3 defaultSpawnPos = new Vector3(startingX, spawnTileHeight + 20f, startingZ);
-            PlayerSpawnPosition = defaultSpawnPos;
-            HasPlayerSpawnPosition = true;
+            Vector3 defaultSpawnPos = new Vector3(startingX, spawnTileHeight, startingZ);
             Vector3 spawnPos = defaultSpawnPos;
             PlayerSaveData savedPlayer = savedWorld != null ? Main.Save.GetLocalPlayerSave() : null;
             if (savedPlayer != null)
@@ -345,6 +350,11 @@ public class WorldGenManager : MonoBehaviour
             CurrentLogicData = logicData;
 
             await _worldChunkDirector.LoadInitialSpawnAreaAsync(spawnChunkCoord);
+            await BuildSpawnSofaAsync(defaultSpawnPos, _cts.Token);
+            PlayerSpawnPosition = SpawnSofa.GetSpawnPosition();
+            HasPlayerSpawnPosition = true;
+            if (savedPlayer == null)
+                spawnPos = PlayerSpawnPosition;
             if (savedWorld != null)
                 await WorldSaveAdapter.RestoreRuntimeAsync(savedWorld, _cts.Token);
             Debug.Log("월드 생성이 완료되었습니다!");
@@ -408,6 +418,10 @@ public class WorldGenManager : MonoBehaviour
                     else
                         _playerInstance.transform.position = spawnPos;
 
+                    // 저장 위치 복원은 스폰 낙하/바운스 연출을 다시 실행하지 않는다.
+                    if (savedPlayer == null && _playerInstance.TryGetComponent(out Player spawningPlayer))
+                        spawningPlayer.BeginSpawnIntro(SpawnSofa);
+
                     _worldChunkDirector.isPlayerSpawned = true;
                     _worldChunkDirector.SetTarget(_playerInstance.transform);
                 }
@@ -445,6 +459,26 @@ public class WorldGenManager : MonoBehaviour
         {
             Debug.Log("맵 생성 취소됨");
         }
+    }
+
+    private async UniTask BuildSpawnSofaAsync(Vector3 position, CancellationToken ct)
+    {
+        GameObject prefab = await Extensions.LoadAssetAsync<GameObject>(START_SOFA_ADDRESSKEY, token: ct);
+        ct.ThrowIfCancellationRequested();
+        if (prefab == null)
+            throw new InvalidOperationException("StartSofa 스폰 제단 프리팹을 불러오지 못했습니다.");
+
+        // 청크 아래에 두면 청크 언로드 때 제단도 사라지므로 매니저가 직접 소유한다.
+        GameObject instance = UnityEngine.Object.Instantiate(prefab, position, Quaternion.identity, transform);
+        SpawnSofa = Extensions.GetOrAddComponent<StartSofa>(instance);
+        Physics.SyncTransforms();
+    }
+
+    private void ClearSpawnSofa()
+    {
+        if (SpawnSofa != null)
+            Destroy(SpawnSofa.gameObject);
+        SpawnSofa = null;
     }
 
     /// <summary>

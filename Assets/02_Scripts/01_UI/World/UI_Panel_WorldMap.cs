@@ -376,6 +376,10 @@ public class UI_Panel_WorldMap : UI_Panel
 
                 Vector3 worldPosition = new Vector3(dispose.tilePosition.x + dispose.localOffset.x,
                     0f, dispose.tilePosition.y + dispose.localOffset.y);
+                if (WorldSpawnArea.Contains(_mapData.LogicData, worldPosition)) continue;
+                WorldGenManager world = WorldGenManager.Instance;
+                if (world != null && world.CurrentLogicData == _mapData.LogicData &&
+                    world.ChunkDirector?.ObjectSpawner?.IsSpawnExcluded(dispose.instanceId) == true) continue;
                 if (worldPosition.x < 0f || worldPosition.z < 0f || worldPosition.x > _mapData.TerrainSize.x
                     || worldPosition.z > _mapData.TerrainSize.y) continue;
                 Vector2 normalized = _mapData.NormalizeWorldPosition(worldPosition);

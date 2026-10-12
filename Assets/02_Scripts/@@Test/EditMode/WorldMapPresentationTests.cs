@@ -381,6 +381,7 @@ public class WorldMapPresentationTests : InputTestFixture
     public void ResourceMarkers_UseFiveIconsAndFollowVisibilityAndDestroyedState()
     {
         var logic = Activator.CreateInstance(FindType("WorldLogicData"), new Vector2Int(100, 100), 10);
+        logic.GetType().GetProperty("SpawnTile").SetValue(logic, new Vector2Int(10, 10));
         var chunk = Invoke(logic, "GetOrCreateChunk", new Vector2Int(5, 5));
         var placements = (System.Collections.IList)Property(chunk, "DisposeDatas");
         string[] names = { "Branch", "Bush", "Fir", "Grass", "Rock" };
@@ -438,6 +439,11 @@ public class WorldMapPresentationTests : InputTestFixture
         Layout();
         Invoke(_map, "RefreshResourceMarkers");
         Assert.That(((RectTransform)markers[resources[0]]).sizeDelta, Is.EqualTo(Vector2.one * 30f));
+
+        // 제단의 비워 둔 공간에는 실제 자원이 없으므로 지도 아이콘도 표시하지 않는다.
+        logic.GetType().GetProperty("SpawnTile").SetValue(logic, new Vector2Int(52, 50));
+        Invoke(_map, "RefreshResourceMarkers");
+        Assert.That(markers.Count, Is.Zero);
 
         Invoke(_map, "ClearView");
         Assert.That(markers.Count, Is.Zero);
