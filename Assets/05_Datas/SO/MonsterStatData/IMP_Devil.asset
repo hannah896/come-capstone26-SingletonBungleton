@@ -22,7 +22,7 @@ MonoBehaviour:
   DetectRange: 14
   AttackRange: 10
   TurnSpeed: 540
-  DropTable: {fileID: 0}
+  DropTable: {fileID: 11400000, guid: e57b77836fbe4fc8965876974e270aa1, type: 2}
   SlashRange: 2
   ProjectileKey: MischiefProjectile
   FireballCooldown: 3

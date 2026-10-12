@@ -73,6 +73,8 @@ public class Devil : Monster
     #region Properties (상태 클래스에서 사용)
     public DevilStance Stance { get; private set; } = DevilStance.Ground;
     public bool IsFlying => Stance == DevilStance.Fly;
+    /// <summary>비행 중에는 지상 배회(걷기)를 하지 않는다.</summary>
+    public override bool CanWander => !IsFlying && base.CanWander;
 
     public float SlashRange => DevilData != null ? DevilData.SlashRange : 2f;
     public float FireballCastTime => DevilData != null ? DevilData.FireballCastTime : 0.8f;
@@ -115,9 +117,7 @@ public class Devil : Monster
             return false;
         }
     }
-
-    private float HpRatio
-        => status != null && status.MaxHp > 0f ? status.CurrentHp / status.MaxHp : 1f;
+    // 체력 비율은 베이스 Monster.HpRatio를 쓴다 (호스트에서는 status 기준으로 같은 값)
     #endregion
 
     protected override void Awake()

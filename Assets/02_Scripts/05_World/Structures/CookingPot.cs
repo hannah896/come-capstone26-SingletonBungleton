@@ -56,6 +56,7 @@ public class CookingPot : StorageStation
         if (!CanCook()) return false;
 
         isCooking = true;
+        PlayCookingSound();
         OnCookingStateChanged?.Invoke(true);
         return true;
     }
@@ -74,7 +75,15 @@ public class CookingPot : StorageStation
         if (isCooking == cooking) return;
 
         isCooking = cooking;
+        if (cooking) PlayCookingSound();
         OnCookingStateChanged?.Invoke(cooking);
+    }
+
+    // 요리 시작: 끓는 소리 + 지글거림 (호스트 시작·클라 복제 양쪽에서 불린다)
+    private void PlayCookingSound()
+    {
+        Extensions.PlaySFXAt(AudioLibrarySounds.CookBubble, transform.position);
+        Extensions.PlaySFXAt(AudioLibrarySounds.CookSizzle, transform.position);
     }
 
     /// <summary>

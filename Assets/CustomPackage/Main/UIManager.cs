@@ -429,6 +429,7 @@ public class UIManager : PrimaryManager
             if (idx < 0) return;
 
             _popups.RemoveAt(idx);
+            popup.PlayCloseSoundOnce(); // 애니메이션 없이 바로 닫히는 경로에서도 닫기 소리 (이미 났으면 무시)
             Object.Destroy(popup.gameObject);
             RefreshPanelState();
         }

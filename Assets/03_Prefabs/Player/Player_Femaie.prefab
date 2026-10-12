@@ -158,7 +158,7 @@ MonoBehaviour:
   weaponLocalScale: {x: 1, y: 1, z: 1}
   swordMeshLocalPosition: {x: 1.2, y: -2.5, z: 2.56}
   swordMeshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
-  swordMeshLocalScale: {x: 7, y: 7, z: 7}
+  swordMeshLocalScale: {x: 4, y: 4, z: 4}
   spearMeshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
   spearMeshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
   spearMeshLocalScale: {x: 7, y: 7, z: 7}
@@ -179,6 +179,9 @@ MonoBehaviour:
   thrustReachOffset: {x: 0, y: 0, z: 1}
   thrustPullBackRotation: {x: -12, y: 0, z: 0}
   thrustReachRotation: {x: 16, y: 0, z: 0}
+  drawPullBackOffset: {x: 0, y: 0.05, z: -0.5}
+  drawPullBackRotation: {x: -6, y: 0, z: 4}
+  drawReleaseOffset: {x: 0, y: 0, z: 0.12}
 --- !u!114 &5601182068425426865
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -203,10 +206,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   bareHandDamage: 1
+  arrowSpeed: 40
+  arrowMaxDistance: 60
   slots:
   - {fileID: 11400000, guid: 41909ce6e3bb1334898e2b02f5f26412, type: 2}
   - {fileID: 11400000, guid: ddbbce5581b91654598a8c87aa7a4a0f, type: 2}
   - {fileID: 11400000, guid: 9e6704d5c5132834594962d2ac92fc07, type: 2}
+  - {fileID: 11400000, guid: 7e761d3834f7336428fb3e220a2e08b9, type: 2}
   stackCounts: 
   expirationTimestamps: []
   rotItemSO: {fileID: 11400000, guid: eac0dd7b1fa44b0392f6ef6602d8b18b, type: 2}
@@ -728,7 +734,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: 7ba053ea9b532bd4784dc795612d69e0, type: 3}
       propertyPath: m_WarningMessage
-      value: 
+      value: "\nBinding warning: Some generic clip(s) animate transforms that are
+        already bound by a Humanoid avatar. These transforms can only be changed
+        by Humanoid clips.\n\tTransform 'RightHandIndex1'\n\tFrom animation clip
+        'HumanF@Mining - Begin'"
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: 7ba053ea9b532bd4784dc795612d69e0, type: 3}
       propertyPath: m_ApplyRootMotion

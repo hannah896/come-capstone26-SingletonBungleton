@@ -22,7 +22,7 @@ MonoBehaviour:
   DetectRange: 14
   AttackRange: 10
   TurnSpeed: 240
-  DropTable: {fileID: 0}
+  DropTable: {fileID: 11400000, guid: c9dd887543c942b485331373943ef1de, type: 2}
   PunchRange: 2.2
   PunchCooldown: 2.5
   PunchHitTime: 0.4

@@ -34,6 +34,8 @@ public class Monster : Mob
     [Header("애니메이션 Bool 파라미터명 (컨트롤러가 Entry에서 이 Bool로 분기한다. 없으면 비워둠 - 비어 있으면 건드리지 않음)")]
     [SerializeField] private string idleBool = "";
     [SerializeField] private string moveBool = "";
+    [Tooltip("타깃 추적 이동 Bool. 비우면 moveBool을 쓴다(배회와 추적이 같은 모션)")]
+    [SerializeField] private string chaseBool = "";
     [SerializeField] private string attackBool = "";
     [SerializeField] private string deadBool = "";
     [SerializeField] private string hitBool = "";
@@ -41,6 +43,25 @@ public class Monster : Mob
     [Header("피격 리액션")]
     [Tooltip("Hit 상태가 유지되는 시간(초). 공격 상태 중 피격 시에는 무시된다.")]
     [SerializeField] private float hitDuration = 0.4f;
+    [Tooltip("공격 애니를 튼 뒤 이 시간(초) 동안은 피격돼도 Hit로 끊기지 않는다(공격 모션 슈퍼아머). " +
+             "교전 상태라도 이 시간이 지난 쿨다운/접근 구간에는 Hit로 전환된다.")]
+    [SerializeField] private float attackMotionArmorTime = 0.6f;
+    [Tooltip("피격 시 공격자 반대쪽으로 밀려나는 초기 속도(m/s). 0이면 넉백 없음. 공격 모션 중에 맞아도 밀린다.")]
+    [SerializeField] private float knockbackSpeed = 10f;
+    [Tooltip("넉백 감속. 클수록 빨리 멈춘다. 대략 밀리는 거리 = knockbackSpeed / knockbackDamping")]
+    [SerializeField] private float knockbackDamping = 7f;
+
+    [Header("소리")]
+    [Tooltip("맞을 때 소리 (AudioLibrarySounds 이름, 예: HitWood). 비우면 소리 없음")]
+    [SerializeField] private string hitSound = "";
+
+    [Header("배회")]
+    [Tooltip("첫 대기 위치(홈)에서 이 반경(m) 안을 돌아다닌다. 0이면 배회하지 않고 제자리에서 대기만 한다.")]
+    [SerializeField] private float wanderRadius = 6f;
+    [Tooltip("배회 사이 대기 시간(초). 몬스터마다 ±30% 흔들어 동시에 움직이지 않게 한다.")]
+    [SerializeField] private float wanderIdleTime = 3f;
+    [Tooltip("배회 이동 속도 배율(MoveSpeed 기준). 추적보다 느긋하게 걷도록 1보다 작게 둔다.")]
+    [SerializeField] private float wanderSpeedMultiplier = 0.6f;
 
     [Header("스폰 연출")]
     [Tooltip("등장 연출을 쓰는 몬스터인지. 컨트롤러의 기본(Default) 상태가 스폰 애니메이션이라 재생은 자동으로 되고, " +
@@ -53,6 +74,18 @@ public class Monster : Mob
 
     protected MonsterStateMachine stateMachine;
     private Player target;
+    private float attackMotionTimer;
+    private MonsterHpBar hpBar;
+    private MobHitFlash hitFlash;
+
+    // 넉백: 마지막 공격자 위치(방향 계산용)와 현재 밀리는 속도
+    private Vector3 lastHitFrom;
+    private bool hasHitFrom;
+    private Vector3 knockbackVelocity;
+
+    // 배회 기준점. 처음 Idle에 들어온 위치로 잡는다(스폰 위치는 OnSpawn 이후에 정해지므로).
+    private Vector3 wanderHome;
+    private bool hasWanderHome;
 
     private MonsterStatData MonsterData => statData as MonsterStatData;
 
@@ -74,6 +107,7 @@ public class Monster : Mob
     private Vector3 netTargetPos;
     private float netTargetYaw;
     private bool hasNetTarget;
+    private float netHpRatio = 1f;
 
     [Header("클라이언트 보간")]
     [Tooltip("호스트가 보낸 위치로 따라붙는 속도. 클수록 빠르게 스냅한다.")]
@@ -93,6 +127,26 @@ public class Monster : Mob
     public float MinAttackPeriod => status != null ? status.MinAttackPeriod : 1f;
 
     public float HitDuration => hitDuration;
+    public float WanderIdleTime => wanderIdleTime;
+    public float WanderSpeed => status != null ? status.MoveSpeed * wanderSpeedMultiplier : 0f;
+    /// <summary>배회해도 되는지. 비행 모드 등 걸어 다니면 안 되는 몬스터는 오버라이드해 막는다.</summary>
+    public virtual bool CanWander => wanderRadius > 0f && WanderSpeed > 0f;
+
+    /// <summary>
+    /// 현재 체력 비율(0~1). 호스트/싱글은 자기 status에서, 클라이언트는 호스트가 복제한 값에서 읽는다.
+    /// (클라는 데미지를 직접 적용하지 않으므로 로컬 status의 HP는 항상 가득 차 있다)
+    /// </summary>
+    public float HpRatio
+    {
+        get
+        {
+            if (!IsSimulatedPeer) return netHpRatio;
+            if (status == null || status.MaxHp <= 0f) return 1f;
+            return status.CurrentHp / status.MaxHp;
+        }
+    }
+    /// <summary>공격 애니 재생 직후의 슈퍼아머 구간인지. 교전(공격) 상태의 IsAttackState 판정에 사용한다.</summary>
+    public bool IsInAttackMotion => attackMotionTimer > 0f;
     /// <summary>등장 연출이 끝날 때까지 Spawn 상태에서 대기할지. false면 스폰 즉시 Idle로 시작한다.</summary>
     public bool UseSpawnAnim => useSpawnAnim;
     /// <summary>스폰 Animation Event가 오지 않을 때 Idle로 강제 전환하기까지의 대기 시간(초).</summary>
@@ -102,6 +156,7 @@ public class Monster : Mob
     #region Animation Bool Hash (Awake 시 1회 계산해 캐싱)
     private int idleBoolHash;
     private int moveBoolHash;
+    private int chaseBoolHash;
     private int attackBoolHash;
     private int deadBoolHash;
     private int hitBoolHash;
@@ -118,6 +173,7 @@ public class Monster : Mob
     {
         MonsterAnimId.Idle   => idleBoolHash,
         MonsterAnimId.Move   => moveBoolHash,
+        MonsterAnimId.Chase  => chaseBoolHash != 0 ? chaseBoolHash : moveBoolHash,
         MonsterAnimId.Attack => attackBoolHash,
         MonsterAnimId.Hit    => hitBoolHash,
         MonsterAnimId.Dead   => deadBoolHash,
@@ -130,11 +186,16 @@ public class Monster : Mob
         base.Awake();
         idleBoolHash = ToAnimHash(idleBool);
         moveBoolHash = ToAnimHash(moveBool);
+        chaseBoolHash = ToAnimHash(chaseBool);
         attackBoolHash = ToAnimHash(attackBool);
         deadBoolHash = ToAnimHash(deadBool);
         hitBoolHash = ToAnimHash(hitBool);
         CacheAnimBoolParams();
         stateMachine = CreateStateMachine();
+        hpBar = gameObject.GetOrAddComponent<MonsterHpBar>();
+        hpBar.Bind(this);
+        hitFlash = gameObject.GetOrAddComponent<MobHitFlash>();
+        hitFlash.Init(transform.Find("HpBar"));
     }
 
     /// <summary>status가 (재)생성될 때마다 OnDamaged를 구독해 피격 리액션을 건다.</summary>
@@ -151,6 +212,11 @@ public class Monster : Mob
     /// </summary>
     private void HandleDamaged(float amount)
     {
+        // 공격 모션 중이라 경직이 없더라도 맞은 건 보여주고 밀어낸다
+        hitFlash?.Flash();
+        PlayHitSound();
+        BeginKnockback();
+
         if (stateMachine == null || stateMachine.CurrentState == null) return;
         if (stateMachine.CurrentState.IsAttackState) return;
         stateMachine.ToHit();
@@ -163,8 +229,15 @@ public class Monster : Mob
         target = null;
         NetSlot = -1;
         hasNetTarget = false;
+        netHpRatio = 1f;
+        attackMotionTimer = 0f;
+        hasHitFrom = false;
+        knockbackVelocity = Vector3.zero;
+        hasWanderHome = false;
+        hitFlash?.ResetColor();
         CurrentAnimId = MonsterAnimId.None;
         stateMachine = CreateStateMachine();
+        hpBar?.Bind(this);
     }
 
     public override void OnDespawn()
@@ -198,6 +271,8 @@ public class Monster : Mob
             return;
         }
 
+        if (attackMotionTimer > 0f) attackMotionTimer -= deltaTime;
+        KnockbackStep(deltaTime);
         stateMachine.OnUpdate(deltaTime);
     }
 
@@ -205,10 +280,21 @@ public class Monster : Mob
     /// 호스트가 보낸 이 몬스터의 최신 상태를 반영한다(클라이언트 전용).
     /// NetworkMonsterDirector가 매 프레임 호출한다.
     /// </summary>
-    public void ApplyNetState(Vector3 position, float yaw, MonsterAnimId animId)
+    public void ApplyNetState(Vector3 position, float yaw, MonsterAnimId animId, float hpRatio)
     {
         netTargetPos = position;
         netTargetYaw = yaw;
+
+        // 클라는 데미지/회복 이벤트를 받지 않으므로 체력 변화를 보고 깜빡임을 재현한다
+        // (몬스터에는 자연 회복이 없어서 체력이 늘었다면 회복 스킬을 받은 것)
+        if (hasNetTarget && hpRatio < netHpRatio - 0.001f)
+        {
+            hitFlash?.Flash();
+            PlayHitSound();
+        }
+        else if (hasNetTarget && hpRatio > netHpRatio + 0.001f)
+            hitFlash?.FlashHeal();
+        netHpRatio = hpRatio;
 
         // 첫 수신은 보간 없이 그 자리에서 시작
         if (!hasNetTarget)
@@ -247,6 +333,115 @@ public class Monster : Mob
 
     // 드랍은 호스트만 스폰한다. 클라가 같이 만들면 아이템이 인원수만큼 중복된다.
     protected override bool CanSpawnDrops => IsSimulatedPeer;
+
+    #region Damage / Knockback
+    /// <summary>
+    /// 공격자 위치를 기억해 둔다(넉백 방향). 플레이어가 직접 때렸으면 그 플레이어 위치,
+    /// 네트워크 보고(NetworkMonsterDirector)면 Point에 실린 공격자 위치를 쓴다.
+    /// </summary>
+    public override void ApplyDamage(DamageContext context)
+    {
+        if (!CanDamage(context)) return;
+
+        Player attacker = context.Instigator != null ? context.Instigator.GetComponentInParent<Player>() : null;
+        lastHitFrom = attacker != null ? attacker.transform.position : context.Point;
+        hasHitFrom = true;
+
+        base.ApplyDamage(context);
+    }
+
+    /// <summary>
+    /// 체력을 회복한다(호스트/싱글 전용). 실제로 회복된 양을 돌려준다. 죽었거나 가득 차 있으면 0.
+    /// 초록빛 깜빡임은 여기서, 클라는 ApplyNetState에서 체력 증가를 보고 재현한다.
+    /// </summary>
+    public float ReceiveHeal(float amount)
+    {
+        if (status == null || status.IsDead || amount <= 0f) return 0f;
+        float before = status.CurrentHp;
+        status.RestoreHp(amount);
+        float healed = status.CurrentHp - before;
+        if (healed > 0f) hitFlash?.FlashHeal();
+        return healed;
+    }
+
+    private bool hitSoundParsed;
+    private bool hasHitSound;
+    private AudioLibrarySounds hitSoundKey;
+
+    // 피격음: 호스트는 HandleDamaged, 클라는 복제된 체력이 줄어든 것을 보고 재생한다
+    private void PlayHitSound()
+    {
+        if (!hitSoundParsed)
+        {
+            hitSoundParsed = true;
+            hasHitSound = !string.IsNullOrEmpty(hitSound) && System.Enum.TryParse(hitSound, out hitSoundKey);
+        }
+        if (hasHitSound)
+            Extensions.PlaySFXAt(hitSoundKey, transform.position + Vector3.up);
+    }
+
+    /// <summary>넉백을 받지 않는 몬스터(보스 등)는 오버라이드해 true로 둔다.</summary>
+    protected virtual bool ResistsKnockback => false;
+
+    /// <summary>마지막 공격자 반대쪽으로 밀려나기 시작한다. 피격(OnDamaged) 때마다 호출된다.</summary>
+    public void BeginKnockback()
+    {
+        if (ResistsKnockback || knockbackSpeed <= 0f || !hasHitFrom) return;
+        if (status != null && status.IsDead) return; // 죽는 타격은 밀지 않고 그 자리에서 사망 연출
+
+        Vector3 dir = transform.position - lastHitFrom;
+        dir.y = 0f;
+        if (dir.sqrMagnitude < 0.0001f) dir = -transform.forward;
+        knockbackVelocity = dir.normalized * knockbackSpeed;
+    }
+
+    private void KnockbackStep(float deltaTime)
+    {
+        if (knockbackVelocity.sqrMagnitude < 0.01f)
+        {
+            knockbackVelocity = Vector3.zero;
+            return;
+        }
+
+        transform.position += knockbackVelocity * deltaTime;
+        knockbackVelocity *= Mathf.Exp(-knockbackDamping * deltaTime);
+    }
+    #endregion
+
+    #region Wander
+    /// <summary>배회 기준점을 아직 안 잡았으면 현재 위치로 잡는다.</summary>
+    public void EnsureWanderHome()
+    {
+        if (hasWanderHome) return;
+        wanderHome = transform.position;
+        hasWanderHome = true;
+    }
+
+    /// <summary>홈 주변 WanderRadius 안의 임의 지점. 너무 가까운 지점은 피한다.</summary>
+    public Vector3 PickWanderPoint()
+    {
+        EnsureWanderHome();
+        Vector2 offset = Random.insideUnitCircle * wanderRadius;
+        if (offset.sqrMagnitude < 1f) offset = offset.normalized * Mathf.Min(1f, wanderRadius);
+
+        Vector3 point = wanderHome + new Vector3(offset.x, 0f, offset.y);
+        point.y = transform.position.y;
+        return point;
+    }
+
+    /// <summary>목표 지점으로 배회 속도만큼 걷는다. 도착하면 true.</summary>
+    public bool WanderStep(Vector3 destination, float deltaTime, float arriveDistance)
+    {
+        Vector3 dir = destination - transform.position;
+        dir.y = 0f;
+        if (dir.sqrMagnitude <= arriveDistance * arriveDistance) return true;
+
+        Vector3 nd = dir.normalized;
+        RotateTowards(nd, deltaTime);
+        transform.position += nd * WanderSpeed * deltaTime;
+        return false;
+    }
+    #endregion
 
     #region Targeting
     /// <summary>DetectRange 내에서 FOV를 만족하는 가장 가까운 플레이어를 탐색해 타깃으로 잡는다. 성공 시 true.</summary>
@@ -382,7 +577,11 @@ public class Monster : Mob
     /// </summary>
     public void PlayAnim(MonsterAnimId animId)
     {
+        MonsterAnimId prev = CurrentAnimId;
         CurrentAnimId = animId;
+        if (prev != animId) OnAnimChanged(animId);
+        if (IsAttackAnim(animId))
+            attackMotionTimer = attackMotionArmorTime;
 
         int boolHash = AnimBoolHash(animId);
         if (animator == null || boolHash == 0) return;
@@ -391,6 +590,23 @@ public class Monster : Mob
         foreach (int hash in animBoolHashes)
             animator.SetBool(hash, hash == boolHash);
     }
+
+    /// <summary>
+    /// 재생 애니 ID가 바뀌었을 때 호출된다. 호스트(직접 재생)와 클라(ApplyNetState로 재현) 양쪽에서 불리므로
+    /// 효과음처럼 모든 피어에서 나와야 하는 연출을 여기에 둔다.
+    /// </summary>
+    protected virtual void OnAnimChanged(MonsterAnimId animId) { }
+
+    /// <summary>공격 모션으로 취급할 애니 ID. 이 애니를 틀면 attackMotionArmorTime 동안 Hit로 끊기지 않는다.</summary>
+    private static bool IsAttackAnim(MonsterAnimId animId) => animId switch
+    {
+        MonsterAnimId.Attack or MonsterAnimId.RangeAttack or
+        MonsterAnimId.FlyAttack or MonsterAnimId.FlyRangeAttack or MonsterAnimId.FlyTail or MonsterAnimId.FlyCast or
+        MonsterAnimId.RollAttack or MonsterAnimId.CastSpell or
+        MonsterAnimId.Smack or MonsterAnimId.Kick or MonsterAnimId.Step or MonsterAnimId.Clap or
+        MonsterAnimId.Spin or MonsterAnimId.Slice => true,
+        _ => false,
+    };
 
     /// <summary>애니메이션 Bool을 모두 끈다. 스폰 시 기본(Default) 상태로 시작시키기 위해 사용한다.</summary>
     public void ClearAnimBools()

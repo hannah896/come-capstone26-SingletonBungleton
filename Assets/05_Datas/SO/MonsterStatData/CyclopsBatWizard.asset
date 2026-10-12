@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ef99f3f267b7c84ab760173ba901888, type: 3}
+  m_Name: CyclopsBatWizard
+  m_EditorClassIdentifier: 
+  MaxHP: 140
+  CurHP: 140
+  MoveSpeed: 3.2
+  AttackDamage: 10
+  Defense: 3
+  MinAttackPeriod: 1.2
+  FOV: 360
+  DetectRange: 16
+  AttackRange: 11
+  TurnSpeed: 540
+  DropTable: {fileID: 0}
+  SkillGap: 0.5
+  MeleeRange: 2.2
+  MeleeDamage: 10
+  MeleeHitTime: 0.3
+  MeleeDuration: 0.6
+  MeleeAngle: 110
+  MeleeCooldown: 1.2
+  SpinRadius: 2.5
+  SpinDamage: 8
+  SpinDuration: 1
+  SpinHitTimes:
+  - 0.35
+  - 0.8
+  SpinKnockback: 8
+  SpinKnockbackDuration: 0.25
+  SpinCooldown: 7
+  ProjectileKey: MischiefProjectile
+  ProjectileDamage: 9
+  ProjectileSpeed: 13
+  ProjectileLifeTime: 1.5
+  ProjectileReleaseTime: 0.3
+  ProjectileDuration: 0.6
+  MuzzleHeight: 1.3
+  AimHeight: 1
+  ProjectileCooldown: 2.5
+  MeteorKey: Meteor
+  MeteorCount: 3
+  MeteorInterval: 0.5
+  MeteorImpactRadius: 1.6
+  MeteorWarningTime: 1
+  MeteorLingerTime: 1.2
+  MeteorDamage: 12
+  MeteorSlowMultiplier: 0.6
+  MeteorSlowDuration: 2
+  SpellCastPoint: 0.4
+  SpellDuration: 0.8
+  SpellMinDistance: 4
+  SpellCooldown: 9

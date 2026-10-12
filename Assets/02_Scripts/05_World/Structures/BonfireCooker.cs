@@ -26,6 +26,7 @@ public class BonfireCooker : MonoBehaviour
 
         inventory.RemoveItem(entry.rawItem, 1);
         inventory.AddItem(entry.cookedItem, 1);
+        Extensions.PlaySFXAt(AudioLibrarySounds.CookSizzle, transform.position);
         Debug.Log($"[모닥불] {entry.rawItem.itemName} → {entry.cookedItem.itemName}");
         return true;
     }
@@ -66,6 +67,9 @@ public class BonfireCooker : MonoBehaviour
         {
             if (entry.rawItem == null || string.IsNullOrEmpty(entry.cookedPrefabKey)) continue;
             if (item.ItemDataSO != entry.rawItem) continue;
+
+            // 트리거는 모든 피어에서 발생하므로 소리는 각자 듣는다 (판정은 호스트만)
+            Extensions.PlaySFXAt(AudioLibrarySounds.CookSizzle, transform.position);
 
             if (WorldResourceSync.IsNetworked)
                 CookNetworkDrop(item, entry.cookedPrefabKey);

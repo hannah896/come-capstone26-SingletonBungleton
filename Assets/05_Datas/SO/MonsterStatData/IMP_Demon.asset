@@ -22,7 +22,7 @@ MonoBehaviour:
   DetectRange: 12
   AttackRange: 6
   TurnSpeed: 540
-  DropTable: {fileID: 0}
+  DropTable: {fileID: 11400000, guid: 91eae16374a44b2590d2979b1bcdde4a, type: 2}
   SlashRange: 2
   MeteorKey: Meteor
   MeteorCooldown: 7

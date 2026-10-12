@@ -2,6 +2,10 @@ using UnityEngine;
 
 public class UI_Popup_Loading : UI_Popup
 {
+    // 로딩 팝업은 열고 닫을 때 소리를 내지 않는다
+    protected override AudioLibrarySounds? OpenSound => null;
+    protected override AudioLibrarySounds? CloseSound => null;
+
     [SerializeField] private UI_Image ProgressFill;
     [SerializeField] private UI_Text ProgressText;
 

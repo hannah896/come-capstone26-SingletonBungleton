@@ -18,6 +18,9 @@ public class MonsterStateMachine : StateMachine<MobState<Monster>>
     public virtual void ToIdle()
         => ChangeState(new MonsterIdleState(owner, this));
 
+    public virtual void ToWander()
+        => ChangeState(new MonsterWanderState(owner, this));
+
     public virtual void ToChase()
         => ChangeState(new MonsterChaseState(owner, this));
 

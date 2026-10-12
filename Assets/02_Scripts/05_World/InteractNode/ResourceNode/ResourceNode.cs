@@ -19,6 +19,7 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
     public void HandPick(DamageContext context)
     {
         if (!IsHandPickable) return;
+        Extensions.PlaySFXAt(AudioLibrarySounds.PickBush, transform.position);
 
         // 멀티: 즉시 소진 = 최대 체력만큼 데미지를 보고해 호스트가 파괴를 확정하게 한다
         if (IsNetworkManaged)
@@ -148,6 +149,7 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
     public void ApplyDamage(DamageContext context)
     {
         if (!CanDamage(context)) return;
+        PlayHitSound(context);
 
         // 멀티: 체력은 호스트가 모든 플레이어의 타격을 합산해 관리한다.
         // 여기서는 표시용 예상 체력만 계산하고, 파괴는 호스트 확정(ApplyNetworkDestroyed)을 기다린다.
@@ -217,6 +219,9 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
 
         _isDestroyed = true;
 
+        // 호스트 확정은 모든 피어에서 호출되므로 쓰러지는 소리를 다 같이 듣는다
+        PlayDestroyedSound();
+
         if (destroyedByLocal)
         {
             DamageContext context = _hasLocalContext
@@ -249,9 +254,45 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
             _chunk.MarkObjectDestroyed(_placement.instanceId, targetRespawnTime);
         }
 
+        PlayDestroyedSound();
         OnDestroyed(context);
         DespawnSelf();
     }
+
+    #region Sound
+    // 도구 종류(액션)로 타격음을 고르고, 액션이 애매하면 노드 종류로 고른다.
+    private void PlayHitSound(DamageContext context)
+    {
+        AudioLibrarySounds sound = context.ActionType switch
+        {
+            ActionType.Chop => AudioLibrarySounds.WoodChop,
+            ActionType.Mine => AudioLibrarySounds.MineRock,
+            ActionType.Dig  => AudioLibrarySounds.DigSoil,
+            ActionType.Hand => NodeType switch
+            {
+                ResourceNodeType.Tree => AudioLibrarySounds.HitWood,
+                ResourceNodeType.Mine => AudioLibrarySounds.HitRock,
+                _                     => AudioLibrarySounds.PickBush,
+            },
+            _ => NodeType switch
+            {
+                ResourceNodeType.Tree => AudioLibrarySounds.WoodChop,
+                ResourceNodeType.Mine => AudioLibrarySounds.MineRock,
+                _                     => AudioLibrarySounds.PickBush,
+            },
+        };
+        Extensions.PlaySFXAt(sound, context.Point != Vector3.zero ? context.Point : transform.position);
+    }
+
+    // 덤불은 줍는 순간(HandPick) 이미 소리가 나므로 파괴 소리는 나무·돌만
+    private void PlayDestroyedSound()
+    {
+        if (NodeType == ResourceNodeType.Tree)
+            Extensions.PlaySFXAt(AudioLibrarySounds.TreeFall, transform.position);
+        else if (NodeType == ResourceNodeType.Mine)
+            Extensions.PlaySFXAt(AudioLibrarySounds.RockBreak, transform.position);
+    }
+    #endregion
 
     // 풀 반납 (스포너 관리 목록에서 먼저 빼서 청크 언로드 때 중복 반납되지 않게)
     private void DespawnSelf()

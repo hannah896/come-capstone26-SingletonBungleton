@@ -2,6 +2,7 @@ using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using Unity.Cinemachine;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
@@ -73,7 +74,7 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     [SerializeField] private Vector3 weaponLocalScale = Vector3.one;
     [SerializeField] private Vector3 swordMeshLocalPosition = new(1.38f, -1.5f, 2.56f);
     [SerializeField] private Vector3 swordMeshLocalEuler = new(26.14f, -168.4f, -12.8f);
-    [SerializeField] private Vector3 swordMeshLocalScale = new(7f, 7f, 7f);
+    [SerializeField] private Vector3 swordMeshLocalScale = new(4f, 4f, 4f); // 칼 원본 메시가 2.04로 창(1.37)보다 길어서 창보다 작게 잡는다
     [SerializeField] private Vector3 spearMeshLocalPosition = new(1.38f, -1.5f, 2.56f);
     [SerializeField] private Vector3 spearMeshLocalEuler = new(26.14f, -168.4f, -12.8f);
     [SerializeField] private Vector3 spearMeshLocalScale = new(7f, 7f, 7f);
@@ -111,6 +112,21 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     [SerializeField] private Vector3 thrustPullBackRotation = new(-12f, 0f, 0f);
     [Tooltip("찌를 때 더하는 회전(도)")]
     [SerializeField] private Vector3 thrustReachRotation = new(16f, 0f, 0f);
+
+    [Header("활 조준 (우클릭 줌인)")]
+    [Tooltip("조준 중 시야각(FOV). 평소 시야각보다 작을수록 더 확대된다.")]
+    [SerializeField] private float aimZoomFov = 28f;
+    [Tooltip("줌인/줌아웃 속도 (클수록 빠름)")]
+    [SerializeField] private float aimZoomSpeed = 12f;
+    [Tooltip("조준 중 마우스 감도 배율")]
+    [SerializeField, Range(0.1f, 1f)] private float aimSensitivityScale = 0.5f;
+
+    [Header("방패 막기 (우클릭, 1인칭)")]
+    [Tooltip("우클릭으로 막을 때 평소 위치(Shield Local Position)에서 더하는 이동량. 방패가 화면 중앙 쪽으로 오도록 조정한다.")]
+    [SerializeField] private Vector3 shieldBlockOffset = new(-0.38f, 0.5f, -0.8f);
+    [Tooltip("막을 때 평소 회전(Shield Local Euler)에서 더하는 회전(도)")]
+    [SerializeField] private Vector3 shieldBlockEulerOffset = Vector3.zero;
+    [SerializeField] private float shieldBlockTweenTime = 0.12f;
 
     [Header("활 시위 당기기 (1인칭 스윙)")]
     [Tooltip("시위를 당길 때 활이 이동하는 양. ToolPivot 로컬 좌표(Z가 앞, 음수면 몸 쪽으로 끌어당김).")]
@@ -202,6 +218,7 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         if (playerInventory == null) return;
 
         playerInventory.OnEquippedItemChanged += OnEquippedItemChanged;
+        playerInventory.OnBlockingChanged += OnBlockingChanged;
         PlaceEquippedToolUnderPivot(playerInventory.EquippedHand).Forget();
     }
 
@@ -370,8 +387,10 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         if (playerInventory != null)
         {
             playerInventory.OnEquippedItemChanged -= OnEquippedItemChanged;
+            playerInventory.OnBlockingChanged -= OnBlockingChanged;
         }
 
+        ResetAimFov();
         ClearEquippedToolView();
         RemoveToolCameraFromStack();
     }
@@ -464,18 +483,72 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         if (toolCamera == null)
             ConfigureToolCamera();
 
+        UpdateBowAim(deltaTime);
+
         // Ctrl 키(RotateView)를 누르고 있는 동안에만 마우스 이동값으로 시야를 회전시킨다.
         Vector2 look = inputData.RotateViewHeld ? inputData.LookInput : Vector2.zero;
+        float sensitivity = IsAiming ? mouseSensitivity * aimSensitivityScale : mouseSensitivity;
 
         // Yaw: 플레이어 몸체를 좌우 회전 (1인칭에서 몸이 카메라 방향과 일치)
-        yaw += look.x * mouseSensitivity;
+        yaw += look.x * sensitivity;
         playerBody.rotation = Quaternion.Euler(0f, yaw, 0f);
 
         // Pitch: 눈 피벗만 상하 회전 (몸은 기울지 않음)
-        pitch -= look.y * mouseSensitivity;
+        pitch -= look.y * sensitivity;
         pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
         eyePivot.localRotation = Quaternion.Euler(pitch + pitchOffset, 0f, 0f);
     }
+
+    #region 활 조준 (우클릭 줌인)
+
+    private float baseFov;
+    private bool baseFovCaptured;
+
+    /// <summary>활을 들고 우클릭을 누르고 있어 줌인 조준 중인지.</summary>
+    public bool IsAiming { get; private set; }
+
+    // 활을 들고 있을 때만 우클릭 동안 시야각을 좁힌다. 놓거나 다른 걸 들면 부드럽게 원래대로 돌아온다.
+    private void UpdateBowAim(float deltaTime)
+    {
+        if (fpCamera == null) return;
+
+        ItemDataSO hand = playerInventory != null ? playerInventory.EquippedHand : null;
+        bool bowEquipped = hand != null && hand.itemType == ItemType.CombatGear && hand.combatGearType == CombatGearType.Bow;
+
+        Mouse mouse = Mouse.current;
+        IsAiming = bowEquipped && mouse != null && mouse.rightButton.isPressed
+            && !(Main.Input != null && Main.Input.IsPointerOverUI(mouse.position.ReadValue()));
+
+        if (!baseFovCaptured)
+        {
+            baseFov = fpCamera.Lens.FieldOfView;
+            baseFovCaptured = true;
+        }
+
+        LensSettings lens = fpCamera.Lens;
+        float target = IsAiming ? aimZoomFov : baseFov;
+        if (Mathf.Approximately(lens.FieldOfView, target)) return;
+
+        float t = 1f - Mathf.Exp(-aimZoomSpeed * deltaTime);
+        lens.FieldOfView = Mathf.Lerp(lens.FieldOfView, target, t);
+        fpCamera.Lens = lens;
+    }
+
+    // 카메라가 바뀌면(리스폰 등) 새 카메라의 시야각을 기준으로 다시 잡는다.
+    private void ResetAimFov()
+    {
+        IsAiming = false;
+        if (fpCamera != null && baseFovCaptured)
+        {
+            LensSettings lens = fpCamera.Lens;
+            lens.FieldOfView = baseFov;
+            fpCamera.Lens = lens;
+        }
+
+        baseFovCaptured = false;
+    }
+
+    #endregion
 
     private void CacheBodyRenderers()
     {
@@ -515,6 +588,22 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
             if (renderers[i] == null) continue;
             renderers[i].shadowCastingMode = mode;
         }
+    }
+
+    // 우클릭으로 막는 동안 방패를 화면 중앙 쪽으로 끌어오고, 떼면 원래 들던 자리로 돌린다.
+    private void OnBlockingChanged(bool blocking)
+    {
+        if (equippedToolObject == null || playerInventory == null) return;
+
+        ItemDataSO hand = playerInventory.EquippedHand;
+        if (hand == null || hand.combatGearType != CombatGearType.Shield) return;
+
+        Transform tool = equippedToolObject.transform;
+        tool.DOKill();
+        tool.DOLocalMove(blocking ? shieldLocalPosition + shieldBlockOffset : shieldLocalPosition, shieldBlockTweenTime)
+            .SetEase(Ease.OutQuad);
+        tool.DOLocalRotate(blocking ? shieldLocalEuler + shieldBlockEulerOffset : shieldLocalEuler, shieldBlockTweenTime)
+            .SetEase(Ease.OutQuad);
     }
 
     private void OnEquippedItemChanged(EquipSlot slot, ItemDataSO itemData)

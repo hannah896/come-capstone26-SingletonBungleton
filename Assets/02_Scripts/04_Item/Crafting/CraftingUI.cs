@@ -129,6 +129,7 @@ public class CraftingUI : UI_Panel
     public void Toggle()
     {
         gameObject.SetActive(!gameObject.activeSelf);
+        Extensions.PlaySFX(gameObject.activeSelf ? AudioLibrarySounds.UIOpen : AudioLibrarySounds.UIClose);
         if (gameObject.activeSelf) OpenDefault();
     }
 

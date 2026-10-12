@@ -945,7 +945,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   statData: {fileID: 11400000, guid: 6ad5a06f7c713ac44b8c78dfdfd4c3bc, type: 2}
-  dropTable: {fileID: 0}
+  dropTable: {fileID: 11400000, guid: dc5f011e3b114ce3a658baca20f3936b, type: 2}
   animator: {fileID: 908042163101761052}
   deathFallbackTimeout: 0
   catalogKey: Deer

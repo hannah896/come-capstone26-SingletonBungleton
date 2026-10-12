@@ -81,3 +81,7 @@ crashlytics-build.properties
 /.claude
 /docs/*
 !/docs/기획_상위작업대_레시피.md
+
+# ML-Agents 학습 산출물/가상환경
+/results/
+/mlagents-venv/

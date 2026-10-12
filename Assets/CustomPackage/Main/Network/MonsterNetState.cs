@@ -23,6 +23,9 @@ public struct MonsterNetState : INetworkStruct
     /// <summary>현재 재생 중인 애니메이션(MonsterAnimId). 클라는 이걸로 애니를 재현한다.</summary>
     public byte AnimId;
 
+    /// <summary>체력 비율(0~255 = 0~100%). 클라는 이걸로 머리 위 체력바를 그린다.</summary>
+    public byte HpRatio;
+
     public Vector3 Position;
     public float Yaw;
 }

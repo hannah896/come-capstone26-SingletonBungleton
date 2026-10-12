@@ -229,9 +229,23 @@ public static class Extensions
     public static void PlayBGM(AudioLibraryMusic key) => Main.JSAM.PlayBGM(key);
 
     /// <summary>
-    /// 효과음을 재생합니다.
+    /// 효과음을 재생합니다(2D — 플레이어 자신의 소리·UI). Main이 없으면(에디트 모드 테스트 등) 무시합니다.
     /// </summary>
-    public static void PlaySFX(AudioLibrarySounds key) => Main.JSAM.PlaySFX(key);
+    public static void PlaySFX(AudioLibrarySounds key) => Main.JSAM?.PlaySFX(key);
+
+    /// <summary>
+    /// 월드 위치에서 효과음을 재생합니다(3D — 채집 대상·구조물·동물 등). Main이 없으면 무시합니다.
+    /// </summary>
+    public static void PlaySFXAt(AudioLibrarySounds key, Vector3 position) => Main.JSAM?.PlaySFXAt(key, position);
+
+    /// <summary>
+    /// 대상을 따라가며 효과음을 재생합니다(3D). 루프 사운드는 StopSFXOn으로 끕니다. Main이 없으면 무시합니다.
+    /// </summary>
+    public static void PlaySFXOn(AudioLibrarySounds key, Transform target) => Main.JSAM?.PlaySFXOn(key, target);
+
+    /// <summary>대상에 붙어 재생 중인 효과음(루프 포함)을 정지합니다.</summary>
+    public static void StopSFXOn(AudioLibrarySounds key, Transform target, bool instantly = false)
+        => Main.JSAM?.StopSFXOn(key, target, instantly);
 
     /// <summary>
     /// 마스터 볼륨을 설정합니다. (0~1)

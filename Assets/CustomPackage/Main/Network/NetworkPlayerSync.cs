@@ -53,6 +53,10 @@ public class NetworkPlayerSync : NetworkBehaviour
     // 아이템 이름은 최대 22자라 _32면 충분하다.
     [Networked] private NetworkString<_32> NetEquippedHandKey { get; set; }
 
+    // 머리/가슴 방어구 키. 남의 화면에서 방어구 옷을 입혀 보여주기 위함 (빈 문자열 = 미착용)
+    [Networked] private NetworkString<_32> NetEquippedHeadKey { get; set; }
+    [Networked] private NetworkString<_32> NetEquippedChestKey { get; set; }
+
     // 소유자가 보고한 사망 상태. 원격 피어의 몬스터 타게팅/피격 판정에 쓴다 (HP는 소유자 피어에만 있다).
     [Networked] private NetworkBool NetIsDead { get; set; }
 
@@ -105,6 +109,10 @@ public class NetworkPlayerSync : NetworkBehaviour
     // 원격 전용 — 마지막으로 뷰에 반영한 장착 키
     private string _appliedEquipKey;
 
+    // 원격 전용 — 마지막으로 옷 뷰에 반영한 머리/가슴 방어구 키
+    private string _appliedHeadKey;
+    private string _appliedChestKey;
+
     // 소유자 전용 — 마지막으로 보고한 사망 상태
     private bool _reportedDead;
 
@@ -142,9 +150,12 @@ public class NetworkPlayerSync : NetworkBehaviour
             if (_inventory != null)
             {
                 _inventory.OnEquippedItemChanged += OnLocalEquippedItemChanged;
+                _inventory.OnArrowFired += OnLocalArrowFired;
 
                 // 재접속·리스폰 등으로 이미 장착한 상태로 스폰될 수 있으므로 현재 값을 한 번 보고한다
                 ReportEquippedHand(GetItemKey(_inventory.EquippedHand));
+                ReportEquippedArmor(EquipSlot.Head, GetItemKey(_inventory.EquippedHead));
+                ReportEquippedArmor(EquipSlot.Chest, GetItemKey(_inventory.EquippedChest));
             }
         }
         else
@@ -209,6 +220,7 @@ public class NetworkPlayerSync : NetworkBehaviour
         if (_inventory != null)
         {
             _inventory.OnEquippedItemChanged -= OnLocalEquippedItemChanged;
+            _inventory.OnArrowFired -= OnLocalArrowFired;
             _inventory = null;
         }
 
@@ -265,6 +277,7 @@ public class NetworkPlayerSync : NetworkBehaviour
         ApplyAnimState();
         ApplyCrossFade();
         ApplyEquipmentView();
+        ApplyArmorViews();
 
         // 호스트가 보는 원격 캐릭터의 위치는 FixedUpdateNetwork에서 이미 적용됨
         if (Object.HasStateAuthority) return;
@@ -448,12 +461,62 @@ public class NetworkPlayerSync : NetworkBehaviour
 
     #region 장착 아이템 동기화
 
-    // 소유자: 장착이 바뀌었다 — 손 슬롯만 호스트로 보고한다
+    // 소유자: 장착이 바뀌었다 — 손/머리/가슴 슬롯을 호스트로 보고한다
     private void OnLocalEquippedItemChanged(EquipSlot slot, ItemDataSO itemData)
     {
-        if (slot != EquipSlot.Hand) return;
+        if (slot == EquipSlot.Hand)
+            ReportEquippedHand(GetItemKey(itemData));
+        else if (slot == EquipSlot.Head || slot == EquipSlot.Chest)
+            ReportEquippedArmor(slot, GetItemKey(itemData));
+    }
 
-        ReportEquippedHand(GetItemKey(itemData));
+    // 소유자 → 호스트. 호스트 자신의 캐릭터라면 RPC 없이 바로 확정한다.
+    private void ReportEquippedArmor(EquipSlot slot, string key)
+    {
+        key ??= string.Empty;
+
+        if (Object.HasStateAuthority)
+            SetArmorKey(slot, key);
+        else
+            Rpc_ReportEquippedArmor((byte)slot, key);
+    }
+
+    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+    private void Rpc_ReportEquippedArmor(byte slot, NetworkString<_32> key)
+    {
+        SetArmorKey((EquipSlot)slot, key.Value ?? string.Empty);
+    }
+
+    private void SetArmorKey(EquipSlot slot, string key)
+    {
+        if (slot == EquipSlot.Head) NetEquippedHeadKey = key;
+        else if (slot == EquipSlot.Chest) NetEquippedChestKey = key;
+    }
+
+    // 원격: 복제된 방어구 키가 바뀌면 해당 슬롯의 옷 뷰를 교체한다.
+    // (뒤늦게 합류한 피어도 _applied 키가 null이라 첫 프레임에 현재 착용이 반영된다)
+    private void ApplyArmorViews()
+    {
+        if (_player == null || _player.OutfitViews == null) return;
+
+        string head = NetEquippedHeadKey.Value ?? string.Empty;
+        string chest = NetEquippedChestKey.Value ?? string.Empty;
+
+        foreach (PlayerOutfitView view in _player.OutfitViews)
+        {
+            if (view == null) continue;
+
+            if (view.WatchedSlot == EquipSlot.Head && head != _appliedHeadKey)
+            {
+                _appliedHeadKey = head;
+                view.EquipByItemKey(head);
+            }
+            else if (view.WatchedSlot == EquipSlot.Chest && chest != _appliedChestKey)
+            {
+                _appliedChestKey = chest;
+                view.EquipByItemKey(chest);
+            }
+        }
     }
 
     // 소유자 → 호스트. 호스트 자신의 캐릭터라면 RPC 없이 바로 확정한다.
@@ -558,6 +621,34 @@ public class NetworkPlayerSync : NetworkBehaviour
     private void Rpc_ReportDead(NetworkBool dead)
     {
         NetIsDead = dead;
+    }
+
+    #endregion
+
+    #region 화살 동기화
+
+    // 소유자: 화살을 쐈을 때 호스트에 알린다. (호스트 자신이 쐈으면 바로 전파)
+    private void OnLocalArrowFired(Vector3 origin, Vector3 direction, float speed, float maxDistance)
+    {
+        if (Object == null || !Object.IsValid) return;
+
+        if (Object.HasStateAuthority) Rpc_BroadcastArrow(origin, direction, speed, maxDistance);
+        else Rpc_ReportArrow(origin, direction, speed, maxDistance);
+    }
+
+    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+    private void Rpc_ReportArrow(Vector3 origin, Vector3 direction, float speed, float maxDistance)
+    {
+        Rpc_BroadcastArrow(origin, direction, speed, maxDistance);
+    }
+
+    // 쏜 본인을 뺀 모든 피어에서 화살 모양만 재현한다. 데미지는 쏜 쪽에서만 판정하므로 여기서는 맞아도 효과가 없다.
+    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+    private void Rpc_BroadcastArrow(Vector3 origin, Vector3 direction, float speed, float maxDistance)
+    {
+        if (Object.HasInputAuthority) return;
+
+        PlayerArrowProjectile.Spawn(origin, direction, speed, maxDistance, ~0, transform, null);
     }
 
     #endregion

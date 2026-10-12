@@ -1338,6 +1338,8 @@ MonoBehaviour:
   idleBool: Idle
   walkBool: Walk
   runBool: Run
+  vocalSound: Chicken
+  idleVocalInterval: {x: 8, y: 16}
   netLerpSpeed: 12
   netSnapDistance: 6
 --- !u!114 &6465559227830581223
