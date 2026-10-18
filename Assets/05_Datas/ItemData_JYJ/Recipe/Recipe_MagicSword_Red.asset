@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 64f7e092734e07b468c75b5208bc1759, type: 3}
+  m_Name: Recipe_MagicSword_Red
+  m_EditorClassIdentifier: 
+  recipeID: Recipe_MagicSword_Red
+  recipeName: "\uB9C8\uB825 \uAC80 (\uC801)"
+  category: 9
+  requiredStation: 0
+  ingredients:
+  - itemData: {fileID: 11400000, guid: 64609e134e1bf8e46ac8a2996d41e244, type: 2}
+    amount: 2
+  - itemData: {fileID: 11400000, guid: b1ff45e4b9b37b542a5596b38218c1bc, type: 2}
+    amount: 1
+  - itemData: {fileID: 11400000, guid: b50dca45200467b4595cbddcff9b6e89, type: 2}
+    amount: 5
+  - itemData: {fileID: 11400000, guid: 1a846fdde396fc945acf993a20dd51e4, type: 2}
+    amount: 1
+  resultItem: {fileID: 11400000, guid: cf5bbc40ebbb72c4388b9f01d94f04ad, type: 2}
+  resultAmount: 1
+  craftTime: 0

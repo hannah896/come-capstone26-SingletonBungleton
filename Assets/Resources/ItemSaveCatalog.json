@@ -145,8 +145,36 @@
             "itemKey": "Booty_Leather"
         },
         {
+            "itemId": "LunarForge",
+            "itemKey": "Tool_LunarForge"
+        },
+        {
+            "itemId": "MagicBow",
+            "itemKey": "Weapon_MagicBow"
+        },
+        {
             "itemId": "MagicDust",
             "itemKey": "Booty_MagicDust"
+        },
+        {
+            "itemId": "MagicShield",
+            "itemKey": "Armor_MagicShield"
+        },
+        {
+            "itemId": "MagicSpear",
+            "itemKey": "Weapon_MagicSpear"
+        },
+        {
+            "itemId": "MagicSword_Cyan",
+            "itemKey": "Weapon_MagicSword_Cyan"
+        },
+        {
+            "itemId": "MagicSword_Red",
+            "itemKey": "Weapon_MagicSword_Red"
+        },
+        {
+            "itemId": "MagicWand",
+            "itemKey": "Weapon_MagicWand"
         },
         {
             "itemId": "Meat1",

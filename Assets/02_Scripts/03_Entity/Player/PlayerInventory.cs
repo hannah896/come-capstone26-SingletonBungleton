@@ -1181,6 +1181,14 @@ public partial class PlayerInventory : MonoBehaviour
             return true;
         }
 
+        // 지팡이: 재사용 대기가 끝났으면 대상 없이도 쓸 수 있다
+        if (IsStaff(handItem))
+        {
+            if (!IsStaffReady()) return false;
+            actionType = ActionType.Attack;
+            return true;
+        }
+
         // 검/창: 정면 부채꼴 안에 칠 대상이 있으면 공격 시작
         if (UsesAreaAttack(handItem) && HitAreaTargets(handItem, apply: false))
         {
@@ -1239,6 +1247,13 @@ public partial class PlayerInventory : MonoBehaviour
         {
             FireArrow(handItem);
             handTool?.UseDurability();
+            return true;
+        }
+
+        // 지팡이: 휘두르는 순간 체력을 회복한다 (재사용 대기 있음, 내구도 없음)
+        if (IsStaff(handItem))
+        {
+            UseStaff(handItem);
             return true;
         }
 
@@ -1320,6 +1335,36 @@ public partial class PlayerInventory : MonoBehaviour
         int damage = Mathf.Max(1, Mathf.RoundToInt(handItem.attackDamage + baseAttack));
         return new DamageContext(gameObject, point, damage, handItem.itemID, actionType, handItem.harvestableNodeTypes);
     }
+
+    #region 지팡이
+
+    // 마지막으로 지팡이를 쓴 시각 (Time.time 기준). 재사용 대기 계산용.
+    private float lastStaffUseTime = -999f;
+
+    private static bool IsStaff(ItemDataSO handItem)
+        => handItem != null && handItem.itemType == ItemType.CombatGear && handItem.combatGearType == CombatGearType.Staff;
+
+    private bool IsStaffReady()
+    {
+        ItemDataSO staff = EquippedHand;
+        return IsStaff(staff) && Time.time - lastStaffUseTime >= staff.staffCooldown;
+    }
+
+    // 지팡이로 자신의 체력을 회복한다. 회복량/재사용 대기는 아이템 데이터(staffHealAmount/staffCooldown)에서 읽는다.
+    private void UseStaff(ItemDataSO staff)
+    {
+        if (owner == null || owner.Stat == null) return;
+        if (Time.time - lastStaffUseTime < staff.staffCooldown) return;
+
+        lastStaffUseTime = Time.time;
+        owner.Stat.RestoreHp(staff.staffHealAmount);
+        CombatEffects.Play(staff, transform.position);
+
+        // 쓸 때마다 내구도가 줄고, 다 닳으면 다른 도구처럼 사라진다
+        GetEquippedItemInstance(EquipSlot.Hand)?.UseDurability();
+    }
+
+    #endregion
 
     #region 활
 
@@ -1524,6 +1569,7 @@ public partial class PlayerInventory : MonoBehaviour
     /// </summary>
     private void DamageMonster(Monster monster, DamageContext ctx, ItemDataSO handItem, ActionType actionType)
     {
+        CombatEffects.Play(handItem, ctx.Point);
 #if PHOTON_FUSION
         var director = NetworkMonsterDirector.Instance;
         if (director != null)
@@ -1541,6 +1587,7 @@ public partial class PlayerInventory : MonoBehaviour
     /// </summary>
     private void DamageAnimal(Animal animal, DamageContext ctx, ItemDataSO handItem, ActionType actionType)
     {
+        CombatEffects.Play(handItem, ctx.Point);
 #if PHOTON_FUSION
         var director = NetworkAnimalDirector.Instance;
         if (director != null)

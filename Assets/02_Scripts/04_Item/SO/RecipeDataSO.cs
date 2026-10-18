@@ -45,6 +45,7 @@ public enum RecipeCategory
     Medicine   = 6,  // 치료제
     All        = 7,  // 모두
     Cooking    = 8,  // 요리
+    Magic      = 9,  // 마력 무기 (문(달) 연성대 전용)
 }
 
 // 작업대 티어 (높은 티어는 낮은 티어 레시피도 제작 가능)

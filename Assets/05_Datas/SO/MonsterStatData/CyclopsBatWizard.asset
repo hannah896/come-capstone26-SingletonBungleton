@@ -22,7 +22,7 @@ MonoBehaviour:
   DetectRange: 16
   AttackRange: 11
   TurnSpeed: 540
-  DropTable: {fileID: 0}
+  DropTable: {fileID: 11400000, guid: f0bc9c9262344a23918d47993f102f57, type: 2}
   SkillGap: 0.5
   MeleeRange: 2.2
   MeleeDamage: 10

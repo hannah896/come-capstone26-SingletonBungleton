@@ -649,7 +649,37 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         equippedToolEquipable?.Equip();
     }
 
+    // 아이템별 모델(메시) 자세 덮어쓰기. 종류별 기본값(검/창/활...)이 맞지 않는 아이템(마력 무기 등)을 따로 맞출 때 쓴다.
+    // 항목을 추가하고 Item Key에 ItemDataSO 파일명(예: Weapon_MagicBow)을 넣은 뒤 값을 조정한다.
+    [System.Serializable]
+    public class ToolViewOverride
+    {
+        [Tooltip("ItemDataSO 파일명 (= Addressable 키)")]
+        public string itemKey;
+        public Vector3 meshLocalPosition = new(1.38f, -1.5f, 2.56f);
+        public Vector3 meshLocalEuler = new(26.14f, -168.4f, -12.8f);
+        public Vector3 meshLocalScale = new(7f, 7f, 7f);
+    }
+
+    [Header("아이템별 1인칭 모델 덮어쓰기")]
+    [SerializeField] private System.Collections.Generic.List<ToolViewOverride> toolViewOverrides = new();
+
     private void ApplyEquippedToolViewTransform(ItemDataSO itemData)
+    {
+        ApplyEquippedToolViewTransformByType(itemData);
+
+        if (itemData == null || toolViewOverrides == null) return;
+        for (int i = 0; i < toolViewOverrides.Count; i++)
+        {
+            ToolViewOverride entry = toolViewOverrides[i];
+            if (entry == null || entry.itemKey != itemData.name) continue;
+
+            ApplyChildMeshTransform(entry.meshLocalPosition, entry.meshLocalEuler, entry.meshLocalScale);
+            return;
+        }
+    }
+
+    private void ApplyEquippedToolViewTransformByType(ItemDataSO itemData)
     {
         if (equippedToolObject == null) return;
 
@@ -932,7 +962,13 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     private void ConfigureEquippedTorchLight(ItemDataSO itemData)
     {
         if (equippedToolObject == null || itemData == null) return;
-        if (itemData.survivalToolType != SurvivalToolType.Torch) return;
+
+        bool isTorch = itemData.survivalToolType == SurvivalToolType.Torch;
+        if (!isTorch && !itemData.emitsLight) return;
+
+        Color color = isTorch ? equippedTorchLightColor : itemData.lightColor;
+        float intensity = isTorch ? equippedTorchLightIntensity : itemData.lightIntensity;
+        float range = isTorch ? equippedTorchLightRange : itemData.lightRange;
 
         Light[] lights = equippedToolObject.GetComponentsInChildren<Light>(true);
         for (int i = 0; i < lights.Length; i++)
@@ -941,9 +977,9 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
             if (torchLight == null) continue;
 
             torchLight.enabled = true;
-            torchLight.color = equippedTorchLightColor;
-            torchLight.intensity = Mathf.Max(torchLight.intensity, equippedTorchLightIntensity);
-            torchLight.range = Mathf.Max(torchLight.range, equippedTorchLightRange);
+            torchLight.color = color;
+            torchLight.intensity = Mathf.Max(torchLight.intensity, intensity);
+            torchLight.range = Mathf.Max(torchLight.range, range);
             torchLight.cullingMask = Physics.AllLayers;
             torchLight.gameObject.layer = equippedLightLayer;
         }

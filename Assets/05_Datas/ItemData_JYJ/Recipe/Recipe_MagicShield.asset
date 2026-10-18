@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 64f7e092734e07b468c75b5208bc1759, type: 3}
+  m_Name: Recipe_MagicShield
+  m_EditorClassIdentifier: 
+  recipeID: Recipe_MagicShield
+  recipeName: "\uB9C8\uB825 \uBC29\uD328"
+  category: 9
+  requiredStation: 0
+  ingredients:
+  - itemData: {fileID: 11400000, guid: ae79b778153ba274a9a4c2048630aff3, type: 2}
+    amount: 1
+  - itemData: {fileID: 11400000, guid: 61bd9fd9c270114489e2b3c5652fddce, type: 2}
+    amount: 1
+  - itemData: {fileID: 11400000, guid: b50dca45200467b4595cbddcff9b6e89, type: 2}
+    amount: 5
+  - itemData: {fileID: 11400000, guid: 64bd351efb9aecd468e2cd3ba48367e7, type: 2}
+    amount: 3
+  resultItem: {fileID: 11400000, guid: 09d4b28f9c2e3b246b42dbb66bfad346, type: 2}
+  resultAmount: 1
+  craftTime: 0

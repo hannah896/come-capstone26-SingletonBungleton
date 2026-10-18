@@ -48,7 +48,8 @@ public enum CombatGearType
     Sword,      // 칼
     Bow,        // 활
     Spear,      // 창
-    Shield      // 방패
+    Shield,     // 방패
+    Staff       // 지팡이 (치유 등 마법 도구, 공격하지 않음)
 }
 
 // 자원 세부 타입

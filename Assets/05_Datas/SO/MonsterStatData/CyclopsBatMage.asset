@@ -22,7 +22,7 @@ MonoBehaviour:
   DetectRange: 25
   AttackRange: 12
   TurnSpeed: 360
-  DropTable: {fileID: 0}
+  DropTable: {fileID: 11400000, guid: 896fa11c1c404f8eac5c7cec4bb3004f, type: 2}
   StaggerCooldown: 5
   SkillGap: 0.6
   Phase2HpRatio: 0.5

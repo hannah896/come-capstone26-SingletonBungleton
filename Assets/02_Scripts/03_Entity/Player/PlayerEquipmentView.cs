@@ -228,7 +228,14 @@ public class PlayerEquipmentView : MonoBehaviour
     {
         Item item = _spawnedObject.GetComponentInChildren<Item>(true);
         ItemDataSO itemSO = item != null ? item.ItemDataSO : null;
-        if (itemSO == null || itemSO.survivalToolType != SurvivalToolType.Torch) return;
+        if (itemSO == null) return;
+
+        bool isTorch = itemSO.survivalToolType == SurvivalToolType.Torch;
+        if (!isTorch && !itemSO.emitsLight) return;
+
+        Color color = isTorch ? torchLightColor : itemSO.lightColor;
+        float intensity = isTorch ? torchLightIntensity : itemSO.lightIntensity;
+        float range = isTorch ? torchLightRange : itemSO.lightRange;
 
         Light[] lights = _spawnedObject.GetComponentsInChildren<Light>(true);
         for (int i = 0; i < lights.Length; i++)
@@ -237,9 +244,9 @@ public class PlayerEquipmentView : MonoBehaviour
             if (light == null) continue;
 
             light.enabled = true;
-            light.color = torchLightColor;
-            light.intensity = Mathf.Max(light.intensity, torchLightIntensity);
-            light.range = Mathf.Max(light.range, torchLightRange);
+            light.color = color;
+            light.intensity = Mathf.Max(light.intensity, intensity);
+            light.range = Mathf.Max(light.range, range);
             light.cullingMask = Physics.AllLayers;
         }
     }

@@ -15,16 +15,6 @@ MonoBehaviour:
   m_GroupName: Prefabs_UI
   m_GUID: 2411e90366f22fd44a7a6ee35752873b
   m_SerializeEntries:
-  - m_GUID: f0b6cc318df0d454fb42faed56c6f08b
-    m_Address: UI_Popup_ConfirmDelete
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 194360f4737004f4785d9ef12a0dff7b
-    m_Address: UI_Popup_LoadRoom
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 07e20303f5edb7f4084fe710d5f60ed9
     m_Address: UI_Popup_EnterRoom
     m_ReadOnly: 0
@@ -32,6 +22,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 0f9147e697b9de9429447a6b59652439
     m_Address: UI_Popup_WorldGen
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 194360f4737004f4785d9ef12a0dff7b
+    m_Address: UI_Popup_LoadRoom
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -118,8 +113,18 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: eaf3e7c4edb7df247a87a2ba3796e583
+    m_Address: UI_Popup_LunarForge
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: f010d313d6369664f91e69d9fb5efed1
     m_Address: UI_Popup_Chest
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f0b6cc318df0d454fb42faed56c6f08b
+    m_Address: UI_Popup_ConfirmDelete
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

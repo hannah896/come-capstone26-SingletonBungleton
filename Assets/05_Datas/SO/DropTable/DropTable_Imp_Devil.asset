@@ -21,5 +21,9 @@ MonoBehaviour:
     MinDropCount: 1
     MaxDropCount: 1
     DropChance: 1
+  - DropPrefabKey: Booty_DemonHorn_Black
+    MinDropCount: 1
+    MaxDropCount: 2
+    DropChance: 1
   DropRadius: 0.5
   DropFxPrefabKey: 

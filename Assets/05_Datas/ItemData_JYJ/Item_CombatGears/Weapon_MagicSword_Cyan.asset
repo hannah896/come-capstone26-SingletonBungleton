@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
+  m_Name: Weapon_MagicSword_Cyan
+  m_EditorClassIdentifier: 
+  itemID: MagicSword_Cyan
+  itemName: "\uB9C8\uB825 \uAC80 (\uCCAD)"
+  description: "\uB9C8\uB825\uC774 \uAE43\uB4E0 \uD478\uB978 \uAC80. \uBCA0\uB294
+    \uACF3\uB9C8\uB2E4 \uB9C8\uB825\uC774 \uD130\uC9C4\uB2E4."
+  icon: {fileID: 21300000, guid: e2bcade4e4773b340ad14bd116f775e8, type: 3}
+  prefab: {fileID: 4975198775200674916, guid: c09bafb472135f44881b6c647500c37a, type: 3}
+  itemType: 1
+  survivalToolType: 0
+  harvestableNodeTypes: 
+  combatGearType: 3
+  resourceType: 0
+  bootyType: 0
+  foodType: 0
+  dishType: 0
+  specialType: 0
+  isStackable: 0
+  maxStack: 1
+  equipSlot: 3
+  hasDurability: 1
+  maxDurability: 100
+  costPerDurability: 1
+  attackDamage: 60
+  attackRange: 10
+  attackAngle: 90
+  defense: 0
+  staffHealAmount: 0
+  staffCooldown: 6
+  attackEffectKey: VFX_OutburstCyan
+  attackEffectScale: 0.5
+  attackEffectLifetime: 2
+  emitsLight: 0
+  lightColor: {r: 0.55, g: 0.75, b: 1, a: 1}
+  lightIntensity: 3
+  lightRange: 7
+  hungerRestore: 0
+  healthRestore: 0
+  egoRestore: 0
+  expirationTime: 0
+  tags: 0
+  isPlaceable: 0
+  placementPrefab: {fileID: 0}
+  placementFootprint: {x: 1, y: 1}
+  placementPivotOffset: {x: 0, y: 0, z: 0}
+  placementSnapToGrid: 1
+  placementCheckHeight: 2
+  placementCheckCenterOffset: {x: 0, y: 0, z: 0}
