@@ -1,6 +1,6 @@
 /// <summary>
 /// 데몬 공격 상태. 타깃과의 거리로 공격 수단을 고른다.
-/// - SlashRange 이내: 근접 슬래시 (내부 쿨 없음, MinAttackPeriod 주기만 적용)
+/// - SlashRange 이내: 근접 슬래시 (MinAttackPeriod 주기. 클립이 끝나면 대기 자세로 숨을 돌린다)
 /// - 그 밖 ~ AttackRange 이내: 운석 세례 (긴 내부 쿨타임)
 /// - 운석 세례 쿨 대기 중에는 슬래시 사거리까지 접근(도약/걷기)한다.
 /// AttackRange를 벗어나면 Chase, 타깃 소실 시 Idle로 전환한다.
@@ -10,6 +10,7 @@ public class DemonAttackState : MobState<Monster>
     private readonly DemonStateMachine sm;
     private readonly Demon demon;
     private float slashCooldown;
+    private float slashAnimTimer; // 슬래시 클립 남은 시간 (끝나면 대기 자세로)
     private float castTimer;    // 시전 모션 남은 시간 (>0이면 제자리 고정)
 
     public DemonAttackState(Demon owner, DemonStateMachine machine) : base(owner, machine)
@@ -53,15 +54,30 @@ public class DemonAttackState : MobState<Monster>
 
         slashCooldown -= time;
 
+        // 슬래시 클립이 끝나면 대기 자세로 돌린다. 공격 Bool을 켜 둔 채면 다음 슬래시 때 클립이 다시 재생되지 않는다.
+        if (slashAnimTimer > 0f)
+        {
+            slashAnimTimer -= time;
+            if (slashAnimTimer <= 0f && demon.CurrentAnimId == MonsterAnimId.Attack)
+                demon.PlayAnim(MonsterAnimId.Idle);
+        }
+
         if (demon.IsTargetInSlashRange())
         {
-            // 근접: 슬래시. 내부 쿨 없이 MinAttackPeriod 주기로만 반복
+            // 근접: 슬래시. MinAttackPeriod 주기로 반복 (사이에는 대기 자세)
             demon.FaceTargetStep(time);
             if (slashCooldown <= 0f)
             {
                 demon.PlayAnim(MonsterAnimId.Attack);
                 demon.PerformAttack();
-                slashCooldown = demon.MinAttackPeriod;
+                slashCooldown = demon.NextMeleeDelay(demon.AttackAnimHoldTime, demon.MinAttackPeriod);
+                slashAnimTimer = demon.AttackAnimHoldTime;
+            }
+            // 같은 기술(슬래시)만 쿨을 기다린다. 쉬는 동안 운석 세례가 준비됐으면 바로 이어 쓴다
+            else if (slashAnimTimer <= 0f && demon.IsMeteorReady)
+            {
+                demon.CastMeteorStorm();
+                castTimer = demon.MeteorCastTime;
             }
         }
         else if (demon.IsMeteorReady)

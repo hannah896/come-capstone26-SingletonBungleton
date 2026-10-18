@@ -86,7 +86,7 @@ public class BatWizardAttackState : MobState<Monster>
         {
             Begin(wizard.NextMelee());
         }
-        else if (!inMelee && wizard.IsProjectileReady)
+        else if (wizard.IsProjectileReady) // 같은 기술(근접)만 쿨을 기다린다. 근접을 쉬는 동안에도 쏜다
         {
             Begin(MonsterAnimId.RangeAttack);
             wizard.StartProjectileCooldown();

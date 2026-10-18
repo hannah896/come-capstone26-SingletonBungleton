@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1ef99f3f267b7c84ab760173ba901888, type: 3}
   m_Name: CyclopsBatWizard
   m_EditorClassIdentifier: 
-  MaxHP: 140
-  CurHP: 140
+  MaxHP: 200
+  CurHP: 200
   MoveSpeed: 3.2
   AttackDamage: 10
   Defense: 3
@@ -21,17 +21,21 @@ MonoBehaviour:
   FOV: 360
   DetectRange: 16
   AttackRange: 11
+  MeleeRhythmGaps:
+  - 0.1
+  - 0.05
+  MeleeRestJitter: 0.5
   TurnSpeed: 540
   DropTable: {fileID: 0}
-  SkillGap: 0.5
-  MeleeRange: 2.2
-  MeleeDamage: 10
+  SkillGap: 0.1
+  MeleeRange: 2.9
+  MeleeDamage: 18
   MeleeHitTime: 0.3
   MeleeDuration: 0.6
   MeleeAngle: 110
-  MeleeCooldown: 1.2
-  SpinRadius: 2.5
-  SpinDamage: 8
+  MeleeCooldown: 2
+  SpinRadius: 3
+  SpinDamage: 12
   SpinDuration: 1
   SpinHitTimes:
   - 0.35
@@ -40,7 +44,7 @@ MonoBehaviour:
   SpinKnockbackDuration: 0.25
   SpinCooldown: 7
   ProjectileKey: MischiefProjectile
-  ProjectileDamage: 9
+  ProjectileDamage: 14
   ProjectileSpeed: 13
   ProjectileLifeTime: 1.5
   ProjectileReleaseTime: 0.3
@@ -54,7 +58,7 @@ MonoBehaviour:
   MeteorImpactRadius: 1.6
   MeteorWarningTime: 1
   MeteorLingerTime: 1.2
-  MeteorDamage: 12
+  MeteorDamage: 20
   MeteorSlowMultiplier: 0.6
   MeteorSlowDuration: 2
   SpellCastPoint: 0.4

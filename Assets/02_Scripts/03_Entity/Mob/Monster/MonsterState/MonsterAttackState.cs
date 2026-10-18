@@ -6,6 +6,7 @@ public class MonsterAttackState : MobState<Monster>
 {
     private readonly MonsterStateMachine sm;
     private float cooldown;
+    private float animTimer; // 공격 클립 남은 시간 (끝나면 대기 자세로)
 
     public MonsterAttackState(Monster owner, MonsterStateMachine machine) : base(owner, machine)
     {
@@ -19,7 +20,8 @@ public class MonsterAttackState : MobState<Monster>
     {
         Owner.PlayAnim(MonsterAnimId.Attack);
         Owner.PerformAttack();              // 진입 즉시 1타
-        cooldown = Owner.MinAttackPeriod;
+        cooldown = Owner.NextMeleeDelay(Owner.AttackAnimHoldTime, Owner.MinAttackPeriod);
+        animTimer = Owner.AttackAnimHoldTime;
     }
 
     public override void Update(float time = 1.0f)
@@ -41,11 +43,21 @@ public class MonsterAttackState : MobState<Monster>
         Owner.FaceTargetStep(time);
 
         cooldown -= time;
+
+        // 공격 클립이 끝나면 대기 자세로 (다음 공격 때 클립이 처음부터 다시 재생되도록)
+        if (animTimer > 0f)
+        {
+            animTimer -= time;
+            if (animTimer <= 0f && Owner.CurrentAnimId == MonsterAnimId.Attack)
+                Owner.PlayAnim(MonsterAnimId.Idle);
+        }
+
         if (cooldown <= 0f)
         {
             Owner.PlayAnim(MonsterAnimId.Attack);
             Owner.PerformAttack();
-            cooldown = Owner.MinAttackPeriod;
+            cooldown = Owner.NextMeleeDelay(Owner.AttackAnimHoldTime, Owner.MinAttackPeriod);
+            animTimer = Owner.AttackAnimHoldTime;
         }
     }
 }

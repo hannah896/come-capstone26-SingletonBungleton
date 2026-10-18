@@ -88,7 +88,7 @@ public class TreantTree : Monster
     public void StartPunch()
     {
         if (TreantData != null)
-            punchCooldown = TreantData.PunchCooldown;
+            punchCooldown = NextMeleeDelay(TreantData.PunchDuration, TreantData.PunchCooldown);
         PlayAnim(MonsterAnimId.Attack);
     }
 

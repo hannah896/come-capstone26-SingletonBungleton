@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 /// <summary>데빌의 자세(Stance). 잠복(Underground)은 P3 예정.</summary>
 public enum DevilStance
@@ -17,6 +19,13 @@ public enum DevilStance
 /// 자세 전환 판정과 쿨타임은 이 본체가, 자세별 스킬 선택은 DevilGroundAttackState / DevilFlyAttackState가 담당한다.
 /// 비행은 루트 Transform Y를 FlyHeight만큼 올려서 구현한다 — 콜라이더가 함께 올라가므로
 /// 플레이어의 근접 공격이 "논리적 무적"이 아니라 물리적으로 닿지 않게 된다.
+///
+/// 진짜 찾기 (만월 보스 패턴): 체력이 CloneHpRatios 아래로 내려가면 연기와 함께 사라졌다가
+/// 플레이어를 둘러싼 원 위에 진짜 1 + 분신 CloneCount마리로 나타난다.
+/// - 분신은 같은 프리팹·같은 AI지만 피해가 약하고, 맞아도 죽지 않고 연기를 내며 다른 자리로 옮겨 간다
+/// - 체력바는 진짜와 같은 비율로 보인다 (진짜만 체력바가 떠서 들키지 않게)
+/// - 단서: 분신에는 그림자가 없다. 패턴 중에는 진짜도 날아오르지 않는다
+/// - 진짜를 맞히면 분신이 모두 사라지고 진짜가 CloneRevealStunTime 동안 비틀거린다. 못 찾으면 CloneDuration 뒤 저절로 사라진다
 /// </summary>
 public class Devil : Monster
 {
@@ -70,6 +79,16 @@ public class Devil : Monster
 
     private DevilStatData DevilData => statData as DevilStatData;
 
+    // 진짜 찾기 (분신)
+    private readonly List<Devil> clones = new List<Devil>();
+    private int cloneThresholdIndex;   // 다음에 볼 CloneHpRatios 인덱스
+    private bool clonePending;
+    private float clonePhaseTimer;     // >0이면 분신 페이즈 진행 중 (진짜에서만)
+    private Devil cloneOwner;          // 분신이면 진짜, 아니면 null
+    private Player cloneCenter;        // 분신 페이즈를 시작할 때 둘러싼 플레이어 (분신이 옮겨 갈 원의 중심)
+    private Renderer[] modelRenderers;
+    private ShadowCastingMode[] originalShadows;
+
     #region Properties (상태 클래스에서 사용)
     public DevilStance Stance { get; private set; } = DevilStance.Ground;
     public bool IsFlying => Stance == DevilStance.Fly;
@@ -108,6 +127,8 @@ public class Devil : Monster
         get
         {
             if (IsFlying || takeOffCooldown > 0f || DevilData == null) return false;
+            // 분신은 날지 않고, 진짜도 분신 페이즈 중에는 땅에 남는다 (날아오르면 진짜가 들킨다)
+            if (IsClone || IsClonePhaseActive) return false;
 
             // ① 피격 누적  ② 플레이어 밀착 지속  ③ HP 70% 최초 도달(강제 1회)
             if (hitCount >= DevilData.HitsToTakeOff) return true;
@@ -118,6 +139,20 @@ public class Devil : Monster
         }
     }
     // 체력 비율은 베이스 Monster.HpRatio를 쓴다 (호스트에서는 status 기준으로 같은 값)
+
+    /// <summary>진짜 찾기 패턴의 분신인지.</summary>
+    public bool IsClone => cloneOwner != null;
+    /// <summary>분신 페이즈 진행 중인지 (진짜 기준).</summary>
+    public bool IsClonePhaseActive => clonePhaseTimer > 0f;
+    /// <summary>분신 시전 대기 중인지. 땅에 있을 때만 시전한다.</summary>
+    public bool IsClonePending => clonePending && !IsClone && !IsClonePhaseActive;
+    public float CloneVanishTime => DevilData != null ? DevilData.CloneVanishTime : 0.5f;
+    public float CloneAppearTime => DevilData != null ? DevilData.CloneAppearTime : 0.9f;
+    public float CloneRevealStunTime => DevilData != null ? DevilData.CloneRevealStunTime : 3f;
+
+    // 분신은 약하게 때린다 (기본 할퀴기에 적용)
+    protected override float OutgoingDamageMultiplier
+        => IsClone && DevilData != null ? DevilData.CloneDamageMultiplier : 1f;
     #endregion
 
     protected override void Awake()
@@ -131,6 +166,12 @@ public class Devil : Monster
         flyTailBoolHash = ToAnimHash(flyTailBool);
         flyCastBoolHash = ToAnimHash(flyCastBool);
         takeOffBoolHash = ToAnimHash(takeOffBool);
+
+        // 분신은 그림자를 끈다 (눈치 빠른 플레이어를 위한 단서). 풀 재사용 시 되돌릴 원래 값을 기억한다
+        modelRenderers = GetComponentsInChildren<SkinnedMeshRenderer>(true);
+        originalShadows = new ShadowCastingMode[modelRenderers.Length];
+        for (int i = 0; i < modelRenderers.Length; i++)
+            originalShadows[i] = modelRenderers[i].shadowCastingMode;
     }
 
     // 풀에서 재사용될 때 자세와 모든 쿨타임을 초기 상태로 되돌린다.
@@ -150,6 +191,31 @@ public class Devil : Monster
         nearContactTimer = 0f;
         phase2Triggered = false;
         groundY = transform.position.y;
+
+        // 풀에서 나온 개체는 항상 진짜로 시작한다 (분신 설정은 SetupAsClone이 다시 건다)
+        cloneOwner = null;
+        clones.Clear();
+        cloneThresholdIndex = 0;
+        clonePending = false;
+        clonePhaseTimer = 0f;
+        SetShadows(true);
+        SetHidden(false);
+    }
+
+    public override void OnDespawn()
+    {
+        if (IsClone)
+        {
+            cloneOwner.clones.Remove(this);
+            cloneOwner = null;
+        }
+        else
+        {
+            EndClonePhase(found: false);
+        }
+        SetShadows(true);
+        SetHidden(false);
+        base.OnDespawn();
     }
 
     protected override MonsterStateMachine CreateStateMachine()
@@ -176,6 +242,7 @@ public class Devil : Monster
         {
             TickCooldowns(deltaTime);
             TickStanceTracking(deltaTime);
+            TickClones(deltaTime);
         }
 
         base.OnGameUpdate(deltaTime);
@@ -218,10 +285,25 @@ public class Devil : Monster
     {
         if (!CanDamage(context)) return;
 
+        // 분신: 피해를 받지 않고 연기를 내며 다른 자리로 옮겨 간다
+        if (IsClone)
+        {
+            cloneOwner.OnCloneStruck(this);
+            return;
+        }
+
+        bool revealed = IsClonePhaseActive;
         base.ApplyDamage(context);
 
         if (!IsFlying)
             hitCount++;
+
+        // 진짜를 찾았다: 분신이 모두 사라지고 비틀거린다
+        if (revealed && status != null && !status.IsDead)
+        {
+            EndClonePhase(found: true);
+            (stateMachine as DevilStateMachine)?.ToCloneReveal();
+        }
     }
     #endregion
 
@@ -231,6 +313,8 @@ public class Devil : Monster
     /// </summary>
     protected override void OnDeath()
     {
+        EndClonePhase(found: false);
+
         if (IsFlying)
         {
             Vector3 pos = transform.position;
@@ -296,6 +380,229 @@ public class Devil : Monster
         Vector3 nd = dir.normalized;
         FaceTargetStep(deltaTime);
         transform.position += nd * (status.MoveSpeed * FlyMoveSpeedMultiplier * deltaTime);
+    }
+    #endregion
+
+    #region 진짜 찾기 (분신)
+    private void TickClones(float deltaTime)
+    {
+        var d = DevilData;
+        if (d == null) return;
+
+        if (IsClone)
+        {
+            // 진짜가 사라졌으면 함께 사라진다. 체력바가 진짜와 같은 비율로 보이도록 맞춘다
+            if (cloneOwner == null || !cloneOwner.isActiveAndEnabled || cloneOwner.Status == null || cloneOwner.Status.IsDead)
+            {
+                Vanish();
+                return;
+            }
+            if (status != null) status.SetCurrentHp(cloneOwner.HpRatio * status.MaxHp);
+            if (cloneOwner.Target != null && cloneOwner.Target != Target) SetTarget(cloneOwner.Target);
+            return;
+        }
+
+        // 체력 기준선을 넘으면 시전 대기 (한 번에 여러 줄을 넘어도 한 번만)
+        if (d.CloneHpRatios != null && status != null && !status.IsDead)
+        {
+            while (cloneThresholdIndex < d.CloneHpRatios.Length && HpRatio <= d.CloneHpRatios[cloneThresholdIndex])
+            {
+                cloneThresholdIndex++;
+                clonePending = true;
+            }
+        }
+
+        if (clonePhaseTimer > 0f)
+        {
+            clonePhaseTimer -= deltaTime;
+            if (clonePhaseTimer <= 0f) EndClonePhase(found: false); // 못 찾았다: 저절로 사라진다
+        }
+    }
+
+    /// <summary>분신 시전 시작 (DevilCloneCastState가 호출).</summary>
+    public void ConsumeClonePending() => clonePending = false;
+
+    /// <summary>모델을 숨기거나 보인다 (연기 속으로 사라지는 연출).</summary>
+    public void SetHidden(bool hidden)
+    {
+        if (modelRenderers == null) return;
+        foreach (var r in modelRenderers)
+            if (r != null) r.enabled = !hidden;
+    }
+
+    private void SetShadows(bool on)
+    {
+        if (modelRenderers == null) return;
+        for (int i = 0; i < modelRenderers.Length; i++)
+        {
+            if (modelRenderers[i] == null) continue;
+            modelRenderers[i].shadowCastingMode = on ? originalShadows[i] : ShadowCastingMode.Off;
+        }
+    }
+
+    /// <summary>
+    /// 분신 페이즈 시작: 플레이어를 둘러싼 원 위에 진짜와 분신을 고르게 세운다. 진짜 자리는 무작위.
+    /// </summary>
+    public void BeginClonePhase()
+    {
+        var d = DevilData;
+        if (d == null || Target == null) return;
+
+        cloneCenter = Target;
+        int total = Mathf.Max(d.CloneCount, 0) + 1;
+        var spots = CloneSpots(Target.transform.position, total, d.CloneRadius);
+        int realIndex = Random.Range(0, total);
+
+        PlayPoof(transform.position);
+        PlaceAt(this, spots[realIndex], Target.transform.position);
+        PlayPoof(transform.position);
+
+        // 분신 스폰이 풀 캐시로 바로 끝날 수 있으므로 페이즈를 먼저 켠다 (안 그러면 방금 만든 분신을 스스로 치운다)
+        clonePhaseTimer = d.CloneDuration;
+
+        string key = Main.Pool.GetAddress(gameObject);
+        if (string.IsNullOrEmpty(key))
+        {
+            Debug.LogWarning("[Devil] 풀 주소를 몰라 분신을 만들 수 없습니다.", this);
+            return;
+        }
+        for (int i = 0; i < total; i++)
+        {
+            if (i == realIndex) continue;
+            SpawnCloneAsync(key, spots[i]).Forget();
+        }
+    }
+
+    private async UniTaskVoid SpawnCloneAsync(string key, Vector3 position)
+    {
+        var monster = await Monster.SpawnAsync(key, statData as MonsterStatData, position);
+        if (monster is not Devil clone)
+        {
+            if (monster != null) Extensions.Despawn(monster.gameObject);
+            Debug.LogWarning($"[Devil] 분신 스폰 실패 ({key})", this);
+            return;
+        }
+
+        // 로드 중에 페이즈가 끝났으면 바로 치운다
+        if (!IsClonePhaseActive || status == null || status.IsDead || !isActiveAndEnabled)
+        {
+            Extensions.Despawn(clone.gameObject);
+            return;
+        }
+
+        clone.SetupAsClone(this);
+        clones.Add(clone);
+        PlayPoof(position);
+
+#if PHOTON_FUSION
+        // 멀티: 분신도 복제 대상으로 등록한다 (클라에는 그림자 단서가 없다 — 그림자는 이 피어에서만 끈다)
+        var catalog = MonsterCatalog.Instance;
+        byte id = catalog != null ? catalog.GetCatalogId(key) : (byte)0;
+        if (id != 0 && Main.Network != null && Main.Network.IsInRoom)
+            NetworkMonsterDirector.Instance?.RegisterMonster(clone, id);
+#endif
+    }
+
+    private void SetupAsClone(Devil owner)
+    {
+        cloneOwner = owner;
+        SetShadows(false);
+        if (owner.Target != null)
+        {
+            SetTarget(owner.Target);
+            PlaceAt(this, transform.position, owner.Target.transform.position);
+        }
+        if (status != null) status.SetCurrentHp(owner.HpRatio * status.MaxHp);
+        (stateMachine as DevilStateMachine)?.ToAttack();
+    }
+
+    /// <summary>분신이 맞았다: 연기를 내며 잠깐 뒤 원 위의 다른 자리로 옮겨 간다.</summary>
+    private void OnCloneStruck(Devil clone)
+    {
+        clone.GetComponent<MobHitFlash>()?.Flash();
+        clone.BlinkAsync().Forget();
+    }
+
+    private async UniTaskVoid BlinkAsync()
+    {
+        var d = DevilData;
+        float delay = d != null ? d.CloneBlinkDelay : 0.25f;
+        PlayPoof(transform.position);
+        SetHidden(true);
+        await UniTask.Delay(Mathf.RoundToInt(delay * 1000f), DelayType.DeltaTime, cancellationToken: this.GetCancellationTokenOnDestroy())
+            .SuppressCancellationThrow();
+        if (!isActiveAndEnabled || !IsClone) return;
+
+        // 진짜가 타깃을 잠깐 놓쳤어도 처음 둘러쌌던 플레이어를 기준으로 옮긴다
+        Player target = cloneOwner.Target != null ? cloneOwner.Target : cloneOwner.cloneCenter;
+        if (target != null && d != null)
+        {
+            float angle = Random.Range(0f, 360f);
+            Vector3 pos = target.transform.position + Quaternion.Euler(0f, angle, 0f) * Vector3.forward * d.CloneRadius;
+            PlaceAt(this, pos, target.transform.position);
+        }
+        SetHidden(false);
+        PlayPoof(transform.position);
+    }
+
+    /// <summary>분신 페이즈를 끝낸다. 분신은 모두 연기로 사라진다.</summary>
+    public void EndClonePhase(bool found)
+    {
+        clonePhaseTimer = 0f;
+        if (clones.Count == 0) return;
+
+        var list = new List<Devil>(clones);
+        clones.Clear();
+        foreach (var clone in list)
+            if (clone != null && clone.isActiveAndEnabled) clone.Vanish();
+    }
+
+    private void Vanish()
+    {
+        PlayPoof(transform.position);
+        if (cloneOwner != null) cloneOwner.clones.Remove(this);
+        cloneOwner = null;
+        Extensions.Despawn(gameObject);
+    }
+
+    private static List<Vector3> CloneSpots(Vector3 center, int count, float radius)
+    {
+        var spots = new List<Vector3>(count);
+        float start = Random.Range(0f, 360f);
+        for (int i = 0; i < count; i++)
+        {
+            float angle = start + 360f * i / count;
+            spots.Add(center + Quaternion.Euler(0f, angle, 0f) * Vector3.forward * radius);
+        }
+        return spots;
+    }
+
+    // 지면에 세우고 플레이어를 바라보게 한다
+    private static void PlaceAt(Devil devil, Vector3 pos, Vector3 lookAt)
+    {
+        if (Physics.Raycast(pos + Vector3.up * 20f, Vector3.down, out var hit, 60f, ~0, QueryTriggerInteraction.Ignore)
+            && hit.collider.GetComponentInParent<Monster>() == null && hit.collider.GetComponentInParent<Player>() == null)
+            pos.y = hit.point.y;
+        else
+            pos.y = lookAt.y;
+
+        Vector3 look = lookAt - pos;
+        look.y = 0f;
+        devil.transform.SetPositionAndRotation(pos, look.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(look) : devil.transform.rotation);
+    }
+
+    public void PlayPoof(Vector3 position)
+    {
+        var d = DevilData;
+        if (d == null || string.IsNullOrEmpty(d.CloneVfxKey)) return;
+        PlayPoofAsync(d.CloneVfxKey, position + Vector3.up * 0.8f).Forget();
+    }
+
+    private static async UniTaskVoid PlayPoofAsync(string key, Vector3 position)
+    {
+        var vfx = await Extensions.SpawnAsync<DragonVfx>(key);
+        if (vfx == null) return;
+        vfx.Play(position, 1.2f);
     }
     #endregion
 
@@ -437,7 +744,7 @@ public class Devil : Monster
             ? skillDamage
             : (status != null ? status.Attack : (statData != null ? statData.AttackDamage : 0f));
 
-        return Mathf.Max(Mathf.RoundToInt(raw), 0);
+        return Mathf.Max(Mathf.RoundToInt(raw * OutgoingDamageMultiplier), 0);
     }
 
     private void ApplyDamageToTarget(Player player, int damage)

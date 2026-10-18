@@ -15,9 +15,9 @@ MonoBehaviour:
   MaxHP: 35
   CurHP: 35
   MoveSpeed: 3.5
-  AttackDamage: 6
+  AttackDamage: 12
   Defense: 0
-  MinAttackPeriod: 1.5
+  MinAttackPeriod: 2.2
   FOV: 360
   DetectRange: 12
   AttackRange: 9
@@ -46,6 +46,6 @@ MonoBehaviour:
   SnareWarningTime: 0.7
   SnareLingerTime: 1.5
   SnareRadius: 2
-  SnareDamage: 3
+  SnareDamage: 8
   SnareSlowMultiplier: 0.45
   SnareSlowDuration: 3

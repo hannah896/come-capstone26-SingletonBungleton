@@ -72,6 +72,12 @@ public class MobHitFlash : MonoBehaviour
     /// <summary>회복 연출: 초록빛으로 조금 더 길게 물들였다가 돌아온다.</summary>
     public void FlashHeal() => Flash(HealColor, HealHoldTime, HealFadeTime);
 
+    /// <summary>카운터 예고용 파란빛. 1보다 큰 값으로 밝게 빛나 보이게 한다.</summary>
+    public static readonly Color CounterColor = new Color(0.45f, 0.9f, 2.2f, 1f);
+
+    /// <summary>카운터 예고: holdTime 동안 파랗게 빛났다가 돌아온다. (드래곤 보스 물기 선딜)</summary>
+    public void FlashCounter(float holdTime) => Flash(CounterColor, Mathf.Max(holdTime, 0f), 0.15f);
+
     private void Flash(Color color, float hold, float fade)
     {
         if (_targets.Count == 0) return;

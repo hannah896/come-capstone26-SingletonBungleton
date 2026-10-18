@@ -46,6 +46,9 @@ public class Monster : Mob
     [Tooltip("공격 애니를 튼 뒤 이 시간(초) 동안은 피격돼도 Hit로 끊기지 않는다(공격 모션 슈퍼아머). " +
              "교전 상태라도 이 시간이 지난 쿨다운/접근 구간에는 Hit로 전환된다.")]
     [SerializeField] private float attackMotionArmorTime = 0.6f;
+    [Tooltip("근접 공격 애니(Attack)를 켜 두는 시간(초). 지나면 Idle로 돌린다. " +
+             "비루프 공격 클립이 다음 공격 때 처음부터 다시 재생되고, 공격 사이 텀이 대기 자세로 보이게 한다")]
+    [SerializeField] private float attackAnimHoldTime = 0.85f;
     [Tooltip("피격 시 공격자 반대쪽으로 밀려나는 초기 속도(m/s). 0이면 넉백 없음. 공격 모션 중에 맞아도 밀린다.")]
     [SerializeField] private float knockbackSpeed = 10f;
     [Tooltip("넉백 감속. 클수록 빨리 멈춘다. 대략 밀리는 거리 = knockbackSpeed / knockbackDamping")]
@@ -75,6 +78,7 @@ public class Monster : Mob
     protected MonsterStateMachine stateMachine;
     private Player target;
     private float attackMotionTimer;
+    private int meleeRhythmIndex; // 지금 근접 묶음에서 몇 번째 공격인지
     private MonsterHpBar hpBar;
     private MobHitFlash hitFlash;
 
@@ -127,6 +131,8 @@ public class Monster : Mob
     public float MinAttackPeriod => status != null ? status.MinAttackPeriod : 1f;
 
     public float HitDuration => hitDuration;
+    /// <summary>근접 공격 애니를 켜 두는 시간(초). 공격 상태가 이 시간 뒤 Idle로 돌린다.</summary>
+    public float AttackAnimHoldTime => attackAnimHoldTime;
     public float WanderIdleTime => wanderIdleTime;
     public float WanderSpeed => status != null ? status.MoveSpeed * wanderSpeedMultiplier : 0f;
     /// <summary>배회해도 되는지. 비행 모드 등 걸어 다니면 안 되는 몬스터는 오버라이드해 막는다.</summary>
@@ -231,6 +237,7 @@ public class Monster : Mob
         hasNetTarget = false;
         netHpRatio = 1f;
         attackMotionTimer = 0f;
+        meleeRhythmIndex = 0;
         hasHitFrom = false;
         knockbackVelocity = Vector3.zero;
         hasWanderHome = false;
@@ -484,6 +491,9 @@ public class Monster : Mob
 
     public void ClearTarget() => target = null;
 
+    /// <summary>타깃을 직접 지정한다 (보스가 가장 먼 플레이어를 노리는 등 패턴용).</summary>
+    public void SetTarget(Player player) => target = player;
+
     /// <summary>타깃과의 수평(Y 무시) 거리. 파생 몬스터의 사거리 판정에 사용한다.</summary>
     protected float PlanarDistanceToTarget()
     {
@@ -534,13 +544,33 @@ public class Monster : Mob
         transform.rotation = Quaternion.RotateTowards(transform.rotation, look, TurnSpeed * deltaTime);
     }
 
+    /// <summary>
+    /// 근접 공격 하나를 시작할 때 부른다. 다음 근접 공격까지 기다릴 시간을 돌려준다.
+    /// 묶음 안이면 클립 길이 + 짧은 텀(MeleeRhythmGaps), 묶음이 끝나면 클립 길이 + 휴식(rest) + 무작위 흔들림.
+    /// 같은 기술(근접)만 이 시간을 기다리고, 다른 기술은 이 사이에도 바로 쓸 수 있다.
+    /// </summary>
+    public float NextMeleeDelay(float clipLength, float rest)
+    {
+        var data = MonsterData;
+        var gaps = data != null ? data.MeleeRhythmGaps : null;
+        if (gaps != null && meleeRhythmIndex < gaps.Length)
+            return clipLength + Mathf.Max(gaps[meleeRhythmIndex++], 0f);
+
+        meleeRhythmIndex = 0;
+        float jitter = data != null ? data.MeleeRestJitter : 0f;
+        return clipLength + rest + Random.Range(0f, Mathf.Max(jitter, 0f));
+    }
+
+    /// <summary>이 몬스터가 주는 기본 공격 피해 배율. 데빌 분신처럼 약하게 때리는 개체가 오버라이드한다.</summary>
+    protected virtual float OutgoingDamageMultiplier => 1f;
+
     /// <summary>현재 타깃에게 1회 공격 데미지를 적용한다.</summary>
     public void PerformAttack()
     {
         if (target == null || status == null) return;
         if (!target.TryGetComponent<IDamageable>(out var dmg)) return;
 
-        int amount = Mathf.Max(Mathf.RoundToInt(status.Attack), 0);
+        int amount = Mathf.Max(Mathf.RoundToInt(status.Attack * OutgoingDamageMultiplier), 0);
         var ctx = new DamageContext(
             instigator: gameObject,
             point: target.transform.position,

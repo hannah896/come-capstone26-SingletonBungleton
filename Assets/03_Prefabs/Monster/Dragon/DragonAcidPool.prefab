@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5214100888908577960
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5731214043127605863}
+  - component: {fileID: 4432994398981478159}
+  m_Layer: 0
+  m_Name: DragonAcidPool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5731214043127605863
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5214100888908577960}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4432994398981478159
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5214100888908577960}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56ab72cce31db9848be792ee6e16ca1b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fillMaterial: {fileID: 2100000, guid: ffd1f582c60640444acbe808743fd68a, type: 2}
+  lineMaterial: {fileID: 2100000, guid: c27b9a55dd2350c45ac98afa98a82357, type: 2}
+  fillColor: {r: 0.35, g: 0.9, b: 0.15, a: 0.45}
+  lineColor: {r: 0.6, g: 1.6, b: 0.3, a: 0.9}
+  lineWidth: 0.1
+  groundOffset: 0.06
+  tickInterval: 0.2
+  fadeOutTime: 0.5

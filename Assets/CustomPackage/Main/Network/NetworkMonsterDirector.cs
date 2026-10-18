@@ -299,6 +299,92 @@ public class NetworkMonsterDirector : NetworkBehaviour
         circle.PlayVisual(center, radius);
     }
 
+    #region 드래곤 보스 연출
+
+    /// <summary>호스트가 깐 드래곤 바닥 예고 표식(원·경로)을 클라에도 띄운다.</summary>
+    public void BroadcastDragonMarker(string key, byte shape, Vector3 a, Vector3 b, float size, float duration, byte style)
+    {
+        if (!HasStateAuthority || string.IsNullOrEmpty(key)) return;
+        Rpc_SpawnDragonMarker(key, shape, a, b, size, duration, style);
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.Proxies)]
+    private void Rpc_SpawnDragonMarker(string key, byte shape, Vector3 a, Vector3 b, float size, float duration, byte style)
+        => SpawnDragonMarkerAsync(key, shape, a, b, size, duration, style).Forget();
+
+    private static async UniTaskVoid SpawnDragonMarkerAsync(string key, byte shape, Vector3 a, Vector3 b, float size, float duration, byte style)
+    {
+        var marker = await Extensions.SpawnAsync<DragonGroundMarker>(key);
+        if (marker == null) return;
+        marker.InitVisual(shape, a, b, size, duration, style);
+    }
+
+    /// <summary>호스트가 깐 드래곤 지속 장판(얼음 장판 등)을 클라에도 띄운다. 둔화·피해는 호스트 원본만 건다.</summary>
+    public void BroadcastDragonZone(string key, Vector3 center, float radius, float duration)
+    {
+        if (!HasStateAuthority || string.IsNullOrEmpty(key)) return;
+        Rpc_SpawnDragonZone(key, center, radius, duration);
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.Proxies)]
+    private void Rpc_SpawnDragonZone(string key, Vector3 center, float radius, float duration)
+        => SpawnDragonZoneAsync(key, center, radius, duration).Forget();
+
+    private static async UniTaskVoid SpawnDragonZoneAsync(string key, Vector3 center, float radius, float duration)
+    {
+        var zone = await Extensions.SpawnAsync<DragonHazardZone>(key);
+        if (zone == null) return;
+        zone.InitVisual(center, radius, duration);
+    }
+
+    /// <summary>호스트가 드래곤 장판을 모두 걷어냈을 때 클라의 복제본도 지운다 (영구 산성 웅덩이 정리).</summary>
+    public void BroadcastDragonZonesClear()
+    {
+        if (!HasStateAuthority) return;
+        Rpc_ClearDragonZones();
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.Proxies)]
+    private void Rpc_ClearDragonZones() => DragonHazardZone.ClearLocal();
+
+    /// <summary>호스트가 쏜 드래곤 탄(얼음탄 등)을 클라에도 띄운다. 판정·장판은 호스트 원본만 한다.</summary>
+    public void BroadcastDragonFrostBall(string key, Vector3 origin, Vector3 target, float flightTime)
+    {
+        if (!HasStateAuthority || string.IsNullOrEmpty(key)) return;
+        Rpc_SpawnDragonFrostBall(key, origin, target, flightTime);
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.Proxies)]
+    private void Rpc_SpawnDragonFrostBall(string key, Vector3 origin, Vector3 target, float flightTime)
+        => SpawnDragonFrostBallAsync(key, origin, target, flightTime).Forget();
+
+    private static async UniTaskVoid SpawnDragonFrostBallAsync(string key, Vector3 origin, Vector3 target, float flightTime)
+    {
+        var ball = await Extensions.SpawnAsync<DragonFrostBall>(key);
+        if (ball == null) return;
+        ball.InitVisual(origin, target, flightTime);
+    }
+
+    /// <summary>호스트가 띄운 드래곤 이펙트(추락 충돌·폭발)를 클라에도 띄운다.</summary>
+    public void BroadcastDragonVfx(string key, Vector3 position, float scale)
+    {
+        if (!HasStateAuthority || string.IsNullOrEmpty(key)) return;
+        Rpc_SpawnDragonVfx(key, position, scale);
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.Proxies)]
+    private void Rpc_SpawnDragonVfx(string key, Vector3 position, float scale)
+        => SpawnDragonVfxAsync(key, position, scale).Forget();
+
+    private static async UniTaskVoid SpawnDragonVfxAsync(string key, Vector3 position, float scale)
+    {
+        var vfx = await Extensions.SpawnAsync<DragonVfx>(key);
+        if (vfx == null) return;
+        vfx.PlayVisual(position, scale);
+    }
+
+    #endregion
+
     // Proxies = 호스트(StateAuthority)를 제외한 모든 피어
     [Rpc(RpcSources.StateAuthority, RpcTargets.Proxies)]
     private void Rpc_SpawnProjectile(string key, Vector3 origin, Vector3 direction, float speed, float lifeTime)

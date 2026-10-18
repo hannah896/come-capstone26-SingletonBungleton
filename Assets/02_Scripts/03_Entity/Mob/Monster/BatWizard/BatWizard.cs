@@ -159,7 +159,7 @@ public class BatWizard : Monster
     /// <summary>이번 근접 공격 모션(Slash/Slice 번갈아)을 고르고 쿨을 건다.</summary>
     public MonsterAnimId NextMelee()
     {
-        meleeCooldown = WizardData != null ? WizardData.MeleeCooldown : 1.2f;
+        meleeCooldown = WizardData != null ? NextMeleeDelay(WizardData.MeleeDuration, WizardData.MeleeCooldown) : 1.2f;
         var anim = nextMeleeIsSlice ? MonsterAnimId.Slice : MonsterAnimId.Attack;
         nextMeleeIsSlice = !nextMeleeIsSlice;
         return anim;

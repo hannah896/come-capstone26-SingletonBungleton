@@ -1,0 +1,146 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0c2895492932f54182ff7f8b8c5912f, type: 3}
+  m_Name: UndeadDragon
+  m_EditorClassIdentifier: 
+  MaxHP: 8000
+  CurHP: 8000
+  MoveSpeed: 2.8
+  AttackDamage: 35
+  Defense: 12
+  MinAttackPeriod: 1
+  FOV: 360
+  DetectRange: 60
+  AttackRange: 40
+  MeleeRhythmGaps:
+  - 0.1
+  - 0.05
+  MeleeRestJitter: 0.5
+  TurnSpeed: 70
+  DropTable: {fileID: 0}
+  BossName: "\uC6D4\uC2DD\uC758 \uB9DD\uB839\uB8E1"
+  HpLineCount: 40
+  HpLineColors:
+  - {r: 0.85, g: 0.15, b: 0.2, a: 1}
+  - {r: 0.7, g: 0.25, b: 0.65, a: 1}
+  - {r: 1, g: 0.45, b: 0.15, a: 1}
+  - {r: 0.55, g: 0.85, b: 0.2, a: 1}
+  SkillGap: 0.3
+  StopDistance: 7.5
+  ArenaRadius: 32
+  AimTurnSpeed: 240
+  PoiseMax: 800
+  HeadPoiseMultiplier: 2
+  PoiseRegenDelay: 6
+  PoiseRegenPerSecond: 15
+  GroggyDuration: 8
+  GroggyDamageMultiplier: 1.5
+  HeadHitRadius: 1.6
+  CounterPoiseDamage: 200
+  CounterStaggerDuration: 1.6
+  CounterFrontReach: 10
+  CounterFrontAngle: 70
+  BiteRange: 8
+  BiteAngle: 60
+  BiteDamage: 50
+  BiteHitTime: 0.55
+  BiteDuration: 1.33
+  BiteKnockback: 10
+  BiteCooldown: 4
+  FrostBallKey: DragonAcidBall
+  IcePatchKey: DragonAcidPool
+  SpitCount: 3
+  SpitReleaseTime: 0.45
+  SpitInterval: 1
+  SpitFlightTime: 0.9
+  SpitImpactRadius: 2.2
+  SpitDamage: 25
+  IcePatchRadius: 2.6
+  IcePatchDuration: 0
+  IcePatchSlow: 0.85
+  PatchDotPerSecond: 8
+  SpitMinRange: 7
+  SpitCooldown: 9
+  BreathRange: 14
+  BreathHalfAngle: 15
+  BreathStartTime: 1
+  BreathEndTime: 2.9
+  BreathDuration: 3.33
+  BreathSweepAngle: 90
+  BreathTickInterval: 0.2
+  BreathTickDamage: 9
+  FreezePerTick: 0
+  FreezeDecayPerSecond: 0.25
+  FreezeDuration: 2
+  BreathCooldown: 14
+  ChargeWarningTime: 1
+  ChargeSpeed: 10
+  ChargeMaxDistance: 28
+  ChargeOvershoot: 4
+  ChargeWidth: 4.5
+  ChargeDamage: 40
+  ChargeKnockback: 16
+  ChargeStunDuration: 3
+  ChargeMinRange: 10
+  ChargeCooldown: 12
+  FlyHeight: 7
+  TakeOffRiseStart: 0.4
+  TakeOffDuration: 1.83
+  LandDescendTime: 1.6
+  LandDuration: 2.17
+  TakeOffHpRatios:
+  - 0.5
+  ShootdownMax: 260
+  ShootdownTimeLimit: 25
+  AirSkillGap: 0.4
+  BombardCount: 6
+  BombardInterval: 0.8
+  FlySpitReleaseTime: 0.38
+  BombardFlightTime: 1.2
+  BombardPatchDuration: 12
+  FlyBreathStartTime: 0.6
+  FlyBreathEndTime: 3
+  FlyBreathDuration: 3.2
+  FlyBreathSweepAngle: 110
+  FlyBreathRange: 22
+  FallStartDuration: 1.33
+  FallStartDrop: 5.4
+  FallGravity: 30
+  CrashImpactTime: 0.2
+  CrashDuration: 0.67
+  CrashKnockbackRadius: 8
+  CrashKnockback: 12
+  ShootdownGroggyDuration: 10
+  ShootdownDamageMultiplier: 2
+  GlideRadius: 20
+  GlideLapTime: 8
+  ExplosionWarningTime: 2.5
+  ExplosionHpRatio: 0.8
+  ExplosionSafeHpRatio: 0.5
+  ExplosionRadius: 40
+  BiteCorrosionMultiplier: 1.2
+  BiteCorrosionDuration: 10
+  BreathCorrodesCover: 1
+  ChargeTrailSpacing: 4
+  ShootdownFailMode: 1
+  AcidRainDuration: 8
+  AcidRainTickInterval: 0.5
+  AcidRainTickDamage: 10
+  FrenzyHpRatio: 0.125
+  FrenzyDuration: 15
+  FrenzyTurnSpeed: 40
+  FrenzyWalkSpeed: 1.2
+  FrenzyRange: 16
+  EnrageHpRatio: 2
+  IntroHoverTime: 2.5
+  IntroShockwaveRadius: 10
+  IntroShockwaveKnockback: 14

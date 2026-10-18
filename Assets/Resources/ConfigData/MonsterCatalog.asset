@@ -37,3 +37,7 @@ MonoBehaviour:
     statData: {fileID: 11400000, guid: 59f430f1c70661849a6972ca75b31232, type: 2}
   - addressableKey: CyclopsBatWizard
     statData: {fileID: 11400000, guid: 3f706b252b049144ea018f49c40e9f03, type: 2}
+  - addressableKey: PolarDragon
+    statData: {fileID: 11400000, guid: 21a8e45f97ce0e244aaa89996935c869, type: 2}
+  - addressableKey: UndeadDragon
+    statData: {fileID: 11400000, guid: 3ad1abab24a3bc3449319f923a4ab8b5, type: 2}

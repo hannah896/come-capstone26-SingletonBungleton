@@ -12,27 +12,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4c6e4086a59dbb64bb546fcd8d9dd495, type: 3}
   m_Name: IMP_Devil
   m_EditorClassIdentifier: 
-  MaxHP: 60
-  CurHP: 60
+  MaxHP: 800
+  CurHP: 800
   MoveSpeed: 3
-  AttackDamage: 6
-  Defense: 1
-  MinAttackPeriod: 1.5
+  AttackDamage: 20
+  Defense: 5
+  MinAttackPeriod: 1.8
   FOV: 360
   DetectRange: 14
   AttackRange: 10
+  MeleeRhythmGaps:
+  - 0.1
+  - 0.05
+  - 0.1
+  MeleeRestJitter: 0.6
   TurnSpeed: 540
   DropTable: {fileID: 11400000, guid: e57b77836fbe4fc8965876974e270aa1, type: 2}
-  SlashRange: 2
+  SlashRange: 3
   ProjectileKey: MischiefProjectile
   FireballCooldown: 3
   FireballCastTime: 0.8
   ProjectileSpeed: 10
   ProjectileLifeTime: 3
-  ProjectileDamage: 0
+  ProjectileDamage: 14
   MuzzleHeight: 1
   HitsToTakeOff: 3
-  NearContactRange: 2
+  NearContactRange: 2.8
   NearContactTime: 2
   Phase2HpRatio: 0.7
   TakeOffCooldown: 8
@@ -45,13 +50,13 @@ MonoBehaviour:
   DiveRange: 6
   DiveDuration: 0.5
   DiveImpactRadius: 2
-  DiveDamage: 0
+  DiveDamage: 30
   TailCooldown: 4
-  TailRange: 3
+  TailRange: 3.8
   TailCastTime: 0.6
   TailKnockback: 8
   TailKnockbackDuration: 0.3
-  TailDamage: 0
+  TailDamage: 20
   FlyProjectileCooldown: 2
   FlyProjectileBurst: 3
   FlyProjectileInterval: 0.15
@@ -65,4 +70,4 @@ MonoBehaviour:
   MeteorSpawnStagger: 0.12
   MeteorImpactRadius: 1.5
   MeteorLingerTime: 1.5
-  MeteorDamage: 0
+  MeteorDamage: 18

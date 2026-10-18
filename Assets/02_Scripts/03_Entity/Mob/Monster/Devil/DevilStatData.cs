@@ -113,4 +113,25 @@ public class DevilStatData : MonsterStatData
     public float MeteorLingerTime = 1.5f;
     [Tooltip("운석 1발의 데미지. 0 이하면 AttackDamage 사용")]
     public float MeteorDamage = 0f;
+
+    [Header("진짜 찾기 (분신)")]
+    [Tooltip("이 체력 비율 아래로 내려갈 때마다 분신을 만든다 (땅에 있을 때 시전, 날고 있으면 착지 후)")]
+    public float[] CloneHpRatios = { 0.6f, 0.3f };
+    [Tooltip("분신 수 (진짜 제외)")]
+    public int CloneCount = 3;
+    [Tooltip("플레이어를 중심으로 진짜와 분신이 나타나는 원의 반지름(m)")]
+    public float CloneRadius = 7f;
+    [Tooltip("진짜를 못 찾으면 분신이 저절로 사라지기까지(초)")]
+    public float CloneDuration = 25f;
+    [Tooltip("분신이 주는 피해 배율")]
+    public float CloneDamageMultiplier = 0.5f;
+    [Tooltip("진짜를 맞혔을 때 분신이 모두 사라지고 진짜가 비틀거리는 시간(초)")]
+    public float CloneRevealStunTime = 3f;
+    [Tooltip("연기와 함께 사라지는(나타나는) 순간까지 걸리는 시간(초)")]
+    public float CloneVanishTime = 0.5f;
+    public float CloneAppearTime = 0.9f;
+    [Tooltip("분신을 맞혔을 때 다른 자리로 옮겨 가기 전 머무는 시간(초)")]
+    public float CloneBlinkDelay = 0.25f;
+    [Tooltip("연기 이펙트 (DragonVfx 프리팹 Addressable 키)")]
+    public string CloneVfxKey = "DevilSmokePoof";
 }

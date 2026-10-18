@@ -11,26 +11,32 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 66b426d8593248718abaffc8ae83e977, type: 3}
   m_Name: IMP_Demon
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   MaxHP: 80
   CurHP: 80
   MoveSpeed: 2.5
-  AttackDamage: 8
+  AttackDamage: 18
   Defense: 2
   MinAttackPeriod: 2
   FOV: 360
   DetectRange: 12
   AttackRange: 6
+  MeleeRhythmGaps:
+  - 0.15
+  MeleeRestJitter: 0.5
   TurnSpeed: 540
   DropTable: {fileID: 11400000, guid: 91eae16374a44b2590d2979b1bcdde4a, type: 2}
-  SlashRange: 2
+  SlashRange: 2.7
   MeteorKey: Meteor
   MeteorCooldown: 7
+  MeteorCastTime: 1.2
   MeteorCount: 6
   MeteorRadius: 5
-  MeteorSpawnHeight: 12
-  MeteorFallSpeed: 18
   MeteorWarningTime: 0.8
   MeteorSpawnStagger: 0.12
   MeteorImpactRadius: 1.5
-  MeteorDamage: 0
+  MeteorLingerTime: 1.5
+  MeteorDamage: 15
+  MeteorDotDamage: 3
+  MeteorDotDuration: 5
+  MeteorDotInterval: 1

@@ -21,19 +21,23 @@ MonoBehaviour:
   FOV: 360
   DetectRange: 25
   AttackRange: 12
+  MeleeRhythmGaps:
+  - 0.05
+  - 0.1
+  MeleeRestJitter: 0.6
   TurnSpeed: 360
   DropTable: {fileID: 0}
   StaggerCooldown: 5
-  SkillGap: 0.6
+  SkillGap: 0.1
   Phase2HpRatio: 0.5
-  SlashRange: 2.8
-  SlashDamage: 20
+  SlashRange: 3.6
+  SlashDamage: 28
   SlashHitTime: 0.35
   SlashDuration: 0.8
   SlashAngle: 100
-  SlashCooldown: 1.6
-  SpinRadius: 3.5
-  SpinDamage: 12
+  SlashCooldown: 2.4
+  SpinRadius: 4.2
+  SpinDamage: 15
   SpinDuration: 1.8
   SpinHitTimes:
   - 0.4
@@ -46,7 +50,7 @@ MonoBehaviour:
   StarLaserKey: MageStarLaser
   StarRadius: 8
   StarLaserWidth: 1
-  StarDamage: 25
+  StarDamage: 35
   StarWarningTime: 1.2
   StarLaserTime: 0.6
   SpellCastPoint: 0.5
