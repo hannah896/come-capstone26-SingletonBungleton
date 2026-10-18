@@ -187,7 +187,8 @@ public class CraftingManager : MonoBehaviour
                 if (recipe.category == RecipeCategory.Cooking
                     || recipe.category == RecipeCategory.Weapons
                     || recipe.category == RecipeCategory.Armor
-                    || recipe.category == RecipeCategory.Magic) continue;
+                    || recipe.category == RecipeCategory.Magic
+                    || recipe.category == RecipeCategory.Ritual) continue;
             }
             else if (recipe.category != category) continue;
 

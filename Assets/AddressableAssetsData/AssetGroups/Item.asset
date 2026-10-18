@@ -240,6 +240,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 89839b5afb67501408ac4ef535d5aa26
+    m_Address: Tool_MoonGate
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 8bae5b84197d58e498f5db430f99e312
     m_Address: Booty_Wing
     m_ReadOnly: 0

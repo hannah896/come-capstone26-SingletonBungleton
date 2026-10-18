@@ -217,6 +217,10 @@
             "itemKey": "Booty_MonsterTail"
         },
         {
+            "itemId": "MoonGate",
+            "itemKey": "Tool_MoonGate"
+        },
+        {
             "itemId": "Mushroom",
             "itemKey": "Resource_Mushroom"
         },

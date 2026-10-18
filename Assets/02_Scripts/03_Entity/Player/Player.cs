@@ -68,6 +68,24 @@ public class Player : MonoBehaviour, IDamageable
     public bool IsDead => machine?.CurrentState is PlayerDeadState;
 
     /// <summary>
+    /// 월문 안 보스 아레나에 들어와 있는지. (소유자 피어에서만 갱신된다)
+    /// 아레나 안에서 죽으면 소지품을 떨구지 않는다.
+    /// </summary>
+    public bool InBossArena { get; set; }
+
+    /// <summary>
+    /// 월문 이동 등으로 이 캐릭터를 지정 좌표로 옮긴다. 소유자 피어에서 호출한다.
+    /// </summary>
+    public void ApplyPortalTeleport(Vector3 position, bool inArena)
+    {
+        InBossArena = inArena;
+        if (motor == null) return;
+
+        motor.Teleport(position);
+        inputData?.SuppressAllInputs();
+    }
+
+    /// <summary>
     /// 공격·타게팅 기준 생존 여부. 몬스터/투사체/동물 판정은 이 값을 쓴다.
     /// 원격 캐릭터는 이 피어의 스탯이 갱신되지 않으므로(HP는 소유자 피어에만 있다) 소유자가 보고한 사망 상태를 쓴다.
     /// </summary>
@@ -406,6 +424,9 @@ public class Player : MonoBehaviour, IDamageable
         stat.RestoreEgo(stat.MaxEgo);
         stat.ClearDot();
         stat.ClearSlow();
+
+        // 아레나 안에서 죽었다면 부활과 함께 아레나를 벗어난다
+        InBossArena = false;
 
         // 리스폰 지점으로 이동. 지점을 못 구하면(테스트 씬 등) 제자리에서 부활한다.
         if (TryGetRespawnPosition(out Vector3 respawnPosition))
