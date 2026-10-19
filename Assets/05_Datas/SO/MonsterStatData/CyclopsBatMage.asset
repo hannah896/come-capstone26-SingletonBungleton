@@ -26,7 +26,7 @@ MonoBehaviour:
   - 0.1
   MeleeRestJitter: 0.6
   TurnSpeed: 360
-  DropTable: {fileID: 0}
+  DropTable: {fileID: 11400000, guid: 896fa11c1c404f8eac5c7cec4bb3004f, type: 2}
   StaggerCooldown: 5
   SkillGap: 0.1
   Phase2HpRatio: 0.5

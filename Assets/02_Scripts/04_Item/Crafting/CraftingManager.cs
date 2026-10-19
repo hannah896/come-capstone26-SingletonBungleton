@@ -186,7 +186,9 @@ public class CraftingManager : MonoBehaviour
                 // 요리는 화덕, 무기/방어구는 작업대 전용 팝업에서만 다룬다 — 일반 제작창 "전체"에는 안 보인다
                 if (recipe.category == RecipeCategory.Cooking
                     || recipe.category == RecipeCategory.Weapons
-                    || recipe.category == RecipeCategory.Armor) continue;
+                    || recipe.category == RecipeCategory.Armor
+                    || recipe.category == RecipeCategory.Magic
+                    || recipe.category == RecipeCategory.Ritual) continue;
             }
             else if (recipe.category != category) continue;
 

@@ -86,6 +86,29 @@ public class ItemDataSO : ScriptableObject
     [Tooltip("방어력")]
     public float defense = 0f;
 
+    [Tooltip("지팡이(Staff)를 쓸 때 회복하는 체력")]
+    public float staffHealAmount = 0f;
+
+    [Tooltip("지팡이(Staff) 재사용 대기 시간(초)")]
+    public float staffCooldown = 6f;
+
+    [Header("=== 공격 이펙트 (선택) ===")]
+    [Tooltip("공격이 맞은 자리에 재생할 이펙트 프리팹의 Addressables 키. 비우면 이펙트 없음.")]
+    public string attackEffectKey;
+
+    [Tooltip("이펙트 크기 배율")]
+    public float attackEffectScale = 1f;
+
+    [Tooltip("이펙트를 풀로 되돌릴 때까지의 시간(초)")]
+    public float attackEffectLifetime = 2f;
+
+    [Header("=== 발광 (선택, 횃불처럼 들고 있으면 빛남) ===")]
+    [Tooltip("켜면 장착했을 때 아이템 프리팹 안의 Light가 켜져 주변을 비춘다. (횃불은 이 옵션 없이도 기존 방식으로 켜진다)")]
+    public bool emitsLight = false;
+    public Color lightColor = new Color(0.55f, 0.75f, 1f, 1f);
+    public float lightIntensity = 3f;
+    public float lightRange = 7f;
+
 
 
     [Header("=== 생존 효과 (음식용) ===")]

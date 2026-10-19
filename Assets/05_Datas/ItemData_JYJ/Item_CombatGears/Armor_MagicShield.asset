@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
+  m_Name: Armor_MagicShield
+  m_EditorClassIdentifier: 
+  itemID: MagicShield
+  itemName: "\uB9C8\uB825 \uBC29\uD328"
+  description: "\uB9C8\uB825\uC774 \uC11C\uB9B0 \uBC29\uD328. \uC6B0\uD074\uB9AD\uC73C\uB85C
+    \uACF5\uACA9\uC744 \uB9C9\uB294\uB2E4."
+  icon: {fileID: 21300000, guid: 43702e88b352ff748a9d4bc4ad895ad8, type: 3}
+  prefab: {fileID: 3241565015529793989, guid: a4deeed7fe635dd4992a67df6d9a4461, type: 3}
+  itemType: 1
+  survivalToolType: 0
+  harvestableNodeTypes: 
+  combatGearType: 6
+  resourceType: 0
+  bootyType: 0
+  foodType: 0
+  dishType: 0
+  specialType: 0
+  isStackable: 0
+  maxStack: 1
+  equipSlot: 3
+  hasDurability: 1
+  maxDurability: 100
+  costPerDurability: 1
+  attackDamage: 0
+  attackRange: 0
+  attackAngle: 90
+  defense: 60
+  staffHealAmount: 0
+  staffCooldown: 6
+  attackEffectKey: 
+  attackEffectScale: 1
+  attackEffectLifetime: 2
+  emitsLight: 0
+  lightColor: {r: 0.55, g: 0.75, b: 1, a: 1}
+  lightIntensity: 3
+  lightRange: 7
+  hungerRestore: 0
+  healthRestore: 0
+  egoRestore: 0
+  expirationTime: 0
+  tags: 0
+  isPlaceable: 0
+  placementPrefab: {fileID: 0}
+  placementFootprint: {x: 1, y: 1}
+  placementPivotOffset: {x: 0, y: 0, z: 0}
+  placementSnapToGrid: 1
+  placementCheckHeight: 2
+  placementCheckCenterOffset: {x: 0, y: 0, z: 0}

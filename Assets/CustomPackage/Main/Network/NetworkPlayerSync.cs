@@ -654,6 +654,55 @@ public class NetworkPlayerSync : NetworkBehaviour
 
     #endregion
 
+    #region 월문(보스 포털)
+
+    /// <summary>소유자 → 호스트: 월문 입장을 요청한다. 호스트 본인의 캐릭터면 바로 처리한다.</summary>
+    public void RequestEnterGate()
+    {
+        if (Object == null || !Object.IsValid) return;
+
+        if (Object.HasStateAuthority) MoonGate.HostHandleEnterRequest(_player);
+        else Rpc_RequestEnterGate();
+    }
+
+    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+    private void Rpc_RequestEnterGate()
+    {
+        MoonGate.HostHandleEnterRequest(_player);
+    }
+
+    /// <summary>호스트 → 소유자: 이 캐릭터를 지정 좌표로 옮긴다 (월문 입장/귀환).</summary>
+    public void ForwardPortalTeleport(Vector3 position, bool inArena)
+    {
+        if (Object == null || !Object.IsValid) return;
+
+        if (Object.HasInputAuthority) _player?.ApplyPortalTeleport(position, inArena);
+        else if (Object.HasStateAuthority) Rpc_PortalTeleport(position, inArena);
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority)]
+    private void Rpc_PortalTeleport(Vector3 position, NetworkBool inArena)
+    {
+        _player?.ApplyPortalTeleport(position, inArena);
+    }
+
+    /// <summary>호스트 → 모든 피어: 월문 진행 이벤트를 알린다. (코드 의미는 MoonGate.PortalEvent 참고)</summary>
+    public bool BroadcastPortalEvent(byte code, Vector3 origin)
+    {
+        if (Object == null || !Object.IsValid || !Object.HasStateAuthority) return false;
+
+        Rpc_PortalEvent(code, origin);
+        return true;
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+    private void Rpc_PortalEvent(byte code, Vector3 origin)
+    {
+        MoonGate.OnPortalEvent(code, origin);
+    }
+
+    #endregion
+
     #region 화살 동기화
 
     // 소유자: 화살을 쐈을 때 호스트에 알린다. (호스트 자신이 쐈으면 바로 전파)

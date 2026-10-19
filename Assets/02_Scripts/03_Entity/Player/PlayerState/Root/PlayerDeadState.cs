@@ -50,7 +50,8 @@ public class PlayerDeadState : PlayerRootStateBase
             UI_Popup_Pause.CloseIfOpen();
 
         // 소지품 전량 드롭 — 부활하면 빈손으로 시작한다.
-        int droppedCount = Main.Save != null && Main.Save.IsRestoring
+        // (보스 아레나 안에서는 떨구지 않는다)
+        int droppedCount = (Main.Save != null && Main.Save.IsRestoring) || Entity.InBossArena
             ? 0 : Entity.Inventory != null ? Entity.Inventory.DropAll() : 0;
         if (droppedCount > 0)
             Debug.Log($"[State] Dead — 소지품 {droppedCount}스택 드롭");

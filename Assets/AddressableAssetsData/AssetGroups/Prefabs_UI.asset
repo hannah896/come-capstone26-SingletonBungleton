@@ -113,6 +113,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: eaf3e7c4edb7df247a87a2ba3796e583
+    m_Address: UI_Popup_LunarForge
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: f010d313d6369664f91e69d9fb5efed1
     m_Address: UI_Popup_Chest
     m_ReadOnly: 0

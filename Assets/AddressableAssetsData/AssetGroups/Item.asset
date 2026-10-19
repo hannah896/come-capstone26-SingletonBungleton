@@ -60,6 +60,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2b34a94abe24c744498a70662cc0bc49
+    m_Address: Weapon_MagicSpear
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 2eca0f12ea2cd5447ada7209f6b369be
     m_Address: Booty_DemonHorn_Red
     m_ReadOnly: 0
@@ -200,6 +205,16 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 68d74debb98828648ab7fd5ea81d93d8
+    m_Address: Weapon_MagicBow
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6a5a3eb2068a8b74c8120cd7d1cebd8e
+    m_Address: Tool_LunarForge
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 6bcac75bfeaaafc42a1e39a298060882
     m_Address: Resource_Mineral_Coal
     m_ReadOnly: 0
@@ -210,6 +225,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7c003df7372f82d49bb74fc3663e5e98
+    m_Address: Weapon_MagicSword_Red
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 837f2e78cd4169d4382f6e15f1354d33
     m_Address: Resource_Mineral_Gold
     m_ReadOnly: 0
@@ -217,6 +237,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 85adbff4ee96e0e4da684c7a27a49dbc
     m_Address: Tool_Pickaxe_Iron
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 89839b5afb67501408ac4ef535d5aa26
+    m_Address: Tool_MoonGate
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -242,6 +267,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: a2c6d75b65c27024c9f5833ed11e82a5
     m_Address: Resource_Mineral_Iron
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a4deeed7fe635dd4992a67df6d9a4461
+    m_Address: Armor_MagicShield
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -297,6 +327,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: bfd2819a276da864ab3f272d424e04e5
     m_Address: Booty_Meat2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c09bafb472135f44881b6c647500c37a
+    m_Address: Weapon_MagicSword_Cyan
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -367,6 +402,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e69c19b2b45ba6046ba04bef1c56c385
     m_Address: Armor_Shield
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e81cf6dc997e993488f991fdaf09591b
+    m_Address: Weapon_MagicWand
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

@@ -255,6 +255,7 @@ public enum GameState
     Playing,     // 게임 진행중
     InTutorial,  // 튜토리얼 진행중
     Failed,      // 게임 오버 (사망)
+    Ending,      // 엔딩 (최종 보스 처치)
 }
 
 public enum GameProcessing
