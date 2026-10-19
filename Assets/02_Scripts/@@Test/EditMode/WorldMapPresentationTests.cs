@@ -130,6 +130,60 @@ public class WorldMapPresentationTests : InputTestFixture
         }
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public void CameraHeading_RotatesOnlySightAreaAndKeepsPlayerImageUpright(bool expanded)
+    {
+        var target = CreateMapTarget("LocalTarget", new Vector3(500f, 0f, 500f));
+        Invoke(_hud, "SetTarget", target);
+        if (expanded) Invoke(_hud, "ToggleMap");
+        Layout();
+
+        var playerRoot = (RectTransform)Field(_map, "_playerMarker");
+        var sightArea = (RectTransform)Field(_map, "_sightArea");
+        Transform markerImage = playerRoot.Find("Marker");
+        Assert.That(sightArea, Is.SameAs(playerRoot.Find("SightArea")));
+        Assert.That(markerImage, Is.Not.Null);
+        Quaternion imageRotation = markerImage.rotation;
+
+        Camera viewCamera = Camera.main;
+        GameObject cameraObject = null;
+        if (viewCamera == null)
+        {
+            cameraObject = new GameObject("MapHeadingCamera", typeof(Camera));
+            cameraObject.transform.SetParent(_root.transform, false);
+            cameraObject.tag = "MainCamera";
+            viewCamera = cameraObject.GetComponent<Camera>();
+        }
+        Quaternion cameraRotation = viewCamera.transform.rotation;
+
+        try
+        {
+            foreach (float yaw in new[] { 0f, 90f, 180f, 270f })
+            {
+                viewCamera.transform.rotation = Quaternion.Euler(35f, yaw, 0f);
+                Invoke(_map, "UpdateSightAreaRotation");
+                Assert.That(Quaternion.Angle(sightArea.localRotation, Quaternion.Euler(0f, 0f, -yaw)),
+                    Is.LessThan(0.01f), "시야각만 카메라의 수평 방향을 따라야 한다.");
+                Assert.That(Quaternion.Angle(playerRoot.localRotation, Quaternion.identity),
+                    Is.LessThan(0.01f));
+                Assert.That(Quaternion.Angle(markerImage.rotation, imageRotation),
+                    Is.LessThan(0.01f), "카메라를 돌려도 플레이어 이미지는 고정되어야 한다.");
+            }
+
+            Quaternion previousSightRotation = sightArea.localRotation;
+            viewCamera.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            Invoke(_map, "UpdateSightAreaRotation");
+            Assert.That(Quaternion.Angle(sightArea.localRotation, previousSightRotation),
+                Is.LessThan(0.01f), "수직 시선에서는 마지막 수평 방향을 유지한다.");
+        }
+        finally
+        {
+            viewCamera.transform.rotation = cameraRotation;
+            if (cameraObject != null) UnityEngine.Object.DestroyImmediate(cameraObject);
+        }
+    }
+
     [Test]
     public void DisableAndDestroyHud_LeavesNoDetachedMap()
     {

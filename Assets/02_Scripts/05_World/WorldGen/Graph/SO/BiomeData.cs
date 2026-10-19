@@ -8,6 +8,10 @@ public class BiomeData : ScriptableObject
     [SerializeField] public BiomeType BiomeType;
     [SerializeField] public Color DebugColor = Color.green; // 기즈모용 색상
 
+    [Header("Temperature")]
+    [Tooltip("이 바이옴의 기본 기온(섭씨). 시간대나 열원에 의한 보정 전 값입니다.")]
+    public float BaseTemperature = 20f;
+
     [Header("Placement Rules")]
     [SerializeField] public DisposeRuleSet BiomeDisposeRule;
 

@@ -30,17 +30,19 @@ public class WorldClock : MonoBehaviour
     private const float SECONDS_PER_DAY = 1440f; // 기본값: 현실 24분
     /// <summary>월드 시계의 게임 초 단위 하루 길이입니다. 날짜 기반 일정의 내부 변환에 사용합니다.</summary>
     public const float SecondsPerDay = SECONDS_PER_DAY;
+    public const float SunriseSeconds = SECONDS_PER_DAY * 0.25f; // 일출 06:00에 다음 일차 시작
     
     public const int MoonCycleDays = 8;
 
     private NyoTimer _dayTimer;
     private int _daysPassed = 0;
+    private int _gameDaysPassed = 0;
     private int _lastHour = -1;
 
     public TimePhase CurrentTimePhase { get; private set; }
-    public int CurrentDay => _daysPassed + 1; // 0부터 시작하므로 +1
+    public int CurrentDay => _gameDaysPassed + 1; // 일출 기준, 첫날은 1일차
 
-    /// <summary>경과 일수(0부터). 네트워크 복제 시 날짜와 하루 중 시간을 나눠 보내 float 정밀도 손실을 피한다.</summary>
+    /// <summary>저장/네트워크용 자정 기준 경과 일수(0부터). 표시 일차는 일출 기준 CurrentDay를 사용한다.</summary>
     public int DaysPassed => _daysPassed;
 
     /// <summary>오늘 하루 중 경과한 초 (0 ~ SECONDS_PER_DAY)</summary>
@@ -82,6 +84,7 @@ public class WorldClock : MonoBehaviour
 
     // 다른 시스템들이 구독할 이벤트 (라이팅 변경, 몬스터 스폰 등)
     public event Action<TimePhase> OnPhaseChanged;
+    /// <summary>일출에 경과한 게임 일수(0부터)를 알린다. 로드/되감기 시에도 현재 값으로 갱신한다.</summary>
     public event Action<int> OnDayPassed;
     public event Action<int> OnHourPassed; // 인게임 1시간 경과 알림
 
@@ -108,7 +111,7 @@ public class WorldClock : MonoBehaviour
         _dayTimer = Main.Time.NewTimer("WorldClockTimer", SECONDS_PER_DAY, isAutoDestroy: false, start: true, loop: true);
 
         // 2. 게임 시작 시간을 '아침(06:00)'으로 강제 세팅 (하루의 25% 경과 = 남은 시간 75%)
-        _dayTimer.Current = SECONDS_PER_DAY * 0.75f;
+        _dayTimer.Current = SECONDS_PER_DAY - SunriseSeconds;
 
         // Start 이전에 네트워크 구동이 지정됐다면 로컬 흐름을 멈춘다.
         _dayTimer.Pause = IsNetworkDriven;
@@ -161,14 +164,14 @@ public class WorldClock : MonoBehaviour
 
     private void HandleDayEnded(NyoTimer timer)
     {
+        // 자정에는 저장/네트워크용 날짜만 증가한다. 게임 일차는 06:00에 바뀐다.
         _daysPassed++;
-        OnDayPassed?.Invoke(_daysPassed);
-        UpdateMoonPhase(false);
     }
 
     private void CheckTimeFlow(NyoTimer timer)
     {
         float timeOfDay = SECONDS_PER_DAY - timer.Current;
+        RefreshGameDay();
 
         // --- 1. 인게임 시간(Hour) 체크 ---
         // (하루 진행률을 24시간으로 변환)
@@ -185,7 +188,7 @@ public class WorldClock : MonoBehaviour
 
         if (timeOfDay >= SECONDS_PER_DAY * 0.75f) newPhase = TimePhase.Dusk;
         else if (timeOfDay >= SECONDS_PER_DAY * 0.50f) newPhase = TimePhase.Afternoon;
-        else if (timeOfDay >= SECONDS_PER_DAY * 0.25f) newPhase = TimePhase.Morning;
+        else if (timeOfDay >= SunriseSeconds) newPhase = TimePhase.Morning;
         else newPhase = TimePhase.Dawn;
 
         if (newPhase != CurrentTimePhase)
@@ -196,9 +199,32 @@ public class WorldClock : MonoBehaviour
         }
     }
 
+    private void RefreshGameDay(bool forceInvoke = false)
+    {
+        // 00:00~05:59는 직전 낮에서 이어지는 밤이다. 절대 시간의 원점은 유지한다.
+        int gameDays = Mathf.Max(0, _daysPassed - (ElapsedSecondsToday < SunriseSeconds ? 1 : 0));
+
+        if (forceInvoke || gameDays < _gameDaysPassed)
+        {
+            // 로드/되감기는 중간 날짜를 재생하지 않고 최종 날짜만 알린다.
+            _gameDaysPassed = gameDays;
+            UpdateMoonPhase(forceInvoke);
+            OnDayPassed?.Invoke(_gameDaysPassed);
+            return;
+        }
+
+        // 수면이나 네트워크 갱신으로 여러 일출을 건너뛰어도 날짜 이벤트를 누락하지 않는다.
+        while (_gameDaysPassed < gameDays)
+        {
+            _gameDaysPassed++;
+            UpdateMoonPhase(false);
+            OnDayPassed?.Invoke(_gameDaysPassed);
+        }
+    }
+
     private void UpdateMoonPhase(bool forceInvoke)
     {
-        int phaseIndex = _daysPassed % MoonCycleDays;
+        int phaseIndex = _gameDaysPassed % MoonCycleDays;
         MoonPhase newPhase = (MoonPhase)phaseIndex;
 
         if (forceInvoke || newPhase != CurrentMoonPhase)
@@ -230,15 +256,9 @@ public class WorldClock : MonoBehaviour
         int passedDays = Mathf.FloorToInt(totalElapsed / SECONDS_PER_DAY);
         float newElapsedToday = totalElapsed % SECONDS_PER_DAY;
 
-        for (int i = 0; i < passedDays; i++)
-        {
-            _daysPassed++;
-            OnDayPassed?.Invoke(_daysPassed);
-        }
-
+        _daysPassed += passedDays;
         _dayTimer.Current = SECONDS_PER_DAY - newElapsedToday;
         CheckTimeFlow(_dayTimer);
-        UpdateMoonPhase(false);
     }
 
 
@@ -273,27 +293,12 @@ public class WorldClock : MonoBehaviour
         }
         daysPassed = Mathf.Max(0, daysPassed);
 
-        bool dayChanged = daysPassed != _daysPassed;
-
-        // 앞으로 넘어간 날짜는 하루씩 알린다 (수면 스킵으로 여러 날이 지나도 누락 없이).
-        while (_daysPassed < daysPassed)
-        {
-            _daysPassed++;
-            OnDayPassed?.Invoke(_daysPassed);
-        }
-
-        // 되감긴 경우(늦게 도착한 호스트 시간이 로컬 초기값보다 이른 날짜)는 한 번만 알린다.
-        if (_daysPassed > daysPassed)
-        {
-            _daysPassed = daysPassed;
-            OnDayPassed?.Invoke(_daysPassed);
-        }
+        _daysPassed = daysPassed;
 
         // 남은 시간은 (0, SECONDS_PER_DAY] 범위라 OnTimeEnd가 중복 발행되지 않는다.
         _dayTimer.Current = SECONDS_PER_DAY - elapsedSecondsToday;
 
         CheckTimeFlow(_dayTimer);
-        if (dayChanged) UpdateMoonPhase(false);
     }
 
 
@@ -328,11 +333,10 @@ public class WorldClock : MonoBehaviour
         _dayTimer.Current = SECONDS_PER_DAY - timeOfDay;
 
         // 4. 로드 직후 UI 및 이벤트 즉시 동기화
-        OnDayPassed?.Invoke(_daysPassed);
+        RefreshGameDay(true);
         CheckTimeFlow(_dayTimer);
-        UpdateMoonPhase(true);
 
-        Debug.Log($"💾 시간 로드 완료: {_daysPassed + 1}일차 {CurrentTimePhase}에 접속하셨습니다.");
+        Debug.Log($"💾 시간 로드 완료: {CurrentDay}일차 {CurrentTimePhase}에 접속하셨습니다.");
     }
 
     private void OnDestroy()

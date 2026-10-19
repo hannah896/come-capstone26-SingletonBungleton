@@ -62,5 +62,5 @@ public sealed class SpawnedMonsterSaveData
     public Vector3 position;
     public float hp;
     /// <summary>실제로 스폰된 몬스터 키. 후보가 여러 개인 규칙에서 어떤 몬스터였는지 복원하는 데 사용. 예전 세이브는 비어 있음(규칙 기본 키 사용).</summary>
-    public string monsterKey;
+    //public string monsterKey;
 }

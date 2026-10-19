@@ -19,13 +19,14 @@ public class UI_Hud_WorldState : UI_Hud
 
     [Header("World State Views-Bottom")]
     //[SerializeField] private UI_Panel_MoonSpiritFill _moonSpiritFill;
-    //[SerializeField] private UI_Panel_MoonShape _moonShape;
+    [SerializeField] private UI_Panel_MoonShape _moonShape;
 
 
     private float _nextTargetSearchTime;
 
     public UI_Panel_WorldClock WorldClockView => _worldClockView;
     public UI_Panel_WorldMap WorldMapView => _worldMapView;
+    public UI_Panel_MoonShape MoonShapeView => _moonShape;
     public bool IsMapExpanded { get; private set; }
 
     public override bool Initialize()
@@ -34,9 +35,11 @@ public class UI_Hud_WorldState : UI_Hud
 
         _worldClockView ??= GetComponentInChildren<UI_Panel_WorldClock>(true);
         _worldMapView ??= GetComponentInChildren<UI_Panel_WorldMap>(true);
+        _moonShape ??= GetComponentInChildren<UI_Panel_MoonShape>(true);
 
         _worldClockView?.Initialize();
         _worldMapView?.Initialize();
+        _moonShape?.Initialize();
         if (_target != null) _worldMapView?.SetTarget(_target);
         SetMapExpanded(false);
         return true;

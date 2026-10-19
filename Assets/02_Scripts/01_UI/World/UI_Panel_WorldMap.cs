@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 /// <summary>
@@ -11,12 +12,15 @@ public class UI_Panel_WorldMap : UI_Panel
     [Header("UI References")]
     [SerializeField] private UI_Image _mapImage;
     [SerializeField] private RectTransform _playerMarker;
+    [Tooltip("플레이어 이미지와 분리하여 카메라 방향을 따라 회전할 시야각 루트다.")]
+    [SerializeField] private RectTransform _sightArea;
     [Tooltip("로컬 인디케이터의 Marker 이미지만 연결한다. 원격 플레이어에게는 시야선을 복제하지 않는다.")]
     [SerializeField] private RectTransform _remoteMarkerTemplate;
 
     [Header("Marker Settings")]
-    [Tooltip("Main Camera의 수평 시야 방향에 맞춰 마커와 시야선을 함께 회전한다.")]
-    [SerializeField] private bool _rotatePlayerMarker = true;
+    [Tooltip("플레이어 이미지는 고정하고 Main Camera의 수평 시야 방향에 맞춰 시야각만 회전한다.")]
+    [FormerlySerializedAs("_rotatePlayerMarker")]
+    [SerializeField] private bool _rotateSightArea = true;
     [SerializeField] private bool _hideMarkerOutsideWorld = true;
     [SerializeField, Min(1f)] private float _compactMarkerSize = 15f;
     [SerializeField, Min(1f)] private float _expandedMarkerSize = 50f;
@@ -59,6 +63,9 @@ public class UI_Panel_WorldMap : UI_Panel
     {
         if (!base.Initialize()) return false;
 
+        if (_sightArea == null && _playerMarker != null)
+            _sightArea = _playerMarker.Find("SightArea") as RectTransform;
+        if (_playerMarker != null) _playerMarker.localRotation = Quaternion.identity;
         if (_remoteMarkerTemplate == null && _playerMarker != null)
             _remoteMarkerTemplate = _playerMarker.Find("Marker") as RectTransform;
 
@@ -98,14 +105,14 @@ public class UI_Panel_WorldMap : UI_Panel
         TryFindLocalPlayer();
         _nextRemoteSearchTime = 0f;
         // Cinemachine이 카메라 회전을 마친 뒤, UI를 그리기 직전에 방향을 반영한다.
-        Canvas.willRenderCanvases += UpdatePlayerMarkerRotation;
+        Canvas.willRenderCanvases += UpdateSightAreaRotation;
         Canvas.willRenderCanvases += UpdateRemotePlayerMarkers;
         Canvas.willRenderCanvases += UpdateResourceMarkerPositions;
     }
 
     private void OnDisable()
     {
-        Canvas.willRenderCanvases -= UpdatePlayerMarkerRotation;
+        Canvas.willRenderCanvases -= UpdateSightAreaRotation;
         Canvas.willRenderCanvases -= UpdateRemotePlayerMarkers;
         Canvas.willRenderCanvases -= UpdateResourceMarkerPositions;
         Unbind();
@@ -264,7 +271,7 @@ public class UI_Panel_WorldMap : UI_Panel
 
         Vector2 normalized = _mapData.NormalizeWorldPosition(position);
         _navigation?.SetMarkerPosition(normalized);
-        UpdatePlayerMarkerRotation();
+        UpdateSightAreaRotation();
     }
 
     private void RefreshRemotePlayers()
@@ -487,10 +494,10 @@ public class UI_Panel_WorldMap : UI_Panel
         _nextResourceRefreshTime = 0f;
     }
 
-    private void UpdatePlayerMarkerRotation()
+    private void UpdateSightAreaRotation()
     {
-        if (!_rotatePlayerMarker || !isActiveAndEnabled || _target == null
-            || _playerMarker == null || !_playerMarker.gameObject.activeInHierarchy) return;
+        if (!_rotateSightArea || !isActiveAndEnabled || _target == null
+            || _sightArea == null || !_sightArea.gameObject.activeInHierarchy) return;
 
         Camera viewCamera = Camera.main;
         Vector3 forward = viewCamera != null ? viewCamera.transform.forward : _target.forward;
@@ -499,6 +506,6 @@ public class UI_Panel_WorldMap : UI_Panel
         if (heading.sqrMagnitude < 0.000001f) return;
 
         float yaw = Mathf.Atan2(heading.x, heading.y) * Mathf.Rad2Deg;
-        _playerMarker.localRotation = Quaternion.Euler(0f, 0f, -yaw);
+        _sightArea.localRotation = Quaternion.Euler(0f, 0f, -yaw);
     }
 }
