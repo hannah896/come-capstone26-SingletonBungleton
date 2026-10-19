@@ -39,13 +39,18 @@ public class SaveManager : CoreManager
         (Main.Network == null || !Main.Network.IsInRoom || Main.Network.IsHost);
     public string LastError { get; private set; }
 
+    // 같은 PC에서 여러 개 실행했을 때 각자 다른 프로필 슬롯을 잡기 위한 시스템 뮤텍스 (앱이 끝날 때까지 쥐고 있다)
+    private const int MaxLocalProfiles = 4;
+    private static Mutex s_profileMutex;
+
     protected override UniTask OnInitializeAsync()
     {
-        LocalPlayerId = PlayerPrefs.GetString(PlayerIdKey, "");
+        string idKey = PlayerIdKey + ProfileSuffix(AcquireLocalProfileSlot());
+        LocalPlayerId = PlayerPrefs.GetString(idKey, "");
         if (!Guid.TryParse(LocalPlayerId, out _))
         {
             LocalPlayerId = Guid.NewGuid().ToString("N");
-            PlayerPrefs.SetString(PlayerIdKey, LocalPlayerId);
+            PlayerPrefs.SetString(idKey, LocalPlayerId);
             PlayerPrefs.Save();
         }
         SaveDirectory = Path.Combine(Application.persistentDataPath, "Saves");
@@ -53,6 +58,37 @@ public class SaveManager : CoreManager
         Application.wantsToQuit += OnWantsToQuit;
         return UniTask.CompletedTask;
     }
+
+    /// <summary>
+    /// 이 실행이 쓸 로컬 프로필 슬롯. PlayerPrefs(플레이어 ID)는 PC에 하나뿐이라,
+    /// 같은 PC에서 두 번째로 실행한 창도 같은 ID로 접속해 호스트가 중복 접속으로 거부한다.
+    /// 먼저 실행된 창이 슬롯 0(기존 ID 그대로)을 잡고, 다음 창은 비어 있는 다음 슬롯의 ID를 쓴다.
+    /// </summary>
+    private static int AcquireLocalProfileSlot()
+    {
+        for (int slot = 0; slot < MaxLocalProfiles; slot++)
+        {
+            try
+            {
+                var mutex = new Mutex(true, $"SingletonBungleton_Profile_{slot}", out bool createdNew);
+                if (createdNew)
+                {
+                    s_profileMutex = mutex;
+                    return slot;
+                }
+                mutex.Dispose();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[Save] 프로필 슬롯 확인 실패, 기본 슬롯을 씁니다: {e.Message}");
+                return 0;
+            }
+        }
+        return 0;
+    }
+
+    // 슬롯 0은 기존 키를 그대로 써서 원래 플레이어 ID와 세이브가 유지된다
+    private static string ProfileSuffix(int slot) => slot == 0 ? string.Empty : "_" + slot;
 
     // Main.Clear는 씬 진입 전에도 호출되므로 PendingLoad와 슬롯 선택을 지우지 않는다.
     public override void Clear() { }
