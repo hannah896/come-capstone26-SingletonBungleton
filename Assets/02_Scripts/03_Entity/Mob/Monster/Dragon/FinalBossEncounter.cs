@@ -14,7 +14,10 @@ using UnityEngine;
 /// - 인원 보정(기획 3.5): 시작할 때 인원(1~4)을 세어 두 보스 모두 체력·광폭화 시간에 배율을 건다
 /// - 멀티: 클라의 이 컴포넌트는 보스를 띄우지 않고, 호스트가 복제한 월식 여부(IsEclipse)를 보고 조명만 바꾼다
 ///
-/// 아직 없는 것: 월광 장궁 시작 트리거 (아레나 씬 작업과 함께).
+/// - 월문 아레나(BossArena) 프리팹 안에 두면 아레나 중심·보스 위치(BossSpawn)·반경을 아레나에서 가져온다.
+///   MoonGate가 입장 후 StartEncounter(참가 인원)를 부르고, 실패하면 Abort, 클리어는 Cleared 이벤트로 받는다
+///
+/// 아직 없는 것: 월광 장궁 받침대 시작 트리거 (지금은 입장 직후 시작).
 /// </summary>
 public class FinalBossEncounter : MonoBehaviour
 {
@@ -47,6 +50,8 @@ public class FinalBossEncounter : MonoBehaviour
     #endregion
 
     private DragonBoss currentBoss;
+    private BossArena bossArena;
+    private int runId;          // Abort하면 올려서 진행 중이던 비동기 흐름을 끊는다
     private Color originalLightColor;
     private float originalLightIntensity;
     private float originalAmbient;
@@ -71,10 +76,27 @@ public class FinalBossEncounter : MonoBehaviour
     /// <summary>2페이즈 보스를 잡았을 때 (월식의 눈 드랍·엔딩 연결 지점).</summary>
     public event Action Cleared;
 
-    private Vector3 CenterPosition => arenaCenter != null ? arenaCenter.position : transform.position;
+    private Vector3 CenterPosition
+        => arenaCenter != null ? arenaCenter.position : bossArena != null ? bossArena.transform.position : transform.position;
     private Quaternion CenterRotation => arenaCenter != null ? arenaCenter.rotation : transform.rotation;
 
-    private void Awake() => Current = this;
+    // 1페이즈 등장 위치: 아레나의 BossSpawn이 있으면 거기서 아레나 중심을 바라본다
+    private Vector3 Phase1Position => bossArena != null && arenaCenter == null ? bossArena.BossSpawn : CenterPosition;
+    private Quaternion Phase1Rotation
+    {
+        get
+        {
+            Vector3 look = CenterPosition - Phase1Position;
+            look.y = 0f;
+            return look.sqrMagnitude > 0.01f ? Quaternion.LookRotation(look) : CenterRotation;
+        }
+    }
+
+    private void Awake()
+    {
+        Current = this;
+        bossArena = GetComponentInParent<BossArena>();
+    }
 
     private void Start()
     {
@@ -89,21 +111,56 @@ public class FinalBossEncounter : MonoBehaviour
         FadeLightingAsync(eclipse, this.GetCancellationTokenOnDestroy()).Forget();
     }
 
-    /// <summary>보스전 시작: 아레나 중앙에 서리룡을 띄운다. 호스트(싱글)에서만 동작한다.</summary>
-    public void StartEncounter()
+    /// <summary>
+    /// 보스전 시작: 서리룡을 띄운다. 호스트(싱글)에서만 동작한다.
+    /// partySizeOverride가 1 이상이면 그 인원으로 보정한다 (월문 참가자 수). 0이면 세션의 캐릭터 수를 센다.
+    /// </summary>
+    public void StartEncounter(int partySizeOverride = 0)
     {
         if (Phase != EncounterPhase.Waiting && Phase != EncounterPhase.Cleared) return;
         if (!Monster.IsSimulatedPeer) return;
 
         CaptureLighting();
-        partySize = Mathf.Clamp(CountPlayers(), 1, 4);
-        RunPhase1Async(this.GetCancellationTokenOnDestroy()).Forget();
+        partySize = Mathf.Clamp(partySizeOverride > 0 ? partySizeOverride : CountPlayers(), 1, 4);
+        foreach (var cover in DragonCover.All) cover?.ResetCorrosion();
+        RunPhase1Async(++runId, this.GetCancellationTokenOnDestroy()).Forget();
     }
 
-    private async UniTaskVoid RunPhase1Async(CancellationToken token)
+    /// <summary>
+    /// 보스전 중단 (전멸 → 다음 보름에 재도전): 보스를 걷고 장판·각인·기둥 부식·월식 조명을 원래대로 돌린다.
+    /// </summary>
+    public void Abort()
     {
-        var boss = await SpawnBossAsync(phase1Key, CenterPosition, CenterRotation);
+        if (!Monster.IsSimulatedPeer) return;
+        runId++;
+
+        if (currentBoss != null)
+        {
+            currentBoss.Died -= OnPhase1Died;
+            currentBoss.Died -= OnPhase2Died;
+            if (currentBoss.isActiveAndEnabled) Extensions.Despawn(currentBoss.gameObject);
+            currentBoss = null;
+        }
+
+        DragonHazardZone.ClearAll();
+        foreach (var cover in DragonCover.All) cover?.ResetCorrosion();
+        if (eclipseShown)
+        {
+            eclipseShown = false;
+            FadeLightingAsync(false, this.GetCancellationTokenOnDestroy()).Forget();
+        }
+        SetPhase(EncounterPhase.Waiting);
+    }
+
+    private async UniTaskVoid RunPhase1Async(int id, CancellationToken token)
+    {
+        var boss = await SpawnBossAsync(phase1Key, Phase1Position, Phase1Rotation);
         if (token.IsCancellationRequested) return;
+        if (id != runId)
+        {
+            if (boss != null) Extensions.Despawn(boss.gameObject);
+            return;
+        }
         if (boss == null)
         {
             Debug.LogError($"[FinalBossEncounter] 1페이즈 보스 '{phase1Key}' 스폰 실패", this);
@@ -122,22 +179,27 @@ public class FinalBossEncounter : MonoBehaviour
         Quaternion rot = dead.transform.rotation;
         currentBoss = null;
         SetPhase(EncounterPhase.Transition);
-        RunTransitionAsync(pos, rot, this.GetCancellationTokenOnDestroy()).Forget();
+        RunTransitionAsync(runId, pos, rot, this.GetCancellationTokenOnDestroy()).Forget();
     }
 
     // 월식 전환: 장판 정리 → 조명이 붉고 어둡게 → 같은 자리에서 망령룡 등장
-    private async UniTaskVoid RunTransitionAsync(Vector3 position, Quaternion rotation, CancellationToken token)
+    private async UniTaskVoid RunTransitionAsync(int id, Vector3 position, Quaternion rotation, CancellationToken token)
     {
         DragonHazardZone.ClearAll();
         eclipseShown = true;
         FadeLightingAsync(true, token).Forget();
 
         await UniTask.Delay(TimeSpan.FromSeconds(phase2SpawnDelay), cancellationToken: token).SuppressCancellationThrow();
-        if (token.IsCancellationRequested) return;
+        if (token.IsCancellationRequested || id != runId) return;
 
         position.y = CenterPosition.y; // 공중에서 죽어도 땅에서 일어선다
         var boss = await SpawnBossAsync(phase2Key, position, rotation);
         if (token.IsCancellationRequested) return;
+        if (id != runId)
+        {
+            if (boss != null) Extensions.Despawn(boss.gameObject);
+            return;
+        }
         if (boss == null)
         {
             Debug.LogError($"[FinalBossEncounter] 2페이즈 보스 '{phase2Key}' 스폰 실패", this);
@@ -187,7 +249,7 @@ public class FinalBossEncounter : MonoBehaviour
             Extensions.Despawn(monster.gameObject);
             return null;
         }
-        boss.SetArenaCenter(CenterPosition);
+        boss.SetArenaCenter(CenterPosition, bossArena != null ? bossArena.Radius : -1f);
         int i = Mathf.Clamp(partySize, 1, 4) - 1;
         boss.ApplyPartyScaling(Pick(partyHpMultipliers, i), Pick(partyEnrageMultipliers, i));
 

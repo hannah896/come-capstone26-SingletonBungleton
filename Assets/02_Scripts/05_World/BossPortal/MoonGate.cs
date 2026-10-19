@@ -44,7 +44,7 @@ public class MoonGate : Structure
     [SerializeField] private GameObject arenaPrefab;
     [Tooltip("문 위치 기준 아레나 오프셋. 지형과 겹치지 않게 하늘 높이에 둔다.")]
     [SerializeField] private Vector3 arenaOffset = new(0f, 400f, 0f);
-    [Tooltip("MonsterCatalog에 등록된 보스 키. 최종 보스가 완성되면 이 키만 바꾼다. (임시: Treeguard)")]
+    [Tooltip("MonsterCatalog에 등록된 보스 키. 아레나 프리팹 안에 FinalBossEncounter가 있으면 이 키 대신 그쪽이 최종 보스(월식룡 2페이즈)를 진행한다.")]
     [SerializeField] private string bossMonsterKey = "Treeguard";
 
     [Header("연출")]
@@ -59,6 +59,7 @@ public class MoonGate : Structure
     private float pollTimer;
     private BossArena arena;
     private Monster boss;
+    private FinalBossEncounter encounter;   // 아레나에 최종 보스전 관리자가 있으면 그걸로 진행한다
     private readonly List<Player> participants = new();
 
     private Vector3 ArenaOrigin => transform.position + arenaOffset;
@@ -235,7 +236,18 @@ public class MoonGate : Structure
         for (int i = 0; i < participants.Count; i++)
             Teleport(participants[i], arena.GetPlayerSpawn(i), true);
 
-        await SpawnBossAsync();
+        encounter = arena.GetComponentInChildren<FinalBossEncounter>(true);
+        if (encounter != null)
+        {
+            // 최종 보스(월식룡): 페이즈·인원 보정·광폭화는 관리자가 맡고, 2페이즈까지 잡으면 Cleared가 온다
+            encounter.Cleared -= OnEncounterCleared;
+            encounter.Cleared += OnEncounterCleared;
+            encounter.StartEncounter(participants.Count);
+        }
+        else
+        {
+            await SpawnBossAsync();
+        }
         MonitorAsync().Forget();
     }
 
@@ -283,6 +295,8 @@ public class MoonGate : Structure
         HostFinish(true);
     }
 
+    private void OnEncounterCleared() => HostFinish(true);
+
     // 1초마다 아레나 안 생존자를 확인한다. 아무도 없으면 실패.
     private async UniTaskVoid MonitorAsync()
     {
@@ -321,6 +335,13 @@ public class MoonGate : Structure
 
         State = GateState.Closed;
         Broadcast(PortalEvent.Failed);
+
+        if (encounter != null)
+        {
+            encounter.Cleared -= OnEncounterCleared;
+            encounter.Abort();
+            encounter = null;
+        }
 
         if (boss != null && boss.isActiveAndEnabled)
         {

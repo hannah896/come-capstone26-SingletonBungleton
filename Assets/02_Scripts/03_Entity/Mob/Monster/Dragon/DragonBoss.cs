@@ -139,6 +139,7 @@ public class DragonBoss : Monster
     private float groundY;
     private Vector3 arenaCenter;
     private bool hasArenaCenter;
+    private float arenaRadiusOverride = -1f;
 
     private readonly Dictionary<Player, float> freezeGauges = new Dictionary<Player, float>();
     private readonly List<Player> freezeKeys = new List<Player>();
@@ -302,6 +303,7 @@ public class DragonBoss : Monster
         counterWindow = false;
         counterTriggered = false;
         hasArenaCenter = false;
+        arenaRadiusOverride = -1f;
         groundY = transform.position.y;
         freezeGauges.Clear();
         corrodedUntil.Clear();
@@ -374,12 +376,16 @@ public class DragonBoss : Monster
     };
 
     /// <summary>보스전 관리자가 아레나 중심을 지정한다. 지면 높이도 이 점을 기준으로 잡는다.</summary>
-    public void SetArenaCenter(Vector3 center)
+    public void SetArenaCenter(Vector3 center, float radius = -1f)
     {
         arenaCenter = center;
         hasArenaCenter = true;
         groundY = center.y;
+        if (radius > 0f) arenaRadiusOverride = radius;
     }
+
+    /// <summary>돌진·이동이 넘지 않는 아레나 반경. 보스전 관리자가 아레나 크기로 정하고, 없으면 스탯 SO 값.</summary>
+    public float ArenaRadius => arenaRadiusOverride > 0f ? arenaRadiusOverride : (DragonData != null ? DragonData.ArenaRadius : 32f);
 
     protected override void OnGameUpdate(float deltaTime)
     {

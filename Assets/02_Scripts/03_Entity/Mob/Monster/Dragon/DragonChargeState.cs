@@ -125,7 +125,7 @@ public class DragonChargeState : MobState<Monster>
         f.y = 0f;
         f.Normalize();
 
-        float r = Mathf.Max(d.ArenaRadius - 3f, 0f);
+        float r = Mathf.Max(boss.ArenaRadius - 3f, 0f);
         // |p + f t| = r 의 양수 해
         float b = Vector3.Dot(p, f);
         float cc = p.sqrMagnitude - r * r;

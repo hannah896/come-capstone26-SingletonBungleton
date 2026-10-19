@@ -68,8 +68,9 @@ public class DragonCover : MonoBehaviour
         if (pillarLight == null)
         {
             var go = new GameObject("PillarLight");
+            // 기둥 크기(스케일)와 상관없이 바닥에서 lightHeight(m) 위에 둔다
             go.transform.SetParent(transform, false);
-            go.transform.localPosition = Vector3.up * lightHeight;
+            go.transform.position = transform.position + Vector3.up * lightHeight;
             pillarLight = go.AddComponent<Light>();
             pillarLight.type = LightType.Point;
             pillarLight.color = lightColor;
