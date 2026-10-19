@@ -200,7 +200,8 @@ public class BatMage : Monster
         return struck.Count;
     }
 
-    public void StartSlashCooldown() => slashCooldown = MageData != null ? MageData.SlashCooldown : 1.6f;
+    public void StartSlashCooldown()
+        => slashCooldown = MageData != null ? NextMeleeDelay(MageData.SlashDuration, MageData.SlashCooldown) : 1.6f;
     public void StartSpinCooldown() => spinCooldown = MageData != null ? MageData.SpinCooldown : 8f;
     public void StartSpellCooldown() => spellCooldown = MageData != null ? MageData.SpellCooldown : 10f;
     public void StartHealCooldown() => healCooldown = MageData != null ? MageData.HealCooldown : 15f;

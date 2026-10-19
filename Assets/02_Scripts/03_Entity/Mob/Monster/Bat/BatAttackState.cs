@@ -76,6 +76,8 @@ public class BatAttackState : MobState<Monster>
             bat.FaceTargetStep(time);
             if (biteCooldown <= 0f)
                 StartBite();
+            else if (bat.IsProjectileReady)
+                StartProjectile(); // 같은 기술(물기)만 쿨을 기다린다. 쉬는 동안 눈알 탄은 바로 쏜다
             else
                 bat.PlayAnim(MonsterAnimId.Idle);
         }
@@ -94,7 +96,7 @@ public class BatAttackState : MobState<Monster>
     private void StartBite()
     {
         bat.PlayAnim(MonsterAnimId.Attack);
-        biteCooldown = bat.MinAttackPeriod;
+        biteCooldown = bat.NextMeleeDelay(bat.BiteDuration, bat.MinAttackPeriod);
         Begin(Pending.Bite, bat.BiteHitTime, bat.BiteDuration);
     }
 

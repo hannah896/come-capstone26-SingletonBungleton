@@ -179,9 +179,40 @@ MonoBehaviour:
   thrustReachOffset: {x: 0, y: 0, z: 1}
   thrustPullBackRotation: {x: -12, y: 0, z: 0}
   thrustReachRotation: {x: 16, y: 0, z: 0}
+  aimZoomFov: 28
+  aimZoomSpeed: 12
+  aimSensitivityScale: 0.5
+  shieldBlockOffset: {x: -0.38, y: 0.5, z: -0.8}
+  shieldBlockEulerOffset: {x: 0, y: 0, z: 0}
+  shieldBlockTweenTime: 0.12
   drawPullBackOffset: {x: 0, y: 0.05, z: -0.5}
   drawPullBackRotation: {x: -6, y: 0, z: 4}
   drawReleaseOffset: {x: 0, y: 0, z: 0.12}
+  toolViewOverrides:
+  - itemKey: Weapon_MagicSword_Cyan
+    meshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
+    meshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
+    meshLocalScale: {x: 3.0822258, y: 3.0822258, z: 3.0822258}
+  - itemKey: Weapon_MagicSword_Red
+    meshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
+    meshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
+    meshLocalScale: {x: 3.9635697, y: 3.9635697, z: 3.9635697}
+  - itemKey: Weapon_MagicSpear
+    meshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
+    meshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
+    meshLocalScale: {x: 6.8266829, y: 6.8266829, z: 6.8266829}
+  - itemKey: Weapon_MagicBow
+    meshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
+    meshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
+    meshLocalScale: {x: 6.7511258, y: 6.7511258, z: 6.7511258}
+  - itemKey: Armor_MagicShield
+    meshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
+    meshLocalEuler: {x: 26.14, y: 11.6, z: -12.8}
+    meshLocalScale: {x: 6.2170224, y: 6.2170224, z: 6.2170224}
+  - itemKey: Weapon_MagicWand
+    meshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
+    meshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
+    meshLocalScale: {x: 4.873617, y: 4.873617, z: 4.873617}
 --- !u!114 &5601182068425426865
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -734,10 +765,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: 7ba053ea9b532bd4784dc795612d69e0, type: 3}
       propertyPath: m_WarningMessage
-      value: "\nBinding warning: Some generic clip(s) animate transforms that are
-        already bound by a Humanoid avatar. These transforms can only be changed
-        by Humanoid clips.\n\tTransform 'RightHandIndex1'\n\tFrom animation clip
-        'HumanF@Mining - Begin'"
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: 7ba053ea9b532bd4784dc795612d69e0, type: 3}
       propertyPath: m_ApplyRootMotion

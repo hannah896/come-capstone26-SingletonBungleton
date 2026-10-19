@@ -31,4 +31,12 @@ public class DevilStateMachine : MonsterStateMachine
     /// <summary>급강하 할퀴기. 착지 지점 광역 피해 후 지상 자세로 내려앉는다.</summary>
     public void ToDive()
         => ChangeState(new DevilDiveState(devil, this));
+
+    /// <summary>진짜 찾기 시전: 연기 속으로 사라졌다가 분신과 함께 나타난다.</summary>
+    public void ToCloneCast()
+        => ChangeState(new DevilCloneCastState(devil, this));
+
+    /// <summary>진짜를 들켰다: 분신이 사라지고 잠시 비틀거린다.</summary>
+    public void ToCloneReveal()
+        => ChangeState(new DevilCloneRevealState(devil, this));
 }

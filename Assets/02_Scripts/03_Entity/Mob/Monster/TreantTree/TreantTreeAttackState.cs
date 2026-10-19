@@ -82,8 +82,8 @@ public class TreantTreeAttackState : MobState<Monster>
             return;
         }
 
-        // ② 열매 투척: 주먹이 닿지 않을 때만
-        if (!inPunchRange && treant.IsProjectileReady)
+        // ② 열매 투척: 같은 기술(주먹)만 쿨을 기다리므로, 주먹을 쉬는 동안에도 준비됐으면 던진다
+        if (treant.IsProjectileReady)
         {
             treant.FireProjectile();
             lockTimer = treant.ProjectileCastTime;

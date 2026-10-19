@@ -55,6 +55,21 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4439074817aa4d14098ba8642dcf0cd4
+    m_Address: VFX_OutburstOrange
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 561608c9abfc4154caf4c330810931fd
+    m_Address: VFX_LightningSpearWhite
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5c1175f13ef500c4abd030ae7769f348
+    m_Address: VFX_OutburstCyan
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 6730271c0743e984180a8f3b5f582e1a
     m_Address: FP_CinemachineCamera
     m_ReadOnly: 0
@@ -95,8 +110,18 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d60887d9dfff36349a587db89bd4080e
+    m_Address: VFX_OrbViolet
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: da9da4afc993f8b44a6b9bd966acf87b
     m_Address: MischiefProjectile
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: dfbf5b6682a18d24f97a63196a05e702
+    m_Address: VFX_OrbSilver
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

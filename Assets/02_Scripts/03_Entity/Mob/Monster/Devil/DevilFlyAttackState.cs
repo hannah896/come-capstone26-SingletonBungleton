@@ -40,8 +40,8 @@ public class DevilFlyAttackState : MobState<Monster>
             return;
         }
 
-        // 비행 시간 종료 → 착지
-        if (devil.IsFlyTimeOver)
+        // 비행 시간 종료 → 착지 (진짜 찾기가 대기 중이면 바로 내려와서 시전한다)
+        if (devil.IsFlyTimeOver || devil.IsClonePending)
         {
             sm.ToLand();
             return;

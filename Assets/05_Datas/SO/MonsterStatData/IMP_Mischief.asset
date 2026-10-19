@@ -15,18 +15,23 @@ MonoBehaviour:
   MaxHP: 50
   CurHP: 50
   MoveSpeed: 3
-  AttackDamage: 5
+  AttackDamage: 12
   Defense: 1
-  MinAttackPeriod: 2
+  MinAttackPeriod: 1.8
   FOV: 360
   DetectRange: 10
   AttackRange: 6
+  MeleeRhythmGaps:
+  - 0.1
+  - 0.05
+  MeleeRestJitter: 0.6
   TurnSpeed: 540
   DropTable: {fileID: 11400000, guid: b88e3d6d6d1f460583cb2e96d62457a8, type: 2}
-  SlashRange: 1.5
+  SlashRange: 2.3
   ProjectileKey: MischiefProjectile
   ProjectileCooldown: 5
+  ProjectileCastTime: 1
   ProjectileSpeed: 10
   ProjectileLifeTime: 3
-  ProjectileDamage: 0
+  ProjectileDamage: 10
   MuzzleHeight: 1

@@ -67,4 +67,26 @@ public enum MonsterAnimId : byte
     // ── 이하 BatWizard(외눈 박쥐 위저드) 전용 ──
     /// <summary>두 번째 근접 베기 (Slice Attack). Slash(Attack)와 번갈아 쓴다.</summary>
     Slice = 26,
+
+    // ── 이하 DragonBoss(최종 보스 서리룡/망령룡) 전용 ──
+    // 공용 ID 재사용: Idle(IdleBreathe) / Move(Walk) / Run(돌진) / Attack(물기) / RangeAttack(지상 탄)
+    //                Hit(GetHit1, 그로기) / Dead(Death) / TakeOff / FlyIdle(FlyStationary) / FlyRangeAttack(공중 탄)
+    /// <summary>지상 브레스 (SpreadFrozenBreath / SpreadAcidBreath).</summary>
+    Breath = 27,
+    /// <summary>공중 브레스 (FlyStationarySpread…Breath).</summary>
+    FlyBreath = 28,
+    /// <summary>격추 추락 (FlyStationaryToFalling → Falling).</summary>
+    Fall = 29,
+    /// <summary>체공 → 착지 (FlyStationaryToLanding).</summary>
+    Land = 30,
+    /// <summary>활공 선회 (Glide).</summary>
+    Glide = 31,
+    /// <summary>활공 → 착지 (GlideToLanding).</summary>
+    GlideLand = 32,
+    /// <summary>추락 충돌 (DeathHitTheGround). 격추 성공 후 땅에 처박히는 연출.</summary>
+    Crash = 33,
+    /// <summary>카운터 피격 (GetHit2).</summary>
+    HitHeavy = 34,
+    /// <summary>최종 발악: 브레스 클립을 반복하며 계속 뿜는다 (Breath와 같은 Bool, 연출만 상시 분사).</summary>
+    Frenzy = 35,
 }

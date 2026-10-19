@@ -15,15 +15,18 @@ MonoBehaviour:
   MaxHP: 40
   CurHP: 40
   MoveSpeed: 3.5
-  AttackDamage: 6
+  AttackDamage: 12
   Defense: 0
-  MinAttackPeriod: 1.5
+  MinAttackPeriod: 1.6
   FOV: 360
   DetectRange: 12
   AttackRange: 8
+  MeleeRhythmGaps:
+  - 0.05
+  MeleeRestJitter: 0.5
   TurnSpeed: 540
-  DropTable: {fileID: 0}
-  BiteRange: 1.6
+  DropTable: {fileID: 11400000, guid: 126cb8bd05a243228a924fa93711ffb5, type: 2}
+  BiteRange: 2.3
   BiteHitTime: 0.3
   BiteDuration: 0.75
   BiteAngle: 120
@@ -33,6 +36,6 @@ MonoBehaviour:
   ProjectileCastTime: 0.85
   ProjectileSpeed: 11
   ProjectileLifeTime: 2.5
-  ProjectileDamage: 0
+  ProjectileDamage: 10
   MuzzleHeight: 1.9
   AimHeight: 1

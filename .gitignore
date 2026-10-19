@@ -85,3 +85,4 @@ crashlytics-build.properties
 # ML-Agents 학습 산출물/가상환경
 /results/
 /mlagents-venv/
+!/docs/기획_보스포탈_조건.md

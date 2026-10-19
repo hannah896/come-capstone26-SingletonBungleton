@@ -68,6 +68,24 @@ public class Player : MonoBehaviour, IDamageable
     public bool IsDead => machine?.CurrentState is PlayerDeadState;
 
     /// <summary>
+    /// 월문 안 보스 아레나에 들어와 있는지. (소유자 피어에서만 갱신된다)
+    /// 아레나 안에서 죽으면 소지품을 떨구지 않는다.
+    /// </summary>
+    public bool InBossArena { get; set; }
+
+    /// <summary>
+    /// 월문 이동 등으로 이 캐릭터를 지정 좌표로 옮긴다. 소유자 피어에서 호출한다.
+    /// </summary>
+    public void ApplyPortalTeleport(Vector3 position, bool inArena)
+    {
+        InBossArena = inArena;
+        if (motor == null) return;
+
+        motor.Teleport(position);
+        inputData?.SuppressAllInputs();
+    }
+
+    /// <summary>
     /// 공격·타게팅 기준 생존 여부. 몬스터/투사체/동물 판정은 이 값을 쓴다.
     /// 원격 캐릭터는 이 피어의 스탯이 갱신되지 않으므로(HP는 소유자 피어에만 있다) 소유자가 보고한 사망 상태를 쓴다.
     /// </summary>
@@ -80,6 +98,24 @@ public class Player : MonoBehaviour, IDamageable
             if (TryGetComponent(out NetworkPlayerSync sync)) return !sync.IsRemoteDead;
 #endif
             return true;
+        }
+    }
+
+    /// <summary>
+    /// 불 켜진 횃불을 손에 들고 있는지 (최종 보스 월식의 어둠 판정).
+    /// 원격 캐릭터는 인벤토리가 없으므로 복제된 손 아이템 뷰를 본다.
+    /// </summary>
+    public bool IsHoldingTorch
+    {
+        get
+        {
+            if (IsLocalPlayerObject())
+                return playerInventory != null && playerInventory.EquippedHand != null
+                    && playerInventory.EquippedHand.survivalToolType == SurvivalToolType.Torch;
+#if PHOTON_FUSION
+            if (TryGetComponent(out NetworkPlayerSync sync)) return sync.IsHoldingTorch;
+#endif
+            return false;
         }
     }
     #endregion
@@ -407,6 +443,9 @@ public class Player : MonoBehaviour, IDamageable
         stat.ClearDot();
         stat.ClearSlow();
 
+        // 아레나 안에서 죽었다면 부활과 함께 아레나를 벗어난다
+        InBossArena = false;
+
         // 리스폰 지점으로 이동. 지점을 못 구하면(테스트 씬 등) 제자리에서 부활한다.
         if (TryGetRespawnPosition(out Vector3 respawnPosition))
             motor?.Teleport(respawnPosition);
@@ -561,6 +600,45 @@ public class Player : MonoBehaviour, IDamageable
         if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
         if (stat == null || stat.IsDead) return;
         stat.ApplySlow(multiplier, duration);
+    }
+
+    /// <summary>보스 기믹 경고 문구를 이 캐릭터 소유자의 화면에 띄운다. (각인 대상 알림 등)</summary>
+    public void ShowBossAlert(BossAlert alert, float duration)
+    {
+        if (TryForwardToOwner(sync => sync.ForwardBossAlert((byte)alert, duration))) return;
+        UI_Hud_BossHealth.ShowAlert(alert, duration);
+    }
+
+    /// <summary>
+    /// 월식의 응시 판정 (최종 보스). 소유자 카메라 정면 halfAngle 안에 eye가 있었으면
+    /// Ego를 egoLoss만큼 잃고 stunDuration 동안 움직이지 못한다. 카메라는 소유자 피어에만 있으므로 판정도 거기서 한다.
+    /// </summary>
+    public void ApplyGaze(Vector3 eye, float halfAngle, float egoLoss, float stunDuration)
+    {
+        if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
+        if (!IsAlive) return;
+        if (TryForwardToOwner(sync => sync.ForwardGaze(eye, halfAngle, egoLoss, stunDuration))) return;
+
+        ApplyLocalGaze(eye, halfAngle, egoLoss, stunDuration);
+    }
+
+    /// <summary>이 피어의 카메라로 응시를 판정한다. 네트워크로 전달받은 응시도 여기로 들어온다.</summary>
+    public void ApplyLocalGaze(Vector3 eye, float halfAngle, float egoLoss, float stunDuration)
+    {
+        if (stat == null || stat.IsDead) return;
+
+        Camera cam = Camera.main;
+        Transform view = cam != null ? cam.transform : transform;
+        Vector3 toEye = eye - view.position;
+        if (toEye.sqrMagnitude > 0.0001f && Vector3.Angle(view.forward, toEye) > halfAngle)
+        {
+            UI_Hud_BossHealth.ShowAlert(BossAlert.GazeAvoided, 1.2f);
+            return;
+        }
+
+        stat.RestoreEgo(-egoLoss);
+        stat.ApplySlow(0f, stunDuration);
+        UI_Hud_BossHealth.ShowAlert(BossAlert.Feared, stunDuration);
     }
 
     // 원격 캐릭터면 소유자 피어로 전달하고 true. 로컬 캐릭터(싱글 포함)면 false.

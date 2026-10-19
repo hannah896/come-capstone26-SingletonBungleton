@@ -21,6 +21,10 @@ MonoBehaviour:
   FOV: 360
   DetectRange: 30
   AttackRange: 14
+  MeleeRhythmGaps:
+  - 0.1
+  - 0.05
+  MeleeRestJitter: 0.5
   TurnSpeed: 90
   DropTable: {fileID: 11400000, guid: 8df67eaf41ff429793c399536066e317, type: 2}
   Phase2HpRatio: 0.6
@@ -29,9 +33,9 @@ MonoBehaviour:
   Phase3RunSpeed: 4.5
   Phase3CooldownMultiplier: 0.7
   PhaseShiftDuration: 2
-  SkillGap: 0.8
-  Phase3SkillGap: 0.5
-  PoiseMax: 100
+  SkillGap: 0.15
+  Phase3SkillGap: 0.1
+  PoiseMax: 250
   PoiseRegenDelay: 4
   PoiseRegenPerSecond: 15
   GroggyDuration: 3
@@ -45,7 +49,7 @@ MonoBehaviour:
   SwingAngle: 180
   SwingHitTime: 0.6
   SwingDuration: 2
-  SwingDamage: 18
+  SwingDamage: 26
   SwingKnockback: 10
   SmackCooldown: 7
   SmackRange: 3.5
@@ -53,22 +57,22 @@ MonoBehaviour:
   SmackRadius: 2.5
   SmackHitTime: 0.9
   SmackDuration: 2.9
-  SmackDamage: 35
+  SmackDamage: 45
   KickCooldown: 5
-  KickRange: 2.5
-  KickTriggerRange: 1.8
+  KickRange: 3.4
+  KickTriggerRange: 2.8
   KickAngle: 60
   KickHitTime: 0.45
   KickDuration: 1.6
-  KickDamage: 10
+  KickDamage: 16
   KickKnockback: 16
   StepCooldown: 8
   StepFrontAngle: 120
-  StepTriggerRange: 3
+  StepTriggerRange: 3.6
   StepRadius: 4.5
   StepHitTime: 0.7
   StepDuration: 2.3
-  StepDamage: 15
+  StepDamage: 22
   StepSlowMultiplier: 0.5
   StepSlowDuration: 2
   ClapCooldown: 10
@@ -79,13 +83,13 @@ MonoBehaviour:
   ClapWaveInterval: 0.15
   ClapHitTime: 0.6
   ClapDuration: 2.2
-  ClapDamage: 25
+  ClapDamage: 32
   ProjectileCooldown: 5
   ProjectileMinRange: 8
   ProjectileRadius: 2
   ProjectileWarningTime: 1
   ProjectileDuration: 1.3
-  ProjectileDamage: 15
+  ProjectileDamage: 20
   MinionKeys:
   - TreantMinionAutumn
   - TreantMinionEvergreen

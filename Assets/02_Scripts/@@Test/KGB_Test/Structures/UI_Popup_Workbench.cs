@@ -30,7 +30,13 @@ public class UI_Popup_Workbench : UI_Popup
     [SerializeField] private Button filterToggleButton;
     [SerializeField] private TextMeshProUGUI filterButtonText;
 
-    private static readonly RecipeCategory[] Categories = { RecipeCategory.Weapons, RecipeCategory.Armor };
+    private static readonly RecipeCategory[] WorkbenchCategories = { RecipeCategory.Weapons, RecipeCategory.Armor };
+
+    /// <summary>이 팝업이 다루는 카테고리 탭 목록. 파생 팝업(연성대 등)이 덮어쓴다.</summary>
+    protected virtual RecipeCategory[] Categories => WorkbenchCategories;
+
+    /// <summary>팝업 제목. 파생 팝업이 덮어쓴다.</summary>
+    protected virtual string PopupTitle => "작업대";
     private static readonly Color TabSelectedColor = new(1f, 0.8f, 0.2f, 1f);
     private static readonly Color TabDefaultColor = Color.white;
 
@@ -50,7 +56,7 @@ public class UI_Popup_Workbench : UI_Popup
         filterToggleButton?.onClick.AddListener(ToggleFilter);
         SetupCategoryTabs();
         if (titleText != null)
-            titleText.text = "작업대";
+            titleText.text = PopupTitle;
         RefreshFilterButton();
     }
 
@@ -92,7 +98,7 @@ public class UI_Popup_Workbench : UI_Popup
         if (playerInventory != null)
             playerInventory.OnInventoryChanged += OnCraftingChanged;
 
-        SelectCategory(RecipeCategory.Weapons);
+        SelectCategory(Categories[0]);
     }
 
     private void Unbind()
@@ -209,6 +215,10 @@ public class UI_Popup_Workbench : UI_Popup
             int index = i;
             categoryTabButtons[i].onClick.AddListener(() => SelectCategory(Categories[index]));
         }
+
+        // 카테고리보다 탭 버튼이 많으면(탭이 1개뿐인 연성대 등) 남는 탭은 숨긴다
+        for (int i = Categories.Length; i < categoryTabButtons.Length; i++)
+            if (categoryTabButtons[i] != null) categoryTabButtons[i].gameObject.SetActive(false);
     }
 
     private void RefreshCategoryTabs()

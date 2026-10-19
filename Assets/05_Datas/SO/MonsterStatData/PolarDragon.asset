@@ -1,0 +1,165 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0c2895492932f54182ff7f8b8c5912f, type: 3}
+  m_Name: PolarDragon
+  m_EditorClassIdentifier: 
+  MaxHP: 6000
+  CurHP: 6000
+  MoveSpeed: 2.5
+  AttackDamage: 30
+  Defense: 10
+  MinAttackPeriod: 1
+  FOV: 360
+  DetectRange: 60
+  AttackRange: 40
+  MeleeRhythmGaps:
+  - 0.1
+  - 0.05
+  MeleeRestJitter: 0.5
+  TurnSpeed: 70
+  DropTable: {fileID: 0}
+  BossName: "\uC11C\uB9AC\uB2EC\uC758 \uC218\uD638\uB8E1"
+  HpLineCount: 30
+  HpLineColors:
+  - {r: 0.55, g: 0.85, b: 1, a: 1}
+  - {r: 0.85, g: 0.95, b: 1, a: 1}
+  - {r: 0.35, g: 0.6, b: 0.95, a: 1}
+  - {r: 0.6, g: 0.95, b: 0.9, a: 1}
+  SkillGap: 0.3
+  StopDistance: 7.5
+  ArenaRadius: 32
+  AimTurnSpeed: 240
+  PoiseMax: 600
+  HeadPoiseMultiplier: 2
+  PoiseRegenDelay: 6
+  PoiseRegenPerSecond: 15
+  GroggyDuration: 8
+  GroggyDamageMultiplier: 1.5
+  HeadHitRadius: 1.6
+  CounterPoiseDamage: 200
+  CounterStaggerDuration: 1.6
+  CounterFrontReach: 10
+  CounterFrontAngle: 70
+  BiteRange: 8
+  BiteAngle: 60
+  BiteDamage: 45
+  BiteHitTime: 0.55
+  BiteDuration: 1.33
+  BiteKnockback: 10
+  BiteCooldown: 4
+  FrostBallKey: DragonFrostBall
+  IcePatchKey: DragonIcePatch
+  SpitCount: 3
+  SpitReleaseTime: 0.45
+  SpitInterval: 1
+  SpitFlightTime: 0.9
+  SpitImpactRadius: 2.2
+  SpitDamage: 25
+  IcePatchRadius: 2.6
+  IcePatchDuration: 6
+  IcePatchSlow: 0.5
+  PatchDotPerSecond: 0
+  SpitMinRange: 7
+  SpitCooldown: 9
+  BreathRange: 14
+  BreathHalfAngle: 15
+  BreathStartTime: 1
+  BreathEndTime: 2.85
+  BreathDuration: 3.33
+  BreathSweepAngle: 90
+  BreathTickInterval: 0.2
+  BreathTickDamage: 8
+  FreezePerTick: 0.25
+  FreezeDecayPerSecond: 0.25
+  FreezeDuration: 2
+  BreathCooldown: 14
+  ChargeWarningTime: 1
+  ChargeSpeed: 9
+  ChargeMaxDistance: 28
+  ChargeOvershoot: 4
+  ChargeWidth: 4.5
+  ChargeDamage: 40
+  ChargeKnockback: 16
+  ChargeStunDuration: 3
+  ChargeMinRange: 10
+  ChargeCooldown: 12
+  FlyHeight: 7
+  TakeOffRiseStart: 0.4
+  TakeOffDuration: 1.83
+  LandDescendTime: 1.6
+  LandDuration: 2.17
+  TakeOffHpRatios:
+  - 0.667
+  - 0.333
+  ShootdownMax: 240
+  ShootdownTimeLimit: 25
+  AirSkillGap: 0.4
+  BombardCount: 6
+  BombardInterval: 0.8
+  FlySpitReleaseTime: 0.35
+  BombardFlightTime: 1.2
+  BombardPatchDuration: 6
+  FlyBreathStartTime: 0.6
+  FlyBreathEndTime: 2.9
+  FlyBreathDuration: 3.2
+  FlyBreathSweepAngle: 110
+  FlyBreathRange: 22
+  FallStartDuration: 1.33
+  FallStartDrop: 5.1
+  FallGravity: 30
+  CrashImpactTime: 0.2
+  CrashDuration: 0.67
+  CrashKnockbackRadius: 8
+  CrashKnockback: 12
+  ShootdownGroggyDuration: 10
+  ShootdownDamageMultiplier: 2
+  GlideRadius: 20
+  GlideLapTime: 8
+  ExplosionWarningTime: 2.5
+  ExplosionHpRatio: 0.8
+  ExplosionSafeHpRatio: 0.5
+  ExplosionRadius: 40
+  BiteCorrosionMultiplier: 1
+  BiteCorrosionDuration: 10
+  BreathCorrodesCover: 0
+  ChargeTrailSpacing: 0
+  ShootdownFailMode: 0
+  AcidRainDuration: 8
+  AcidRainTickInterval: 0.5
+  AcidRainTickDamage: 10
+  FrenzyHpRatio: 0
+  FrenzyDuration: 15
+  FrenzyTurnSpeed: 40
+  FrenzyWalkSpeed: 1.2
+  FrenzyRange: 16
+  EnrageHpRatio: 2
+  EnrageTime: 480
+  EnrageRepeatInterval: 10
+  EclipseEgoDrainPerSecond: 0
+  TorchLightRadius: 4
+  GazeHpRatios: []
+  GazeWarningTime: 3
+  GazeHalfAngle: 30
+  GazeEgoLoss: 40
+  GazeStunDuration: 2
+  GazeAfterHover: 0.6
+  GazeDriftSpeed: 6
+  MarkHpRatios: []
+  MarkTargetCount: 1
+  MarkTargetCountAtFour: 2
+  MarkDuration: 12
+  MarkCleanseTime: 3
+  MarkExplosionRadius: 8
+  MarkExplosionDamage: 70
+  IntroHoverTime: 2.5
+  IntroShockwaveRadius: 10
+  IntroShockwaveKnockback: 14

@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 64f7e092734e07b468c75b5208bc1759, type: 3}
+  m_Name: Recipe_MagicWand
+  m_EditorClassIdentifier: 
+  recipeID: Recipe_MagicWand
+  recipeName: "\uB9C8\uB825 \uC9C0\uD321\uC774"
+  category: 9
+  requiredStation: 0
+  ingredients:
+  - itemData: {fileID: 11400000, guid: d35d95bd2e4e7574e9345b144861254b, type: 2}
+    amount: 1
+  - itemData: {fileID: 11400000, guid: 9f5f78c67b818f646999884118206a83, type: 2}
+    amount: 3
+  - itemData: {fileID: 11400000, guid: f41232c7538cb644fbe7551b247ff716, type: 2}
+    amount: 4
+  - itemData: {fileID: 11400000, guid: 1a846fdde396fc945acf993a20dd51e4, type: 2}
+    amount: 1
+  resultItem: {fileID: 11400000, guid: 3206ee64b9d4ee446854d1b824d9febb, type: 2}
+  resultAmount: 1
+  craftTime: 0

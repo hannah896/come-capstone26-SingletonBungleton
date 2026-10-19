@@ -1,6 +1,6 @@
 /// <summary>
 /// 데빌 지상 공격 상태. 거리로 수단을 고른다.
-/// - SlashRange 이내: 할퀴기 (내부 쿨 없음, MinAttackPeriod 주기만)
+/// - SlashRange 이내: 할퀴기 (MinAttackPeriod 주기. 클립이 끝나면 대기 자세로)
 /// - 그 밖 ~ AttackRange 이내: 화염구 (내부 쿨타임)
 /// - 화염구 쿨 대기 중에는 걸어서 접근
 ///
@@ -12,6 +12,7 @@ public class DevilGroundAttackState : MobState<Monster>
     private readonly Devil devil;
 
     private float slashCooldown;
+    private float slashAnimTimer; // 슬래시 클립 남은 시간 (끝나면 대기 자세로)
     private float castTimer;    // 시전 모션 남은 시간 (>0이면 제자리 고정)
 
     public DevilGroundAttackState(Devil owner, DevilStateMachine machine) : base(owner, machine)
@@ -38,6 +39,13 @@ public class DevilGroundAttackState : MobState<Monster>
             return;
         }
 
+        // 진짜 찾기: 체력 기준선을 넘었으면 다른 무엇보다 먼저 분신을 만든다
+        if (devil.IsClonePending && devil.Target != null)
+        {
+            sm.ToCloneCast();
+            return;
+        }
+
         // 이륙 조건 우선 — 맞았거나, 밀착당했거나, HP 70%에 닿았거나
         if (devil.ShouldTakeOff)
         {
@@ -60,6 +68,14 @@ public class DevilGroundAttackState : MobState<Monster>
 
         slashCooldown -= time;
 
+        // 슬래시 클립이 끝나면 대기 자세로 돌린다. 공격 Bool을 켜 둔 채면 다음 슬래시 때 클립이 다시 재생되지 않는다.
+        if (slashAnimTimer > 0f)
+        {
+            slashAnimTimer -= time;
+            if (slashAnimTimer <= 0f && devil.CurrentAnimId == MonsterAnimId.Attack)
+                devil.PlayAnim(MonsterAnimId.Idle);
+        }
+
         if (devil.IsTargetInSlashRange())
         {
             // 근접: 할퀴기. MinAttackPeriod 주기로만 반복
@@ -68,7 +84,14 @@ public class DevilGroundAttackState : MobState<Monster>
             {
                 devil.PlayAnim(MonsterAnimId.Attack);
                 devil.PerformAttack();
-                slashCooldown = devil.MinAttackPeriod;
+                slashCooldown = devil.NextMeleeDelay(devil.AttackAnimHoldTime, devil.MinAttackPeriod);
+                slashAnimTimer = devil.AttackAnimHoldTime;
+            }
+            // 같은 기술(할퀴기)만 쿨을 기다린다. 쉬는 동안 화염구가 준비됐으면 바로 이어 쏜다
+            else if (slashAnimTimer <= 0f && devil.IsFireballReady)
+            {
+                devil.FireFireball();
+                castTimer = devil.FireballCastTime;
             }
         }
         else if (devil.IsFireballReady)
