@@ -64,8 +64,14 @@ public class PlayerEquipmentView : MonoBehaviour
     // 스폰이 비동기라 요청이 연달아 들어오면 순서가 뒤집힐 수 있다 — 최신 요청만 반영한다.
     private int _requestSeq;
 
+    // 손에 붙은 아이템이 불 켜진 횃불인지
+    private bool _isTorchLit;
+
     /// <summary>현재 표시 중인 아이템 키 (없으면 빈 문자열).</summary>
     public string CurrentKey => _currentKey;
+
+    /// <summary>손에 불 켜진 횃불이 붙어 있는지 (원격 캐릭터의 횃불 빛 판정용).</summary>
+    public bool IsTorchLit => _isTorchLit;
 
     /// <summary>손에 붙은 아이템이 새로 스폰되거나(오브젝트) 제거될 때(null) 호출된다.</summary>
     public event Action<GameObject> OnViewChanged;
@@ -230,6 +236,7 @@ public class PlayerEquipmentView : MonoBehaviour
         ItemDataSO itemSO = item != null ? item.ItemDataSO : null;
         if (itemSO == null || itemSO.survivalToolType != SurvivalToolType.Torch) return;
 
+        _isTorchLit = true;
         Light[] lights = _spawnedObject.GetComponentsInChildren<Light>(true);
         for (int i = 0; i < lights.Length; i++)
         {
@@ -246,6 +253,7 @@ public class PlayerEquipmentView : MonoBehaviour
 
     private void ClearView()
     {
+        _isTorchLit = false;
         if (_spawnedObject == null) return;
 
         if (Main.Pool != null)

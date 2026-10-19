@@ -56,6 +56,10 @@ public class DragonStateMachine : MonsterStateMachine
     public void ToIntro()
         => ChangeState(new DragonIntroState(boss, this));
 
+    /// <summary>월식의 응시: 중앙 상공에서 카운트다운 → 카메라 판정 → 착지 후 산성 침.</summary>
+    public void ToGaze()
+        => ChangeState(new DragonGazeState(boss, this));
+
     /// <summary>최종 발악: 중앙에서 브레스를 360° 돌리며 걷는다.</summary>
     public void ToFrenzy()
         => ChangeState(new DragonFrenzyState(boss, this));

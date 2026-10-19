@@ -374,6 +374,21 @@ public static class DragonBossBuilder
             };
             EditorUtility.SetDirty(stat);
         }
+
+        // 5단계 기믹(어둠·응시·각인): 아직 비어 있으면 채운다 (이미 만든 SO 포함)
+        if (stat.EclipseEgoDrainPerSecond <= 0f && (stat.GazeHpRatios == null || stat.GazeHpRatios.Length == 0))
+        {
+            stat.EclipseEgoDrainPerSecond = 1f;
+            stat.GazeHpRatios = new[] { 0.75f, 0.375f }; // ×40줄 중 ×30, ×15
+            stat.MarkHpRatios = new[] { 0.625f, 0.2f };  // ×25, ×8
+            EditorUtility.SetDirty(stat);
+        }
+        // 광폭화: 2페이즈는 10분 (클래스 기본값 8분은 1페이즈 것)
+        if (Mathf.Approximately(stat.EnrageTime, 480f))
+        {
+            stat.EnrageTime = 600f;
+            EditorUtility.SetDirty(stat);
+        }
         if (!created) return stat;
         stat.MaxHP = stat.CurHP = 8000f;
         stat.MoveSpeed = 2.8f;
@@ -689,9 +704,18 @@ public static class DragonBossBuilder
     #endregion
 
     #region Boss HUD
+    [MenuItem("Tools/최종 보스/보스 HUD만 다시 만들기")]
+    public static void RebuildHudOnly()
+    {
+        RegisterAddressable(BuildBossHud(), UiAddressableGroup);
+        AssetDatabase.SaveAssets();
+        Debug.Log("[DragonBossBuilder] 보스 HUD 재생성 완료");
+    }
+
     /// <summary>
     /// 보스 체력바 HUD 프리팹 (1920x1080 기준, 화면 상단 중앙).
-    /// 이름(왼쪽) · xN(오른쪽) / 체력바(아래 줄 색 · 잔상 · 현재 줄) / 무력화 게이지 / 상태 문구(그로기·격추)
+    /// 이름(왼쪽) · xN(오른쪽) / 체력바(아래 줄 색 · 잔상 · 현재 줄) / 무력화 게이지 / 상태 문구(그로기·격추) / 어둠 안내
+    /// + 화면 가운데 위쪽 기믹 경고 문구(응시·각인)
     /// </summary>
     private static GameObject BuildBossHud()
     {
@@ -707,6 +731,12 @@ public static class DragonBossBuilder
         group.alpha = 0f;
         group.interactable = false;
         group.blocksRaycasts = false;
+
+        // 화면 효과는 문구·체력바보다 먼저 만들어 뒤에 깔린다 (비네트 스프라이트는 런타임에 만든다)
+        var vignette = NewImage("Vignette", root.transform, Color.clear);
+        Stretch(vignette.rectTransform, 0f);
+        var flash = NewImage("Flash", root.transform, Color.clear);
+        Stretch(flash.rectTransform, 0f);
 
         var panel = NewRect("Panel", root.transform);
         panel.anchorMin = panel.anchorMax = new Vector2(0.5f, 1f);
@@ -742,6 +772,19 @@ public static class DragonBossBuilder
         var stateText = NewText("State", panel, font, 26f, TextAlignmentOptions.Top);
         Place(stateText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -90f), new Vector2(400f, 34f));
 
+        var timerText = NewText("EnrageTimer", panel, font, 24f, TextAlignmentOptions.TopRight);
+        Place(timerText.rectTransform, new Vector2(1f, 1f), new Vector2(0f, -90f), new Vector2(200f, 32f));
+
+        var hintText = NewText("DarknessHint", panel, font, 22f, TextAlignmentOptions.Top);
+        Place(hintText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -124f), new Vector2(900f, 30f));
+
+        // 기믹 경고 문구: 화면 가운데보다 조금 위 (조준점을 가리지 않게)
+        var alertText = NewText("Alert", root.transform, font, 44f, TextAlignmentOptions.Center);
+        alertText.rectTransform.anchorMin = alertText.rectTransform.anchorMax = new Vector2(0.5f, 0.68f);
+        alertText.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        alertText.rectTransform.anchoredPosition = Vector2.zero;
+        alertText.rectTransform.sizeDelta = new Vector2(1400f, 70f);
+
         var hud = root.AddComponent<UI_Hud_BossHealth>();
         var so = new SerializedObject(hud);
         so.FindProperty("_group").objectReferenceValue = group;
@@ -752,6 +795,11 @@ public static class DragonBossBuilder
         so.FindProperty("_hpGhost").objectReferenceValue = ghost;
         so.FindProperty("_hpFill").objectReferenceValue = fill;
         so.FindProperty("_gaugeFill").objectReferenceValue = gaugeFill;
+        so.FindProperty("_alertText").objectReferenceValue = alertText;
+        so.FindProperty("_hintText").objectReferenceValue = hintText;
+        so.FindProperty("_timerText").objectReferenceValue = timerText;
+        so.FindProperty("_vignette").objectReferenceValue = vignette;
+        so.FindProperty("_flash").objectReferenceValue = flash;
         so.ApplyModifiedPropertiesWithoutUndo();
 
         var prefab = PrefabUtility.SaveAsPrefabAsset(root, HudFolder + "/UI_Hud_BossHealth.prefab");

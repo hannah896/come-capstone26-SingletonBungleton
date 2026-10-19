@@ -11,8 +11,10 @@ using UnityEngine;
 ///   (DragonIntroState: 이륙 → 포효 → 착지 충격파, 내내 무적). 쓰러짐부터 교전까지 약 15초가 휴식·재정비 시간이다
 /// - 두 드래곤은 별도 몬스터라 애니메이터·콜라이더·스탯이 섞이지 않고, 멀티 복제도 기존 몬스터 방식을 그대로 쓴다
 ///
-/// 아직 없는 것: 체력바 HUD(PhaseChanged/CurrentBoss를 구독해 붙인다), 광폭화 타이머, 인원 보정, 월광 장궁 시작 트리거,
-/// 멀티 클라의 월식 조명 (조명은 지금 이 피어에서만 바뀐다).
+/// - 인원 보정(기획 3.5): 시작할 때 인원(1~4)을 세어 두 보스 모두 체력·광폭화 시간에 배율을 건다
+/// - 멀티: 클라의 이 컴포넌트는 보스를 띄우지 않고, 호스트가 복제한 월식 여부(IsEclipse)를 보고 조명만 바꾼다
+///
+/// 아직 없는 것: 월광 장궁 시작 트리거 (아레나 씬 작업과 함께).
 /// </summary>
 public class FinalBossEncounter : MonoBehaviour
 {
@@ -38,6 +40,10 @@ public class FinalBossEncounter : MonoBehaviour
     [SerializeField] private float eclipseLightIntensity = 0.35f;
     [SerializeField] private float eclipseAmbientMultiplier = 0.4f;
     [SerializeField] private float eclipseFadeTime = 5f;
+
+    [Header("인원 보정 (기획 3.5) — 인덱스 0 = 1인, 3 = 4인")]
+    [SerializeField] private float[] partyHpMultipliers = { 0.45f, 0.65f, 0.85f, 1f };
+    [SerializeField] private float[] partyEnrageMultipliers = { 1.4f, 1.2f, 1.1f, 1f };
     #endregion
 
     private DragonBoss currentBoss;
@@ -45,6 +51,15 @@ public class FinalBossEncounter : MonoBehaviour
     private float originalLightIntensity;
     private float originalAmbient;
     private bool lightCaptured;
+    private int partySize = 1;
+    private bool eclipseShown;  // 이 피어 조명이 지금 월식 상태인지
+
+    /// <summary>씬의 보스전 관리자 (클라가 복제된 월식 상태를 넘겨줄 대상).</summary>
+    public static FinalBossEncounter Current { get; private set; }
+
+    /// <summary>호스트/싱글: 월식(전환~2페이즈) 중인지. 멀티에서는 이 값이 클라로 복제된다.</summary>
+    public bool IsEclipse => Phase == EncounterPhase.Transition || Phase == EncounterPhase.Phase2;
+    public int PartySize => partySize;
 
     /// <summary>현재 진행 단계.</summary>
     public EncounterPhase Phase { get; private set; } = EncounterPhase.Waiting;
@@ -59,9 +74,19 @@ public class FinalBossEncounter : MonoBehaviour
     private Vector3 CenterPosition => arenaCenter != null ? arenaCenter.position : transform.position;
     private Quaternion CenterRotation => arenaCenter != null ? arenaCenter.rotation : transform.rotation;
 
+    private void Awake() => Current = this;
+
     private void Start()
     {
         if (startOnAwake) StartEncounter();
+    }
+
+    /// <summary>멀티 클라 전용: 호스트가 보낸 월식 여부로 이 피어의 조명을 바꾼다.</summary>
+    public void ApplyNetEclipse(bool eclipse)
+    {
+        if (Monster.IsSimulatedPeer || eclipse == eclipseShown) return;
+        eclipseShown = eclipse;
+        FadeLightingAsync(eclipse, this.GetCancellationTokenOnDestroy()).Forget();
     }
 
     /// <summary>보스전 시작: 아레나 중앙에 서리룡을 띄운다. 호스트(싱글)에서만 동작한다.</summary>
@@ -71,6 +96,7 @@ public class FinalBossEncounter : MonoBehaviour
         if (!Monster.IsSimulatedPeer) return;
 
         CaptureLighting();
+        partySize = Mathf.Clamp(CountPlayers(), 1, 4);
         RunPhase1Async(this.GetCancellationTokenOnDestroy()).Forget();
     }
 
@@ -103,6 +129,7 @@ public class FinalBossEncounter : MonoBehaviour
     private async UniTaskVoid RunTransitionAsync(Vector3 position, Quaternion rotation, CancellationToken token)
     {
         DragonHazardZone.ClearAll();
+        eclipseShown = true;
         FadeLightingAsync(true, token).Forget();
 
         await UniTask.Delay(TimeSpan.FromSeconds(phase2SpawnDelay), cancellationToken: token).SuppressCancellationThrow();
@@ -127,6 +154,7 @@ public class FinalBossEncounter : MonoBehaviour
     {
         dead.Died -= OnPhase2Died;
         currentBoss = null;
+        eclipseShown = false;
         FadeLightingAsync(false, this.GetCancellationTokenOnDestroy()).Forget(); // 월식이 걷힌다
         SetPhase(EncounterPhase.Cleared);
         Cleared?.Invoke();
@@ -160,6 +188,8 @@ public class FinalBossEncounter : MonoBehaviour
             return null;
         }
         boss.SetArenaCenter(CenterPosition);
+        int i = Mathf.Clamp(partySize, 1, 4) - 1;
+        boss.ApplyPartyScaling(Pick(partyHpMultipliers, i), Pick(partyEnrageMultipliers, i));
 
 #if PHOTON_FUSION
         if (catalogId != 0 && Main.Network != null && Main.Network.IsInRoom)
@@ -167,6 +197,13 @@ public class FinalBossEncounter : MonoBehaviour
 #endif
         return boss;
     }
+
+    private static float Pick(float[] values, int index)
+        => values != null && values.Length > 0 ? values[Mathf.Clamp(index, 0, values.Length - 1)] : 1f;
+
+    // 보스전에 참가하는 인원 = 세션의 플레이어 캐릭터 수 (호스트는 모든 캐릭터를 갖고 있다)
+    private static int CountPlayers()
+        => FindObjectsByType<Player>(FindObjectsSortMode.None).Length;
 
     #region 월식 조명
     private Light Sun => sunLight != null ? sunLight : RenderSettings.sun;
@@ -214,6 +251,7 @@ public class FinalBossEncounter : MonoBehaviour
     // 씬을 떠날 때 조명을 원래대로 (공유 Light/RenderSettings가 바뀐 채 남지 않게)
     private void OnDestroy()
     {
+        if (Current == this) Current = null;
         if (!lightCaptured) return;
         var sun = Sun;
         if (sun != null)

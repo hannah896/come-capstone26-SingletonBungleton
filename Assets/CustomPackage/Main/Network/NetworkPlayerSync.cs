@@ -121,6 +121,9 @@ public class NetworkPlayerSync : NetworkBehaviour
     /// <summary>원격 캐릭터의 사망 여부 (소유자가 보고한 값).</summary>
     public bool IsRemoteDead => Object != null && Object.IsValid && NetIsDead;
 
+    /// <summary>원격 캐릭터가 불 켜진 횃불을 들고 있는지 (복제된 손 아이템 뷰 기준).</summary>
+    public bool IsHoldingTorch => _equipmentView != null && _equipmentView.IsTorchLit;
+
     #endregion
 
     #region Lifecycle
@@ -602,6 +605,32 @@ public class NetworkPlayerSync : NetworkBehaviour
     private void Rpc_ReceiveSlow(float multiplier, float duration)
     {
         _player?.ApplyLocalSlow(multiplier, duration);
+    }
+
+    /// <summary>호스트 → 소유자: 최종 보스 월식의 응시 판정을 맡긴다 (카메라는 소유자에게만 있다).</summary>
+    public void ForwardGaze(Vector3 eye, float halfAngle, float egoLoss, float stunDuration)
+    {
+        if (Object.HasInputAuthority) _player?.ApplyLocalGaze(eye, halfAngle, egoLoss, stunDuration);
+        else if (Object.HasStateAuthority) Rpc_ReceiveGaze(eye, halfAngle, egoLoss, stunDuration);
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority)]
+    private void Rpc_ReceiveGaze(Vector3 eye, float halfAngle, float egoLoss, float stunDuration)
+    {
+        _player?.ApplyLocalGaze(eye, halfAngle, egoLoss, stunDuration);
+    }
+
+    /// <summary>호스트 → 소유자: 보스 기믹 경고 문구(각인 대상 등)를 소유자 화면에 띄운다.</summary>
+    public void ForwardBossAlert(byte alert, float duration)
+    {
+        if (Object.HasInputAuthority) UI_Hud_BossHealth.ShowAlert((BossAlert)alert, duration);
+        else if (Object.HasStateAuthority) Rpc_ReceiveBossAlert(alert, duration);
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority)]
+    private void Rpc_ReceiveBossAlert(byte alert, float duration)
+    {
+        UI_Hud_BossHealth.ShowAlert((BossAlert)alert, duration);
     }
 
     // 소유자: 사망/부활이 바뀐 순간에만 호스트에 보고한다

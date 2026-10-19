@@ -5,6 +5,7 @@ using UnityEngine;
 ///
 /// 선택 순서 (조건을 만족하고 쿨이 돌아온 첫 패턴):
 /// ① 이륙 대기 중         → 이륙 (공중 페이즈)
+///    응시 체력            → 월식의 응시 (2페이즈)
 ///    최종 발악 체력       → 최종 발악 (2페이즈)
 /// ② 정면 가까이           → 서리 물기 ★
 /// ③ 브레스 사거리 안      → 서리 브레스
@@ -45,6 +46,12 @@ public class DragonGroundState : MobState<Monster>
         if (boss.IsTakeOffPending)
         {
             sm.ToTakeOff();
+            return;
+        }
+
+        if (boss.IsGazePending)
+        {
+            sm.ToGaze();
             return;
         }
 

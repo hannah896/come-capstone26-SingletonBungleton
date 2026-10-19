@@ -98,6 +98,13 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     private float pitch;
     private float pitchOffset;
 
+    // 카메라 흔들림 (보스 충격·공포 등). 세기는 각도(도), 남은 시간 동안 줄어든다
+    private static PlayerFirstPersonCameraController s_localView;
+    private float shakeStrength;
+    private float shakeDuration;
+    private float shakeTimer;
+    private float shakeSeed;
+
     // 진행 중인 스윙 흔들림 트윈 (연타 시 중복 누적 방지용)
     private Tween swingShakeTween;
     // 도구 스윙 재생 여부 (캔슬 시 원위치 복귀용)
@@ -200,6 +207,15 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     public void SetLocalView(bool value)
     {
         isLocalView = value;
+        if (value)
+        {
+            s_localView = this;
+            shakeSeed = Random.value * 100f;
+        }
+        else if (s_localView == this)
+        {
+            s_localView = null;
+        }
         ApplyBodyVisibility();
     }
 
@@ -496,8 +512,50 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         // Pitch: 눈 피벗만 상하 회전 (몸은 기울지 않음)
         pitch -= look.y * sensitivity;
         pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
-        eyePivot.localRotation = Quaternion.Euler(pitch + pitchOffset, 0f, 0f);
+        eyePivot.localRotation = Quaternion.Euler(pitch + pitchOffset, 0f, 0f) * ShakeRotation(deltaTime);
     }
+
+    #region 카메라 흔들림
+    /// <summary>
+    /// 이 피어의 1인칭 카메라를 흔든다. strength는 최대 흔들림 각도(도), duration 동안 잦아든다.
+    /// 이미 흔들리는 중이면 더 센 쪽을 따른다 (매 프레임 불러 지속 흔들림으로도 쓸 수 있다).
+    /// </summary>
+    public static void Shake(float strength, float duration)
+    {
+        var view = s_localView;
+        if (view == null || strength <= 0f || duration <= 0f) return;
+
+        float current = view.shakeTimer > 0f ? view.shakeStrength * (view.shakeTimer / view.shakeDuration) : 0f;
+        if (strength < current) return;
+        view.shakeStrength = strength;
+        view.shakeDuration = duration;
+        view.shakeTimer = duration;
+    }
+
+    /// <summary>position에서 터진 충격: 이 피어 카메라와의 거리에 따라 radius까지 선형으로 약해진다.</summary>
+    public static void ShakeAt(Vector3 position, float strength, float radius, float duration = 0.5f)
+    {
+        var view = s_localView;
+        if (view == null || view.eyePivot == null || radius <= 0f) return;
+        float dist = Vector3.Distance(view.eyePivot.position, position);
+        float falloff = 1f - Mathf.Clamp01(dist / radius);
+        if (falloff > 0f) Shake(strength * falloff, duration);
+    }
+
+    // 펄린 노이즈로 피치·요·롤을 흔든다 (사인보다 덜 기계적)
+    private Quaternion ShakeRotation(float deltaTime)
+    {
+        if (shakeTimer <= 0f) return Quaternion.identity;
+        shakeTimer -= deltaTime;
+        float k = Mathf.Clamp01(shakeTimer / Mathf.Max(shakeDuration, 0.01f));
+        float amp = shakeStrength * k * k;
+        float t = Time.time * 25f;
+        float x = (Mathf.PerlinNoise(shakeSeed, t) - 0.5f) * 2f * amp;
+        float y = (Mathf.PerlinNoise(shakeSeed + 10f, t) - 0.5f) * 2f * amp;
+        float z = (Mathf.PerlinNoise(shakeSeed + 20f, t) - 0.5f) * amp;
+        return Quaternion.Euler(x, y, z);
+    }
+    #endregion
 
     #region 활 조준 (우클릭 줌인)
 

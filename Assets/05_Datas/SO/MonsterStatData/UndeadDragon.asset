@@ -141,6 +141,28 @@ MonoBehaviour:
   FrenzyWalkSpeed: 1.2
   FrenzyRange: 16
   EnrageHpRatio: 2
+  EnrageTime: 600
+  EnrageRepeatInterval: 10
+  EclipseEgoDrainPerSecond: 1
+  TorchLightRadius: 4
+  GazeHpRatios:
+  - 0.75
+  - 0.375
+  GazeWarningTime: 3
+  GazeHalfAngle: 30
+  GazeEgoLoss: 40
+  GazeStunDuration: 2
+  GazeAfterHover: 0.6
+  GazeDriftSpeed: 6
+  MarkHpRatios:
+  - 0.625
+  - 0.2
+  MarkTargetCount: 1
+  MarkTargetCountAtFour: 2
+  MarkDuration: 12
+  MarkCleanseTime: 3
+  MarkExplosionRadius: 8
+  MarkExplosionDamage: 70
   IntroHoverTime: 2.5
   IntroShockwaveRadius: 10
   IntroShockwaveKnockback: 14

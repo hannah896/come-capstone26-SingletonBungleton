@@ -23,6 +23,10 @@ public class NetworkMonsterDirector : NetworkBehaviour
     [Networked, Capacity(Capacity)]
     private NetworkArray<MonsterNetState> Slots { get; }
 
+    // 최종 보스전 공유 상태 (게이지·광폭화·각인·기둥 부식·월식). 호스트가 쓰고 클라가 읽는다
+    [Networked]
+    private DragonNetState Dragon { get; set; }
+
     /// <summary>현재 세션의 디렉터. 스포너/데미지 보고가 참조한다.</summary>
     public static NetworkMonsterDirector Instance { get; private set; }
 
@@ -157,6 +161,8 @@ public class NetworkMonsterDirector : NetworkBehaviour
             state.Yaw = monster.transform.eulerAngles.y;
             Slots.Set(i, state);
         }
+
+        Dragon = DragonNetSync.Capture();
     }
 
     #endregion
@@ -193,6 +199,8 @@ public class NetworkMonsterDirector : NetworkBehaviour
 
             monster.ApplyNetState(state.Position, state.Yaw, (MonsterAnimId)state.AnimId, state.HpRatio / 255f);
         }
+
+        DragonNetSync.Apply(Runner, Dragon);
     }
 
     // 클라: 복제 정보로 로컬 몬스터를 풀에서 꺼낸다(네트워크 스폰이 아니다).
@@ -364,6 +372,17 @@ public class NetworkMonsterDirector : NetworkBehaviour
         if (ball == null) return;
         ball.InitVisual(origin, target, flightTime);
     }
+
+    /// <summary>호스트가 띄운 보스 기믹 경고 문구(응시 경고 등)를 클라 화면에도 띄운다.</summary>
+    public void BroadcastBossAlert(byte alert, float duration)
+    {
+        if (!HasStateAuthority) return;
+        Rpc_ShowBossAlert(alert, duration);
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.Proxies)]
+    private void Rpc_ShowBossAlert(byte alert, float duration)
+        => UI_Hud_BossHealth.ShowAlert((BossAlert)alert, duration);
 
     /// <summary>호스트가 띄운 드래곤 이펙트(추락 충돌·폭발)를 클라에도 띄운다.</summary>
     public void BroadcastDragonVfx(string key, Vector3 position, float scale)

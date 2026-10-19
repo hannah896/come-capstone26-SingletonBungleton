@@ -213,6 +213,46 @@ public class DragonStatData : MonsterStatData
     public float FrenzyRange = 16f;
     public float EnrageHpRatio = 2f;
 
+    [Header("광폭화 (기획 3.4)")]
+    [Tooltip("교전 시작부터 이 시간(초, 4인 기준)이 지나면 광폭화: 전원에게 전멸기(EnrageHpRatio)를 반복한다. 0이면 없음. 인원이 적으면 FinalBossEncounter가 늘린다")]
+    public float EnrageTime = 480f;
+    [Tooltip("광폭화 후 전멸기 반복 간격(초)")]
+    public float EnrageRepeatInterval = 10f;
+
+    [Header("2페이즈 - 월식의 어둠 (기획 5.1)")]
+    [Tooltip("이 보스가 살아 있는 동안 빛 밖에 선 플레이어의 Ego가 초당 이만큼 줄어든다. 0이면 어둠 없음")]
+    public float EclipseEgoDrainPerSecond = 0f;
+    [Tooltip("횃불을 든 플레이어 주변 이 반경(m) 안은 빛 (기둥 빛 반경은 DragonCover가 가진다)")]
+    public float TorchLightRadius = 4f;
+
+    [Header("2페이즈 - 월식의 응시 (기획 5.3)")]
+    [Tooltip("이 체력 비율 아래로 내려갈 때마다 응시를 쓴다 (×40줄 중 ×30, ×15). 비우면 쓰지 않음")]
+    public float[] GazeHpRatios = { };
+    [Tooltip("중앙 상공에서 눈을 빛내며 세는 시간(초). 끝나는 순간 판정")]
+    public float GazeWarningTime = 3f;
+    [Tooltip("카메라 정면에서 이 각도(도, 반각) 안에 보스 머리가 있으면 '보고 있었다'")]
+    public float GazeHalfAngle = 30f;
+    public float GazeEgoLoss = 40f;
+    [Tooltip("공포: 이 시간 동안 이동 불가")]
+    public float GazeStunDuration = 2f;
+    [Tooltip("판정 후 착지하기 전까지 머무는 시간(초)")]
+    public float GazeAfterHover = 0.6f;
+    [Tooltip("중앙 상공으로 옮겨 가는 속도(m/s)")]
+    public float GazeDriftSpeed = 6f;
+
+    [Header("2페이즈 - 망령의 각인 (기획 5.4)")]
+    [Tooltip("이 체력 비율 아래로 내려갈 때마다 각인을 새긴다 (×40줄 중 ×25, ×8). 비우면 쓰지 않음")]
+    public float[] MarkHpRatios = { };
+    [Tooltip("각인 대상 수. 4인 이상이면 MarkTargetCountAtFour")]
+    public int MarkTargetCount = 1;
+    public int MarkTargetCountAtFour = 2;
+    [Tooltip("정화하지 못하면 터지기까지의 시간(초)")]
+    public float MarkDuration = 12f;
+    [Tooltip("살아 있는 기둥 안전 반경 안에 이 시간(초) 머물면 정화 (기둥 1회 부식). 벗어나면 처음부터")]
+    public float MarkCleanseTime = 3f;
+    public float MarkExplosionRadius = 8f;
+    public float MarkExplosionDamage = 70f;
+
     [Header("등장 연출 (페이즈 전환으로 등장할 때)")]
     [Tooltip("이륙해서 포효하는 시간(초) — 이후 착지")]
     public float IntroHoverTime = 2.5f;

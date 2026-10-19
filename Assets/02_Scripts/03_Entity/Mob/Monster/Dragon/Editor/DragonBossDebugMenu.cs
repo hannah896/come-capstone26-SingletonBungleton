@@ -91,6 +91,51 @@ public static class DragonBossDebugMenu
     [MenuItem(Root + "최종 발악", false, 45)]
     private static void Frenzy() => Machine()?.ToFrenzy();
 
+    [MenuItem(Root + "월식의 응시", false, 46)]
+    private static void Gaze() => Machine()?.ToGaze();
+
+    [MenuItem(Root + "망령의 각인", false, 47)]
+    private static void Mark()
+    {
+        var b = Boss();
+        if (b == null) return;
+        b.ForceMarks();
+        Debug.Log($"[DragonDebug] 각인 {b.ActiveMarkCount}명");
+    }
+
+    [MenuItem(Root + "테스트 기둥 4개 배치", false, 70)]
+    private static void PlacePillars()
+    {
+        if (!EditorApplication.isPlaying) return;
+        var player = Object.FindAnyObjectByType<Player>();
+        if (player == null) return;
+
+        // 보스가 있으면 아레나 중심, 없으면 플레이어 앞 20m를 중심으로 반경 12m에 네 개
+        var b = Object.FindAnyObjectByType<DragonBoss>();
+        Vector3 center = b != null ? b.ArenaCenter : player.transform.position + player.transform.forward * 20f;
+        center.y = player.transform.position.y;
+
+        var root = new GameObject("DebugPillars");
+        for (int i = 0; i < 4; i++)
+        {
+            float a = (45f + 90f * i) * Mathf.Deg2Rad;
+            var pillar = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            pillar.name = "MoonPillar_" + i;
+            pillar.transform.SetParent(root.transform);
+            pillar.transform.localScale = new Vector3(1.6f, 3f, 1.6f); // 높이 6m
+            pillar.transform.position = center + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * 12f + Vector3.up * 3f;
+            pillar.AddComponent<DragonCover>();
+        }
+        Debug.Log($"[DragonDebug] 테스트 기둥 4개 배치 (중심 {center})");
+    }
+
+    [MenuItem(Root + "기둥 부식 초기화", false, 71)]
+    private static void ResetPillars()
+    {
+        foreach (var cover in DragonCover.All)
+            cover?.ResetCorrosion();
+    }
+
     [MenuItem(Root + "이륙 (공중 페이즈)", false, 60)]
     private static void TakeOff()
     {

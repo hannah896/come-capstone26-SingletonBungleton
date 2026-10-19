@@ -109,6 +109,30 @@ public class DragonBoss : Monster
     private bool lastHitWasHead;
 
     private bool frenzyDone;              // 최종 발악은 한 번만
+    private int gazeIndex;
+    private bool gazePending;
+    private int markIndex;
+    private readonly List<MarkInfo> marks = new List<MarkInfo>();
+    private float darknessElapsed;        // 월식의 어둠 판정 간격 누적 (모든 피어)
+    private float enrageLeft;             // 광폭화까지 남은 시간 (호스트/싱글)
+    private float enrageRepeat;
+    private bool enraged;
+
+    private const float DarknessInterval = 0.25f;
+    private static readonly Collider[] s_overlap = new Collider[32];
+    private static Player s_localPlayer;
+
+    // 망령의 각인 1명분 (호스트/싱글)
+    private class MarkInfo
+    {
+        public Player Player;
+        public float TimeLeft;
+        public float Cleanse;             // 기둥 곁에 머문 시간
+        public DragonGroundMarker Marker;
+        public Light Sigil;               // 머리 위 보라색 빛
+    }
+
+    private Light eyeLight;               // 응시 예고 중 머리에서 붉게 빛난다 (모든 피어)
     private readonly Dictionary<Player, float> corrodedUntil = new Dictionary<Player, float>();
     private readonly HashSet<DragonCover> corrodedThisBreath = new HashSet<DragonCover>();
 
@@ -140,6 +164,7 @@ public class DragonBoss : Monster
     {
         get
         {
+            if (UseNetDisplay) return netPoiseRatio;
             var d = DragonData;
             if (d == null) return 1f;
             return isAirborne ? Mathf.Clamp01(shootdownGauge / Mathf.Max(d.ShootdownMax, 1f))
@@ -147,8 +172,30 @@ public class DragonBoss : Monster
         }
     }
     /// <summary>지금 게이지가 격추 게이지인지 (HUD 색 구분용).</summary>
-    public bool IsShootdownGauge => isAirborne;
-    public bool IsGroggy => isGroggy;
+    public bool IsShootdownGauge => UseNetDisplay ? netShootdown : isAirborne;
+    public bool IsGroggy => UseNetDisplay ? netGroggy : isGroggy;
+
+    /// <summary>광폭화까지 남은 시간(초). 광폭화가 없으면 -1.</summary>
+    public float EnrageTimeLeft => UseNetDisplay ? netEnrageLeft : (DragonData != null && DragonData.EnrageTime > 0f ? enrageLeft : -1f);
+    public bool IsEnraged => UseNetDisplay ? netEnraged : enraged;
+
+    // 멀티 클라: 게이지·광폭화는 호스트만 계산하므로 복제값을 보여준다 (DragonNetSync가 채운다)
+    private bool UseNetDisplay => hasNetDisplay && !IsSimulatedPeer;
+    private bool hasNetDisplay;
+    private float netPoiseRatio = 1f;
+    private bool netShootdown, netGroggy, netEnraged;
+    private float netEnrageLeft = -1f;
+
+    /// <summary>멀티 클라 전용: 호스트가 보낸 게이지·광폭화 표시값.</summary>
+    public void ApplyNetDisplay(float poiseRatio, bool shootdown, bool groggy, bool isEnraged, float enrageTimeLeft)
+    {
+        hasNetDisplay = true;
+        netPoiseRatio = poiseRatio;
+        netShootdown = shootdown;
+        netGroggy = groggy;
+        netEnraged = isEnraged;
+        netEnrageLeft = enrageTimeLeft;
+    }
     public bool IsAirborne => isAirborne;
     public bool IsShootdownComplete => isAirborne && shootdownGauge <= 0f;
     public bool IsTakeOffPending => takeOffPending;
@@ -156,6 +203,8 @@ public class DragonBoss : Monster
     public bool IsFrenzyPending
         => !frenzyDone && DragonData != null && DragonData.FrenzyHpRatio > 0f && !isAirborne
            && status != null && !status.IsDead && HpRatio <= DragonData.FrenzyHpRatio;
+    /// <summary>월식의 응시를 쓸 체력인지 (GazeHpRatios를 지날 때마다 한 번).</summary>
+    public bool IsGazePending => gazePending && !isAirborne;
     public float SkillGap => DragonData != null ? DragonData.SkillGap : 1.2f;
     public float GroundY => groundY;
 
@@ -174,6 +223,9 @@ public class DragonBoss : Monster
             return headBone.position + SnoutDirection * mouthForwardOffset;
         }
     }
+
+    /// <summary>눈 위치 (월식의 응시 판정 기준). 머리 뼈가 없으면 입 위치.</summary>
+    public Vector3 EyePosition => headBone != null ? headBone.position : MouthPosition;
 
     /// <summary>
     /// 주둥이가 향한 수평 방향. 목 → 머리 벡터의 수평 성분이라 브레스 클립의 좌우 흔들림이 그대로 반영된다.
@@ -254,6 +306,16 @@ public class DragonBoss : Monster
         freezeGauges.Clear();
         corrodedUntil.Clear();
         frenzyDone = false;
+        gazeIndex = 0;
+        gazePending = false;
+        markIndex = 0;
+        ClearMarks();
+        ClearNetMarks();
+        darknessElapsed = 0f;
+        enrageLeft = DragonData != null ? DragonData.EnrageTime : 0f;
+        enrageRepeat = 0f;
+        enraged = false;
+        hasNetDisplay = false;
         breathFx?.SetEmitting(false);
 
         // 클라이언트도 복제된 드래곤이 스폰될 때 여기를 지나므로 모든 피어에 체력바가 뜬다
@@ -264,6 +326,8 @@ public class DragonBoss : Monster
     public override void OnDespawn()
     {
         s_active.Remove(this);
+        ClearMarks();
+        ClearNetMarks();
         base.OnDespawn();
     }
 
@@ -277,6 +341,7 @@ public class DragonBoss : Monster
     {
         base.ApplyStatData(data);
         poise = DragonData != null ? DragonData.PoiseMax : 600f;
+        enrageLeft = DragonData != null ? DragonData.EnrageTime : 0f;
     }
 
     protected override void OnStatusInitialized()
@@ -320,6 +385,9 @@ public class DragonBoss : Monster
     {
         // 브레스 연출은 클라도 애니메이터 상태를 보고 각자 켠다
         UpdateBreathFx();
+        // 월식의 어둠은 각 피어가 자기 플레이어의 Ego에 건다
+        DarknessStep(deltaTime);
+        UpdateEyeGlow();
 
         if (IsSimulatedPeer)
         {
@@ -335,6 +403,9 @@ public class DragonBoss : Monster
             PoiseRegenStep(deltaTime);
             FreezeDecayStep(deltaTime);
             CheckTakeOff();
+            CheckGimmicks();
+            MarkStep(deltaTime);
+            EnrageStep(deltaTime);
         }
 
         base.OnGameUpdate(deltaTime);
@@ -345,6 +416,9 @@ public class DragonBoss : Monster
         breathFx?.SetEmitting(false);
         loopSource.Stop();
         DragonHazardZone.ClearAll();
+        ClearMarks();
+        ClearNetMarks();
+        UI_Hud_BossHealth.SetInDarkness(false);
         base.OnDeath();
     }
 
@@ -1021,6 +1095,388 @@ public class DragonBoss : Monster
         var ctx = new DamageContext(gameObject, player.transform.position, dmg, string.Empty);
         if (player.TryGetComponent<IDamageable>(out var target) && target.CanDamage(ctx))
             target.ApplyDamage(ctx);
+    }
+    #endregion
+
+    #region 2페이즈 기믹 (어둠 · 응시 · 각인)
+    // 체력 문턱을 지날 때마다 응시를 예약하고(지상 상태가 다음 판단에 소비), 각인은 바로 새긴다
+    private void CheckGimmicks()
+    {
+        var d = DragonData;
+        if (d == null || status == null || status.IsDead) return;
+
+        if (!gazePending && d.GazeHpRatios != null && gazeIndex < d.GazeHpRatios.Length
+            && HpRatio <= d.GazeHpRatios[gazeIndex])
+        {
+            gazeIndex++;
+            gazePending = true;
+        }
+
+        if (d.MarkHpRatios != null && markIndex < d.MarkHpRatios.Length
+            && HpRatio <= d.MarkHpRatios[markIndex])
+        {
+            markIndex++;
+            StartMarks();
+        }
+    }
+
+    /// <summary>
+    /// 월식의 어둠 (기획 5.1): 이 보스가 살아 있는 동안, 이 피어의 플레이어가 빛(횃불 든 플레이어 주변 · 살아 있는 기둥 주변) 밖에 있으면
+    /// Ego가 줄어든다. Ego는 소유자 피어에만 있으므로 모든 피어가 각자 자기 플레이어만 판정한다.
+    /// </summary>
+    private void DarknessStep(float deltaTime)
+    {
+        var d = DragonData;
+        if (d == null || d.EclipseEgoDrainPerSecond <= 0f || status == null || status.IsDead) return;
+
+        darknessElapsed += deltaTime;
+        if (darknessElapsed < DarknessInterval) return;
+        float elapsed = darknessElapsed;
+        darknessElapsed = 0f;
+
+        var player = FindLocalPlayer();
+        if (player == null || !player.IsAlive || player.Stat == null)
+        {
+            UI_Hud_BossHealth.SetInDarkness(false);
+            return;
+        }
+
+        // 보스전 범위 밖(아레나 밖)이면 어둠이 닿지 않는다
+        Vector3 pos = player.transform.position;
+        float range = Mathf.Max(DetectRange, 10f);
+        if (PlanarSqr(pos - transform.position) > range * range)
+        {
+            UI_Hud_BossHealth.SetInDarkness(false);
+            return;
+        }
+
+        bool lit = DragonCover.IsInLight(pos) || IsNearTorch(pos, d.TorchLightRadius);
+        UI_Hud_BossHealth.SetInDarkness(!lit);
+        if (!lit) player.Stat.RestoreEgo(-d.EclipseEgoDrainPerSecond * elapsed);
+    }
+
+    // 반경 안에 불 켜진 횃불을 든 플레이어(자신 포함)가 있는지
+    private static bool IsNearTorch(Vector3 position, float radius)
+    {
+        int count = Physics.OverlapSphereNonAlloc(position, radius, s_overlap, ~0, QueryTriggerInteraction.Collide);
+        for (int i = 0; i < count; i++)
+        {
+            var player = s_overlap[i].GetComponentInParent<Player>();
+            if (player != null && player.IsAlive && player.IsHoldingTorch) return true;
+        }
+        return false;
+    }
+
+    private static Player FindLocalPlayer()
+    {
+        if (s_localPlayer != null && s_localPlayer.isActiveAndEnabled && s_localPlayer.IsLocalPlayer) return s_localPlayer;
+        s_localPlayer = null;
+        foreach (var player in FindObjectsByType<Player>(FindObjectsSortMode.None))
+        {
+            if (!player.IsLocalPlayer) continue;
+            s_localPlayer = player;
+            break;
+        }
+        return s_localPlayer;
+    }
+
+    // 응시 예고(경고 문구 카운트다운) 동안 머리에 붉은 빛을 켠다. 클라도 경고 문구를 받으므로 각자 켠다
+    private void UpdateEyeGlow()
+    {
+        bool on = UI_Hud_BossHealth.IsGazeWarning && status != null && !status.IsDead && headBone != null;
+        if (!on)
+        {
+            if (eyeLight != null && eyeLight.enabled) eyeLight.enabled = false;
+            return;
+        }
+
+        if (eyeLight == null)
+        {
+            var go = new GameObject("EyeGlow");
+            go.transform.SetParent(headBone, false);
+            eyeLight = go.AddComponent<Light>();
+            eyeLight.type = LightType.Point;
+            eyeLight.color = new Color(1f, 0.15f, 0.1f);
+            eyeLight.shadows = LightShadows.None;
+        }
+        float progress = UI_Hud_BossHealth.GazeWarningProgress;
+        eyeLight.enabled = true;
+        eyeLight.range = 6f + 10f * progress;
+        eyeLight.intensity = (4f + 14f * progress) * (0.7f + 0.3f * Mathf.PingPong(Time.time * 6f, 1f));
+    }
+
+    /// <summary>월식의 응시 예고를 시작한다 (DragonGazeState가 호출). 모든 피어 화면에 카운트다운을 띄운다.</summary>
+    public void BeginGazeWarning()
+    {
+        gazePending = false;
+        var d = DragonData;
+        if (d == null) return;
+        PlaySfx(roarSfx);
+        BroadcastAlert(BossAlert.GazeWarning, d.GazeWarningTime);
+    }
+
+    /// <summary>
+    /// 월식의 응시 판정: 플레이어마다 카메라가 보스 눈을 보고 있었는지 판정을 맡긴다.
+    /// 보고 있었으면 공포(Ego 감소 + 이동 불가). 판정은 각 플레이어 소유자 피어의 카메라로 한다.
+    /// </summary>
+    public void GazeJudge()
+    {
+        var d = DragonData;
+        if (d == null) return;
+        Vector3 eye = EyePosition;
+        foreach (var player in CollectPlayers())
+            player.ApplyGaze(eye, d.GazeHalfAngle, d.GazeEgoLoss, d.GazeStunDuration);
+    }
+
+    /// <summary>
+    /// 망령의 각인 (기획 5.4): 무작위 플레이어(4인 이상이면 2명)에게 각인을 새긴다.
+    /// 살아 있는 기둥 안전 반경 안에 MarkCleanseTime 머물면 정화(기둥 1회 부식), 시간 안에 못 하면 그 자리에서 폭발.
+    /// </summary>
+    private void StartMarks()
+    {
+        var d = DragonData;
+        var players = CollectPlayers();
+        if (d == null || players.Count == 0) return;
+
+        int count = players.Count >= 4 ? d.MarkTargetCountAtFour : d.MarkTargetCount;
+        count = Mathf.Clamp(count, 1, players.Count);
+
+        // 앞쪽 count명만 섞어서 고른다 (CollectPlayers 버퍼는 재사용되므로 복사본으로)
+        var pool = new List<Player>(players);
+        PlaySfx(roarSfx);
+        for (int i = 0; i < count; i++)
+        {
+            int pick = Random.Range(i, pool.Count);
+            (pool[i], pool[pick]) = (pool[pick], pool[i]);
+            var player = pool[i];
+            if (marks.Exists(m => m.Player == player)) continue;
+
+            var info = new MarkInfo { Player = player, TimeLeft = d.MarkDuration };
+            marks.Add(info);
+            player.ShowBossAlert(BossAlert.Marked, d.MarkDuration);
+            SpawnMarkRingAsync(info, d.MarkDuration).Forget();
+            info.Sigil = CreateMarkSigil(player.transform);
+        }
+    }
+
+    // 각인 대상 발밑을 따라다니는 보라색 원. 채움이 자라 폭발까지 남은 시간을 보여준다 (이 피어 전용)
+    private async UniTaskVoid SpawnMarkRingAsync(MarkInfo info, float duration)
+    {
+        if (string.IsNullOrEmpty(markerKey)) return;
+        var marker = await Extensions.SpawnAsync<DragonGroundMarker>(markerKey);
+        if (marker == null) return;
+        if ((!marks.Contains(info) && System.Array.IndexOf(netMarks, info) < 0) || info.Player == null)
+        {
+            Extensions.Despawn(marker.gameObject);
+            return;
+        }
+        // 각인이 끝날 때 직접 걷으므로 표식 자체 수명은 조금 길게 잡는다
+        marker.InitFollow(info.Player.transform, 1.2f, duration + 0.5f, DragonMarkerStyle.Mark);
+        info.Marker = marker;
+    }
+
+    private void MarkStep(float deltaTime)
+    {
+        if (marks.Count == 0) return;
+        var d = DragonData;
+        if (d == null) return;
+
+        for (int i = marks.Count - 1; i >= 0; i--)
+        {
+            var mark = marks[i];
+            if (mark.Player == null || !mark.Player.IsAlive)
+            {
+                EndMark(i);
+                continue;
+            }
+
+            Vector3 pos = mark.Player.transform.position;
+            var cover = DragonCover.FindSafeZoneCover(pos);
+            if (cover != null)
+            {
+                mark.Cleanse += deltaTime;
+                if (mark.Cleanse >= d.MarkCleanseTime)
+                {
+                    cover.Corrode();
+                    mark.Player.ShowBossAlert(BossAlert.MarkCleansed, 1.5f);
+                    EndMark(i);
+                    continue;
+                }
+            }
+            else
+            {
+                mark.Cleanse = 0f; // 기둥을 벗어나면 처음부터
+            }
+
+            mark.TimeLeft -= deltaTime;
+            UpdateSigil(mark, d.MarkDuration);
+            if (mark.TimeLeft > 0f) continue;
+
+            mark.Player.ShowBossAlert(BossAlert.MarkExploded, 1.5f);
+            EndMark(i);
+            ExplodeMark(pos);
+        }
+    }
+
+    // 각인 폭발: 반경 안 전원(대상 포함)에게 큰 피해 + 그 자리에 산성 웅덩이
+    private void ExplodeMark(Vector3 position)
+    {
+        var d = DragonData;
+        PlaySfx(explosionSfx);
+        SpawnVfx(explosionVfxKey, position, 3f);
+
+        float r = d.MarkExplosionRadius;
+        foreach (var player in CollectPlayers())
+        {
+            if (PlanarSqr(player.transform.position - position) > r * r) continue;
+            DealDamage(player, d.MarkExplosionDamage);
+        }
+
+        position.y = groundY;
+        SpawnMarkerCircle(position, r, 0.4f, DragonMarkerStyle.Mark);
+        if (!string.IsNullOrEmpty(d.IcePatchKey))
+            SpawnPatchAsync(position, d.IcePatchRadius, d.IcePatchDuration, d.IcePatchSlow, d.PatchDotPerSecond).Forget();
+    }
+
+    // 각인 대상 머리 위 보라색 빛 (플레이어 자식으로 붙인다)
+    private static Light CreateMarkSigil(Transform player)
+    {
+        var go = new GameObject("MarkSigil");
+        go.transform.SetParent(player, false);
+        go.transform.localPosition = Vector3.up * 2.4f;
+        var light = go.AddComponent<Light>();
+        light.type = LightType.Point;
+        light.color = new Color(0.7f, 0.2f, 1f);
+        light.range = 4f;
+        light.intensity = 3f;
+        light.shadows = LightShadows.None;
+        return light;
+    }
+
+    // 터질 때가 가까울수록 빠르고 밝게 깜빡인다
+    private static void UpdateSigil(MarkInfo mark, float duration)
+    {
+        if (mark.Sigil == null) return;
+        float urgency = 1f - Mathf.Clamp01(mark.TimeLeft / Mathf.Max(duration, 0.01f));
+        mark.Sigil.intensity = (3f + 5f * urgency) * (0.5f + 0.5f * Mathf.PingPong(Time.time * (1.5f + 6f * urgency), 1f));
+    }
+
+    private void EndMark(int index)
+    {
+        ReleaseMarkVisuals(marks[index]);
+        marks.RemoveAt(index);
+    }
+
+    private static void ReleaseMarkVisuals(MarkInfo mark)
+    {
+        mark.Marker?.Stop();
+        if (mark.Sigil != null) Destroy(mark.Sigil.gameObject);
+    }
+
+    #region 각인 복제 (호스트 → 클라 표시)
+    // 클라 전용: 호스트가 보낸 각인 대상의 표시(머리 위 빛 · 발밑 원). 판정은 호스트만 한다
+    private readonly MarkInfo[] netMarks = new MarkInfo[2];
+
+    /// <summary>호스트: index번째 각인의 대상과 남은 시간. 없으면 false.</summary>
+    public bool TryGetMark(int index, out Player player, out float timeLeft)
+    {
+        player = null;
+        timeLeft = 0f;
+        if (index < 0 || index >= marks.Count || marks[index].Player == null) return false;
+        player = marks[index].Player;
+        timeLeft = marks[index].TimeLeft;
+        return true;
+    }
+
+    /// <summary>멀티 클라 전용: 호스트가 보낸 각인(최대 2개)을 표시한다. player가 null이면 그 칸은 비어 있다.</summary>
+    public void ApplyNetMark(int index, Player player, float timeLeft)
+    {
+        if (index < 0 || index >= netMarks.Length) return;
+        var cur = netMarks[index];
+        if (cur != null && cur.Player != player)
+        {
+            ReleaseMarkVisuals(cur);
+            netMarks[index] = cur = null;
+        }
+        if (player == null) return;
+
+        float duration = DragonData != null ? DragonData.MarkDuration : 12f;
+        if (cur == null)
+        {
+            cur = new MarkInfo { Player = player, TimeLeft = timeLeft };
+            netMarks[index] = cur;
+            cur.Sigil = CreateMarkSigil(player.transform);
+            SpawnMarkRingAsync(cur, timeLeft).Forget();
+        }
+        cur.TimeLeft = timeLeft;
+        UpdateSigil(cur, duration);
+    }
+
+    private void ClearNetMarks()
+    {
+        for (int i = 0; i < netMarks.Length; i++)
+        {
+            if (netMarks[i] == null) continue;
+            ReleaseMarkVisuals(netMarks[i]);
+            netMarks[i] = null;
+        }
+    }
+    #endregion
+
+    #region 광폭화 · 인원 보정 (기획 3.4 · 3.5)
+    /// <summary>
+    /// 인원 보정 (보스전 관리자가 스폰 직후 호출): 최대 체력 × hpMultiplier, 광폭화 시간 × enrageMultiplier.
+    /// </summary>
+    public void ApplyPartyScaling(float hpMultiplier, float enrageMultiplier)
+    {
+        status?.ScaleMaxHp(hpMultiplier);
+        if (DragonData != null) enrageLeft = DragonData.EnrageTime * enrageMultiplier;
+    }
+
+    // 교전 시간이 다 되면 광폭화: 전원에게 전멸기를 EnrageRepeatInterval마다 반복한다. 등장 연출(무적) 동안은 멈춘다
+    private void EnrageStep(float deltaTime)
+    {
+        var d = DragonData;
+        if (d == null || d.EnrageTime <= 0f || isInvulnerable || status == null || status.IsDead) return;
+
+        if (!enraged)
+        {
+            enrageLeft -= deltaTime;
+            if (enrageLeft > 0f) return;
+            enrageLeft = 0f;
+            enraged = true;
+            enrageRepeat = 0f;
+            PlaySfx(roarSfx);
+            BroadcastAlert(BossAlert.Enraged, 3f);
+        }
+
+        enrageRepeat -= deltaTime;
+        if (enrageRepeat > 0f) return;
+        enrageRepeat = d.EnrageRepeatInterval;
+        EnrageHit();
+    }
+    #endregion
+
+    private void ClearMarks()
+    {
+        for (int i = marks.Count - 1; i >= 0; i--)
+            EndMark(i);
+    }
+
+    /// <summary>지금 각인된 플레이어 수 (테스트 메뉴용).</summary>
+    public int ActiveMarkCount => marks.Count;
+
+    /// <summary>테스트용: 다음 각인을 바로 새긴다.</summary>
+    public void ForceMarks() => StartMarks();
+
+    // 이 피어 화면에 띄우고, 호스트면 클라 화면에도 띄운다
+    private static void BroadcastAlert(BossAlert alert, float duration)
+    {
+        UI_Hud_BossHealth.ShowAlert(alert, duration);
+#if PHOTON_FUSION
+        if (NetworkMonsterDirector.ShouldBroadcastEffects)
+            NetworkMonsterDirector.Instance.BroadcastBossAlert((byte)alert, duration);
+#endif
     }
     #endregion
 

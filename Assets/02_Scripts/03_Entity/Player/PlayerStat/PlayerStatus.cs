@@ -207,9 +207,18 @@ public class PlayerStatus
 
         multiplier = Mathf.Clamp(multiplier, 0f, 1f);
 
-        // 더 센 둔화(작은 배율)가 이긴다. 시간은 긴 쪽으로 늘린다.
-        SlowMultiplier = IsSlowed ? Mathf.Min(SlowMultiplier, multiplier) : multiplier;
-        slowRemaining = Mathf.Max(slowRemaining, duration);
+        // 더 센 둔화(작은 배율)가 이긴다. 시간은 이긴 둔화의 것을 쓴다.
+        // 약한 둔화가 센 둔화의 시간을 늘리면 안 된다 — 장판이 틱마다 거는 짧은 둔화가
+        // 빙결·공포(배율 0)를 장판 위에 있는 내내 붙잡아 두게 된다. 장판은 틱마다 다시 걸리므로 무시해도 곧 이어진다.
+        if (!IsSlowed || multiplier < SlowMultiplier)
+        {
+            SlowMultiplier = multiplier;
+            slowRemaining = duration;
+        }
+        else if (Mathf.Approximately(multiplier, SlowMultiplier))
+        {
+            slowRemaining = Mathf.Max(slowRemaining, duration);
+        }
     }
 
     /// <summary>둔화 지속 시간을 흘려보낸다. 다 되면 이동 속도가 원래대로 돌아온다.</summary>

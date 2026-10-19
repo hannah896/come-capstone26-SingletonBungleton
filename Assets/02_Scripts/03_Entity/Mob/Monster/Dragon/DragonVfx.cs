@@ -46,6 +46,9 @@ public class DragonVfx : MonoBehaviour, IPoolable
         timer = lifeTime;
         active = true;
 
+        // 충격 흔들림: 클수록(추락 3 · 폭발 6) 세고 멀리까지. 각 피어가 자기 카메라 기준으로 흔든다
+        PlayerFirstPersonCameraController.ShakeAt(position, Mathf.Min(0.4f * scale, 2.5f), 8f * scale, 0.6f);
+
         foreach (var ps in _systems)
         {
             if (ps == null) continue;

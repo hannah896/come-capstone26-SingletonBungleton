@@ -9,6 +9,8 @@ public enum DragonMarkerStyle : byte
     Wipe = 1,
     /// <summary>안전지대 (기둥 주변).</summary>
     Safe = 2,
+    /// <summary>망령의 각인 (대상 플레이어 발밑을 따라다닌다).</summary>
+    Mark = 3,
 }
 
 /// <summary>
@@ -26,6 +28,7 @@ public class DragonGroundMarker : MonoBehaviour, IPoolable
     [ColorUsage(true, true)] [SerializeField] private Color dangerColor = new Color(0.55f, 0.9f, 1.6f, 0.9f);
     [ColorUsage(true, true)] [SerializeField] private Color wipeColor = new Color(1.6f, 0.35f, 0.35f, 0.9f);
     [ColorUsage(true, true)] [SerializeField] private Color safeColor = new Color(1.4f, 1.3f, 0.6f, 0.9f);
+    [ColorUsage(true, true)] [SerializeField] private Color markColor = new Color(1.3f, 0.4f, 1.8f, 0.95f);
     [SerializeField] private float outlineWidth = 0.12f;
     [SerializeField] private float fillWidth = 0.08f;
     [Tooltip("바닥에서 띄우는 높이(m)")]
@@ -47,6 +50,7 @@ public class DragonGroundMarker : MonoBehaviour, IPoolable
     private float timer;
     private bool active;
     private bool loopHooked;
+    private Transform follow;  // 원을 이 대상 발밑에 붙여 움직인다 (각인)
 
     private void Awake()
     {
@@ -93,6 +97,24 @@ public class DragonGroundMarker : MonoBehaviour, IPoolable
         Begin(Shape.Line, start, end, width, duration, style);
     }
 
+    /// <summary>
+    /// 대상 발밑을 따라다니는 원 (망령의 각인). 채움이 duration 동안 자라 폭발까지 남은 시간을 보여준다.
+    /// 이 피어에만 띄운다 — 다른 피어는 각자 알림으로 본다. 끝나기 전에 걷으려면 Stop.
+    /// </summary>
+    public void InitFollow(Transform target, float radius, float duration, DragonMarkerStyle style)
+    {
+        Begin(Shape.Circle, target.position, target.position, radius, duration, style);
+        follow = target;
+    }
+
+    /// <summary>표식을 바로 걷는다.</summary>
+    public void Stop()
+    {
+        if (!active) return;
+        active = false;
+        Extensions.Despawn(gameObject);
+    }
+
     /// <summary>멀티 클라 전용: 호스트가 띄운 표식의 복제본.</summary>
     public void InitVisual(byte shapeId, Vector3 a, Vector3 b, float size, float duration, byte style)
         => Begin((Shape)shapeId, a, b, size, duration, (DragonMarkerStyle)style);
@@ -107,11 +129,13 @@ public class DragonGroundMarker : MonoBehaviour, IPoolable
         this.duration = Mathf.Max(duration, 0.05f);
         timer = 0f;
         active = true;
+        follow = null;
 
         Color color = style switch
         {
             DragonMarkerStyle.Wipe => wipeColor,
             DragonMarkerStyle.Safe => safeColor,
+            DragonMarkerStyle.Mark => markColor,
             _ => dangerColor,
         };
         _outline.startColor = _outline.endColor = color;
@@ -131,6 +155,7 @@ public class DragonGroundMarker : MonoBehaviour, IPoolable
     public void OnDespawn()
     {
         active = false;
+        follow = null;
         SetVisible(false);
     }
     #endregion
@@ -156,6 +181,11 @@ public class DragonGroundMarker : MonoBehaviour, IPoolable
         if (!active || !isActiveAndEnabled) return;
 
         timer += deltaTime;
+        if (follow != null)
+        {
+            center = follow.position;
+            DrawCircle(_outline, center, size);
+        }
         DrawFill(Mathf.Clamp01(timer / duration));
 
         if (timer < duration) return;
