@@ -155,8 +155,7 @@ public class JSAMManager : PrimaryManager
         }
         catch (System.Collections.Generic.KeyNotFoundException)
         {
-            if (_missingSfxWarned.Add(clip))
-                Debug.LogWarning($"[JSAM] 오디오 라이브러리에 없는 효과음입니다: {clip} (Audio Library를 갱신하세요)");
+            WarnMissing(clip);
             return;
         }
 #if UNITY_EDITOR
@@ -173,7 +172,8 @@ public class JSAMManager : PrimaryManager
     public void PlaySFXAt(AudioLibrarySounds clip, Vector3 position)
     {
         if (!CanPlaySFX) return;
-        AudioManager.PlaySound(clip, position);
+        try { AudioManager.PlaySound(clip, position); }
+        catch (System.Collections.Generic.KeyNotFoundException) { WarnMissing(clip); }
     }
 
     /// <summary>
@@ -182,17 +182,30 @@ public class JSAMManager : PrimaryManager
     public void PlaySFXOn(AudioLibrarySounds clip, Transform target)
     {
         if (!CanPlaySFX || target == null) return;
-        AudioManager.PlaySound(clip, target);
+        try { AudioManager.PlaySound(clip, target); }
+        catch (System.Collections.Generic.KeyNotFoundException) { WarnMissing(clip); }
     }
 
     /// <summary>대상 Transform에 붙어 재생 중인 SFX를 정지합니다. 재생 중이 아니면 아무것도 하지 않습니다.</summary>
     public void StopSFXOn(AudioLibrarySounds clip, Transform target, bool instantly = false)
     {
         if (AudioManager.Instance == null) return;
-        AudioManager.StopSoundIfPlaying(clip, target, instantly);
+        try { AudioManager.StopSoundIfPlaying(clip, target, instantly); }
+        catch (System.Collections.Generic.KeyNotFoundException) { WarnMissing(clip); }
     }
 
     private readonly System.Collections.Generic.HashSet<AudioLibrarySounds> _missingSfxWarned = new();
+
+    // 라이브러리 조회 테이블에 없는 키면 JSAM이 KeyNotFoundException을 던진다.
+    // 라이브러리에 등록하지 않은 소리뿐 아니라, 플레이 중 스크립트 재컴파일로 테이블이 비었을 때도 난다.
+    // 이 예외가 Loop.Update까지 올라가면 같은 프레임의 Loop.GameUpdate(몬스터 AI·사망 타이머)가 통째로 건너뛰어지므로
+    // 재생·정지 함수는 전부 여기서 막고 키마다 한 번만 경고한다.
+    private void WarnMissing(AudioLibrarySounds clip)
+    {
+        if (_missingSfxWarned.Add(clip))
+            Debug.LogWarning($"[JSAM] 오디오 라이브러리 조회 테이블에 없는 효과음입니다: {clip} " +
+                             "(라이브러리 미등록이거나, 플레이 중 재컴파일로 테이블이 비었습니다 — 플레이 모드를 다시 시작하세요)");
+    }
 
     /// <summary>
     /// 랜덤 SFX를 재생합니다.

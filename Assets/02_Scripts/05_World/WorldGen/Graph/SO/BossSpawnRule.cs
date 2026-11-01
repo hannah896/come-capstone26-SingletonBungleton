@@ -13,6 +13,9 @@ public sealed class BossSpawnRule : ScriptableObject
     [Tooltip("Element 0~7에 보스 #1~#8의 MonsterCatalog 키를 순서대로 입력합니다. (만월 번호 - 1) % 8로 선택하며, #8 다음에는 #1로 돌아갑니다. 빈 슬롯은 생성하지 않고 다음 만월까지 예약을 유지합니다. 다른 슬롯으로 대체하거나 순서를 압축하지 않습니다.")]
     public string[] bossMonsterKeys = new string[BossCount];
 
+    [Tooltip("Element 0~7에 보스 #1~#8의 능력치 배율(최대 체력·주는 피해)을 입력합니다. 같은 보스를 반복할 때 점점 강하게 만드는 용도입니다. 0 이하는 1배로 처리합니다.")]
+    public float[] bossStatMultipliers = new float[BossCount];
+
     [Tooltip("만월 보스를 생성할 수 있는 하루 중 시간대입니다. 달 위상은 만월로 고정됩니다.")]
     public SpawnTimePhaseMask allowedTimePhases = SpawnTimePhaseMask.All;
 
@@ -43,10 +46,22 @@ public sealed class BossSpawnRule : ScriptableObject
         return string.IsNullOrWhiteSpace(monsterKey) ? null : monsterKey;
     }
 
+    /// <summary>해당 만월 보스의 능력치 배율. 지정하지 않았거나 만월이 아니면 1입니다.</summary>
+    public float GetStatMultiplier(int fullMoonDay)
+    {
+        int index = GetBossIndex(fullMoonDay);
+        if (index < 0 || bossStatMultipliers == null || index >= bossStatMultipliers.Length)
+            return 1f;
+        float multiplier = bossStatMultipliers[index];
+        return multiplier > 0f ? multiplier : 1f;
+    }
+
     private void OnValidate()
     {
         if (string.IsNullOrWhiteSpace(ruleId)) ruleId = System.Guid.NewGuid().ToString("N");
         if (bossMonsterKeys == null || bossMonsterKeys.Length != BossCount)
             System.Array.Resize(ref bossMonsterKeys, BossCount);
+        if (bossStatMultipliers == null || bossStatMultipliers.Length != BossCount)
+            System.Array.Resize(ref bossStatMultipliers, BossCount);
     }
 }

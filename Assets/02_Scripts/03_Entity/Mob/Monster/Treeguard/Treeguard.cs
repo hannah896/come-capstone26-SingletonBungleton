@@ -462,7 +462,7 @@ public class Treeguard : Monster
     /// <summary>전방 부채꼴 안의 모든 플레이어에게 데미지와 넉백을 준다. (TreantTree.PunchHit과 같은 방식)</summary>
     private void FanHit(float range, float angle, float rawDamage, float knockback, float knockbackDuration)
     {
-        int damage = Mathf.Max(Mathf.RoundToInt(rawDamage > 0f ? rawDamage : (status != null ? status.Attack : 0f)), 0);
+        int damage = ScaleDamage(rawDamage > 0f ? rawDamage : (status != null ? status.Attack : 0f));
         float halfAngle = angle * 0.5f;
 
         var hits = Physics.OverlapSphere(transform.position + Vector3.up * 0.5f, range,
@@ -511,7 +511,7 @@ public class Treeguard : Monster
         var zone = await Extensions.SpawnAsync<Meteor>(d.ZoneKey);
         if (zone == null) return;
 
-        int damage = Mathf.Max(Mathf.RoundToInt(rawDamage), 0);
+        int damage = ScaleDamage(rawDamage);
         zone.Init(gameObject, center, damage, radius, warningTime, d.ZoneLingerTime,
             dotDamage: 0f, dotDuration: 0f, dotInterval: 1f,
             slowMultiplier: slowMultiplier, slowDuration: slowDuration);
@@ -586,6 +586,8 @@ public class Treeguard : Monster
             return;
         }
 
+        // 소환 미니언도 보스와 같은 배율로 강해진다
+        minion.ApplyStatScale(StatScale);
         minions.Add(minion);
 
 #if PHOTON_FUSION
