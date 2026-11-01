@@ -25,6 +25,11 @@ public class PlayerAnimHashKey
     private readonly string build = "build";
 
     private readonly string attack = "Attack";
+    // Attack SM 무기별 Bool (Entry에서 분기, 각 상태는 자기 Bool이 false가 되면 빠져나간다)
+    private readonly string sword = "Sword";
+    private readonly string spear = "Spear";
+    private readonly string arrow = "Arrow";
+    private readonly string staff = "Staff";
     private readonly string sleep = "sleep";
     private readonly string dead = "Dead";
     private readonly string hurt = "Hurt";
@@ -52,6 +57,10 @@ public class PlayerAnimHashKey
     public int Build { get; private set; }
 
     public int Attack { get; private set; }
+    public int Sword { get; private set; }
+    public int Spear { get; private set; }
+    public int Arrow { get; private set; }
+    public int Staff { get; private set; }
     public int Sleep { get; private set; }
     public int Dead { get; private set; }
     public int Hurt { get; private set; }
@@ -83,6 +92,10 @@ public class PlayerAnimHashKey
 
         // Combat & Special
         Attack = Animator.StringToHash(attack);
+        Sword = Animator.StringToHash(sword);
+        Spear = Animator.StringToHash(spear);
+        Arrow = Animator.StringToHash(arrow);
+        Staff = Animator.StringToHash(staff);
         Sleep = Animator.StringToHash(sleep);
         Dead = Animator.StringToHash(dead);
         Hurt = Animator.StringToHash(hurt);
