@@ -54,7 +54,7 @@ public class MobStatus
     public void RestoreHp(float amount)
         => CurrentHp = Mathf.Min(CurrentHp + amount, MaxHp);
 
-    /// <summary>최대 체력에 배율을 건다 (보스 인원 보정). 현재 체력도 같은 비율을 유지한다.</summary>
+    /// <summary>최대 체력에 배율을 건다 (보스 인원 보정, 만월 보스 반복 강화). 현재 체력도 같은 비율을 유지한다.</summary>
     public void ScaleMaxHp(float multiplier)
     {
         if (multiplier <= 0f || IsDead) return;

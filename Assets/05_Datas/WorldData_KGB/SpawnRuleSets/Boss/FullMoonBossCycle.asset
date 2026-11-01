@@ -17,11 +17,20 @@ MonoBehaviour:
   - Devil
   - Treeguard
   - CyclopsBatMage
-  - 
-  - 
-  - 
-  - 
-  - 
+  - Devil
+  - Treeguard
+  - CyclopsBatMage
+  - Devil
+  - Treeguard
+  bossStatMultipliers:
+  - 1
+  - 1
+  - 1
+  - 1.5
+  - 1.5
+  - 1.5
+  - 2
+  - 2
   allowedTimePhases: -1
   minDistanceFromPlayer: 25
   maxDistanceFromPlayer: 40

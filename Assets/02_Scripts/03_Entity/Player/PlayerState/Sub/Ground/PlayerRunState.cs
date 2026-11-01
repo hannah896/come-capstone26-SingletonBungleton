@@ -8,7 +8,8 @@ public class PlayerRunState : PlayerSubStateBase
     private const float rotationSpeed = 12f;
 
     // 달리기 발소리(Walk2/Walk3 번갈아) 재생 주기
-    private const float footstepInterval = 0.5f;
+    // 원격 캐릭터 발소리(RemotePlayerAudio)도 같은 주기를 쓴다
+    public const float FootstepInterval = 0.5f;
     private float footstepTimer;
     private bool footstepToggle;
 
@@ -18,7 +19,7 @@ public class PlayerRunState : PlayerSubStateBase
     {
         base.OnEnter();
         Machine.AnimData.PlayLocomotionAnimation(Machine.AnimData.AnimHashKey.Run);
-        footstepTimer = footstepInterval; // 진입 즉시 첫 발소리
+        footstepTimer = FootstepInterval; // 진입 즉시 첫 발소리
         Debug.Log("[State] Run 진입");
     }
 
@@ -49,7 +50,7 @@ public class PlayerRunState : PlayerSubStateBase
 
         // 달리기 발소리 — Walk2/Walk3을 번갈아 재생해 뛰는 느낌 (보스 아레나는 풀숲이 아니므로 소리를 내지 않는다)
         footstepTimer += time;
-        if (footstepTimer >= footstepInterval)
+        if (footstepTimer >= FootstepInterval)
         {
             if (!Entity.InBossArena)
                 Extensions.PlaySFX(footstepToggle ? AudioLibrarySounds.Walk3 : AudioLibrarySounds.Walk2);

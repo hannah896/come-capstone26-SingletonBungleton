@@ -12,11 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b29b41b2b0ac1442925d390d0edbb35, type: 3}
   m_Name: Swamp
   m_EditorClassIdentifier: 
-  BiomeDisposeRule: {fileID: 11400000, guid: 72c571fa53f34064983540206a648f94, type: 2}
   BiomeType: 4
   DebugColor: {r: 0.9672885, g: 0, b: 1, a: 1}
+  BaseTemperature: 20
+  Weather:
+    Precipitation: 1
+    MinDryDays: 1
+    MaxDryDays: 1.5
+    MinWetDays: 1.5
+    MaxWetDays: 3.5
+  BiomeDisposeRule: {fileID: 11400000, guid: 72c571fa53f34064983540206a648f94, type: 2}
+  BiomeSpawnRule: {fileID: 0}
   TopKey: Swamp_Top
   AltKey: Swamp_Alt
   CliffKey: 
-  SedimentKey: 
   DetailKeys: []

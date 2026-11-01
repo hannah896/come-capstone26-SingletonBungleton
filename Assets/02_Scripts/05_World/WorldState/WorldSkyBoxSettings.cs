@@ -9,6 +9,9 @@ public class WorldSkyBoxSettings : ScriptableObject
     public sealed class PhaseSettings
     {
         public Material Skybox;
+        public Material RainSkybox;
+        public Material SnowSkybox;
+        [Min(0f)] public float WeatherSkyExposure = 1f;
         public Color LightColor = Color.white;
         [Min(0f)] public float LightIntensity = 1f;
         [Min(0f)] public float AmbientIntensity = 1f;
@@ -18,6 +21,11 @@ public class WorldSkyBoxSettings : ScriptableObject
     [SerializeField] private PhaseSettings _morning = new PhaseSettings();
     [SerializeField] private PhaseSettings _afternoon = new PhaseSettings();
     [SerializeField] private PhaseSettings _dusk = new PhaseSettings();
+
+    [Range(0f, 1f)] public float RainLightMultiplier = 0.65f;
+    [Range(0f, 1f)] public float RainAmbientMultiplier = 0.75f;
+    [Range(0f, 1f)] public float SnowLightMultiplier = 0.85f;
+    [Range(0f, 1f)] public float SnowAmbientMultiplier = 0.9f;
 
     public PhaseSettings GetPhaseSettings(TimePhase phase) => phase switch
     {

@@ -320,6 +320,7 @@ public partial class PlayerInventory : MonoBehaviour
         owner.Stat.RestoreEgo(itemData.egoRestore);
 
         Extensions.PlaySFX(AudioLibrarySounds.Eat);
+        PlayerNetFx.ShareSound(AudioLibrarySounds.Eat, transform.position);
         return RemoveItem(itemData, 1);
     }
 

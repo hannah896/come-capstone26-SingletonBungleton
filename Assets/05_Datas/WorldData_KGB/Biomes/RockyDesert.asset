@@ -14,9 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   BiomeType: 6
   DebugColor: {r: 0.5278817, g: 0.5698112, b: 0.5278817, a: 1}
+  BaseTemperature: 40
   BiomeDisposeRule: {fileID: 11400000, guid: 538c0732e7c123444a6c623666e70638, type: 2}
   BiomeSpawnRule: {fileID: 0}
   TopKey: RockyDesert_Top
   AltKey: RockyDesert_Alt
   CliffKey: 
   DetailKeys: []
+  Weather:
+    Precipitation: 0
+    MinDryDays: 0
+    MaxDryDays: 0
+    MinWetDays: 0
+    MaxWetDays: 0

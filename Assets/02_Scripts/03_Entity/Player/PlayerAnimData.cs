@@ -30,10 +30,11 @@ public class PlayerAnimData
     // 다음 타격은 Begin 상태로 직접 CrossFade해서 되감는다. (PlayerChopState.LoopStateHash)
     private static readonly int s_chopBeginHash     = Animator.StringToHash("Action_Chop_Begin");
     private static readonly int s_mineBeginHash     = Animator.StringToHash("Action_Mine_Begin");
-    // 전투 공격: 검=베기, 창=찌르기, 활=쏘기. 트리거 없이 CrossFade로 직접 들어가는 단일 클립 상태다.
-    private static readonly int s_attackSlashHash   = Animator.StringToHash("Action_Attack_Slash");
-    private static readonly int s_attackThrustHash  = Animator.StringToHash("Action_Attack_Thrust");
-    private static readonly int s_attackShootHash   = Animator.StringToHash("Action_Attack_Shoot");
+    // 전투 공격: PlayerAttactState SM의 무기별 단일 클립 상태. 첫 타는 Bool로 들어가고, 연타할 때 CrossFade로 처음부터 다시 재생한다.
+    private static readonly int s_attackSwordHash   = Animator.StringToHash("Sword Attack");
+    private static readonly int s_attackSpearHash   = Animator.StringToHash("Spear Attack");
+    private static readonly int s_attackArrowHash   = Animator.StringToHash("Arrow Attack");
+    private static readonly int s_attackStaffHash   = Animator.StringToHash("Staff Attack");
 
     private const float CrossFadeTime = 0.05f;
 
@@ -47,16 +48,18 @@ public class PlayerAnimData
         s_combatDeath02Hash,
         s_chopBeginHash,
         s_mineBeginHash,
-        s_attackSlashHash,
-        s_attackThrustHash,
-        s_attackShootHash,
+        s_attackSwordHash,
+        s_attackSpearHash,
+        s_attackArrowHash,
+        s_attackStaffHash,
     };
 
     public PlayerAnimHashKey AnimHashKey => animHashKey;
 
-    public static int AttackSlashHash => s_attackSlashHash;
-    public static int AttackThrustHash => s_attackThrustHash;
-    public static int AttackShootHash => s_attackShootHash;
+    public static int AttackSwordHash => s_attackSwordHash;
+    public static int AttackSpearHash => s_attackSpearHash;
+    public static int AttackArrowHash => s_attackArrowHash;
+    public static int AttackStaffHash => s_attackStaffHash;
 
     /// <summary>CrossFade 전환 시간 (원격 재현도 같은 값을 쓴다).</summary>
     public static float CrossFadeDuration => CrossFadeTime;
@@ -160,13 +163,22 @@ public class PlayerAnimData
     }
 
     /// <summary>
-    /// 트리거 없이 단일 클립 상태로 직접 CrossFade하는 액션 재생 (전투 공격 등).
-    /// 로코모션 Bool을 모두 끄고, 원격 피어에도 같은 CrossFade가 재현되도록 PlayCrossFade를 거친다.
+    /// 무기 공격 재생. Attack 루트 Bool과 무기 Bool만 켜서 애니메이터가 Entry로 해당 공격 상태에 들어가게 한다.
+    /// (Locomotion SM과 같은 구조: 루트 Bool로 SM 진입 → 무기 Bool로 상태 분기)
     /// </summary>
-    public void PlayActionState(int stateHash)
+    public void PlayAttackAnimation(int weaponBoolHash)
     {
+        SetRootState(animHashKey.Attack);
         ResetLocomotionBools();
-        PlayCrossFade(stateHash);
+        ResetAttackBools();
+        animator.SetBool(weaponBoolHash, true);
+    }
+
+    /// <summary>무기 공격 종료. 무기 Bool과 Attack 루트 Bool을 끈다 (공격 상태가 Base Layer로 빠져나간다).</summary>
+    public void StopAttackAnimation()
+    {
+        ResetAttackBools();
+        animator.SetBool(animHashKey.Attack, false);
     }
 
     /// <summary>
@@ -198,6 +210,14 @@ public class PlayerAnimData
     {
         animator.SetTrigger(animHashKey.Hit);
         OnTriggerPlayed?.Invoke(animHashKey.Hit);
+    }
+
+    private void ResetAttackBools()
+    {
+        animator.SetBool(animHashKey.Sword, false);
+        animator.SetBool(animHashKey.Spear, false);
+        animator.SetBool(animHashKey.Arrow, false);
+        animator.SetBool(animHashKey.Staff, false);
     }
 
     /// <summary>

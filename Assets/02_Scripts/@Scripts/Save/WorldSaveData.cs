@@ -11,6 +11,7 @@ public sealed class WorldSaveData
     public WorldLoopSetting loop;
     public WorldSize size;
     public float totalSeconds;
+    public WorldWeatherSaveData weather;
     public List<DestroyedObjectSaveData> destroyedObjects = new();
     public List<StructureSaveData> structures = new();
     public List<DroppedItemSaveData> droppedItems = new();

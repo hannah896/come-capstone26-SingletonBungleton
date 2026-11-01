@@ -118,6 +118,9 @@ public class NetworkPlayerSync : NetworkBehaviour
 
     private Player _player;
 
+    // 소유자 전용 — PlayerNetFx 구독 여부 (Despawned에서 해제)
+    private bool _sharesLocalFx;
+
     /// <summary>원격 캐릭터의 사망 여부 (소유자가 보고한 값).</summary>
     public bool IsRemoteDead => Object != null && Object.IsValid && NetIsDead;
 
@@ -154,7 +157,6 @@ public class NetworkPlayerSync : NetworkBehaviour
             {
                 _inventory.OnEquippedItemChanged += OnLocalEquippedItemChanged;
                 _inventory.OnArrowFired += OnLocalArrowFired;
-                CombatEffects.LocalEffectPlayed += OnLocalEffectPlayed;
 
                 // 재접속·리스폰 등으로 이미 장착한 상태로 스폰될 수 있으므로 현재 값을 한 번 보고한다
                 ReportEquippedHand(GetItemKey(_inventory.EquippedHand));
@@ -162,8 +164,18 @@ public class NetworkPlayerSync : NetworkBehaviour
                 ReportEquippedArmor(EquipSlot.Chest, GetItemKey(_inventory.EquippedChest));
             }
         }
+        if (Object.HasInputAuthority)
+        {
+            // 로컬에서 낸 소리·이펙트를 다른 피어에 전파한다 (원격 캐릭터는 상태 머신이 돌지 않아 스스로 내지 못한다)
+            PlayerNetFx.OnLocalSound += OnLocalSound;
+            PlayerNetFx.OnLocalEffect += OnLocalEffect;
+            _sharesLocalFx = true;
+        }
         else
         {
+            // 남의 캐릭터: 발소리·착지음은 복제된 애니메이터 Bool을 보고 이 화면에서 직접 낸다.
+            Extensions.GetOrAddComponent<RemotePlayerAudio>(gameObject);
+
             // 남의 캐릭터: 손 본에 실제 아이템을 붙여 보여주는 뷰를 준비한다.
             // (소유자 자신은 1인칭 뷰모델이 따로 있어 붙이지 않는다)
             _equipmentView = Extensions.GetOrAddComponent<PlayerEquipmentView>(gameObject);
@@ -225,8 +237,14 @@ public class NetworkPlayerSync : NetworkBehaviour
         {
             _inventory.OnEquippedItemChanged -= OnLocalEquippedItemChanged;
             _inventory.OnArrowFired -= OnLocalArrowFired;
-            CombatEffects.LocalEffectPlayed -= OnLocalEffectPlayed;
             _inventory = null;
+        }
+
+        if (_sharesLocalFx)
+        {
+            PlayerNetFx.OnLocalSound -= OnLocalSound;
+            PlayerNetFx.OnLocalEffect -= OnLocalEffect;
+            _sharesLocalFx = false;
         }
 
         if (Object.HasInputAuthority)
@@ -705,34 +723,6 @@ public class NetworkPlayerSync : NetworkBehaviour
 
     #endregion
 
-    #region 공격 이펙트 동기화
-
-    // 소유자: 무기 공격 이펙트를 재생했다 — 다른 피어에서도 같은 자리에 보이도록 호스트를 거쳐 알린다
-    private void OnLocalEffectPlayed(string key, Vector3 position, float scale, float lifetime)
-    {
-        if (Object == null || !Object.IsValid || string.IsNullOrEmpty(key)) return;
-
-        if (Object.HasStateAuthority) Rpc_BroadcastEffect(key, position, scale, lifetime);
-        else Rpc_ReportEffect(key, position, scale, lifetime);
-    }
-
-    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
-    private void Rpc_ReportEffect(NetworkString<_32> key, Vector3 position, float scale, float lifetime)
-    {
-        Rpc_BroadcastEffect(key, position, scale, lifetime);
-    }
-
-    // 쏜 본인은 이미 재생했으므로 건너뛰고, 나머지 피어에서만 재생한다
-    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
-    private void Rpc_BroadcastEffect(NetworkString<_32> key, Vector3 position, float scale, float lifetime)
-    {
-        if (Object.HasInputAuthority) return;
-
-        CombatEffects.PlayRemote(key.Value, position, scale, lifetime);
-    }
-
-    #endregion
-
     #region 화살 동기화
 
     // 소유자: 화살을 쐈을 때 호스트에 알린다. (호스트 자신이 쐈으면 바로 전파)
@@ -757,6 +747,40 @@ public class NetworkPlayerSync : NetworkBehaviour
         if (Object.HasInputAuthority) return;
 
         PlayerArrowProjectile.Spawn(origin, direction, speed, maxDistance, ~0, transform, null);
+        Extensions.PlaySFXAt(AudioLibrarySounds.BowShoot, origin);
+    }
+
+    #endregion
+
+    #region 소리·이펙트 동기화
+
+    // 소유자: 로컬에서 낸 소리를 모든 피어에 알린다 (호스트를 거쳐 전달된다)
+    private void OnLocalSound(AudioLibrarySounds sound, Vector3 position)
+    {
+        if (Object == null || !Object.IsValid) return;
+        Rpc_PlaySound((ushort)sound, position);
+    }
+
+    // 소유자: 로컬에서 재생한 이펙트를 모든 피어에 알린다
+    private void OnLocalEffect(string key, Vector3 position, Quaternion rotation, float scale, float lifetime)
+    {
+        if (Object == null || !Object.IsValid || string.IsNullOrEmpty(key)) return;
+        Rpc_PlayEffect(key, position, rotation, scale, lifetime);
+    }
+
+    // 낸 본인은 이미 로컬에서 재생했으므로 건너뛴다
+    [Rpc(RpcSources.InputAuthority, RpcTargets.All)]
+    private void Rpc_PlaySound(ushort sound, Vector3 position)
+    {
+        if (Object.HasInputAuthority) return;
+        Extensions.PlaySFXAt((AudioLibrarySounds)sound, position);
+    }
+
+    [Rpc(RpcSources.InputAuthority, RpcTargets.All)]
+    private void Rpc_PlayEffect(string key, Vector3 position, Quaternion rotation, float scale, float lifetime)
+    {
+        if (Object.HasInputAuthority) return;
+        CombatEffects.PlayRemote(key, position, rotation, scale, lifetime);
     }
 
     #endregion

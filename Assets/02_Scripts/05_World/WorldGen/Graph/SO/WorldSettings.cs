@@ -15,6 +15,11 @@ public class WorldSettings : ScriptableObject
     [SerializeField] private WorldSkyBoxSettings skyBoxSettings;
     public WorldSkyBoxSettings SkyBoxSettings => skyBoxSettings;
 
+    [Header("World Weather")]
+    [Tooltip("지역 날씨에 사용할 비와 눈 프리팹 및 전환 설정")]
+    [SerializeField] private WorldWeatherSettings weatherSettings;
+    public WorldWeatherSettings WeatherSettings => weatherSettings;
+
     [Header("Map Size")]
     [SerializeField] private int worldSmall;    
     [SerializeField] private int worldMedium;  

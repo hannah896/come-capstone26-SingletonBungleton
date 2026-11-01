@@ -314,7 +314,7 @@ public class BatMage : Monster
         var laser = await Extensions.SpawnAsync<MageStarLaser>(data.StarLaserKey);
         if (laser == null) return;
 
-        int damage = Mathf.Max(Mathf.RoundToInt(data.StarDamage), 0);
+        int damage = ScaleDamage(data.StarDamage);
         laser.Init(gameObject, center, yaw, data.StarRadius, data.StarLaserWidth, damage,
                    data.StarWarningTime, data.StarLaserTime);
     }
@@ -340,7 +340,7 @@ public class BatMage : Monster
 
     private void DealDamage(Player player, float amount)
     {
-        int dmg = Mathf.Max(Mathf.RoundToInt(amount), 0);
+        int dmg = ScaleDamage(amount);
         var ctx = new DamageContext(
             instigator: gameObject,
             point: player.transform.position,

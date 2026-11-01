@@ -9,31 +9,14 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7423367656008161810}
-  - component: {fileID: 6100239821504691289}
+  - component: {fileID: 6100239821504691290}
   m_Layer: 0
-  m_Name: TreeantMinionSpawner
+  m_Name: TreeantTreeEvergreenSpawner
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &6100239821504691289
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 191693704886540814}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dc092bb28ad34ba9b736cfe6bb827801, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  spawnRule: {fileID: 11400000, guid: 8fb4a4ed72d644739806657131301c17, type: 2}
-  placementSettings:
-    placementRadius: 3
-    maxHeightDifference: 2
-    minDistanceFromWorldStart: 30
 --- !u!4 &7423367656008161810
 Transform:
   m_ObjectHideFlags: 0
@@ -54,6 +37,23 @@ Transform:
   - {fileID: 548272460683925634}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6100239821504691290
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 191693704886540814}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc092bb28ad34ba9b736cfe6bb827801, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  spawnRule: {fileID: 11400000, guid: 57ed7b6958c67264fb451818bc9512f8, type: 2}
+  placementSettings:
+    placementRadius: 3
+    maxHeightDifference: 2
+    minDistanceFromWorldStart: 30
 --- !u!1001 &1420748149877799692
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -62,49 +62,65 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7423367656008161810}
     m_Modifications:
+    - target: {fileID: 616272818527478622, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.17
+      objectReference: {fileID: 0}
+    - target: {fileID: 616272818527478622, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.323
+      objectReference: {fileID: 0}
+    - target: {fileID: 616272818527478622, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -1.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 1.13
+      value: -1.63
       objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.15
+      value: -1.46
       objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.14
+      value: 1.63
       objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.9725256
+      value: 0.521031
       objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0.0754204
+      value: -0.2608374
       objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.061559003
+      value: -0.8110723
       objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0.21146224
+      value: 0.051500477
       objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: -9.947
+      value: -10.852
       objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 5.116
+      value: -117.385
       objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: 24.089
+      value: 29.043
       objectReference: {fileID: 0}
     - target: {fileID: 3204263856825333624, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_Name
-      value: Treant Minion Evergreen
+      value: TreantEvergreen(3)
       objectReference: {fileID: 0}
     - target: {fileID: 4068210973677580449, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalPosition.x
@@ -269,6 +285,14 @@ PrefabInstance:
     - target: {fileID: 4525196634250451326, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: 'm_Bones.Array.data[42]'
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 4525196634250451326, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 249c7b3ce216c91458f4c88639cba2ae, type: 2}
+    - target: {fileID: 8204478217197713336, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:
@@ -295,49 +319,65 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7423367656008161810}
     m_Modifications:
+    - target: {fileID: 616272818527478622, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.13
+      objectReference: {fileID: 0}
+    - target: {fileID: 616272818527478622, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.59
+      objectReference: {fileID: 0}
+    - target: {fileID: 616272818527478622, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.23
+      objectReference: {fileID: 0}
+    - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.534
+      value: 1.15
       objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.172
+      value: -2.0913086
       objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.073
+      value: -0.85
       objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.84551644
+      value: 0.65097684
       objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0.21872565
+      value: -0.13679793
       objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.45664766
+      value: 0.7397717
       objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.16951092
+      value: 0.10125877
       objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: -12.419
+      value: -19.143
       objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 60.07
+      value: 98.029
       objectReference: {fileID: 0}
     - target: {fileID: 2827140905092394434, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: -29.872
+      value: -4.284
       objectReference: {fileID: 0}
     - target: {fileID: 3204263856825333624, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_Name
-      value: Treant Minion Evergreen (1)
+      value: TreantEvergreen(4)
       objectReference: {fileID: 0}
     - target: {fileID: 4068210973677580449, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: m_LocalPosition.x
@@ -502,6 +542,14 @@ PrefabInstance:
     - target: {fileID: 4525196634250451326, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
       propertyPath: 'm_Bones.Array.data[42]'
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 4525196634250451326, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 249c7b3ce216c91458f4c88639cba2ae, type: 2}
+    - target: {fileID: 8204478217197713336, guid: 99ff0fbe66a6f644ba7551cea46cb7d6, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:
@@ -602,6 +650,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7423367656008161810}
     m_Modifications:
+    - target: {fileID: 3396838279027927623, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6932004440758928513, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: 'm_Bones.Array.data[2]'
       value: 
@@ -758,49 +810,57 @@ PrefabInstance:
       propertyPath: 'm_Bones.Array.data[42]'
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 6932004440758928513, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 249c7b3ce216c91458f4c88639cba2ae, type: 2}
     - target: {fileID: 8252848597702617735, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_Name
-      value: Treant Minion Autumn
+      value: TreantEvergreen
+      objectReference: {fileID: 0}
+    - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.14
+      value: -0.7803345
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.49
+      value: 1.8969727
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -2.038147
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.93891066
+      value: 0.24610412
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0
+      value: -0.088115886
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: -0.9010164
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.34416106
+      value: -0.34617594
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
+      value: -41.851
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
+      value: -149.104
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: -40.261
+      value: -0.893
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:
@@ -827,6 +887,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7423367656008161810}
     m_Modifications:
+    - target: {fileID: 3396838279027927623, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6932004440758928513, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: 'm_Bones.Array.data[2]'
       value: 
@@ -983,49 +1047,57 @@ PrefabInstance:
       propertyPath: 'm_Bones.Array.data[42]'
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 6932004440758928513, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 249c7b3ce216c91458f4c88639cba2ae, type: 2}
     - target: {fileID: 8252848597702617735, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_Name
-      value: Treant Minion Autumn (1)
+      value: TreantEvergreen(2)
+      objectReference: {fileID: 0}
+    - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.134
+      value: -0.22015381
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.21948242
+      value: 1.2900391
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.255
+      value: -0.13354492
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalRotation.w
-      value: -0.005672274
+      value: 0.9808335
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.03526279
+      value: -0.12133976
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.9957516
+      value: -0.07453253
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.08487114
+      value: -0.13299339
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: 9.708
+      value: -14.943
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 181.005
+      value: -6.772
       objectReference: {fileID: 0}
     - target: {fileID: 8774088214170660925, guid: 4adb93d47b0833044a6059c73300d12f, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: 4.142
+      value: -14.554
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:

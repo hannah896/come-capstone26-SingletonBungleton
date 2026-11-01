@@ -252,6 +252,7 @@ public class WorldGenManager : MonoBehaviour
         try
         {
             Debug.Log("=== 월드 생성 시작 ===");
+            WorldWeatherController.Instance?.Shutdown();
             CurrentLogicData = null; // 새 월드가 준비될 때까지 이전 월드에 원격 파괴가 반영되지 않도록
             ReportProgress(0.05f, "월드 설정 적용");
 
@@ -437,7 +438,8 @@ public class WorldGenManager : MonoBehaviour
                 navMeshBuilder.SetTarget(_playerInstance.transform);
 
             _simulationManager = Extensions.GetOrAddComponent<WorldSimulationManager>(this.gameObject);
-            _simulationManager.Initialize(_worldChunkDirector, _worldSettings.SkyBoxSettings);
+            _simulationManager.Initialize(_worldChunkDirector, _worldSettings.SkyBoxSettings,
+                logicData, graphData, _worldSettings, savedWorld?.weather);
 
             _dynamicSpawnDirector.Initialize(
                 logicData,

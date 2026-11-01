@@ -21,3 +21,9 @@ MonoBehaviour:
   DetailKeys:
   - Detail_Grass_1
   DecoKeys: []
+  Weather:
+    Precipitation: 1
+    MinDryDays: 10
+    MaxDryDays: 15
+    MinWetDays: 0.5
+    MaxWetDays: 1
