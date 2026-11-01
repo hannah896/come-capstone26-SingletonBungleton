@@ -8,7 +8,8 @@ public class PlayerWalkState : PlayerSubStateBase
     private const float rotationSpeed = 10f;
 
     // 걷기 발소리(Walk1) 재생 주기
-    private const float footstepInterval = 1.0f;
+    // 원격 캐릭터 발소리(RemotePlayerAudio)도 같은 주기를 쓴다
+    public const float FootstepInterval = 1.0f;
     private float footstepTimer;
 
     public PlayerWalkState(PlayerRootStateMachine machine) : base(machine) { }
@@ -17,7 +18,7 @@ public class PlayerWalkState : PlayerSubStateBase
     {
         base.OnEnter();
         Machine.AnimData.PlayLocomotionAnimation(Machine.AnimData.AnimHashKey.Walk);
-        footstepTimer = footstepInterval; // 진입 즉시 첫 발소리
+        footstepTimer = FootstepInterval; // 진입 즉시 첫 발소리
         Debug.Log("[State] Walk 진입");
     }
 
@@ -48,7 +49,7 @@ public class PlayerWalkState : PlayerSubStateBase
 
         // 걷기 발소리(Walk1) 주기 재생
         footstepTimer += time;
-        if (footstepTimer >= footstepInterval)
+        if (footstepTimer >= FootstepInterval)
         {
             Extensions.PlaySFX(AudioLibrarySounds.Walk1);
             footstepTimer = 0f;

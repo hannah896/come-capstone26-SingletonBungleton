@@ -99,8 +99,10 @@ public class PlayerAttackActionState : PlayerActionSubStateBase
     // 칼·창·도구 공격은 내려치기 시작에 휘두르는 소리. 활은 화살이 나갈 때(PlayerInventory.FireArrow) 따로 내고, 지팡이는 휘두르지 않는다.
     protected override void OnStrikeStart()
     {
-        if (style != Style.Shoot && style != Style.Cast)
-            Extensions.PlaySFX(AudioLibrarySounds.SwordSwing);
+        if (style == Style.Shoot || style == Style.Cast) return;
+
+        Extensions.PlaySFX(AudioLibrarySounds.SwordSwing);
+        PlayerNetFx.ShareSound(AudioLibrarySounds.SwordSwing, Entity.transform.position);
     }
 
     // 도구 공격(Chop)은 Action SM의 chop 트리거, 무기 공격은 Attack SM으로 Attack + 무기 Bool을 켜서 들어간다.
