@@ -141,6 +141,16 @@ public class Player : MonoBehaviour, IDamageable
     {
         var token = this.GetCancellationTokenOnDestroy();
 
+        // 프리팹에서 비어 있을 때의 대체. OnValidate는 에디터에서만 돌아서 빌드에서는 비어 있는 채로 남는다
+        // (남자 프리팹이 그랬다 — 빌드에서 모든 애니메이션 호출이 NullReference).
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>(true);
+
+        // 바디 클립의 Animation Event(PlayerToolUse/OnActionStop)는 Animator와 같은 오브젝트의 컴포넌트로만 전달된다.
+        // 모델을 교체한 프리팹(남자)에서 빠지면 "no receiver" 에러가 나므로 없으면 붙인다.
+        if (animator != null)
+            Extensions.GetOrAddComponent<PlayerAnimEventRelay>(animator.gameObject);
+
         // machine과 inputData는 동기적으로 먼저 생성 (Start()가 await 복귀 전에 실행될 수 있으므로)
         inputData = new PlayerInputData();
         machine = new PlayerRootStateMachine(this, animator);
