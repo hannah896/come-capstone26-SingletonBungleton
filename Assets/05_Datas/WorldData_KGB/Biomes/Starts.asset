@@ -17,10 +17,10 @@ MonoBehaviour:
   BaseTemperature: 20
   Weather:
     Precipitation: 1
-    MinDryDays: 0.1
-    MaxDryDays: 0.2
-    MinWetDays: 0.2
-    MaxWetDays: 0.3
+    MinDryDays: 10
+    MaxDryDays: 15
+    MinWetDays: 0.5
+    MaxWetDays: 1
   BiomeDisposeRule: {fileID: 11400000, guid: 5b73ce8a62c46224391c7eadf29af994, type: 2}
   BiomeSpawnRule: {fileID: 0}
   TopKey: Plains_Top
