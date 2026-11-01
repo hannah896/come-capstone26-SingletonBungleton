@@ -8,10 +8,25 @@ using UnityEngine;
 /// </summary>
 public static class CombatEffects
 {
+    /// <summary>
+    /// 이 피어의 플레이어가 공격 이펙트를 재생했을 때 발생한다 (키, 위치, 크기, 유지 시간).
+    /// 멀티플레이 계층(NetworkPlayerSync)이 구독해 다른 피어에도 같은 이펙트를 보여준다.
+    /// </summary>
+    public static event System.Action<string, Vector3, float, float> LocalEffectPlayed;
+
     public static void Play(ItemDataSO item, Vector3 position, Quaternion rotation)
     {
         if (item == null || string.IsNullOrEmpty(item.attackEffectKey)) return;
+
         PlayAsync(item.attackEffectKey, position, rotation, item.attackEffectScale, item.attackEffectLifetime).Forget();
+        LocalEffectPlayed?.Invoke(item.attackEffectKey, position, item.attackEffectScale, item.attackEffectLifetime);
+    }
+
+    /// <summary>다른 피어가 보낸 이펙트를 재생한다. (다시 네트워크로 내보내지 않는다)</summary>
+    public static void PlayRemote(string key, Vector3 position, float scale, float lifetime)
+    {
+        if (string.IsNullOrEmpty(key)) return;
+        PlayAsync(key, position, Quaternion.identity, scale, lifetime).Forget();
     }
 
     public static void Play(ItemDataSO item, Vector3 position)

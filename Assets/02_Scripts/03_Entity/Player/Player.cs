@@ -41,6 +41,10 @@ public class Player : MonoBehaviour, IDamageable
     // 도구 액션 애니메이션 중 바디의 손(RightHand/ToolPivot)에 장착 도구와 같은 오브젝트를 들리는 뷰 (로컬 전용)
     private PlayerEquipmentView actionToolView;
     private bool isActionToolVisible;
+
+    [Tooltip("(조정용) 켜면 내 캐릭터 손에도 장착 아이템을 항상 보여준다. 1인칭 화면에는 안 보이고 Scene 뷰에서만 보이므로, " +
+             "Play 중에 PlayerEquipmentView의 Attach Overrides로 상대가 보는 도구 위치/각도를 맞출 때 쓴다.")]
+    [SerializeField] private bool previewHandItemOnBody;
     #endregion
 
     #region Properties
@@ -80,6 +84,9 @@ public class Player : MonoBehaviour, IDamageable
     {
         InBossArena = inArena;
         if (motor == null) return;
+
+        // 아레나로 가는 이동이면 바닥(아레나)이 먼저 있어야 한다
+        if (inArena) MoonGate.EnsureArenaForTeleport();
 
         motor.Teleport(position);
         inputData?.SuppressAllInputs();
@@ -386,6 +393,9 @@ public class Player : MonoBehaviour, IDamageable
 
         // 액션 도중 도구가 부서지거나 바뀌면 손에 든 것도 따라 바꾼다.
         playerInventory.OnEquippedItemChanged += OnActionToolEquipChanged;
+
+        // 조정용 미리보기가 켜져 있으면 지금 든 것부터 보여준다
+        RefreshActionTool();
     }
 
     private void OnActionToolEquipChanged(EquipSlot slot, ItemDataSO itemData)
@@ -399,7 +409,8 @@ public class Player : MonoBehaviour, IDamageable
         if (actionToolView == null) return;
 
         ItemDataSO hand = playerInventory != null ? playerInventory.EquippedHand : null;
-        actionToolView.SetHandItem(isActionToolVisible && hand != null ? hand.name : string.Empty);
+        bool visible = isActionToolVisible || previewHandItemOnBody;
+        actionToolView.SetHandItem(visible && hand != null ? hand.name : string.Empty);
     }
 
     #endregion

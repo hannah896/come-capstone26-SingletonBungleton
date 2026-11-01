@@ -47,6 +47,14 @@ public class PlayerArrowProjectile : MonoBehaviour
         tip.transform.localScale = new Vector3(ShaftRadius * 3f, ShaftRadius * 3f, ShaftRadius * 8f);
         Destroy(tip.GetComponent<Collider>());
 
+        // 기본 프리미티브 재질(Standard)은 URP에서 마젠타로 보인다 — URP용 재질(Resources/PlayerArrow)을 입힌다
+        Material arrowMaterial = Resources.Load<Material>("PlayerArrow");
+        if (arrowMaterial != null)
+        {
+            shaft.GetComponent<Renderer>().sharedMaterial = arrowMaterial;
+            tip.GetComponent<Renderer>().sharedMaterial = arrowMaterial;
+        }
+
         PlayerArrowProjectile arrow = root.AddComponent<PlayerArrowProjectile>();
         arrow.direction = direction.normalized;
         arrow.speed = speed;

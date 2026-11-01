@@ -154,6 +154,7 @@ public class NetworkPlayerSync : NetworkBehaviour
             {
                 _inventory.OnEquippedItemChanged += OnLocalEquippedItemChanged;
                 _inventory.OnArrowFired += OnLocalArrowFired;
+                CombatEffects.LocalEffectPlayed += OnLocalEffectPlayed;
 
                 // 재접속·리스폰 등으로 이미 장착한 상태로 스폰될 수 있으므로 현재 값을 한 번 보고한다
                 ReportEquippedHand(GetItemKey(_inventory.EquippedHand));
@@ -224,6 +225,7 @@ public class NetworkPlayerSync : NetworkBehaviour
         {
             _inventory.OnEquippedItemChanged -= OnLocalEquippedItemChanged;
             _inventory.OnArrowFired -= OnLocalArrowFired;
+            CombatEffects.LocalEffectPlayed -= OnLocalEffectPlayed;
             _inventory = null;
         }
 
@@ -699,6 +701,34 @@ public class NetworkPlayerSync : NetworkBehaviour
     private void Rpc_PortalEvent(byte code, Vector3 origin)
     {
         MoonGate.OnPortalEvent(code, origin);
+    }
+
+    #endregion
+
+    #region 공격 이펙트 동기화
+
+    // 소유자: 무기 공격 이펙트를 재생했다 — 다른 피어에서도 같은 자리에 보이도록 호스트를 거쳐 알린다
+    private void OnLocalEffectPlayed(string key, Vector3 position, float scale, float lifetime)
+    {
+        if (Object == null || !Object.IsValid || string.IsNullOrEmpty(key)) return;
+
+        if (Object.HasStateAuthority) Rpc_BroadcastEffect(key, position, scale, lifetime);
+        else Rpc_ReportEffect(key, position, scale, lifetime);
+    }
+
+    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+    private void Rpc_ReportEffect(NetworkString<_32> key, Vector3 position, float scale, float lifetime)
+    {
+        Rpc_BroadcastEffect(key, position, scale, lifetime);
+    }
+
+    // 쏜 본인은 이미 재생했으므로 건너뛰고, 나머지 피어에서만 재생한다
+    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+    private void Rpc_BroadcastEffect(NetworkString<_32> key, Vector3 position, float scale, float lifetime)
+    {
+        if (Object.HasInputAuthority) return;
+
+        CombatEffects.PlayRemote(key.Value, position, scale, lifetime);
     }
 
     #endregion

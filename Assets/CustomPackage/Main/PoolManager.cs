@@ -71,6 +71,10 @@ public sealed class PoolManager : CoreManager
         // IAfterSpawn 컴포넌트 캐시
         private readonly Dictionary<GameObject, IAfterSpawn> _afterSpawnCache = new();
 
+        // 아이템(Item) 프리팹의 처음 로컬 트랜스폼. 손에 든 뷰(1인칭/상대 화면)가 크기·위치·회전을 바꿔서 풀로 돌려보내면
+        // 다음에 같은 아이템을 바닥에 떨굴 때 그 값이 남아 엄청 커지므로, 반환할 때 원래대로 되돌린다.
+        private readonly Dictionary<GameObject, (Transform t, Vector3 pos, Quaternion rot, Vector3 scale)[]> _transformSnapshots = new();
+
         // 오브젝트 파괴 시 콜백
         private readonly Action<GameObject> _onDestroyed;
 
@@ -116,7 +120,31 @@ public sealed class PoolManager : CoreManager
             var afterSpawn = inst.GetComponent<IAfterSpawn>();
             if (afterSpawn != null) _afterSpawnCache[inst] = afterSpawn;
 
+            if (inst.GetComponent<Item>() != null)
+                _transformSnapshots[inst] = CaptureTransforms(inst);
+
             return inst;
+        }
+
+        private static (Transform t, Vector3 pos, Quaternion rot, Vector3 scale)[] CaptureTransforms(GameObject root)
+        {
+            Transform[] all = root.GetComponentsInChildren<Transform>(true);
+            var result = new (Transform t, Vector3 pos, Quaternion rot, Vector3 scale)[all.Length];
+            for (int i = 0; i < all.Length; i++)
+                result[i] = (all[i], all[i].localPosition, all[i].localRotation, all[i].localScale);
+
+            return result;
+        }
+
+        private static void RestoreTransforms((Transform t, Vector3 pos, Quaternion rot, Vector3 scale)[] snapshot)
+        {
+            foreach (var s in snapshot)
+            {
+                if (s.t == null) continue;
+                s.t.localPosition = s.pos;
+                s.t.localRotation = s.rot;
+                s.t.localScale = s.scale;
+            }
         }
 
         // 풀에서 꺼낼 때
@@ -144,6 +172,9 @@ public sealed class PoolManager : CoreManager
 
             go.SetActive(false);
             go.transform.SetParent(_root, false);
+
+            if (_transformSnapshots.TryGetValue(go, out var snapshot))
+                RestoreTransforms(snapshot);
         }
 
         // 오브젝트 파괴 시
@@ -153,6 +184,7 @@ public sealed class PoolManager : CoreManager
 
             _poolableCache.Remove(go);
             _afterSpawnCache.Remove(go);
+            _transformSnapshots.Remove(go);
             _allMembers.Remove(go);
 
             _onDestroyed?.Invoke(go);

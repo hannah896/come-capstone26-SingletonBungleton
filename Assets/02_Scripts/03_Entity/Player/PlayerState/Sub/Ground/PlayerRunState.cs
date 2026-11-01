@@ -47,11 +47,12 @@ public class PlayerRunState : PlayerSubStateBase
         Entity.Motor.SetHorizontalVelocity(dir, Entity.Stat.MoveSpeed * Entity.Stat.SprintMultiplier);
         Entity.Motor.RotateToward(dir, rotationSpeed);
 
-        // 달리기 발소리 — Walk2/Walk3을 번갈아 재생해 뛰는 느낌
+        // 달리기 발소리 — Walk2/Walk3을 번갈아 재생해 뛰는 느낌 (보스 아레나는 풀숲이 아니므로 소리를 내지 않는다)
         footstepTimer += time;
         if (footstepTimer >= footstepInterval)
         {
-            Extensions.PlaySFX(footstepToggle ? AudioLibrarySounds.Walk3 : AudioLibrarySounds.Walk2);
+            if (!Entity.InBossArena)
+                Extensions.PlaySFX(footstepToggle ? AudioLibrarySounds.Walk3 : AudioLibrarySounds.Walk2);
             footstepToggle = !footstepToggle;
             footstepTimer = 0f;
         }

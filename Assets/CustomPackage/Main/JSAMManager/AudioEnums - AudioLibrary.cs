@@ -55,5 +55,6 @@
         UICraftDone
     }
     public enum AudioLibraryMusic {
-        LobbyBGM
+        LobbyBGM,
+        BossArenaBGM
     }

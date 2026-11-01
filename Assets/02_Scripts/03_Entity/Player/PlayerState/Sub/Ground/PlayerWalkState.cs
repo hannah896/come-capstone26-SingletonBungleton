@@ -46,11 +46,12 @@ public class PlayerWalkState : PlayerSubStateBase
         Entity.Motor.SetHorizontalVelocity(dir, Entity.Stat.MoveSpeed);
         Entity.Motor.RotateToward(dir, rotationSpeed);
 
-        // 걷기 발소리(Walk1) 주기 재생
+        // 걷기 발소리(Walk1) 주기 재생 — 보스 아레나는 풀숲이 아니므로 발소리를 내지 않는다
         footstepTimer += time;
         if (footstepTimer >= footstepInterval)
         {
-            Extensions.PlaySFX(AudioLibrarySounds.Walk1);
+            if (!Entity.InBossArena)
+                Extensions.PlaySFX(AudioLibrarySounds.Walk1);
             footstepTimer = 0f;
         }
 

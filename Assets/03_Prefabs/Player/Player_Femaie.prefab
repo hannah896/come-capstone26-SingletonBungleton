@@ -88,6 +88,7 @@ MonoBehaviour:
   outfitViews:
   - {fileID: 3009027082736589027}
   - {fileID: 5049166734155591387}
+  previewHandItemOnBody: 0
 --- !u!114 &3458799336253370163
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -196,15 +197,15 @@ MonoBehaviour:
   - itemKey: Weapon_MagicSword_Red
     meshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
     meshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
-    meshLocalScale: {x: 3.9635697, y: 3.9635697, z: 3.9635697}
+    meshLocalScale: {x: 3.9635696, y: 3.9635696, z: 3.9635696}
   - itemKey: Weapon_MagicSpear
     meshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
     meshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
-    meshLocalScale: {x: 6.8266829, y: 6.8266829, z: 6.8266829}
+    meshLocalScale: {x: 6.826683, y: 6.826683, z: 6.826683}
   - itemKey: Weapon_MagicBow
     meshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
     meshLocalEuler: {x: 26.14, y: -168.4, z: -12.8}
-    meshLocalScale: {x: 6.7511258, y: 6.7511258, z: 6.7511258}
+    meshLocalScale: {x: 6.751126, y: 6.751126, z: 6.751126}
   - itemKey: Armor_MagicShield
     meshLocalPosition: {x: 1.38, y: -1.5, z: 2.56}
     meshLocalEuler: {x: 26.14, y: 11.6, z: -12.8}
@@ -293,11 +294,87 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cad7554807933a24aae442b52d099bbd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  handAttachPoint: {fileID: 3367956887733851697}
+  handAttachPoint: {fileID: 0}
   defaultLocalPosition: {x: 0, y: 0, z: 0}
   defaultLocalEuler: {x: 0, y: 0, z: 0}
   defaultLocalScale: {x: 1, y: 1, z: 1}
-  attachOverrides: []
+  attachOverrides:
+  - itemKey: Armor_Shield
+    localPosition: {x: 0, y: 0, z: 0}
+    localEuler: {x: 0, y: 180, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+  - itemKey: Armor_MagicShield
+    localPosition: {x: 0, y: -0.3, z: 0}
+    localEuler: {x: 0, y: 180, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+  - itemKey: Tool_Torch
+    localPosition: {x: 0, y: 0.4, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+  - itemKey: Weapon_MagicBow
+    localPosition: {x: 0, y: -0.4, z: 0}
+    localEuler: {x: 0, y: 180, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+  - itemKey: Weapon_Bow
+    localPosition: {x: 0, y: -0.03, z: 0}
+    localEuler: {x: 0, y: 180, z: 0}
+    localScale: {x: 0.8, y: 0.8, z: 0.8}
+  - itemKey: Tool_Axe_Stone
+    localPosition: {x: 0, y: 0.1, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+  - itemKey: Tool_Axe_Iron
+    localPosition: {x: 0, y: 0.1, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+  - itemKey: Tool_Axe_Gold
+    localPosition: {x: 0, y: 0.1, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+  - itemKey: Tool_Pickaxe_Stone
+    localPosition: {x: 0, y: 0.1, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+  - itemKey: Tool_Pickaxe_Iron
+    localPosition: {x: 0, y: 0.1, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+  - itemKey: Tool_Pickaxe_Gold
+    localPosition: {x: 0, y: 0.1, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+  - itemKey: Tool_Hammer_Stone
+    localPosition: {x: 0, y: 0.1, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+  - itemKey: Tool_Hammer_Iron
+    localPosition: {x: 0, y: 0.1, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+  - itemKey: Tool_Hammer_Gold
+    localPosition: {x: 0, y: 0.1, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+  - itemKey: Weapon_Spear
+    localPosition: {x: 0, y: 0.45, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+  - itemKey: Weapon_Sword
+    localPosition: {x: 0, y: 0.06, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+  - itemKey: Tool_Shovel_Stone
+    localPosition: {x: 0, y: 0.3, z: 0}
+    localEuler: {x: 180, y: 0, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+  - itemKey: Tool_Shovel_Iron
+    localPosition: {x: 0, y: 0.3, z: 0}
+    localEuler: {x: 180, y: 0, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+  - itemKey: Tool_Shovel_Gold
+    localPosition: {x: 0, y: 0.3, z: 0}
+    localEuler: {x: 180, y: 0, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
   torchLightIntensity: 3.5
   torchLightRange: 7
   torchLightColor: {r: 1, g: 0.45, b: 0.18, a: 1}

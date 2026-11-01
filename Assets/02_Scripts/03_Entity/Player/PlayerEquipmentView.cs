@@ -95,6 +95,16 @@ public class PlayerEquipmentView : MonoBehaviour
         SpawnViewAsync(itemKey, _requestSeq).Forget();
     }
 
+#if UNITY_EDITOR
+    // 에디터 전용: Play 중에 Attach Overrides 값을 바꾸면 바로 손에 든 모습에 반영한다 (위치/각도 조정용).
+    // 아이템은 스폰될 때 한 번만 값을 적용하므로, 이게 없으면 값을 바꿔도 다시 장착해야 보인다.
+    private void LateUpdate()
+    {
+        if (_spawnedObject != null && !string.IsNullOrEmpty(_currentKey))
+            ApplyAttachTransform(_currentKey);
+    }
+#endif
+
     private void OnDestroy()
     {
         ClearView();

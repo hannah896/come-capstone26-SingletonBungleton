@@ -87,6 +87,9 @@ public class MoonGate : Structure
         if (pollTimer > 0f) return;
         pollTimer = 0.5f;
 
+        // 설치 미리보기(고스트)가 먼저 Instance를 잡았다가 사라진 경우를 대비해, 진짜 문이 다시 잡는다
+        if (Instance == null) Instance = this;
+
         bool open = IsOpenNow();
         if (!Busy) State = open ? GateState.Open : GateState.Closed;
 
@@ -94,7 +97,7 @@ public class MoonGate : Structure
 
         ApplyVisual(open);
         if (open)
-            Toast.Show("월문이 열렸습니다! 보름달이 뜬 오늘, 파티를 모아 문 앞에서 E키로 입장하세요.", 5f, ToastColor.Yellow, ToastPosition.TopCenter);
+            GateMessage.Show("월문이 열렸습니다", 4f);
     }
 
     private void ApplyVisual(bool open)
@@ -145,13 +148,13 @@ public class MoonGate : Structure
 
         if (State == GateState.Cleared)
         {
-            Toast.Show("월문은 이미 닫혔습니다.", 3f, ToastColor.Yellow, ToastPosition.TopCenter);
+            GateMessage.Show("월문은 이미 닫혔습니다", 2.5f);
             return;
         }
 
         if (Busy)
         {
-            Toast.Show("월문 안에서 이미 전투가 벌어지고 있습니다.", 3f, ToastColor.Yellow, ToastPosition.TopCenter);
+            GateMessage.Show("월문 안에서 전투 중입니다", 2.5f);
             return;
         }
 
@@ -160,10 +163,10 @@ public class MoonGate : Structure
             int days = DaysUntilFullMoon();
             bool attemptedToday = WorldClock.Instance != null && WorldClock.Instance.CurrentDay == lastAttemptDay;
             string message = attemptedToday
-                ? "오늘은 이미 도전했습니다. 다음 보름에 다시 열립니다."
-                : days > 0 ? $"월문은 보름달이 뜨는 날에만 열립니다. (보름까지 {days}일)"
-                : "월문은 보름달이 뜨는 날에만 열립니다.";
-            Toast.Show(message, 3f, ToastColor.Yellow, ToastPosition.TopCenter);
+                ? "오늘은 이미 도전했습니다"
+                : days > 0 ? $"보름달이 뜨면 열립니다 ({days}일 후)"
+                : "보름달이 뜨면 열립니다";
+            GateMessage.Show(message, 2.5f);
             return;
         }
 
@@ -399,6 +402,15 @@ public class MoonGate : Structure
 
     #region 모든 피어: 이벤트 반영
 
+    /// <summary>
+    /// 아레나로 이동하기 직전에 호출한다. 이동 RPC가 "아레나 생성" 이벤트보다 먼저 도착해도,
+    /// 바닥이 없어 하늘에서 떨어지는 일이 없도록 아레나가 없으면 먼저 만든다.
+    /// </summary>
+    public static void EnsureArenaForTeleport()
+    {
+        if (Instance != null) Instance.EnsureArena();
+    }
+
     /// <summary>호스트가 보낸 진행 이벤트를 이 피어에 반영한다. (RPC 또는 싱글에서 호출)</summary>
     public static void OnPortalEvent(byte code, Vector3 origin)
     {
@@ -412,8 +424,7 @@ public class MoonGate : Structure
         {
             case PortalEvent.Countdown:
                 State = GateState.Entering;
-                Toast.Show($"월문이 입장을 시작합니다! {countdownSeconds:0}초 뒤 문 앞({gatherRadius:0}m 안)에 있는 사람이 함께 들어갑니다.",
-                    4f, ToastColor.Yellow, ToastPosition.TopCenter);
+                GateMessage.Show($"{countdownSeconds:0}초 뒤 월문으로 입장합니다", countdownSeconds);
                 break;
 
             case PortalEvent.Begin:
@@ -430,12 +441,12 @@ public class MoonGate : Structure
 
             case PortalEvent.Failed:
                 State = GateState.Closed;
-                Toast.Show("월문 도전에 실패했습니다. 다음 보름에 다시 열립니다.", 5f, ToastColor.Yellow, ToastPosition.TopCenter);
+                GateMessage.Show("도전 실패 · 다음 보름에 다시 열립니다", 4f);
                 break;
 
             case PortalEvent.Cancelled:
                 State = GateState.Open;
-                Toast.Show("입장이 취소되었습니다. 문 앞에 아무도 없습니다.", 3f, ToastColor.Yellow, ToastPosition.TopCenter);
+                GateMessage.Show("입장 취소 · 문 앞에 아무도 없습니다", 2.5f);
                 break;
 
             case PortalEvent.ArenaClosed:
@@ -452,6 +463,10 @@ public class MoonGate : Structure
 
         GameObject go = Instantiate(arenaPrefab, origin, Quaternion.identity);
         arena = go.GetComponent<BossArena>();
+
+        // 아레나 안에 있는 동안 하늘/조명을 어두운 달밤으로 바꾼다
+        if (go.GetComponent<ArenaAtmosphere>() == null)
+            go.AddComponent<ArenaAtmosphere>();
     }
 
     private void DestroyArena()
