@@ -14,21 +14,37 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   _dawn:
     Skybox: {fileID: 2100000, guid: d1fdb8e44b28da34d9e922cca0bc740e, type: 2}
+    RainSkybox: {fileID: 2100000, guid: e0a21ebc98cee4e46bbae873ec0be703, type: 2}
+    SnowSkybox: {fileID: 2100000, guid: b141c8e4f6387ef45b13a68b10c88b7f, type: 2}
+    WeatherSkyExposure: 0.15
     LightColor: {r: 0.45, g: 0.55, b: 0.85, a: 1}
     LightIntensity: 0.15
     AmbientIntensity: 0.3
   _morning:
     Skybox: {fileID: 2100000, guid: 7c86d4abbd33b564b9e773aceadb8572, type: 2}
+    RainSkybox: {fileID: 2100000, guid: e0a21ebc98cee4e46bbae873ec0be703, type: 2}
+    SnowSkybox: {fileID: 2100000, guid: b141c8e4f6387ef45b13a68b10c88b7f, type: 2}
+    WeatherSkyExposure: 0.8
     LightColor: {r: 1, g: 0.85, b: 0.65, a: 1}
     LightIntensity: 0.8
     AmbientIntensity: 0.8
   _afternoon:
     Skybox: {fileID: 2100000, guid: 9ca22510633fbfd4399f1704cd9d5c72, type: 2}
+    RainSkybox: {fileID: 2100000, guid: e0a21ebc98cee4e46bbae873ec0be703, type: 2}
+    SnowSkybox: {fileID: 2100000, guid: b141c8e4f6387ef45b13a68b10c88b7f, type: 2}
+    WeatherSkyExposure: 1
     LightColor: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}
     LightIntensity: 1
     AmbientIntensity: 1
   _dusk:
     Skybox: {fileID: 2100000, guid: 44d0573bf6d91e447b62f3aff840f2ae, type: 2}
+    RainSkybox: {fileID: 2100000, guid: e0a21ebc98cee4e46bbae873ec0be703, type: 2}
+    SnowSkybox: {fileID: 2100000, guid: b141c8e4f6387ef45b13a68b10c88b7f, type: 2}
+    WeatherSkyExposure: 0.4
     LightColor: {r: 1, g: 0.5, b: 0.35, a: 1}
     LightIntensity: 0.45
     AmbientIntensity: 0.55
+  RainLightMultiplier: 0.65
+  RainAmbientMultiplier: 0.75
+  SnowLightMultiplier: 0.85
+  SnowAmbientMultiplier: 0.9

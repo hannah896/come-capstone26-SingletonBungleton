@@ -12,11 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b29b41b2b0ac1442925d390d0edbb35, type: 3}
   m_Name: Snow
   m_EditorClassIdentifier: 
-  BiomeDisposeRule: {fileID: 11400000, guid: 34c1818622d4206428daa162c65f74ac, type: 2}
   BiomeType: 3
   DebugColor: {r: 1, g: 1, b: 1, a: 1}
+  BaseTemperature: 0
+  BiomeDisposeRule: {fileID: 11400000, guid: 34c1818622d4206428daa162c65f74ac, type: 2}
+  BiomeSpawnRule: {fileID: 0}
   TopKey: Snow_Top
   AltKey: Snow_Alt
   CliffKey: Snow_Cliff
   DetailKeys: []
-  DecoKeys: []
+  Weather:
+    Precipitation: 2
+    MinDryDays: 1.5
+    MaxDryDays: 2.5
+    MinWetDays: 0.5
+    MaxWetDays: 1

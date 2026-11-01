@@ -897,7 +897,10 @@ public class NetworkManager : CoreManager
     void INetworkRunnerCallbacks.OnCustomAuthenticationResponse(NetworkRunner runner, Dictionary<string, object> data) { }
     void INetworkRunnerCallbacks.OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken) { }
     void INetworkRunnerCallbacks.OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey key, ArraySegment<byte> data)
-        => NetworkSaveCoordinator.Receive(runner, player, key, data);
+    {
+        NetworkSaveCoordinator.Receive(runner, player, key, data);
+        WorldWeatherNetwork.Receive(runner, player, key, data);
+    }
     void INetworkRunnerCallbacks.OnReliableDataProgress(NetworkRunner runner, PlayerRef player, ReliableKey key, float progress) { }
     void INetworkRunnerCallbacks.OnSceneLoadDone(NetworkRunner runner) { }
     void INetworkRunnerCallbacks.OnSceneLoadStart(NetworkRunner runner) { }

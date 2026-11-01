@@ -12,12 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b29b41b2b0ac1442925d390d0edbb35, type: 3}
   m_Name: Starts
   m_EditorClassIdentifier: 
-  BiomeDisposeRule: {fileID: 11400000, guid: 5b73ce8a62c46224391c7eadf29af994, type: 2}
   BiomeType: 0
   DebugColor: {r: 0.16470589, g: 0.16470589, b: 0.16470589, a: 1}
+  BaseTemperature: 20
+  Weather:
+    Precipitation: 1
+    MinDryDays: 0.1
+    MaxDryDays: 0.2
+    MinWetDays: 0.2
+    MaxWetDays: 0.3
+  BiomeDisposeRule: {fileID: 11400000, guid: 5b73ce8a62c46224391c7eadf29af994, type: 2}
+  BiomeSpawnRule: {fileID: 0}
   TopKey: Plains_Top
   AltKey: Plains_Alt
   CliffKey: 
   DetailKeys:
   - Detail_Grass_2
-  DecoKeys: []

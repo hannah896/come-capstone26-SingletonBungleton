@@ -12,11 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b29b41b2b0ac1442925d390d0edbb35, type: 3}
   m_Name: Savanna
   m_EditorClassIdentifier: 
-  BiomeDisposeRule: {fileID: 11400000, guid: fc1f6d3c56bb2b14ea505d2a92d0e0cf, type: 2}
   BiomeType: 5
   DebugColor: {r: 1, g: 0.09736635, b: 0, a: 1}
+  BaseTemperature: 20
+  Weather:
+    Precipitation: 1
+    MinDryDays: 10
+    MaxDryDays: 15
+    MinWetDays: 10
+    MaxWetDays: 15
+  BiomeDisposeRule: {fileID: 11400000, guid: fc1f6d3c56bb2b14ea505d2a92d0e0cf, type: 2}
+  BiomeSpawnRule: {fileID: 0}
   TopKey: Savanna_Top
   AltKey: Savanna_Alt
   CliffKey: 
-  SedimentKey: 
   DetailKeys: []

@@ -12,6 +12,10 @@ public class BiomeData : ScriptableObject
     [Tooltip("이 바이옴의 기본 기온(섭씨). 시간대나 열원에 의한 보정 전 값입니다.")]
     public float BaseTemperature = 20f;
 
+    [Header("Weather")]
+    [Tooltip("이 바이옴의 강수 형태와 맑음/강수 기간. 현재 수분량은 각 생성 지역이 별도로 관리합니다.")]
+    public BiomeWeatherSettings Weather = new BiomeWeatherSettings();
+
     [Header("Placement Rules")]
     [SerializeField] public DisposeRuleSet BiomeDisposeRule;
 

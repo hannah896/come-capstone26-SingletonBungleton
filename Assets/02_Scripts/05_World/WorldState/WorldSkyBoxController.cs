@@ -18,6 +18,25 @@ public class WorldSkyBoxController : MonoBehaviour
     private Light _boundLight;
     private Color _originalLightColor;
     private float _originalLightIntensity;
+    private WorldWeatherEffects _weather;
+    private LoopManager _loop;
+    private Material _runtimeSkybox;
+    private Material _selectedSource;
+    private TimePhase _selectedPhase;
+    private PrecipitationKind _selectedWeather;
+
+    /// <summary>파티클과 같은 로컬 날씨 전환 비율을 사용합니다.</summary>
+    public void BindWeather(WorldWeatherEffects weather)
+    {
+        _weather = weather;
+        // 같은 LateUpdate에서 파티클의 날씨 비율이 먼저 갱신되도록 구독 순서를 맞춥니다.
+        if (_loop != null)
+        {
+            _loop.OnLateUpdate -= OnLoopLateUpdate;
+            _loop.OnLateUpdate += OnLoopLateUpdate;
+        }
+        if (_worldClock != null && isActiveAndEnabled) ApplyPhase(_worldClock.CurrentTimePhase);
+    }
 
     /// <summary>초기화 시 현재 시간대를 적용하고 이후 시간대 변경을 구독한다.</summary>
     public void Initialize(WorldClock worldClock, WorldSkyBoxSettings settings, Light directionalLight)
@@ -40,6 +59,8 @@ public class WorldSkyBoxController : MonoBehaviour
     {
         Unsubscribe();
         RestoreEnvironment();
+        ReleaseRuntimeSkybox();
+        _weather = null;
         _worldClock = null;
         _settings = null;
         _directionalLight = null;
@@ -54,6 +75,7 @@ public class WorldSkyBoxController : MonoBehaviour
     {
         Unsubscribe();
         RestoreEnvironment();
+        ReleaseRuntimeSkybox();
     }
 
     private void OnDestroy()
@@ -68,14 +90,26 @@ public class WorldSkyBoxController : MonoBehaviour
             _worldClock.OnPhaseChanged += ApplyPhase;
             _isSubscribed = true;
         }
+        if (_loop == null && Application.isPlaying)
+        {
+            _loop = Main.Loop;
+            if (_loop != null) _loop.OnLateUpdate += OnLoopLateUpdate;
+        }
         ApplyPhase(_worldClock.CurrentTimePhase);
     }
 
     private void Unsubscribe()
     {
+        if (_loop != null) _loop.OnLateUpdate -= OnLoopLateUpdate;
+        _loop = null;
         if (_isSubscribed && _worldClock != null)
             _worldClock.OnPhaseChanged -= ApplyPhase;
         _isSubscribed = false;
+    }
+
+    private void OnLoopLateUpdate(float deltaTime)
+    {
+        if (_worldClock != null) ApplyPhase(_worldClock.CurrentTimePhase);
     }
 
     private void ApplyPhase(TimePhase phase)
@@ -92,18 +126,42 @@ public class WorldSkyBoxController : MonoBehaviour
 
         CaptureEnvironment();
 
-        // 외부 에셋의 Material 자체를 변경하지 않고 씬에서 사용하는 참조만 교체한다.
-        RenderSettings.skybox = settings.Skybox;
-        RenderSettings.ambientIntensity = settings.AmbientIntensity;
-        _appliedSkybox = settings.Skybox;
+        float rain = _weather != null ? _weather.RainBlend : 0f;
+        float snow = _weather != null ? _weather.SnowBlend : 0f;
+        PrecipitationKind kind = rain <= 0f && snow <= 0f ? PrecipitationKind.None :
+            rain >= snow ? PrecipitationKind.Rain : PrecipitationKind.Snow;
+        Material source = kind == PrecipitationKind.Rain ? settings.RainSkybox :
+            kind == PrecipitationKind.Snow ? settings.SnowSkybox : settings.Skybox;
+        if (source == null) source = settings.Skybox;
+        if (_appliedSkybox == null || source != _selectedSource || phase != _selectedPhase || kind != _selectedWeather)
+        {
+            Material previous = _runtimeSkybox;
+            _runtimeSkybox = null;
+            _appliedSkybox = source;
+            if (source != settings.Skybox)
+            {
+                // 외부 원본 대신 런타임 복제본에서 시간대별 강수 하늘 밝기를 보정합니다.
+                _runtimeSkybox = new Material(source) { name = "Runtime_WeatherSkybox" };
+                if (_runtimeSkybox.HasProperty("_Exposure"))
+                    _runtimeSkybox.SetFloat("_Exposure", source.GetFloat("_Exposure") * settings.WeatherSkyExposure);
+                _appliedSkybox = _runtimeSkybox;
+            }
+            RenderSettings.skybox = _appliedSkybox;
+            _selectedSource = source;
+            _selectedPhase = phase;
+            _selectedWeather = kind;
+            if (previous != null) DestroyMaterial(previous);
+            DynamicGI.UpdateEnvironment();
+        }
+        RenderSettings.ambientIntensity = settings.AmbientIntensity * Mathf.Max(0f,
+            1f - rain * (1f - _settings.RainAmbientMultiplier) - snow * (1f - _settings.SnowAmbientMultiplier));
         if (_boundLight != null)
         {
             _boundLight.color = settings.LightColor;
-            _boundLight.intensity = settings.LightIntensity;
+            _boundLight.intensity = settings.LightIntensity * Mathf.Max(0f,
+                1f - rain * (1f - _settings.RainLightMultiplier) - snow * (1f - _settings.SnowLightMultiplier));
         }
 
-        // 프레임마다 호출하지 않고 시간대를 적용할 때만 환경광 프로브를 갱신한다.
-        DynamicGI.UpdateEnvironment();
     }
 
     private void CaptureEnvironment()
@@ -140,5 +198,18 @@ public class WorldSkyBoxController : MonoBehaviour
         _hasOriginalSettings = false;
         _boundLight = null;
         _appliedSkybox = null;
+    }
+
+    private void ReleaseRuntimeSkybox()
+    {
+        if (_runtimeSkybox != null) DestroyMaterial(_runtimeSkybox);
+        _runtimeSkybox = null;
+        _selectedSource = null;
+    }
+
+    private static void DestroyMaterial(Material material)
+    {
+        if (Application.isPlaying) Destroy(material);
+        else DestroyImmediate(material);
     }
 }

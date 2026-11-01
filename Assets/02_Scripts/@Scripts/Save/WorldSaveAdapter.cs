@@ -22,6 +22,8 @@ public static class WorldSaveAdapter
             loop = settings.WorldLoop,
             size = settings.WorldSize,
             totalSeconds = WorldClock.Instance != null ? WorldClock.Instance.SaveTime() : 0f,
+            weather = WorldWeatherController.Instance != null && WorldWeatherController.Instance.IsInitialized
+                ? WorldWeatherController.Instance.Capture() : null,
             monsterSpawns = world.WorldMonsterSpawnDirector != null
                 ? world.WorldMonsterSpawnDirector.Capture() : new MonsterSpawnSaveData()
         };
@@ -194,6 +196,15 @@ public static class WorldSaveAdapter
         // 이전 저장 파일에는 몬스터 상태 항목이 없을 수 있습니다.
         data.monsterSpawns ??= new MonsterSpawnSaveData();
         ValidateMonsterSpawns(data.monsterSpawns);
+        // Unity 인라인 직렬화가 구버전의 null 날씨를 빈 객체로 만든 경우도 호환합니다.
+        if (data.weather != null && (data.weather.version == 0 || data.weather.version == 1) && data.weather.regionCount == 0 &&
+            data.weather.seed == 0 && data.weather.clockSeconds == 0d &&
+            string.IsNullOrEmpty(data.weather.generationId) &&
+            (data.weather.regions == null || data.weather.regions.Count == 0))
+            data.weather = null;
+        WorldWeatherSaveData.Validate(data.weather);
+        if (data.weather != null && data.weather.seed != data.seed)
+            throw new InvalidOperationException("날씨 저장 시드와 월드 시드가 일치하지 않습니다.");
 
         var placementIds = new HashSet<int>();
         foreach (var destroyed in data.destroyedObjects)

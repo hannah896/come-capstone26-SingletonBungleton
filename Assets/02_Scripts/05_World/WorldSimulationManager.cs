@@ -11,10 +11,13 @@ public class WorldSimulationManager : MonoBehaviour
     private WorldChunkDirector _chunkDirector;
     private WorldClock _worldClock;
     private WorldSkyBoxController _skyBoxController;
+    private WorldWeatherController _weatherController;
     private Light _directionalLight;
     private bool _isInitialized = false;
 
-    public void Initialize(WorldChunkDirector chunkDirector, WorldSkyBoxSettings skyBoxSettings)
+    public void Initialize(WorldChunkDirector chunkDirector, WorldSkyBoxSettings skyBoxSettings,
+        WorldLogicData logicData = null, WorldGraphData graphData = null, WorldSettings settings = null,
+        WorldWeatherSaveData savedWeather = null)
     {
         _chunkDirector = chunkDirector;
 
@@ -30,6 +33,16 @@ public class WorldSimulationManager : MonoBehaviour
         _worldClock.OnPhaseChanged += HandlePhaseChanged;
 
         InitializeSkyBox(skyBoxSettings);
+
+        if (logicData != null && graphData != null && settings != null)
+        {
+            if (_weatherController == null && !TryGetComponent(out _weatherController))
+                _weatherController = gameObject.AddComponent<WorldWeatherController>();
+            _weatherController.Initialize(logicData, graphData, settings.WorldSeed, _worldClock,
+                settings.WeatherSettings, savedWeather);
+            if (_skyBoxController != null)
+                _skyBoxController.BindWeather(GetComponent<WorldWeatherEffects>());
+        }
 
         _isInitialized = true;
     }
@@ -76,6 +89,7 @@ public class WorldSimulationManager : MonoBehaviour
     private void OnDestroy()
     {
         _isInitialized = false;
+        if (_weatherController != null) _weatherController.Shutdown();
         if (_skyBoxController != null) _skyBoxController.Unbind();
         _skyBoxController = null;
         if (_worldClock != null)

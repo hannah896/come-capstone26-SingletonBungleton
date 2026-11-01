@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1cf15aa68c6485f99a16c3f357be317, type: 3}
+  m_Name: WorldWeatherSettings
+  m_EditorClassIdentifier:
+  RainPrefab: {fileID: 100000, guid: a32990168367469a88b655bb9b63242f, type: 3}
+  SnowPrefab: {fileID: 3449159466640472962, guid: 1e1128671c1cc7846865c509db6a2061, type: 3}
+  RainLoop: {fileID: 8300000, guid: 71b4dab7d0b744cefa9d43f53f4da4d5, type: 3}
+  RainVolume: 0.5
+  TransitionSeconds: 3
+  RainIntensity: 0.5
+  SnowIntensity: 1
+  SnowEmissionRate: 100
