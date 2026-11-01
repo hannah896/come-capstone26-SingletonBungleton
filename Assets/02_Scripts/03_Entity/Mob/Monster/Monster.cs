@@ -233,6 +233,7 @@ public class Monster : Mob
     {
         base.OnSpawn();
         target = null;
+        StatScale = 1f;
         NetSlot = -1;
         hasNetTarget = false;
         netHpRatio = 1f;
@@ -564,13 +565,76 @@ public class Monster : Mob
     /// <summary>이 몬스터가 주는 기본 공격 피해 배율. 데빌 분신처럼 약하게 때리는 개체가 오버라이드한다.</summary>
     protected virtual float OutgoingDamageMultiplier => 1f;
 
+    /// <summary>
+    /// 외부에서 건 능력치 배율 (만월 보스 반복 강화 등). 최대 체력과 주는 피해에 곱한다.
+    /// 판정은 호스트에서만 하므로 호스트(싱글이면 본인)에서만 걸면 된다. 스폰할 때마다 1로 돌아간다.
+    /// </summary>
+    public float StatScale { get; private set; } = 1f;
+
+    /// <summary>능력치 배율을 건다. 최대 체력은 즉시 늘리고(현재 체력 비율 유지), 피해는 <see cref="ScaleDamage"/>에서 곱한다.</summary>
+    public void ApplyStatScale(float multiplier)
+    {
+        if (multiplier <= 0f || Mathf.Approximately(multiplier, 1f)) return;
+        StatScale *= multiplier;
+        status?.ScaleMaxHp(multiplier);
+    }
+
+    /// <summary>스킬 원본 피해량에 <see cref="StatScale"/>을 곱해 정수 피해로 만든다.</summary>
+    protected int ScaleDamage(float rawDamage) => Mathf.Max(Mathf.RoundToInt(rawDamage * StatScale), 0);
+
+    /// <summary>
+    /// 지금 XZ 위치의 실제 지면(Ground 레이어)을 찾아, 그 위 height(m)에서 duration초 동안 가속하며 떨어뜨려 착지시킨다 (만월 보스 등장).
+    /// 월드 논리 높이와 실제 지형 콜라이더가 어긋나 땅에 파묻히는 것도 함께 바로잡는다. height가 0이면 지면에 붙이기만 한다.
+    /// 위치는 몬스터 복제로 클라에도 그대로 보이므로 판정 피어(호스트/싱글)에서만 부른다.
+    /// </summary>
+    public async UniTaskVoid DropFromSkyAsync(float height, float duration)
+    {
+        var token = this.GetCancellationTokenOnDestroy();
+        Vector3 start = transform.position;
+        float groundY = FindGroundY(start, start.y);
+        float startY = groundY + Mathf.Max(0f, height);
+        transform.position = new Vector3(start.x, startY, start.z);
+
+        duration = Mathf.Max(0.05f, duration);
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            bool canceled = await UniTask.Yield(PlayerLoopTiming.Update, token).SuppressCancellationThrow();
+            if (canceled || !isActiveAndEnabled) return;
+
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            // 떨어지는 동안 AI가 수평으로 움직여도 그대로 두고 높이만 바꾼다
+            Vector3 current = transform.position;
+            transform.position = new Vector3(current.x, Mathf.Lerp(startY, groundY, t * t), current.z);
+        }
+
+        Vector3 landed = transform.position;
+        landed.y = FindGroundY(landed, groundY);
+        transform.position = landed;
+        OnLandedFromSky();
+    }
+
+    /// <summary>하늘에서 떨어져 착지한 직후 호출된다 (지면 높이를 기억하는 몬스터가 오버라이드).</summary>
+    protected virtual void OnLandedFromSky() { }
+
+    private static float FindGroundY(Vector3 position, float fallback)
+    {
+        int mask = LayerMask.GetMask("Ground");
+        if (mask == 0) mask = ~0;
+        if (Physics.Raycast(position + Vector3.up * 200f, Vector3.down, out RaycastHit hit, 400f, mask,
+                QueryTriggerInteraction.Ignore))
+            return hit.point.y;
+        return fallback;
+    }
+
     /// <summary>현재 타깃에게 1회 공격 데미지를 적용한다.</summary>
     public void PerformAttack()
     {
         if (target == null || status == null) return;
         if (!target.TryGetComponent<IDamageable>(out var dmg)) return;
 
-        int amount = Mathf.Max(Mathf.RoundToInt(status.Attack * OutgoingDamageMultiplier), 0);
+        int amount = ScaleDamage(status.Attack * OutgoingDamageMultiplier);
         var ctx = new DamageContext(
             instigator: gameObject,
             point: target.transform.position,

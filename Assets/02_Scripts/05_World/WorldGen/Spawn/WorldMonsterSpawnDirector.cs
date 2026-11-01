@@ -19,6 +19,10 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
     private readonly Dictionary<int, SourceState> _sources = new();
     private readonly Dictionary<string, PeriodicState> _periodic = new();
     private BossState _boss;
+    // 만월 보스 등장: 실제 지면 위 이 높이(m)에서 이 시간(초) 동안 떨어진다
+    private const float BossDropHeight = 30f;
+    private const float BossDropDuration = 1.2f;
+
     private readonly Dictionary<Monster, ActiveMonster> _active = new();
     private readonly List<MemberState> _dormantMembers = new();
     private readonly HashSet<int> _activeInitialIds = new();
@@ -254,7 +258,8 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
                         BossId = bossId,
                         MonsterKey = monsterKey,
                         Position = entry.position,
-                        Hp = entry.hp
+                        Hp = entry.hp,
+                        StatMultiplier = entry.statMultiplier > 0f ? entry.statMultiplier : 1f
                     });
                 }
     }
@@ -469,6 +474,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
 
         state.Spawning = true;
         _pendingCount++;
+        float statMultiplier = rule.GetStatMultiplier(fullMoonDay);
         SpawnGroupAsync(key, 1, center, minRadius, maxRadius, 0, null,
             spawnedCount =>
             {
@@ -476,8 +482,41 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
                 // 위치 탐색이나 비동기 생성이 실패하면 다음 갱신에서 다시 시도한다.
                 if (spawnedCount > 0) state.LastFullMoonDay = Mathf.Max(state.LastFullMoonDay, fullMoonDay);
             }, _epoch, _cancellation.Token,
-            minRadius, rule.ruleId).Forget();
+            minRadius, rule.ruleId, statMultiplier).Forget();
     }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    /// <summary>
+    /// 테스트용 (만월 보스 테스트 창): 지금 있는 만월 보스를 치우고, 지정한 만월의 보스를 바로 예약한다.
+    /// 평소 예약은 지난 만월보다 이후 날짜만 받으므로, 날짜를 앞뒤로 옮겨 같은 보스를 다시 시험할 때 쓴다.
+    /// </summary>
+    public void DebugForceFullMoon(int fullMoonDay)
+    {
+        if (_boss == null) return;
+
+        string ruleId = _boss.Rule.ruleId;
+        var owned = new List<ActiveMonster>();
+        foreach (ActiveMonster active in _active.Values)
+            if (active.BossId == ruleId) owned.Add(active);
+        foreach (ActiveMonster active in owned) DespawnOwned(active);
+        _dormantMembers.RemoveAll(member => member.BossId == ruleId);
+
+        _boss.LastFullMoonDay = fullMoonDay - 1;
+        _boss.PendingFullMoonDay = fullMoonDay;
+    }
+
+    /// <summary>테스트용: 지금 살아 있는 만월 보스 (없으면 null).</summary>
+    public Monster DebugCurrentBoss
+    {
+        get
+        {
+            if (_boss == null) return null;
+            foreach (ActiveMonster active in _active.Values)
+                if (active.BossId == _boss.Rule.ruleId && !active.Dead && active.Monster != null) return active.Monster;
+            return null;
+        }
+    }
+#endif
 
     private void HandleDayPassed(int daysPassed)
     {
@@ -524,8 +563,12 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
                     ? member.MonsterKey : _periodic[member.PeriodicId].Rule.monsterKey;
             Monster monster = await SpawnRegisteredAsync(key, member.Position, token);
             if (monster == null) return;
+            // 배율을 먼저 걸어야 저장된 체력이 늘어난 최대 체력 안에서 복원된다
+            monster.ApplyStatScale(member.StatMultiplier);
             if (member.Hp > 0f) monster.Status?.SetCurrentHp(member.Hp);
-            Track(monster, 0, member.SourceId, member.PeriodicId, member.BossId, key);
+            // 복원된 보스는 떨어뜨리지 않고 실제 지면에만 붙인다 (예전에 파묻힌 채 저장됐어도 바로잡힌다)
+            if (!string.IsNullOrEmpty(member.BossId)) monster.DropFromSkyAsync(0f, 0.05f).Forget();
+            Track(monster, 0, member.SourceId, member.PeriodicId, member.BossId, key, member.StatMultiplier);
             _dormantMembers.Remove(member);
         }
         catch (OperationCanceledException) { }
@@ -542,7 +585,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
 
     private async UniTaskVoid SpawnGroupAsync(string key, int count, Vector3 center, float minRadius,
         float maxRadius, int sourceId, string periodicId, Action<int> completed, int epoch, CancellationToken token,
-        float minDistanceFromPlayers = 0f, string bossId = null)
+        float minDistanceFromPlayers = 0f, string bossId = null, float statMultiplier = 1f)
     {
         int spawnedCount = 0;
         try
@@ -554,7 +597,9 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
                         minDistanceFromPlayers)) continue;
                 Monster monster = await SpawnRegisteredAsync(key, position, token);
                 if (monster == null) continue;
-                Track(monster, 0, sourceId, periodicId, bossId, key);
+                monster.ApplyStatScale(statMultiplier);
+                if (!string.IsNullOrEmpty(bossId)) monster.DropFromSkyAsync(BossDropHeight, BossDropDuration).Forget();
+                Track(monster, 0, sourceId, periodicId, bossId, key, statMultiplier);
                 spawnedCount++;
             }
         }
@@ -596,10 +641,10 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
     }
 
     private void Track(Monster monster, int initialId, int sourceId, string periodicId,
-        string bossId = null, string monsterKey = null)
+        string bossId = null, string monsterKey = null, float statMultiplier = 1f)
     {
         var active = new ActiveMonster { Monster = monster, InitialId = initialId, SourceId = sourceId,
-            PeriodicId = periodicId, BossId = bossId, MonsterKey = monsterKey };
+            PeriodicId = periodicId, BossId = bossId, MonsterKey = monsterKey, StatMultiplier = statMultiplier };
         _active.Add(monster, active);
         if (initialId != 0) _activeInitialIds.Add(initialId);
         monster.Died += HandleDied;
@@ -637,7 +682,8 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
                 BossId = active.BossId,
                 MonsterKey = active.MonsterKey,
                 Position = monster.transform.position,
-                Hp = monster.Status.CurrentHp
+                Hp = monster.Status.CurrentHp,
+                StatMultiplier = active.StatMultiplier
             });
         if (!ReferenceEquals(monster, null))
         {
@@ -675,7 +721,8 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             bossRuleId = active.BossId,
             monsterKey = active.MonsterKey,
             position = active.Monster.transform.position,
-            hp = active.Monster.Status.CurrentHp
+            hp = active.Monster.Status.CurrentHp,
+            statMultiplier = active.StatMultiplier
         };
 
     private bool TrySamplePosition(Vector3 center, float minRadius, float maxRadius, out Vector3 position,
@@ -842,6 +889,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         public string PeriodicId;
         public string BossId;
         public string MonsterKey;
+        public float StatMultiplier = 1f;
         public bool Dead;
     }
 
@@ -853,6 +901,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         public string MonsterKey;
         public Vector3 Position;
         public float Hp;
+        public float StatMultiplier = 1f;
         public bool Pending;
 
         public SpawnedMonsterSaveData ToSaveData() => new SpawnedMonsterSaveData
@@ -862,7 +911,8 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             bossRuleId = BossId,
             monsterKey = MonsterKey,
             position = Position,
-            hp = Hp
+            hp = Hp,
+            statMultiplier = StatMultiplier
         };
     }
 }

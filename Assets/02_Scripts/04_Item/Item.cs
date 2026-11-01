@@ -5,7 +5,7 @@ using UnityEngine;
 /// Inspector에서 ItemDataSO를 연결하면 Awake 시점에 런타임 데이터(ItemData)를 자동 생성한다.
 /// </summary>
 [RequireComponent(typeof(Collider))]
-public class Item : MonoBehaviour, IDisposeInitializable
+public class Item : MonoBehaviour, IDisposeInitializable, IPoolable
 {
     [Header("=== 아이템 데이터 ===")]
     [Tooltip("아이템 원본 데이터 (Inspector에서 SO 연결)")]
@@ -115,6 +115,13 @@ public class Item : MonoBehaviour, IDisposeInitializable
     [System.NonSerialized] private Quaternion _originalLocalRotation = Quaternion.identity;
     [System.NonSerialized] private bool _originalTransformCached;
 
+    // 1인칭 장착 뷰는 루트뿐 아니라 자식 메시의 위치/회전/스케일도 바꾼다 (칼 메시 4배 등).
+    // 같은 풀을 드롭·3인칭 손 뷰가 같이 쓰므로 자식 트랜스폼의 원본도 기억해 둔다.
+    [System.NonSerialized] private Transform[] _childTransforms;
+    [System.NonSerialized] private Vector3[] _childLocalPositions;
+    [System.NonSerialized] private Quaternion[] _childLocalRotations;
+    [System.NonSerialized] private Vector3[] _childLocalScales;
+
     private void Awake()
     {
         CacheOriginalLocalTransform();
@@ -127,17 +134,48 @@ public class Item : MonoBehaviour, IDisposeInitializable
         if (_originalTransformCached) return;
         _originalLocalScale = transform.localScale;
         _originalLocalRotation = transform.localRotation;
+
+        Transform[] all = GetComponentsInChildren<Transform>(true);
+        int count = all.Length - 1; // 0번은 루트 자신
+        _childTransforms = new Transform[count];
+        _childLocalPositions = new Vector3[count];
+        _childLocalRotations = new Quaternion[count];
+        _childLocalScales = new Vector3[count];
+        for (int i = 0; i < count; i++)
+        {
+            Transform child = all[i + 1];
+            _childTransforms[i] = child;
+            _childLocalPositions[i] = child.localPosition;
+            _childLocalRotations[i] = child.localRotation;
+            _childLocalScales[i] = child.localScale;
+        }
+
         _originalTransformCached = true;
     }
 
-    /// <summary>장착 뷰 등으로 변형된 로컬 스케일/회전을 프리팹 원본 상태로 되돌린다.
-    /// 위치는 호출부에서 별도로 설정한다 (드롭/월드 배치 시 사용).</summary>
+    /// <summary>장착 뷰 등으로 변형된 로컬 스케일/회전(자식 메시 포함)을 프리팹 원본 상태로 되돌린다.
+    /// 루트 위치는 호출부에서 별도로 설정한다 (드롭/월드 배치 시 사용).</summary>
     public void ResetToWorldTransform()
     {
         CacheOriginalLocalTransform();
         transform.localScale = _originalLocalScale;
         transform.localRotation = _originalLocalRotation;
+
+        for (int i = 0; i < _childTransforms.Length; i++)
+        {
+            Transform child = _childTransforms[i];
+            if (child == null) continue;
+            child.localPosition = _childLocalPositions[i];
+            child.localRotation = _childLocalRotations[i];
+            child.localScale = _childLocalScales[i];
+        }
     }
+
+    // 풀에서 꺼낼 때마다 이전 용도(1인칭 뷰·손 뷰·드롭)가 남긴 트랜스폼을 지운다.
+    // 각 사용처는 SpawnAsync 반환 뒤에 자기 오프셋을 다시 적용한다.
+    public void OnSpawn() => ResetToWorldTransform();
+
+    public void OnDespawn() { }
 
     protected virtual void Init()
     {

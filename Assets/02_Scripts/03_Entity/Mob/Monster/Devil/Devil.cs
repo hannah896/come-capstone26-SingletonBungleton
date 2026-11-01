@@ -352,6 +352,9 @@ public class Devil : Monster
     /// <summary>이륙 직전의 지면 높이를 기억해 둔다(착지 레이캐스트 실패 시 폴백).</summary>
     public void RememberGroundY() => groundY = transform.position.y;
 
+    // 스폰 때 기억한 높이는 하늘 위라서, 착지한 높이로 다시 잡는다 (비행 후 착지 폴백)
+    protected override void OnLandedFromSky() => RememberGroundY();
+
     /// <summary>
     /// 현재 XZ 위치의 착지 높이를 구한다.
     /// 비행 중 이동해 지형이 달라졌을 수 있으므로 아래로 레이캐스트하고, 실패하면 이륙 지점 높이를 쓴다.
@@ -490,6 +493,8 @@ public class Devil : Monster
             return;
         }
 
+        // 분신은 본체와 같은 배율로 강해진다 (체력 비율을 맞추는 SetupAsClone보다 먼저 건다)
+        clone.ApplyStatScale(StatScale);
         clone.SetupAsClone(this);
         clones.Add(clone);
         PlayPoof(position);
@@ -744,7 +749,7 @@ public class Devil : Monster
             ? skillDamage
             : (status != null ? status.Attack : (statData != null ? statData.AttackDamage : 0f));
 
-        return Mathf.Max(Mathf.RoundToInt(raw * OutgoingDamageMultiplier), 0);
+        return ScaleDamage(raw * OutgoingDamageMultiplier);
     }
 
     private void ApplyDamageToTarget(Player player, int damage)

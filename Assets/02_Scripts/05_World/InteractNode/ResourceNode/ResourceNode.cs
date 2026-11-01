@@ -20,6 +20,7 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
     {
         if (!IsHandPickable) return;
         Extensions.PlaySFXAt(AudioLibrarySounds.PickBush, transform.position);
+        PlayerNetFx.ShareSound(AudioLibrarySounds.PickBush, transform.position);
 
         // 멀티: 즉시 소진 = 최대 체력만큼 데미지를 보고해 호스트가 파괴를 확정하게 한다
         if (IsNetworkManaged)
@@ -281,7 +282,10 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
                 _                     => AudioLibrarySounds.PickBush,
             },
         };
-        Extensions.PlaySFXAt(sound, context.Point != Vector3.zero ? context.Point : transform.position);
+        Vector3 position = context.Point != Vector3.zero ? context.Point : transform.position;
+        Extensions.PlaySFXAt(sound, position);
+        // 타격은 때린 피어에서만 처리되므로 다른 피어에는 따로 알린다 (쓰러지는 소리는 호스트 확정으로 모두가 듣는다)
+        PlayerNetFx.ShareSound(sound, position);
     }
 
     // 덤불은 줍는 순간(HandPick) 이미 소리가 나므로 파괴 소리는 나무·돌만

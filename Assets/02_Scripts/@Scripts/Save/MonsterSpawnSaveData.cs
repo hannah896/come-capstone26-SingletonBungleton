@@ -64,4 +64,6 @@ public sealed class SpawnedMonsterSaveData
     public string monsterKey;
     public Vector3 position;
     public float hp;
+    /// <summary>스폰 때 건 능력치 배율 (만월 보스 반복 강화). 예전 세이브는 0 → 1배로 복원.</summary>
+    public float statMultiplier;
 }
