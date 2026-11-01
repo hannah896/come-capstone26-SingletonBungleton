@@ -3,7 +3,8 @@
     "rootNamespace": "SingletonBungleton.BossTraining",
     "references": [
         "SingletonBungleton.BossTraining",
-        "Unity.ML-Agents"
+        "Unity.ML-Agents",
+        "Unity.InferenceEngine"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

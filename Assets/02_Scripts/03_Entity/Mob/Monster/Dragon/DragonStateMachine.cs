@@ -14,8 +14,14 @@ public class DragonStateMachine : MonsterStateMachine
         boss = owner;
     }
 
+    // 학습된 판단층(IDragonBrain)이 준비돼 있으면 그쪽이 패턴을 고르고, 없으면 기존 규칙 기반 선택을 쓴다.
     public override void ToAttack()
-        => ChangeState(new DragonGroundState(boss, this));
+    {
+        if (DragonAiGroundState.CanUse(boss, out var brain))
+            ChangeState(new DragonAiGroundState(boss, this, brain));
+        else
+            ChangeState(new DragonGroundState(boss, this));
+    }
 
     public override void ToChase()
         => ToAttack();

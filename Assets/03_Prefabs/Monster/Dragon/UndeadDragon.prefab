@@ -4914,6 +4914,9 @@ GameObject:
   - component: {fileID: 979320379369976240}
   - component: {fileID: 5938915941096607826}
   - component: {fileID: 2243101787473269525}
+  - component: {fileID: 7323285399975265206}
+  - component: {fileID: 4002110538063389602}
+  - component: {fileID: 7250787587892485875}
   m_Layer: 0
   m_Name: UndeadDragon
   m_TagString: Untagged
@@ -4988,6 +4991,7 @@ MonoBehaviour:
   hitBool: Hit
   hitDuration: 0.4
   attackMotionArmorTime: 0.6
+  attackAnimHoldTime: 0.85
   knockbackSpeed: 0
   knockbackDamping: 7
   hitSound: 
@@ -5037,6 +5041,74 @@ MonoBehaviour:
   counterSfx: {fileID: 0}
   explosionSfx: {fileID: 0}
   deathSfx: {fileID: 0}
+--- !u!114 &7323285399975265206
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7043292222820381681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c58f5f1518504a64ebc8b73a8cbd9b28, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &4002110538063389602
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7043292222820381681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d1c4e0b1822b495aa52bc52839ecb30, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_BrainParameters:
+    VectorObservationSize: 19
+    NumStackedVectorObservations: 1
+    m_ActionSpec:
+      m_NumContinuousActions: 0
+      BranchSizes: 05000000
+    VectorActionSize: 05000000
+    VectorActionDescriptions: []
+    VectorActionSpaceType: 0
+    hasUpgradedBrainParametersWithActionSpec: 1
+  m_Model: {fileID: 5022602860645237092, guid: e0a6d6c107977d549ade40d34cdd59ff, type: 3}
+  m_InferenceDevice: 0
+  m_BehaviorType: 2
+  m_BehaviorName: DragonBoss
+  TeamId: 0
+  m_UseChildSensors: 1
+  m_UseChildActuators: 1
+  m_DeterministicInference: 0
+  m_ObservableAttributeHandling: 0
+--- !u!114 &7250787587892485875
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7043292222820381681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fbaf1d3d5c541dd47b9eb98fbc290866, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  agentParameters:
+    maxStep: 0
+  hasUpgradedFromAgentParameters: 1
+  MaxStep: 0
+  arena: {fileID: 0}
+  damageDealtScale: 1
+  damageTakenScale: 0.5
+  whiffPenalty: 0.03
+  timePenaltyPerDecision: 0.003
+  winReward: 1
+  loseReward: -1
+  standaloneTimeScale: 20
+  standaloneStopAfterEpisodes: 300
 --- !u!1 &8977482283874580503
 GameObject:
   m_ObjectHideFlags: 0
