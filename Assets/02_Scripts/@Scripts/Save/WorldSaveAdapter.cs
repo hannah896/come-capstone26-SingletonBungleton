@@ -93,7 +93,7 @@ public static class WorldSaveAdapter
     {
         Validate(data);
         if (logic == null) throw new ArgumentNullException(nameof(logic));
-        foreach (ChunkData chunk in logic.GetAllChunks()) chunk.DestroyedObjects.Clear();
+        foreach (ChunkData chunk in logic.GetAllChunks()) chunk.ClearDestroyedObjects();
         foreach (DestroyedObjectSaveData destroyed in data.destroyedObjects)
         {
             ChunkData chunk = logic.FindChunkByInstanceId(destroyed.instanceId);

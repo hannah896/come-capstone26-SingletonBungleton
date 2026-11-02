@@ -475,10 +475,10 @@ public class WorldMapPresentationTests : InputTestFixture
                 Is.GreaterThan(((RectTransform)markers[resources[leftToRight[i - 1]]]).GetSiblingIndex()));
 
         Invoke(chunk, "MarkObjectDestroyed", 1, 100f);
-        Invoke(_map, "RefreshResourceMarkers");
+        Invoke(_map, "FlushResourceChanges");
         Assert.That(markers.Contains(resources[0]), Is.False);
-        ((System.Collections.IDictionary)Field(chunk, "DestroyedObjects")).Remove(1);
-        Invoke(_map, "RefreshResourceMarkers");
+        Invoke(chunk, "MarkObjectRespawned", 1);
+        Invoke(_map, "FlushResourceChanges");
         Assert.That(markers.Contains(resources[0]), Is.True);
 
         var distantTarget = CreateMapTarget("DistantMapTarget", new Vector3(10, 0, 10));
@@ -505,6 +505,133 @@ public class WorldMapPresentationTests : InputTestFixture
 
     private System.Collections.IDictionary RemoteMarkers =>
         (System.Collections.IDictionary)Field(_map, "_remoteMarkers");
+
+    [Test]
+    public void ResourceMarkers_ReuseFiveHundredViewsAndKeepPositionsAndOrderAcrossZoom()
+    {
+        var logic = Activator.CreateInstance(FindType("WorldLogicData"), new Vector2Int(100, 100), 10);
+        logic.GetType().GetProperty("SpawnTile").SetValue(logic, new Vector2Int(10, 10));
+        var resources = new object[500];
+        for (int i = 0; i < resources.Length; i++)
+        {
+            var dispose = Activator.CreateInstance(FindType("DisposeData"));
+            var tile = new Vector2Int(44 + i % 25 / 2, 44 + i / 25 / 2);
+            dispose.GetType().GetField("instanceId").SetValue(dispose, i + 1);
+            dispose.GetType().GetField("prefabName").SetValue(dispose, "ResourceNode_Fir");
+            dispose.GetType().GetField("tilePosition").SetValue(dispose, tile);
+            dispose.GetType().GetField("localOffset").SetValue(dispose,
+                new Vector2(i % 2 * 0.5f, i / 25 % 2 * 0.5f));
+            var chunk = Invoke(logic, "GetOrCreateChunk", new Vector2Int(tile.x / 10, tile.y / 10));
+            ((System.Collections.IList)Property(chunk, "DisposeDatas")).Add(dispose);
+            resources[i] = dispose;
+        }
+        var target = CreateMapTarget("DenseResourceTarget", new Vector3(50, 0, 50));
+        Invoke(_map, "SetTarget", target);
+        Invoke(_map, "HandleDataChanged", Activator.CreateInstance(FindType("WorldMapData"),
+            _texture, _sprite, new Vector2Int(100, 100), logic));
+        Layout();
+        Invoke(_map, "RefreshResourceMarkers");
+        var markers = (System.Collections.IDictionary)Field(_map, "_resourceMarkers");
+        Assert.That(markers.Count, Is.EqualTo(500));
+        var originalViews = new System.Collections.Generic.HashSet<RectTransform>();
+        foreach (RectTransform view in markers.Values) originalViews.Add(view);
+        var first = (RectTransform)markers[resources[0]];
+        var layer = first.parent;
+        Assert.That(layer.parent, Is.SameAs(((Component)Property(_navigation, "MapImage")).transform));
+        Assert.That(_map.GetComponent<Canvas>(), Is.Not.Null);
+        Assert.That(_map.GetComponent<Canvas>().overrideSorting, Is.False);
+
+        // 지도만 이동/확대해도 자원 좌표를 다시 대입하지 않고 고정 크기로 따라와야 한다.
+        _navigation.GetType().GetProperty("Zoom").SetValue(_navigation, 6f);
+        target.position = new Vector3(51, 0, 51);
+        Invoke(_map, "UpdatePlayerMarker");
+        Layout();
+        var content = ((Component)Property(_navigation, "MapImage")).GetComponent<RectTransform>();
+        Vector3 expected = content.TransformPoint(Vector2.Scale(new Vector2(0.44f, 0.44f)
+            - Vector2.one * 0.5f, content.rect.size));
+        Assert.That(Vector3.Distance(first.position, expected), Is.LessThan(0.01f));
+        Assert.That(first.sizeDelta, Is.EqualTo(Vector2.one * 16f));
+        Assert.That(first.anchoredPosition, Is.EqualTo(Vector2.zero));
+
+        target.position = new Vector3(95, 0, 95);
+        Invoke(_map, "UpdatePlayerMarker");
+        Invoke(_map, "RefreshResourceMarkers");
+        Assert.That(markers.Count, Is.Zero);
+        Assert.That(layer.childCount, Is.EqualTo(500));
+        foreach (RectTransform view in originalViews) Assert.That(view.gameObject.activeSelf, Is.False);
+        target.position = new Vector3(50, 0, 50);
+        _navigation.GetType().GetProperty("Zoom").SetValue(_navigation, 4f);
+        Invoke(_map, "UpdatePlayerMarker");
+        Invoke(_map, "RefreshResourceMarkers");
+        Assert.That(markers.Count, Is.EqualTo(500));
+        Assert.That(layer.childCount, Is.EqualTo(500), "이동 후 새 UI를 만들지 않고 기존 500개를 재사용한다.");
+        foreach (RectTransform view in markers.Values) Assert.That(originalViews.Contains(view), Is.True);
+
+        // 중간 마커 하나의 파괴/재생성에서도 나머지 UI와 좌우 순서는 유지한다.
+        var victim = resources[250];
+        var victimView = (RectTransform)markers[victim];
+        var victimTile = (Vector2Int)victim.GetType().GetField("tilePosition").GetValue(victim);
+        var victimChunk = Invoke(logic, "GetOrCreateChunk", new Vector2Int(victimTile.x / 10, victimTile.y / 10));
+        Invoke(victimChunk, "MarkObjectDestroyed", 251, 100f);
+        Invoke(_map, "FlushResourceChanges");
+        Assert.That(markers.Count, Is.EqualTo(499));
+        Invoke(victimChunk, "MarkObjectRespawned", 251);
+        Invoke(_map, "FlushResourceChanges");
+        Assert.That(markers[victim], Is.SameAs(victimView));
+        var ordered = (System.Collections.IList)Field(_map, "_orderedResources");
+        for (int i = 0; i < ordered.Count; i++)
+            Assert.That(((RectTransform)markers[ordered[i]]).GetSiblingIndex(), Is.EqualTo(i));
+
+        // 작은 이동은 캐시한 여유 영역 안에서 부모만 움직이고, 범위를 벗어나면 목록을 바꾼다.
+        target.position = new Vector3(50.1f, 0, 50);
+        Invoke(_map, "UpdatePlayerMarker");
+        Assert.That((bool)Field(_map, "_resourceViewDirty"), Is.False);
+        target.position = new Vector3(95, 0, 95);
+        Invoke(_map, "UpdatePlayerMarker");
+        Invoke(_map, "FlushResourceChanges");
+        Assert.That(markers.Count, Is.Zero);
+        Invoke(victimChunk, "MarkObjectDestroyed", 251, 100f);
+        var dirtyChunks = Field(_map, "_dirtyResourceChunks");
+        Assert.That((int)Property(dirtyChunks, "Count"), Is.Zero, "화면 밖 청크 변경은 탐색을 예약하지 않는다.");
+        target.position = new Vector3(50, 0, 50);
+        Invoke(_map, "UpdatePlayerMarker");
+        Invoke(_map, "FlushResourceChanges");
+        Assert.That(markers.Count, Is.EqualTo(499), "다시 진입할 때는 화면 밖에서 바뀐 상태를 읽는다.");
+        Assert.That(markers.Contains(victim), Is.False);
+        Invoke(_map, "ClearView");
+        Invoke(victimChunk, "MarkObjectRespawned", 251);
+        Assert.That((int)Property(dirtyChunks, "Count"), Is.Zero, "해제한 지도의 청크 이벤트를 계속 받으면 안 된다.");
+    }
+
+    [Test]
+    public void ResourceStateNotifications_OnlyFireOnChangesAndIncludeSpawnExclusions()
+    {
+        var logic = Activator.CreateInstance(FindType("WorldLogicData"), new Vector2Int(100, 100), 10);
+        var chunk = Invoke(logic, "GetOrCreateChunk", new Vector2Int(5, 5));
+        int changes = 0;
+        Action<object> callback = _ => changes++;
+        chunk.GetType().GetEvent("OnResourceStateChanged").AddEventHandler(chunk, callback);
+        Invoke(chunk, "MarkObjectDestroyed", 1, 100f);
+        Invoke(chunk, "MarkObjectDestroyed", 1, 200f);
+        Assert.That(changes, Is.EqualTo(1));
+        Assert.That(Invoke(chunk, "MarkObjectRespawned", 1), Is.EqualTo(true));
+        Assert.That(Invoke(chunk, "MarkObjectRespawned", 1), Is.EqualTo(false));
+        Assert.That(changes, Is.EqualTo(2));
+        Invoke(chunk, "MarkObjectDestroyed", 2, 100f);
+        Invoke(chunk, "ClearDestroyedObjects");
+        Invoke(chunk, "ClearDestroyedObjects");
+        Assert.That(changes, Is.EqualTo(4));
+
+        var spawner = Activator.CreateInstance(FindType("WorldObjectSpawner"));
+        Invoke(spawner, "Initialize", logic, null);
+        Invoke(spawner, "ExcludeSpawn", chunk, 1);
+        Invoke(spawner, "ExcludeSpawn", chunk, 1);
+        Assert.That(changes, Is.EqualTo(5));
+        Assert.That(Invoke(spawner, "IsSpawnExcluded", 1), Is.EqualTo(true));
+        Invoke(spawner, "Clear");
+        Assert.That(changes, Is.EqualTo(6));
+        Assert.That(Invoke(spawner, "IsSpawnExcluded", 1), Is.EqualTo(false));
+    }
 
     private Transform CreateMapTarget(string name, Vector3 position)
     {

@@ -68,6 +68,9 @@ public class MapViewportInputTests
         frameRect.sizeDelta = new Vector2(150f, 85f);
         var panel = frame.GetComponent(FindType("UI_Panel_WorldMap"));
         panel.GetType().GetMethod("Initialize").Invoke(panel, null);
+        _raycaster = frame.GetComponent<GraphicRaycaster>();
+        Assert.That(_raycaster, Is.Not.Null, "분리된 지도 Canvas에도 입력 Raycaster가 있어야 한다.");
+        Assert.That(_raycaster.eventCamera, Is.SameAs(_camera), "지도는 부모 HUD의 UI 카메라로 입력을 판정해야 한다.");
         _playerMarker = (RectTransform)new UnityEditor.SerializedObject(panel)
             .FindProperty("_playerMarker").objectReferenceValue;
         _navigation = frame.GetComponentInChildren(FindType("UI_MapViewport"));

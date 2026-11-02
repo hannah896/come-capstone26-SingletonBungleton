@@ -33,6 +33,7 @@ public class UI_Panel_WorldMap : UI_Panel
     [SerializeField] private Sprite _rockIcon;
     [SerializeField, Min(1f)] private float _compactResourceIconSize = 16f;
     [SerializeField, Min(1f)] private float _expandedResourceIconSize = 30f;
+    [SerializeField, Min(0)] private int _maxPooledResourceMarkers = 2048;
 
     [Header("Viewport Settings")]
     [Tooltip("인게임 진입 및 더블클릭 시 플레이어 주변을 보여 주는 기본 확대 배율이다.")]
@@ -47,7 +48,6 @@ public class UI_Panel_WorldMap : UI_Panel
     private Transform _target;
     private float _nextTargetSearchTime;
     private float _nextRemoteSearchTime;
-    private float _nextResourceRefreshTime;
     private bool _isExpanded;
     private readonly Dictionary<Transform, RectTransform> _remoteMarkers = new();
     private readonly HashSet<Transform> _remoteTargets = new();
@@ -56,12 +56,45 @@ public class UI_Panel_WorldMap : UI_Panel
     private readonly HashSet<DisposeData> _visibleResources = new();
     private readonly List<DisposeData> _removedResources = new();
     private readonly List<DisposeData> _orderedResources = new();
+    private readonly Stack<RectTransform> _resourceMarkerPool = new();
+    private readonly Dictionary<ChunkData, ResourceChunkCache> _resourceChunkCache = new();
+    private readonly List<ResourceMarkerData> _visibleResourceData = new();
+    private RectTransform _resourceMarkerLayer;
+    private readonly HashSet<ChunkData> _watchedResourceChunks = new();
+    private readonly HashSet<ChunkData> _dirtyResourceChunks = new();
+    private bool _resourceViewDirty;
+    private bool _hasResourceCoverage;
+    private Rect _resourceCoverage;
+    private float _resourceCoverageZoom;
+    private Vector2 _resourceViewportSize;
+    private static readonly IComparer<DisposeData> ResourceOrder =
+        Comparer<DisposeData>.Create(CompareResourcePositions);
+
+    // 고정 배치는 캐시하고, 파괴/재생성과 스폰 배제는 청크의 변경 알림으로만 반영한다.
+    private sealed class ResourceMarkerData
+    {
+        public DisposeData Dispose;
+        public Vector3 Position;
+        public Vector2 Normalized;
+        public Sprite Icon;
+    }
+
+    private sealed class ResourceChunkCache
+    {
+        public List<DisposeData> Source;
+        public int Count;
+        public readonly List<ResourceMarkerData> Entries = new();
+    }
 
     public Transform Target => _target;
 
     public override bool Initialize()
     {
         if (!base.Initialize()) return false;
+
+        // 지도 변경에 따른 배치 재계산을 시계 등 다른 HUD 요소와 분리한다.
+        ConfigureMapCanvas();
+        if (!TryGetComponent<GraphicRaycaster>(out _)) gameObject.AddComponent<GraphicRaycaster>();
 
         if (_sightArea == null && _playerMarker != null)
             _sightArea = _playerMarker.Find("SightArea") as RectTransform;
@@ -73,6 +106,8 @@ public class UI_Panel_WorldMap : UI_Panel
         _navigation = UI_MapViewport.Create(_mapImage, null, _playerMarker,
             _zoom, _maxZoom, _zoomStep, fillViewport: false, followTarget: true);
         if (_navigation != null) _mapImage = _navigation.MapImage;
+        CreateResourceMarkerLayer();
+        if (_navigation != null) _navigation.OnViewChanged += HandleMapViewChanged;
         SetExpanded(false);
         return true;
     }
@@ -94,7 +129,6 @@ public class UI_Panel_WorldMap : UI_Panel
             if (marker != null) marker.sizeDelta = Vector2.one * resourceSize;
         _navigation?.CancelDrag();
         _navigation?.Refresh();
-        UpdateRemotePlayerMarkers();
         RefreshResourceMarkers();
     }
 
@@ -105,17 +139,39 @@ public class UI_Panel_WorldMap : UI_Panel
         TryFindLocalPlayer();
         _nextRemoteSearchTime = 0f;
         // Cinemachine이 카메라 회전을 마친 뒤, UI를 그리기 직전에 방향을 반영한다.
-        Canvas.willRenderCanvases += UpdateSightAreaRotation;
-        Canvas.willRenderCanvases += UpdateRemotePlayerMarkers;
-        Canvas.willRenderCanvases += UpdateResourceMarkerPositions;
+        Canvas.willRenderCanvases += HandleWillRenderCanvases;
     }
 
     private void OnDisable()
     {
-        Canvas.willRenderCanvases -= UpdateSightAreaRotation;
-        Canvas.willRenderCanvases -= UpdateRemotePlayerMarkers;
-        Canvas.willRenderCanvases -= UpdateResourceMarkerPositions;
+        Canvas.willRenderCanvases -= HandleWillRenderCanvases;
         Unbind();
+    }
+
+    private void OnDestroy()
+    {
+        if (_navigation != null) _navigation.OnViewChanged -= HandleMapViewChanged;
+        ClearResourceChunkCache();
+    }
+
+    private void HandleWillRenderCanvases()
+    {
+        UpdateSightAreaRotation();
+        // 레이아웃이 LateUpdate 뒤에 바뀐 경우에도 렌더 전에 한 번만 반영한다.
+        FlushResourceChanges();
+    }
+
+    private void OnTransformParentChanged()
+    {
+        if (IsInitialized) ConfigureMapCanvas();
+    }
+
+    private void ConfigureMapCanvas()
+    {
+        if (!TryGetComponent(out Canvas mapCanvas)) mapCanvas = gameObject.AddComponent<Canvas>();
+        Canvas parentCanvas = transform.parent != null ? transform.parent.GetComponentInParent<Canvas>() : null;
+        // 중첩 Canvas의 Raycaster도 HUD와 같은 UI 카메라를 사용해야 한다.
+        if (parentCanvas != null) mapCanvas.worldCamera = parentCanvas.rootCanvas.worldCamera;
     }
 
     private void LateUpdate()
@@ -136,12 +192,7 @@ public class UI_Panel_WorldMap : UI_Panel
             RefreshRemotePlayers();
         }
         UpdateRemotePlayerMarkers();
-        if (Time.unscaledTime >= _nextResourceRefreshTime)
-        {
-            _nextResourceRefreshTime = Time.unscaledTime + 0.25f;
-            RefreshResourceMarkers();
-        }
-        UpdateResourceMarkerPositions();
+        FlushResourceChanges();
     }
 
     /// <summary>외부에서 추적 대상을 명시적으로 지정할 때 사용한다.</summary>
@@ -210,7 +261,11 @@ public class UI_Panel_WorldMap : UI_Panel
         UpdatePlayerMarker();
         if (mapChanged) _navigation?.ResetView();
         if (mapChanged) _nextRemoteSearchTime = 0f;
-        if (mapChanged) ClearResourceMarkers();
+        if (mapChanged)
+        {
+            ClearResourceMarkers();
+            ClearResourceChunkCache();
+        }
         RefreshResourceMarkers();
     }
 
@@ -223,6 +278,7 @@ public class UI_Panel_WorldMap : UI_Panel
     {
         ClearRemoteMarkers();
         ClearResourceMarkers();
+        ClearResourceChunkCache();
         _mapData = null;
         if (_mapImage != null) _mapImage.Sprite = null;
         _navigation?.ResetView();
@@ -271,7 +327,6 @@ public class UI_Panel_WorldMap : UI_Panel
 
         Vector2 normalized = _mapData.NormalizeWorldPosition(position);
         _navigation?.SetMarkerPosition(normalized);
-        UpdateSightAreaRotation();
     }
 
     private void RefreshRemotePlayers()
@@ -355,48 +410,117 @@ public class UI_Panel_WorldMap : UI_Panel
         _nextRemoteSearchTime = 0f;
     }
 
+    private void HandleMapViewChanged()
+    {
+        if (_mapData?.LogicData == null || _navigation == null) return;
+        Rect visible = _navigation.VisibleNormalizedRect;
+        if (!_hasResourceCoverage || _resourceCoverageZoom != _navigation.Zoom
+            || _resourceViewportSize != _navigation.Viewport.rect.size
+            || visible.xMin < _resourceCoverage.xMin || visible.xMax > _resourceCoverage.xMax
+            || visible.yMin < _resourceCoverage.yMin || visible.yMax > _resourceCoverage.yMax)
+            _resourceViewDirty = true;
+    }
+
+    private void HandleResourceStateChanged(ChunkData chunk)
+    {
+        // 화면 밖 청크의 변경은 나중에 진입할 때 읽는다. 같은 청크의 연속 변경은 한 번으로 합친다.
+        if (_watchedResourceChunks.Contains(chunk)) _dirtyResourceChunks.Add(chunk);
+    }
+
+    private void FlushResourceChanges()
+    {
+        if (_resourceViewDirty)
+        {
+            RefreshResourceMarkers();
+            return;
+        }
+        if (_dirtyResourceChunks.Count == 0 || _mapData?.LogicData == null) return;
+        WorldObjectSpawner spawner = GetResourceSpawner();
+        foreach (ChunkData chunk in _dirtyResourceChunks)
+        {
+            foreach (ResourceMarkerData entry in GetResourceEntries(chunk))
+            {
+                if (ShouldShowResource(entry, chunk, spawner))
+                {
+                    if (!_resourceMarkers.ContainsKey(entry.Dispose)) AddResourceMarker(entry);
+                }
+                else RemoveResourceMarker(entry.Dispose);
+            }
+        }
+        _dirtyResourceChunks.Clear();
+    }
+
+    private WorldObjectSpawner GetResourceSpawner()
+    {
+        WorldGenManager world = WorldGenManager.Instance;
+        return world != null && world.CurrentLogicData == _mapData.LogicData
+            ? world.ChunkDirector?.ObjectSpawner : null;
+    }
+
+    private bool ShouldShowResource(ResourceMarkerData entry, ChunkData chunk, WorldObjectSpawner spawner)
+    {
+        return entry.Normalized.x >= _resourceCoverage.xMin && entry.Normalized.x <= _resourceCoverage.xMax
+            && entry.Normalized.y >= _resourceCoverage.yMin && entry.Normalized.y <= _resourceCoverage.yMax
+            && !chunk.IsObjectDestroyed(entry.Dispose.instanceId)
+            && spawner?.IsSpawnExcluded(entry.Dispose.instanceId) != true
+            && !WorldSpawnArea.Contains(_mapData.LogicData, entry.Position);
+    }
+
+    private void ClearResourceChunkCache()
+    {
+        foreach (ChunkData chunk in _resourceChunkCache.Keys)
+            chunk.OnResourceStateChanged -= HandleResourceStateChanged;
+        _resourceChunkCache.Clear();
+        _watchedResourceChunks.Clear();
+        _dirtyResourceChunks.Clear();
+    }
+
     private void RefreshResourceMarkers()
     {
-        if (_mapData?.Sprite == null || _mapData.LogicData == null || _navigation == null) return;
+        if (_mapData?.Sprite == null || _mapData.LogicData == null || _navigation == null
+            || _resourceMarkerLayer == null) return;
 
         _navigation.Refresh();
         Rect visible = _navigation.VisibleNormalizedRect;
-        float minX = visible.xMin * _mapData.TerrainSize.x;
-        float maxX = visible.xMax * _mapData.TerrainSize.x;
-        float minZ = visible.yMin * _mapData.TerrainSize.y;
-        float maxZ = visible.yMax * _mapData.TerrainSize.y;
+        // 각 변에 10% 여유를 두어 작은 이동에는 목록을 탐색하지 않고 부모 이동/마스킹만 수행한다.
+        _resourceCoverage = UnityEngine.Rect.MinMaxRect(
+            Mathf.Max(0f, visible.xMin - visible.width * 0.1f),
+            Mathf.Max(0f, visible.yMin - visible.height * 0.1f),
+            Mathf.Min(1f, visible.xMax + visible.width * 0.1f),
+            Mathf.Min(1f, visible.yMax + visible.height * 0.1f));
+        _resourceCoverageZoom = _navigation.Zoom;
+        _resourceViewportSize = _navigation.Viewport.rect.size;
+        _hasResourceCoverage = true;
+        _resourceViewDirty = false;
+        _dirtyResourceChunks.Clear();
+        _watchedResourceChunks.Clear();
+        float minX = _resourceCoverage.xMin * _mapData.TerrainSize.x;
+        float maxX = _resourceCoverage.xMax * _mapData.TerrainSize.x;
+        float minZ = _resourceCoverage.yMin * _mapData.TerrainSize.y;
+        float maxZ = _resourceCoverage.yMax * _mapData.TerrainSize.y;
         int chunkSize = _mapData.LogicData.ChunkSize;
-        bool markersChanged = false;
+        if (chunkSize <= 0) return;
+        // 청크 경계의 localOffset과 경계 위 자원을 포함하도록 인접 청크까지 조회한다.
+        int minChunkX = Mathf.Max(0, Mathf.FloorToInt(minX / chunkSize) - 1);
+        int maxChunkX = Mathf.Min(_mapData.TerrainSize.x / chunkSize, Mathf.FloorToInt(maxX / chunkSize) + 1);
+        int minChunkZ = Mathf.Max(0, Mathf.FloorToInt(minZ / chunkSize) - 1);
+        int maxChunkZ = Mathf.Min(_mapData.TerrainSize.y / chunkSize, Mathf.FloorToInt(maxZ / chunkSize) + 1);
+        WorldObjectSpawner spawner = GetResourceSpawner();
         _visibleResources.Clear();
-        foreach (ChunkData chunk in _mapData.LogicData.GetAllChunks())
+        _visibleResourceData.Clear();
+        // 전체 청크 목록을 복사/순회하지 않고 표시 영역의 좌표만 읽는다.
+        for (int z = minChunkZ; z <= maxChunkZ; z++)
+        for (int x = minChunkX; x <= maxChunkX; x++)
         {
-            if (chunk?.DisposeDatas == null) continue;
-            float chunkX = chunk.ChunkCoord.x * chunkSize;
-            float chunkZ = chunk.ChunkCoord.y * chunkSize;
-            if (chunkX > maxX || chunkX + chunkSize < minX
-                || chunkZ > maxZ || chunkZ + chunkSize < minZ) continue;
-            foreach (DisposeData dispose in chunk.DisposeDatas)
+            if (!_mapData.LogicData.TryGetChunk(new Vector2Int(x, z), out ChunkData chunk)
+                || chunk?.DisposeDatas == null) continue;
+            _watchedResourceChunks.Add(chunk);
+            foreach (ResourceMarkerData entry in GetResourceEntries(chunk))
             {
-                if (dispose == null || chunk.IsObjectDestroyed(dispose.instanceId)) continue;
-                Sprite icon = GetResourceIcon(dispose.prefabName);
-                if (icon == null) continue;
-
-                Vector3 worldPosition = new Vector3(dispose.tilePosition.x + dispose.localOffset.x,
-                    0f, dispose.tilePosition.y + dispose.localOffset.y);
-                if (WorldSpawnArea.Contains(_mapData.LogicData, worldPosition)) continue;
-                WorldGenManager world = WorldGenManager.Instance;
-                if (world != null && world.CurrentLogicData == _mapData.LogicData &&
-                    world.ChunkDirector?.ObjectSpawner?.IsSpawnExcluded(dispose.instanceId) == true) continue;
-                if (worldPosition.x < 0f || worldPosition.z < 0f || worldPosition.x > _mapData.TerrainSize.x
-                    || worldPosition.z > _mapData.TerrainSize.y) continue;
-                Vector2 normalized = _mapData.NormalizeWorldPosition(worldPosition);
-                if (normalized.x < visible.xMin || normalized.x > visible.xMax
-                    || normalized.y < visible.yMin || normalized.y > visible.yMax) continue;
-
+                DisposeData dispose = entry.Dispose;
+                if (!ShouldShowResource(entry, chunk, spawner)) continue;
                 _visibleResources.Add(dispose);
-                if (_resourceMarkers.ContainsKey(dispose)) continue;
-                AddResourceMarker(dispose, icon);
-                markersChanged = true;
+                _visibleResourceData.Add(entry);
             }
         }
 
@@ -404,22 +528,42 @@ public class UI_Panel_WorldMap : UI_Panel
         foreach (DisposeData dispose in _resourceMarkers.Keys)
             if (!_visibleResources.Contains(dispose)) _removedResources.Add(dispose);
         foreach (DisposeData dispose in _removedResources) RemoveResourceMarker(dispose);
-        if (_removedResources.Count > 0) markersChanged = true;
         _removedResources.Clear();
-        if (markersChanged) OrderResourceMarkers();
-        UpdateResourceMarkerPositions();
+        // 이탈한 마커를 먼저 반납하여 같은 갱신에서 새로 진입한 자원에 재사용한다.
+        foreach (ResourceMarkerData entry in _visibleResourceData)
+            if (!_resourceMarkers.ContainsKey(entry.Dispose)) AddResourceMarker(entry);
     }
 
-    private void OrderResourceMarkers()
+    private List<ResourceMarkerData> GetResourceEntries(ChunkData chunk)
     {
-        _orderedResources.Clear();
-        _orderedResources.AddRange(_resourceMarkers.Keys);
-        _orderedResources.Sort(CompareResourcePositions);
+        if (!_resourceChunkCache.TryGetValue(chunk, out ResourceChunkCache cache))
+        {
+            cache = new ResourceChunkCache();
+            _resourceChunkCache.Add(chunk, cache);
+            chunk.OnResourceStateChanged += HandleResourceStateChanged;
+        }
+        if (ReferenceEquals(cache.Source, chunk.DisposeDatas) && cache.Count == chunk.DisposeDatas.Count)
+            return cache.Entries;
 
-        // 같은 지도에서 월드 +X가 화면 오른쪽이다. 오른쪽 아이콘을 나중에 그려 겹침 순서를 고정한다.
-        int firstIndex = _mapImage.transform.GetSiblingIndex() + 1;
-        for (int i = 0; i < _orderedResources.Count; i++)
-            _resourceMarkers[_orderedResources[i]].SetSiblingIndex(firstIndex + i);
+        cache.Source = chunk.DisposeDatas;
+        cache.Count = cache.Source.Count;
+        cache.Entries.Clear();
+        foreach (DisposeData dispose in cache.Source)
+        {
+            if (dispose == null) continue;
+            Sprite icon = GetResourceIcon(dispose.prefabName);
+            if (icon == null) continue;
+            Vector3 position = new Vector3(dispose.tilePosition.x + dispose.localOffset.x,
+                0f, dispose.tilePosition.y + dispose.localOffset.y);
+            if (position.x < 0f || position.z < 0f || position.x > _mapData.TerrainSize.x
+                || position.z > _mapData.TerrainSize.y) continue;
+            cache.Entries.Add(new ResourceMarkerData
+            {
+                Dispose = dispose, Position = position, Icon = icon,
+                Normalized = _mapData.NormalizeWorldPosition(position)
+            });
+        }
+        return cache.Entries;
     }
 
     private static int CompareResourcePositions(DisposeData left, DisposeData right)
@@ -446,40 +590,50 @@ public class UI_Panel_WorldMap : UI_Panel
         _ => null
     };
 
-    private void AddResourceMarker(DisposeData dispose, Sprite icon)
+    private void CreateResourceMarkerLayer()
     {
-        var marker = new GameObject($"ResourceMarker_{dispose.prefabName}",
-            typeof(RectTransform), typeof(Image)).GetComponent<RectTransform>();
-        marker.gameObject.layer = _navigation.Viewport.gameObject.layer;
-        marker.SetParent(_navigation.Viewport, false);
-        marker.anchorMin = marker.anchorMax = Vector2.one * 0.5f;
-        marker.sizeDelta = Vector2.one * (_isExpanded ? _expandedResourceIconSize : _compactResourceIconSize);
-        Image image = marker.GetComponent<Image>();
-        image.sprite = icon;
-        image.raycastTarget = false;
-        if (_playerMarker != null) marker.SetSiblingIndex(_playerMarker.GetSiblingIndex());
-        _resourceMarkers.Add(dispose, marker);
+        if (_mapImage == null || _resourceMarkerLayer != null) return;
+        _resourceMarkerLayer = new GameObject("ResourceMarkers", typeof(RectTransform)).GetComponent<RectTransform>();
+        _resourceMarkerLayer.gameObject.layer = _mapImage.gameObject.layer;
+        // 지도와 함께 이동하되 scale은 1로 유지하여 줌에도 아이콘의 픽셀 크기를 고정한다.
+        _resourceMarkerLayer.SetParent(_mapImage.Rect, false);
+        _resourceMarkerLayer.anchorMin = Vector2.zero;
+        _resourceMarkerLayer.anchorMax = Vector2.one;
+        _resourceMarkerLayer.sizeDelta = Vector2.zero;
+        _resourceMarkerLayer.anchoredPosition = Vector2.zero;
     }
 
-    private void UpdateResourceMarkerPositions()
+    private void AddResourceMarker(ResourceMarkerData entry)
     {
-        if (_mapData?.Sprite == null || _navigation == null) return;
-        foreach (var pair in _resourceMarkers)
-        {
-            DisposeData dispose = pair.Key;
-            if (pair.Value == null) continue;
-            Vector3 worldPosition = new Vector3(dispose.tilePosition.x + dispose.localOffset.x,
-                0f, dispose.tilePosition.y + dispose.localOffset.y);
-            pair.Value.anchoredPosition = _navigation.NormalizedToViewportPosition(
-                _mapData.NormalizeWorldPosition(worldPosition));
-        }
+        DisposeData dispose = entry.Dispose;
+        RectTransform marker = _resourceMarkerPool.Count > 0 ? _resourceMarkerPool.Pop() :
+            new GameObject("ResourceMarker", typeof(RectTransform), typeof(Image)).GetComponent<RectTransform>();
+        marker.gameObject.layer = _resourceMarkerLayer.gameObject.layer;
+        if (marker.parent != _resourceMarkerLayer) marker.SetParent(_resourceMarkerLayer, false);
+        marker.anchorMin = marker.anchorMax = entry.Normalized;
+        marker.anchoredPosition = Vector2.zero;
+        marker.sizeDelta = Vector2.one * (_isExpanded ? _expandedResourceIconSize : _compactResourceIconSize);
+        Image image = marker.GetComponent<Image>();
+        image.sprite = entry.Icon;
+        image.raycastTarget = false;
+        // 기존 좌우 순서를 유지하고 새 마커만 이진 탐색한 위치에 삽입한다.
+        int index = _orderedResources.BinarySearch(dispose, ResourceOrder);
+        if (index < 0) index = ~index;
+        _orderedResources.Insert(index, dispose);
+        marker.SetSiblingIndex(index);
+        marker.gameObject.SetActive(true);
+        _resourceMarkers.Add(dispose, marker);
     }
 
     private void RemoveResourceMarker(DisposeData dispose)
     {
         if (!_resourceMarkers.Remove(dispose, out RectTransform marker) || marker == null) return;
+        _orderedResources.Remove(dispose);
         marker.gameObject.SetActive(false);
-        if (Application.isPlaying) Destroy(marker.gameObject);
+        marker.GetComponent<Image>().sprite = null;
+        marker.SetAsLastSibling();
+        if (_resourceMarkerPool.Count < _maxPooledResourceMarkers) _resourceMarkerPool.Push(marker);
+        else if (Application.isPlaying) Destroy(marker.gameObject);
         else DestroyImmediate(marker.gameObject);
     }
 
@@ -490,8 +644,12 @@ public class UI_Panel_WorldMap : UI_Panel
         foreach (DisposeData dispose in _removedResources) RemoveResourceMarker(dispose);
         _removedResources.Clear();
         _visibleResources.Clear();
+        _visibleResourceData.Clear();
         _orderedResources.Clear();
-        _nextResourceRefreshTime = 0f;
+        _hasResourceCoverage = false;
+        _resourceViewDirty = false;
+        _watchedResourceChunks.Clear();
+        _dirtyResourceChunks.Clear();
     }
 
     private void UpdateSightAreaRotation()

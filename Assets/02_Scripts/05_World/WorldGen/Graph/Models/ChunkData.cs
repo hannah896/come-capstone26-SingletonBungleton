@@ -7,6 +7,9 @@ using UnityEngine;
 /// </summary>
 public class ChunkData
 {
+    /// <summary>파괴/재생성 또는 스폰 배제 상태가 실제로 바뀐 청크만 알린다.</summary>
+    public event System.Action<ChunkData> OnResourceStateChanged;
+
     public Vector2Int ChunkCoord { get; private set; }
 
     // 청크 내부의 로컬 데이터 (크기: ChunkSize x ChunkSize)
@@ -38,6 +41,23 @@ public class ChunkData
         if (!DestroyedObjects.ContainsKey(instanceId))
         {
             DestroyedObjects.Add(instanceId, targetRespawnTime);
+            NotifyResourceStateChanged();
         }
     }
+
+    public bool MarkObjectRespawned(int instanceId)
+    {
+        if (!DestroyedObjects.Remove(instanceId)) return false;
+        NotifyResourceStateChanged();
+        return true;
+    }
+
+    public void ClearDestroyedObjects()
+    {
+        if (DestroyedObjects.Count == 0) return;
+        DestroyedObjects.Clear();
+        NotifyResourceStateChanged();
+    }
+
+    public void NotifyResourceStateChanged() => OnResourceStateChanged?.Invoke(this);
 }

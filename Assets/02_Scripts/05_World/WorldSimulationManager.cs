@@ -134,7 +134,7 @@ public class WorldSimulationManager : MonoBehaviour
         // 2. 파괴 목록에서 지워주고, 다시 맵에 스폰시키기
         foreach (int instanceId in toRespawn)
         {
-            chunk.DestroyedObjects.Remove(instanceId);
+            chunk.MarkObjectRespawned(instanceId);
 
             DisposeData targetData = chunk.DisposeDatas.Find(p => p.instanceId == instanceId);
 

@@ -1,0 +1,90 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!687078895 &4343727234628468602
+SpriteAtlas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: WorldMapResourceIcons
+  m_EditorData:
+    serializedVersion: 2
+    textureSettings:
+      serializedVersion: 2
+      anisoLevel: 1
+      compressionQuality: 50
+      maxTextureSize: 2048
+      textureCompression: 0
+      filterMode: 1
+      generateMipMaps: 0
+      readable: 0
+      crunchedCompression: 0
+      sRGB: 1
+    platformSettings:
+    - serializedVersion: 4
+      m_BuildTarget: DefaultTexturePlatform
+      m_MaxTextureSize: 1024
+      m_ResizeAlgorithm: 0
+      m_TextureFormat: 4
+      m_TextureCompression: 0
+      m_CompressionQuality: 50
+      m_CrunchedCompression: 0
+      m_AllowsAlphaSplitting: 0
+      m_Overridden: 0
+      m_IgnorePlatformSupport: 0
+      m_AndroidETC2FallbackOverride: 0
+      m_ForceMaximumCompressionQuality_BC6H_BC7: 0
+    - serializedVersion: 4
+      m_BuildTarget: Standalone
+      m_MaxTextureSize: 1024
+      m_ResizeAlgorithm: 0
+      m_TextureFormat: 4
+      m_TextureCompression: 0
+      m_CompressionQuality: 50
+      m_CrunchedCompression: 0
+      m_AllowsAlphaSplitting: 0
+      m_Overridden: 1
+      m_IgnorePlatformSupport: 0
+      m_AndroidETC2FallbackOverride: 0
+      m_ForceMaximumCompressionQuality_BC6H_BC7: 0
+    packingSettings:
+      serializedVersion: 2
+      padding: 4
+      blockOffset: 1
+      allowAlphaSplitting: 0
+      enableRotation: 0
+      enableTightPacking: 0
+      enableAlphaDilation: 0
+    secondaryTextureSettings: {}
+    variantMultiplier: 1
+    packables:
+    - {fileID: 21300000, guid: 9f3cb58a72c470043b03b698c7222913, type: 3}
+    - {fileID: 21300000, guid: 0a6870f562485c445b6b035283f7dc88, type: 3}
+    - {fileID: 21300000, guid: 48f957c96a7fd2f4c8bb1ca0d39c061d, type: 3}
+    - {fileID: 21300000, guid: c0698360febc38442aa2dade8cf1533d, type: 3}
+    - {fileID: 21300000, guid: 2dfec2705713c1246bcb7c81761098e1, type: 3}
+    bindAsDefault: 1
+    isAtlasV2: 0
+    cachedData: {fileID: 0}
+    packedSpriteRenderDataKeys:
+    - c0698360febc38442aa2dade8cf1533d: 21300000
+    - 2dfec2705713c1246bcb7c81761098e1: 21300000
+    - 0a6870f562485c445b6b035283f7dc88: 21300000
+    - 48f957c96a7fd2f4c8bb1ca0d39c061d: 21300000
+    - 9f3cb58a72c470043b03b698c7222913: 21300000
+  m_MasterAtlas: {fileID: 0}
+  m_PackedSprites:
+  - {fileID: 21300000, guid: c0698360febc38442aa2dade8cf1533d, type: 3}
+  - {fileID: 21300000, guid: 2dfec2705713c1246bcb7c81761098e1, type: 3}
+  - {fileID: 21300000, guid: 0a6870f562485c445b6b035283f7dc88, type: 3}
+  - {fileID: 21300000, guid: 48f957c96a7fd2f4c8bb1ca0d39c061d, type: 3}
+  - {fileID: 21300000, guid: 9f3cb58a72c470043b03b698c7222913, type: 3}
+  m_PackedSpriteNamesToIndex:
+  - ResourceNode_Grass_icon
+  - ResourceNode_Rock_icon
+  - ResourceNode_Bush_icon
+  - ResourceNode_Fir_icon
+  - ResourceNode_Branch_icon
+  m_RenderDataMap: {}
+  m_Tag: WorldMapResourceIcons
+  m_IsVariant: 0

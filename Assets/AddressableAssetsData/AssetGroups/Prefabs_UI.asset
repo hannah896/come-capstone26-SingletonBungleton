@@ -45,6 +45,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 40f9cc176d15f2749843e64e6d65eedd
+    m_Address: WorldMapResourceIcons
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 45dc1db2f43944772bc1917712a974bc
     m_Address: UI_LoadingCanvas
     m_ReadOnly: 0

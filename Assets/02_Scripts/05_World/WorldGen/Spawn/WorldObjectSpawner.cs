@@ -26,6 +26,7 @@ public class WorldObjectSpawner
     private readonly Dictionary<Vector2Int, List<SpawnedObject>> _activeChunkObjects = new Dictionary<Vector2Int, List<SpawnedObject>>();
     private readonly Dictionary<Vector2Int, Transform> _activeChunkRoots = new Dictionary<Vector2Int, Transform>();
     private readonly HashSet<int> _spawnExcludedIds = new HashSet<int>();
+    private readonly HashSet<ChunkData> _spawnExcludedChunks = new();
 
     public bool IsSpawnExcluded(int instanceId) => _spawnExcludedIds.Contains(instanceId);
 
@@ -37,7 +38,7 @@ public class WorldObjectSpawner
     {
         _chunkSize = logicData != null ? logicData.ChunkSize : 0;
         _logicData = logicData;
-        _spawnExcludedIds.Clear();
+        ClearSpawnExclusions();
         _root = root;
     }
 
@@ -64,7 +65,7 @@ public class WorldObjectSpawner
             Vector3 position = GetDisposeWorldPosition(chunk, dispose, _chunkSize);
             if (WorldSpawnArea.Contains(_logicData, position))
             {
-                _spawnExcludedIds.Add(dispose.instanceId);
+                ExcludeSpawn(chunk, dispose.instanceId);
                 continue;
             }
 
@@ -83,7 +84,7 @@ public class WorldObjectSpawner
 
             if (WorldSpawnArea.Intersects(_logicData, instance))
             {
-                _spawnExcludedIds.Add(dispose.instanceId);
+                ExcludeSpawn(chunk, dispose.instanceId);
                 Extensions.Despawn(instance);
                 continue;
             }
@@ -109,7 +110,7 @@ public class WorldObjectSpawner
         Vector3 position = GetDisposeWorldPosition(chunk, dispose, _chunkSize);
         if (WorldSpawnArea.Contains(_logicData, position))
         {
-            _spawnExcludedIds.Add(dispose.instanceId);
+            ExcludeSpawn(chunk, dispose.instanceId);
             return;
         }
 
@@ -126,7 +127,7 @@ public class WorldObjectSpawner
         instance.transform.localScale = dispose.scale;
         if (WorldSpawnArea.Intersects(_logicData, instance))
         {
-            _spawnExcludedIds.Add(dispose.instanceId);
+            ExcludeSpawn(chunk, dispose.instanceId);
             Extensions.Despawn(instance);
             return;
         }
@@ -200,12 +201,26 @@ public class WorldObjectSpawner
 
     public void Clear()
     {
-        _spawnExcludedIds.Clear();
+        ClearSpawnExclusions();
         List<Vector2Int> coords = new List<Vector2Int>(_activeChunkObjects.Keys);
         foreach (Vector2Int coord in coords)
         {
             DespawnChunkObjects(coord);
         }
+    }
+
+    private void ExcludeSpawn(ChunkData chunk, int instanceId)
+    {
+        if (!_spawnExcludedIds.Add(instanceId)) return;
+        _spawnExcludedChunks.Add(chunk);
+        chunk.NotifyResourceStateChanged();
+    }
+
+    private void ClearSpawnExclusions()
+    {
+        _spawnExcludedIds.Clear();
+        foreach (ChunkData chunk in _spawnExcludedChunks) chunk.NotifyResourceStateChanged();
+        _spawnExcludedChunks.Clear();
     }
 
     private Transform GetOrCreateChunkRoot(Vector2Int coord, Transform parent)

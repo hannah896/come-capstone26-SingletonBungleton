@@ -26,6 +26,11 @@ public sealed class UI_MapViewport : MonoBehaviour, IScrollHandler, IBeginDragHa
     private bool _fillViewport;
     private bool _followTarget;
     private int? _dragPointerId;
+    private Vector2 _lastViewCenter;
+    private Vector2 _lastContentSize;
+    private Vector2 _lastViewportSize;
+
+    public event System.Action OnViewChanged;
 
     public UI_Image MapImage { get; private set; }
     public RectTransform Viewport => _viewport;
@@ -155,7 +160,17 @@ public sealed class UI_MapViewport : MonoBehaviour, IScrollHandler, IBeginDragHa
         MapImage.Rect.anchoredPosition = Vector2.Scale(Middle - _center, _contentSize);
         if (_marker != null)
             _marker.anchoredPosition = NormalizedToViewportPosition(_markerPosition);
+
+        if (_lastViewCenter != _center || _lastContentSize != _contentSize || _lastViewportSize != size)
+        {
+            _lastViewCenter = _center;
+            _lastContentSize = _contentSize;
+            _lastViewportSize = size;
+            OnViewChanged?.Invoke();
+        }
     }
+
+    private void OnRectTransformDimensionsChange() => Refresh();
 
     public void SetMarkerPosition(Vector2 normalizedPosition)
     {
@@ -170,7 +185,6 @@ public sealed class UI_MapViewport : MonoBehaviour, IScrollHandler, IBeginDragHa
 
     public void OnScroll(PointerEventData eventData)
     {
-        Debug.Log($"OnScroll 감지됨");
         if (!CanNavigate() || !RectTransformUtility.RectangleContainsScreenPoint(
                 _viewport, eventData.position, eventData.enterEventCamera)) return;
         if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(

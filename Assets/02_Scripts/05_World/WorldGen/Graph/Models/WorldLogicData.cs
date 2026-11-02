@@ -23,6 +23,9 @@ public class WorldLogicData
     // 렌더 중인 청크뿐 아니라 언로드된 청크의 변경분까지 저장해야 한다.
     public IEnumerable<ChunkData> GetAllChunks() => _chunks.Values;
 
+    /// <summary>지도 등의 읽기 작업에서 빈 청크를 생성하지 않고 조회한다.</summary>
+    public bool TryGetChunk(Vector2Int coord, out ChunkData chunk) => _chunks.TryGetValue(coord, out chunk);
+
     public int[,] TerritoryWorld { get; set; }  // -1: 바다/벽, >=0: 노드 인덱스
     public float[,] HeightWorld { get; set; }   // 타일별 실제 높이
     public int[,] BorderWorld { get; set; }     // -2: 경계선
