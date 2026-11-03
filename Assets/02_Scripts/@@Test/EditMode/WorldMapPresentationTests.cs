@@ -463,16 +463,17 @@ public class WorldMapPresentationTests : InputTestFixture
         Assert.That(markers.Count, Is.EqualTo(5));
         for (int i = 0; i < names.Length; i++)
         {
-            var marker = (RectTransform)markers[resources[i]];
+            object marker = markers[resources[i]];
             var expected = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(
                 $"Assets/Sprites/Icons/ResourceNode/ResourceNode_{names[i]}_icon.png");
-            Assert.That(marker.GetComponent<Image>().sprite, Is.SameAs(expected));
-            Assert.That(marker.sizeDelta, Is.EqualTo(Vector2.one * 16f));
+            Assert.That(Field(marker, "Icon"), Is.SameAs(expected));
         }
+        foreach (Component graphic in ResourceGraphics) Assert.That(Property(graphic, "IconSize"), Is.EqualTo(16f));
+        var drawOrder = OrderedResourceDisposes();
         int[] leftToRight = { 1, 3, 4, 2, 0 };
         for (int i = 1; i < leftToRight.Length; i++)
-            Assert.That(((RectTransform)markers[resources[leftToRight[i]]]).GetSiblingIndex(),
-                Is.GreaterThan(((RectTransform)markers[resources[leftToRight[i - 1]]]).GetSiblingIndex()));
+            Assert.That(drawOrder.IndexOf(resources[leftToRight[i]]),
+                Is.GreaterThan(drawOrder.IndexOf(resources[leftToRight[i - 1]])));
 
         Invoke(chunk, "MarkObjectDestroyed", 1, 100f);
         Invoke(_map, "FlushResourceChanges");
@@ -492,7 +493,7 @@ public class WorldMapPresentationTests : InputTestFixture
         Invoke(_hud, "ToggleMap");
         Layout();
         Invoke(_map, "RefreshResourceMarkers");
-        Assert.That(((RectTransform)markers[resources[0]]).sizeDelta, Is.EqualTo(Vector2.one * 30f));
+        foreach (Component graphic in ResourceGraphics) Assert.That(Property(graphic, "IconSize"), Is.EqualTo(30f));
 
         // 제단의 비워 둔 공간에는 실제 자원이 없으므로 지도 아이콘도 표시하지 않는다.
         logic.GetType().GetProperty("SpawnTile").SetValue(logic, new Vector2Int(52, 50));
@@ -507,7 +508,7 @@ public class WorldMapPresentationTests : InputTestFixture
         (System.Collections.IDictionary)Field(_map, "_remoteMarkers");
 
     [Test]
-    public void ResourceMarkers_ReuseFiveHundredViewsAndKeepPositionsAndOrderAcrossZoom()
+    public void ResourceMarkers_BatchFiveHundredIconsAndKeepOrderAcrossZoomAndEvents()
     {
         var logic = Activator.CreateInstance(FindType("WorldLogicData"), new Vector2Int(100, 100), 10);
         logic.GetType().GetProperty("SpawnTile").SetValue(logic, new Vector2Int(10, 10));
@@ -533,11 +534,14 @@ public class WorldMapPresentationTests : InputTestFixture
         Invoke(_map, "RefreshResourceMarkers");
         var markers = (System.Collections.IDictionary)Field(_map, "_resourceMarkers");
         Assert.That(markers.Count, Is.EqualTo(500));
-        var originalViews = new System.Collections.Generic.HashSet<RectTransform>();
-        foreach (RectTransform view in markers.Values) originalViews.Add(view);
-        var first = (RectTransform)markers[resources[0]];
-        var layer = first.parent;
+        var originalViews = new System.Collections.Generic.HashSet<Component>(ResourceGraphics);
+        Assert.That(originalViews.Count, Is.EqualTo(2), "500개 자원을 X 구간별 두 Graphic으로 표시한다.");
+        object first = markers[resources[0]];
+        var layer = (RectTransform)Field(_map, "_resourceMarkerLayer");
         Assert.That(layer.parent, Is.SameAs(((Component)Property(_navigation, "MapImage")).transform));
+        Assert.That(layer.GetComponent<Canvas>(), Is.Not.Null);
+        Assert.That(layer.GetComponentsInChildren<Image>(true), Is.Empty,
+            "자원별 Image는 생성하지 않는다.");
         Assert.That(_map.GetComponent<Canvas>(), Is.Not.Null);
         Assert.That(_map.GetComponent<Canvas>().overrideSorting, Is.False);
 
@@ -547,40 +551,55 @@ public class WorldMapPresentationTests : InputTestFixture
         Invoke(_map, "UpdatePlayerMarker");
         Layout();
         var content = ((Component)Property(_navigation, "MapImage")).GetComponent<RectTransform>();
-        Vector3 expected = content.TransformPoint(Vector2.Scale(new Vector2(0.44f, 0.44f)
-            - Vector2.one * 0.5f, content.rect.size));
-        Assert.That(Vector3.Distance(first.position, expected), Is.LessThan(0.01f));
-        Assert.That(first.sizeDelta, Is.EqualTo(Vector2.one * 16f));
-        Assert.That(first.anchoredPosition, Is.EqualTo(Vector2.zero));
+        Assert.That(Field(first, "Normalized"), Is.EqualTo(new Vector2(0.44f, 0.44f)));
+        foreach (Component graphic in ResourceGraphics)
+        {
+            Assert.That(Property(graphic, "IconSize"), Is.EqualTo(16f));
+            Assert.That(((RectTransform)graphic.transform).rect.size,
+                Is.EqualTo(content.rect.size + Vector2.one * 16f));
+        }
 
         target.position = new Vector3(95, 0, 95);
         Invoke(_map, "UpdatePlayerMarker");
         Invoke(_map, "RefreshResourceMarkers");
         Assert.That(markers.Count, Is.Zero);
-        Assert.That(layer.childCount, Is.EqualTo(500));
-        foreach (RectTransform view in originalViews) Assert.That(view.gameObject.activeSelf, Is.False);
+        Assert.That(layer.childCount, Is.EqualTo(2));
+        foreach (Component view in originalViews) Assert.That(view.gameObject.activeSelf, Is.False);
         target.position = new Vector3(50, 0, 50);
         _navigation.GetType().GetProperty("Zoom").SetValue(_navigation, 4f);
         Invoke(_map, "UpdatePlayerMarker");
         Invoke(_map, "RefreshResourceMarkers");
         Assert.That(markers.Count, Is.EqualTo(500));
-        Assert.That(layer.childCount, Is.EqualTo(500), "이동 후 새 UI를 만들지 않고 기존 500개를 재사용한다.");
-        foreach (RectTransform view in markers.Values) Assert.That(originalViews.Contains(view), Is.True);
+        Assert.That(layer.childCount, Is.EqualTo(2), "이동 후에도 기존 두 Graphic만 재사용한다.");
+        foreach (Component view in ResourceGraphics) Assert.That(originalViews.Contains(view), Is.True);
 
         // 중간 마커 하나의 파괴/재생성에서도 나머지 UI와 좌우 순서는 유지한다.
         var victim = resources[250];
-        var victimView = (RectTransform)markers[victim];
+        object victimView = markers[victim];
         var victimTile = (Vector2Int)victim.GetType().GetField("tilePosition").GetValue(victim);
         var victimChunk = Invoke(logic, "GetOrCreateChunk", new Vector2Int(victimTile.x / 10, victimTile.y / 10));
+        var unchangedGraphic = (Graphic)ResourceGraphics[1];
+        int unrelatedMeshChanges = 0;
+        UnityEngine.Events.UnityAction trackUnrelatedChange = () => unrelatedMeshChanges++;
+        unchangedGraphic.RegisterDirtyVerticesCallback(trackUnrelatedChange);
+        Invoke(_map, "FlushResourceChanges");
         Invoke(victimChunk, "MarkObjectDestroyed", 251, 100f);
         Invoke(_map, "FlushResourceChanges");
         Assert.That(markers.Count, Is.EqualTo(499));
         Invoke(victimChunk, "MarkObjectRespawned", 251);
         Invoke(_map, "FlushResourceChanges");
         Assert.That(markers[victim], Is.SameAs(victimView));
-        var ordered = (System.Collections.IList)Field(_map, "_orderedResources");
-        for (int i = 0; i < ordered.Count; i++)
-            Assert.That(((RectTransform)markers[ordered[i]]).GetSiblingIndex(), Is.EqualTo(i));
+        Assert.That(unrelatedMeshChanges, Is.Zero, "다른 X 구간의 메시에는 갱신을 요청하지 않는다.");
+        unchangedGraphic.UnregisterDirtyVerticesCallback(trackUnrelatedChange);
+        var ordered = OrderedResourceDisposes();
+        Assert.That(ordered.Count, Is.EqualTo(500));
+        int previousX = -1;
+        foreach (object dispose in ordered)
+        {
+            int x = ((Vector2Int)Field(dispose, "tilePosition")).x;
+            Assert.That(x, Is.GreaterThanOrEqualTo(previousX));
+            previousX = x;
+        }
 
         // 작은 이동은 캐시한 여유 영역 안에서 부모만 움직이고, 범위를 벗어나면 목록을 바꾼다.
         target.position = new Vector3(50.1f, 0, 50);
@@ -601,6 +620,22 @@ public class WorldMapPresentationTests : InputTestFixture
         Invoke(_map, "ClearView");
         Invoke(victimChunk, "MarkObjectRespawned", 251);
         Assert.That((int)Property(dirtyChunks, "Count"), Is.Zero, "해제한 지도의 청크 이벤트를 계속 받으면 안 된다.");
+    }
+
+    private Component[] ResourceGraphics => Array.FindAll(
+        _map.GetComponentsInChildren(FindType("UI_ResourceMarkerGraphic"), true),
+        graphic => graphic.gameObject.activeInHierarchy);
+
+    private System.Collections.Generic.List<object> OrderedResourceDisposes()
+    {
+        var result = new System.Collections.Generic.List<object>();
+        foreach (object pair in (System.Collections.IEnumerable)Field(_map, "_resourceColumns"))
+        {
+            object column = Property(pair, "Value");
+            foreach (object entry in (System.Collections.IEnumerable)Field(column, "Entries"))
+                result.Add(Field(entry, "Dispose"));
+        }
+        return result;
     }
 
     [Test]

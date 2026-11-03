@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
+using UnityEngine.U2D;
 
 /// <summary>
 /// <see cref="WorldMap"/>의 전체 지도를 HUD와 확대 화면에서 공유하는 View다.
@@ -33,7 +34,7 @@ public class UI_Panel_WorldMap : UI_Panel
     [SerializeField] private Sprite _rockIcon;
     [SerializeField, Min(1f)] private float _compactResourceIconSize = 16f;
     [SerializeField, Min(1f)] private float _expandedResourceIconSize = 30f;
-    [SerializeField, Min(0)] private int _maxPooledResourceMarkers = 2048;
+    [SerializeField, Min(0)] private int _maxPooledResourceGraphics = 32;
 
     [Header("Viewport Settings")]
     [Tooltip("인게임 진입 및 더블클릭 시 플레이어 주변을 보여 주는 기본 확대 배율이다.")]
@@ -52,11 +53,12 @@ public class UI_Panel_WorldMap : UI_Panel
     private readonly Dictionary<Transform, RectTransform> _remoteMarkers = new();
     private readonly HashSet<Transform> _remoteTargets = new();
     private readonly List<Transform> _removedTargets = new();
-    private readonly Dictionary<DisposeData, RectTransform> _resourceMarkers = new();
+    private readonly Dictionary<DisposeData, ResourceMarkerData> _resourceMarkers = new();
     private readonly HashSet<DisposeData> _visibleResources = new();
     private readonly List<DisposeData> _removedResources = new();
-    private readonly List<DisposeData> _orderedResources = new();
-    private readonly Stack<RectTransform> _resourceMarkerPool = new();
+    private readonly SortedDictionary<int, ResourceColumn> _resourceColumns = new();
+    private readonly HashSet<int> _dirtyResourceColumns = new();
+    private readonly Stack<UI_ResourceMarkerGraphic> _resourceGraphicPool = new();
     private readonly Dictionary<ChunkData, ResourceChunkCache> _resourceChunkCache = new();
     private readonly List<ResourceMarkerData> _visibleResourceData = new();
     private RectTransform _resourceMarkerLayer;
@@ -67,8 +69,10 @@ public class UI_Panel_WorldMap : UI_Panel
     private Rect _resourceCoverage;
     private float _resourceCoverageZoom;
     private Vector2 _resourceViewportSize;
-    private static readonly IComparer<DisposeData> ResourceOrder =
-        Comparer<DisposeData>.Create(CompareResourcePositions);
+    private bool _resourceGraphicOrderDirty;
+    private bool _resourceAtlasDirty;
+    private static readonly IComparer<ResourceMarkerData> ResourceOrder =
+        Comparer<ResourceMarkerData>.Create((left, right) => CompareResourcePositions(left.Dispose, right.Dispose));
 
     // 고정 배치는 캐시하고, 파괴/재생성과 스폰 배제는 청크의 변경 알림으로만 반영한다.
     private sealed class ResourceMarkerData
@@ -77,6 +81,7 @@ public class UI_Panel_WorldMap : UI_Panel
         public Vector3 Position;
         public Vector2 Normalized;
         public Sprite Icon;
+        public int Column;
     }
 
     private sealed class ResourceChunkCache
@@ -84,6 +89,14 @@ public class UI_Panel_WorldMap : UI_Panel
         public List<DisposeData> Source;
         public int Count;
         public readonly List<ResourceMarkerData> Entries = new();
+    }
+
+    // X 구간 내부는 모든 Z 청크를 함께 정렬하여 기존 아이콘 겹침 순서를 그대로 유지한다.
+    private sealed class ResourceColumn
+    {
+        public readonly List<ResourceMarkerData> Entries = new();
+        public readonly List<UI_ResourceMarkerGraphic.Icon> Icons = new();
+        public readonly List<UI_ResourceMarkerGraphic> Graphics = new();
     }
 
     public Transform Target => _target;
@@ -108,6 +121,7 @@ public class UI_Panel_WorldMap : UI_Panel
         if (_navigation != null) _mapImage = _navigation.MapImage;
         CreateResourceMarkerLayer();
         if (_navigation != null) _navigation.OnViewChanged += HandleMapViewChanged;
+        SpriteAtlasManager.atlasRegistered += HandleResourceAtlasRegistered;
         SetExpanded(false);
         return true;
     }
@@ -125,8 +139,8 @@ public class UI_Panel_WorldMap : UI_Panel
         foreach (RectTransform marker in _remoteMarkers.Values)
             if (marker != null) marker.sizeDelta = Vector2.one * markerSize;
         float resourceSize = expanded ? _expandedResourceIconSize : _compactResourceIconSize;
-        foreach (RectTransform marker in _resourceMarkers.Values)
-            if (marker != null) marker.sizeDelta = Vector2.one * resourceSize;
+        foreach (ResourceColumn column in _resourceColumns.Values)
+            foreach (UI_ResourceMarkerGraphic graphic in column.Graphics) graphic.SetIconSize(resourceSize);
         _navigation?.CancelDrag();
         _navigation?.Refresh();
         RefreshResourceMarkers();
@@ -151,6 +165,7 @@ public class UI_Panel_WorldMap : UI_Panel
     private void OnDestroy()
     {
         if (_navigation != null) _navigation.OnViewChanged -= HandleMapViewChanged;
+        SpriteAtlasManager.atlasRegistered -= HandleResourceAtlasRegistered;
         ClearResourceChunkCache();
     }
 
@@ -427,14 +442,29 @@ public class UI_Panel_WorldMap : UI_Panel
         if (_watchedResourceChunks.Contains(chunk)) _dirtyResourceChunks.Add(chunk);
     }
 
+    private void HandleResourceAtlasRegistered(SpriteAtlas atlas)
+    {
+        if ((_branchIcon != null && atlas.CanBindTo(_branchIcon))
+            || (_bushIcon != null && atlas.CanBindTo(_bushIcon))
+            || (_firIcon != null && atlas.CanBindTo(_firIcon))
+            || (_grassIcon != null && atlas.CanBindTo(_grassIcon))
+            || (_rockIcon != null && atlas.CanBindTo(_rockIcon)))
+            _resourceAtlasDirty = true;
+    }
+
     private void FlushResourceChanges()
     {
+        if (_resourceAtlasDirty)
+        {
+            foreach (int column in _resourceColumns.Keys) _dirtyResourceColumns.Add(column);
+            _resourceAtlasDirty = false;
+        }
         if (_resourceViewDirty)
         {
             RefreshResourceMarkers();
             return;
         }
-        if (_dirtyResourceChunks.Count == 0 || _mapData?.LogicData == null) return;
+        if (_mapData?.LogicData == null || (_dirtyResourceChunks.Count == 0 && _dirtyResourceColumns.Count == 0)) return;
         WorldObjectSpawner spawner = GetResourceSpawner();
         foreach (ChunkData chunk in _dirtyResourceChunks)
         {
@@ -448,6 +478,7 @@ public class UI_Panel_WorldMap : UI_Panel
             }
         }
         _dirtyResourceChunks.Clear();
+        RebuildResourceGraphics();
     }
 
     private WorldObjectSpawner GetResourceSpawner()
@@ -532,6 +563,7 @@ public class UI_Panel_WorldMap : UI_Panel
         // 이탈한 마커를 먼저 반납하여 같은 갱신에서 새로 진입한 자원에 재사용한다.
         foreach (ResourceMarkerData entry in _visibleResourceData)
             if (!_resourceMarkers.ContainsKey(entry.Dispose)) AddResourceMarker(entry);
+        RebuildResourceGraphics();
     }
 
     private List<ResourceMarkerData> GetResourceEntries(ChunkData chunk)
@@ -560,7 +592,8 @@ public class UI_Panel_WorldMap : UI_Panel
             cache.Entries.Add(new ResourceMarkerData
             {
                 Dispose = dispose, Position = position, Icon = icon,
-                Normalized = _mapData.NormalizeWorldPosition(position)
+                Normalized = _mapData.NormalizeWorldPosition(position),
+                Column = Mathf.FloorToInt(position.x / Mathf.Max(1, _mapData.LogicData.ChunkSize))
             });
         }
         return cache.Entries;
@@ -601,51 +634,113 @@ public class UI_Panel_WorldMap : UI_Panel
         _resourceMarkerLayer.anchorMax = Vector2.one;
         _resourceMarkerLayer.sizeDelta = Vector2.zero;
         _resourceMarkerLayer.anchoredPosition = Vector2.zero;
+        // 자원 메시의 배치 계산을 매 프레임 움직이는 플레이어/시야각과 분리한다.
+        _resourceMarkerLayer.gameObject.AddComponent<Canvas>();
     }
 
     private void AddResourceMarker(ResourceMarkerData entry)
     {
-        DisposeData dispose = entry.Dispose;
-        RectTransform marker = _resourceMarkerPool.Count > 0 ? _resourceMarkerPool.Pop() :
-            new GameObject("ResourceMarker", typeof(RectTransform), typeof(Image)).GetComponent<RectTransform>();
-        marker.gameObject.layer = _resourceMarkerLayer.gameObject.layer;
-        if (marker.parent != _resourceMarkerLayer) marker.SetParent(_resourceMarkerLayer, false);
-        marker.anchorMin = marker.anchorMax = entry.Normalized;
-        marker.anchoredPosition = Vector2.zero;
-        marker.sizeDelta = Vector2.one * (_isExpanded ? _expandedResourceIconSize : _compactResourceIconSize);
-        Image image = marker.GetComponent<Image>();
-        image.sprite = entry.Icon;
-        image.raycastTarget = false;
-        // 기존 좌우 순서를 유지하고 새 마커만 이진 탐색한 위치에 삽입한다.
-        int index = _orderedResources.BinarySearch(dispose, ResourceOrder);
-        if (index < 0) index = ~index;
-        _orderedResources.Insert(index, dispose);
-        marker.SetSiblingIndex(index);
-        marker.gameObject.SetActive(true);
-        _resourceMarkers.Add(dispose, marker);
+        _resourceMarkers.Add(entry.Dispose, entry);
+        if (!_resourceColumns.TryGetValue(entry.Column, out ResourceColumn column))
+        {
+            column = new ResourceColumn();
+            _resourceColumns.Add(entry.Column, column);
+            _resourceGraphicOrderDirty = true;
+        }
+        column.Entries.Add(entry);
+        _dirtyResourceColumns.Add(entry.Column);
     }
 
     private void RemoveResourceMarker(DisposeData dispose)
     {
-        if (!_resourceMarkers.Remove(dispose, out RectTransform marker) || marker == null) return;
-        _orderedResources.Remove(dispose);
-        marker.gameObject.SetActive(false);
-        marker.GetComponent<Image>().sprite = null;
-        marker.SetAsLastSibling();
-        if (_resourceMarkerPool.Count < _maxPooledResourceMarkers) _resourceMarkerPool.Push(marker);
-        else if (Application.isPlaying) Destroy(marker.gameObject);
-        else DestroyImmediate(marker.gameObject);
+        if (!_resourceMarkers.Remove(dispose, out ResourceMarkerData entry)) return;
+        _resourceColumns[entry.Column].Entries.Remove(entry);
+        _dirtyResourceColumns.Add(entry.Column);
+    }
+
+    private UI_ResourceMarkerGraphic RentResourceGraphic()
+    {
+        UI_ResourceMarkerGraphic graphic = _resourceGraphicPool.Count > 0 ? _resourceGraphicPool.Pop() :
+            new GameObject("ResourceMarkerBatch", typeof(RectTransform), typeof(UI_ResourceMarkerGraphic))
+                .GetComponent<UI_ResourceMarkerGraphic>();
+        graphic.gameObject.layer = _resourceMarkerLayer.gameObject.layer;
+        RectTransform rect = graphic.rectTransform;
+        if (rect.parent != _resourceMarkerLayer) rect.SetParent(_resourceMarkerLayer, false);
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.pivot = Vector2.one * 0.5f;
+        rect.anchoredPosition = Vector2.zero;
+        graphic.gameObject.SetActive(true);
+        return graphic;
+    }
+
+    private void ReturnResourceGraphic(UI_ResourceMarkerGraphic graphic)
+    {
+        graphic.gameObject.SetActive(false);
+        graphic.ClearIcons();
+        graphic.transform.SetAsLastSibling();
+        if (_resourceGraphicPool.Count < _maxPooledResourceGraphics) _resourceGraphicPool.Push(graphic);
+        else if (Application.isPlaying) Destroy(graphic.gameObject);
+        else DestroyImmediate(graphic.gameObject);
+    }
+
+    private void RebuildResourceGraphics()
+    {
+        foreach (int key in _dirtyResourceColumns)
+        {
+            ResourceColumn column = _resourceColumns[key];
+            column.Entries.Sort(ResourceOrder);
+            column.Icons.Clear();
+            foreach (ResourceMarkerData entry in column.Entries)
+                if (entry.Icon != null && entry.Icon.texture != null)
+                    column.Icons.Add(new UI_ResourceMarkerGraphic.Icon(entry.Icon, entry.Normalized));
+
+            int used = 0;
+            for (int start = 0; start < column.Icons.Count;)
+            {
+                Texture texture = column.Icons[start].Sprite.texture;
+                int end = start + 1;
+                // Atlas 준비 전에도 서로 다른 텍스처를 한 메시로 잘못 그리지 않는다.
+                while (end < column.Icons.Count && end - start < UI_ResourceMarkerGraphic.MaxIcons
+                    && column.Icons[end].Sprite.texture == texture) end++;
+                if (used == column.Graphics.Count)
+                {
+                    column.Graphics.Add(RentResourceGraphic());
+                    _resourceGraphicOrderDirty = true;
+                }
+                column.Graphics[used++].SetIcons(column.Icons, start, end - start, texture,
+                    _isExpanded ? _expandedResourceIconSize : _compactResourceIconSize);
+                start = end;
+            }
+            for (int i = column.Graphics.Count - 1; i >= used; i--)
+            {
+                ReturnResourceGraphic(column.Graphics[i]);
+                column.Graphics.RemoveAt(i);
+                _resourceGraphicOrderDirty = true;
+            }
+            if (column.Entries.Count == 0) _resourceColumns.Remove(key);
+        }
+        _dirtyResourceColumns.Clear();
+        if (!_resourceGraphicOrderDirty) return;
+        int sibling = 0;
+        foreach (ResourceColumn column in _resourceColumns.Values)
+            foreach (UI_ResourceMarkerGraphic graphic in column.Graphics)
+                if (graphic.transform.GetSiblingIndex() != sibling++) graphic.transform.SetSiblingIndex(sibling - 1);
+        _resourceGraphicOrderDirty = false;
     }
 
     private void ClearResourceMarkers()
     {
-        _removedResources.Clear();
-        _removedResources.AddRange(_resourceMarkers.Keys);
-        foreach (DisposeData dispose in _removedResources) RemoveResourceMarker(dispose);
+        foreach (ResourceColumn column in _resourceColumns.Values)
+            foreach (UI_ResourceMarkerGraphic graphic in column.Graphics) ReturnResourceGraphic(graphic);
+        _resourceColumns.Clear();
+        _dirtyResourceColumns.Clear();
+        _resourceGraphicOrderDirty = false;
+        _resourceAtlasDirty = false;
+        _resourceMarkers.Clear();
         _removedResources.Clear();
         _visibleResources.Clear();
         _visibleResourceData.Clear();
-        _orderedResources.Clear();
         _hasResourceCoverage = false;
         _resourceViewDirty = false;
         _watchedResourceChunks.Clear();
