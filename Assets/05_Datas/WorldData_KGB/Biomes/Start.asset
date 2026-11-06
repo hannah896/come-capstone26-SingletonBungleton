@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4b29b41b2b0ac1442925d390d0edbb35, type: 3}
-  m_Name: Starts
+  m_Name: Start
   m_EditorClassIdentifier: 
   BiomeType: 0
   DebugColor: {r: 0.16470589, g: 0.16470589, b: 0.16470589, a: 1}
@@ -22,7 +22,7 @@ MonoBehaviour:
     MinWetDays: 0.5
     MaxWetDays: 1
   BiomeDisposeRule: {fileID: 11400000, guid: 5b73ce8a62c46224391c7eadf29af994, type: 2}
-  BiomeSpawnRule: {fileID: 0}
+  BiomeSpawnRule: {fileID: 11400000, guid: f0337f056055d6142b1d0db33c83c4ed, type: 2}
   TopKey: Plains_Top
   AltKey: Plains_Alt
   CliffKey: 

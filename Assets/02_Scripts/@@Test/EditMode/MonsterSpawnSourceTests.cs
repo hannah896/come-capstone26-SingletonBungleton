@@ -103,7 +103,7 @@ public class MonsterSpawnSourceTests
     public void PlacementRulesAndSpawnRules_KeepTheirSeparateSerializationContracts()
     {
         Assert.That(FindType("CountDisposeRule").GetFields(BindingFlags.Instance | BindingFlags.Public)
-            .Select(field => field.Name), Is.EquivalentTo(new[] { "ruleName", "prefabKey", "minCount", "maxCount" }));
+            .Select(field => field.Name), Is.EquivalentTo(new[] { "prefabKey", "minCount", "maxCount" }));
         Assert.That(FindType("DisposeData").GetField("monsterSpawnRule"), Is.Null);
         Type sourceRule = FindType("SourceSpawnRule");
         foreach (string field in new[] { "placementRadius", "maxHeightDifference", "minDistanceFromWorldStart" })

@@ -20,18 +20,8 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 08363636d8d125449884069a19e4bb7a
-    m_Address: TreeantMinionSpawner
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 1291edd4371d00440aa578e17af38026
     m_Address: RootSnare
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 1ca7e0bb3c4b52042b67b7c805de4bf5
-    m_Address: TreeantTreeSpawner
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

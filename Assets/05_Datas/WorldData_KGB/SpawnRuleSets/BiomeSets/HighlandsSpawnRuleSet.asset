@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e47ea1e5b5a0ecd439e18d5fc63e5aaa, type: 3}
+  m_Name: HighlandsSpawnRuleSet
+  m_EditorClassIdentifier: 
+  NatureSpawnRules:
+  - {fileID: 11400000, guid: 70b9f2eb41e182546a0ba14aa11ccade, type: 2}
+  - {fileID: 11400000, guid: 0241cf99655e8eb458c9ec237dda46f5, type: 2}
+  - {fileID: 11400000, guid: 8426c112dd5779542995736176616854, type: 2}
+  InitialSpawnRules:
+  - {fileID: 11400000, guid: 6fc347e331ca43d088cfa33c2b7c670b, type: 2}
+  - {fileID: 11400000, guid: d583b944ca76b0445b818481539f5583, type: 2}
+  - {fileID: 11400000, guid: efe6a280830598c46b1528a253c7e946, type: 2}

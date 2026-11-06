@@ -24,7 +24,7 @@ public class DisposeRuleSet : ScriptableObject
 [System.Serializable]
 public class DensityDisposeRule
 {
-    public string ruleName;
+
     public string prefabKey;
 
     [Header("Spawn Density")]
@@ -39,7 +39,7 @@ public class DensityDisposeRule
 [System.Serializable]
 public class CountDisposeRule
 {
-    public string ruleName;
+
     public string prefabKey;
 
     [Header("Spawn Quantity")]

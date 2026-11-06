@@ -14,16 +14,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   BiomeType: 7
   DebugColor: {r: 1, g: 0.472049, b: 0, a: 1}
-  BiomeDisposeRule: {fileID: 11400000, guid: dd9ccb6ae78edbf40921d65a95f0c951, type: 2}
-  TopKey: Highlands_Top
-  AltKey: Highlands_Alt
-  CliffKey: Highlands_Cliff
-  DetailKeys:
-  - Detail_Grass_1
-  DecoKeys: []
+  BaseTemperature: 20
   Weather:
     Precipitation: 1
     MinDryDays: 10
     MaxDryDays: 15
     MinWetDays: 0.5
     MaxWetDays: 1
+  BiomeDisposeRule: {fileID: 11400000, guid: dd9ccb6ae78edbf40921d65a95f0c951, type: 2}
+  BiomeSpawnRule: {fileID: 11400000, guid: 8eecf9a8a52aa8941beefcf2bb11ba2a, type: 2}
+  TopKey: Highlands_Top
+  AltKey: Highlands_Alt
+  CliffKey: Highlands_Cliff
+  DetailKeys:
+  - Detail_Grass_1

@@ -12,11 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b29b41b2b0ac1442925d390d0edbb35, type: 3}
   m_Name: Rocky
   m_EditorClassIdentifier: 
-  BiomeDisposeRule: {fileID: 11400000, guid: 3b81747c05686f74cb04378130c0e621, type: 2}
   BiomeType: 6
   DebugColor: {r: 0.5278817, g: 0.5698112, b: 0.5278817, a: 1}
+  BaseTemperature: 20
+  Weather:
+    Precipitation: 0
+    MinDryDays: 0
+    MaxDryDays: 0
+    MinWetDays: 0
+    MaxWetDays: 0
+  BiomeDisposeRule: {fileID: 11400000, guid: 3b81747c05686f74cb04378130c0e621, type: 2}
+  BiomeSpawnRule: {fileID: 11400000, guid: 3380a818994212c46a5ed5de33898959, type: 2}
   TopKey: Rocky_Top
   AltKey: Rocky_Alt
   CliffKey: 
-  SedimentKey: 
   DetailKeys: []

@@ -9,9 +9,6 @@ using UnityEngine;
 public class NatureSpawnRule : ScriptableObject
 {
     [Header("대상")]
-    [Tooltip("인스펙터에서 규칙을 구분하기 위한 이름입니다.")]
-    public string ruleName;
-
     [Tooltip("MonsterCatalog에 등록된 몬스터의 Addressable 키입니다.")]
     public string monsterKey;
 

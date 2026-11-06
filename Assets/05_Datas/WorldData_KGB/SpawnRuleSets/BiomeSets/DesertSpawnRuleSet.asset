@@ -15,4 +15,4 @@ MonoBehaviour:
   NatureSpawnRules:
   - {fileID: 11400000, guid: 3ec4bf35303d4c48915156504a449c80, type: 2}
   InitialSpawnRules:
-  - {fileID: 11400000, guid: 6fc347e331ca43d088cfa33c2b7c670b, type: 2}
+  - {fileID: 11400000, guid: c77bdaee8f7968b4f96d87946b8c6932, type: 2}

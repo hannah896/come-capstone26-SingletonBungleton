@@ -46,6 +46,7 @@ MonoBehaviour:
     noiseStrength: 15
     borderWidth: 2
     oceanThreshold: 0.85
+    minimumConnectionWidth: 16
     batchSize: 100000
   DisposeSettings:
     minObjectDistance: 2

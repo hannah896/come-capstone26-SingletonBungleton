@@ -156,7 +156,7 @@ public class TerritoryBuilder : IGraphPipelineStage
             // 노이즈로 인해 발생한 고립된 섬(Orphan) 타일들을 주변 영토로 병합
             await CleanUpOrphanTilesAsync();
 
-            // 해안선과 영토 경계선 처리 - 맵 가장자리에서 바다 타일로 설정 + 영토 간 경계 타일 마킹
+            // 해안선 처리 후 필수 육로를 복원하고, 최종 영토를 기준으로 경계를 표시합니다.
             await ProcessBordersAsync();
 
             // 타일 데이터를 각 노드의 RegionData에 할당하여 소유 타일 목록 구축
@@ -628,6 +628,9 @@ public class TerritoryBuilder : IGraphPipelineStage
             }
         }
 
+        // 노이즈/바다/고립 타일 정리가 끝난 뒤 보호하므로 이후 단계에서 육로가 다시 깎이지 않습니다.
+        await PreserveRequiredConnectionsAsync();
+
         if (_partiSettings.borderWidth > 0)
         {
             await MarkBorderTilesAsync();
@@ -635,6 +638,139 @@ public class TerritoryBuilder : IGraphPipelineStage
 
         if (_worldSettings.EnableStepByStep)
             await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
+    }
+
+    /// <summary>
+    /// 연결선의 캡슐 영역과 지역 중심부를 보장합니다. 소유권은 연결 양 끝 지역에만 배분합니다.
+    /// </summary>
+    private async UniTask PreserveRequiredConnectionsAsync()
+    {
+        var nodes = _graphResult.Nodes;
+        if (nodes == null || nodes.Count == 0) return;
+
+        int width = _worldLogicData.TerrainSize.x;
+        int height = _worldLogicData.TerrainSize.y;
+        // 셀 중심의 오차를 더해 대각선 육로도 요청한 폭을 확보합니다.
+        float radius = Mathf.Max(2, _partiSettings.minimumConnectionWidth) * 0.5f + Mathf.Sqrt(0.5f);
+        var protectedSources = new int[width, height];
+        var sources = new List<(int parent, int child)>();
+        var indices = new Dictionary<Node, int>(nodes.Count);
+        for (int i = 0; i < nodes.Count; i++) indices.Add(nodes[i], i);
+
+        for (int i = 0; i < nodes.Count; i++)
+            await PreserveConnectionAsync(nodes[i].Position, nodes[i].Position, i, i, radius, protectedSources, sources);
+
+        foreach (var edge in _graphResult.NodeConnections)
+        {
+            _ct.ThrowIfCancellationRequested();
+            if (!indices.TryGetValue(edge.ParentNode, out int parent) ||
+                !indices.TryGetValue(edge.ChildNode, out int child)) continue;
+
+            await PreserveConnectionAsync(edge.ParentNode.Position, edge.ChildNode.Position,
+                parent, child, radius, protectedSources, sources);
+        }
+
+        await SeparateUnrelatedConnectionsAsync(indices, protectedSources);
+    }
+
+    private async UniTask SeparateUnrelatedConnectionsAsync(Dictionary<Node, int> indices, int[,] protectedSources)
+    {
+        var nodes = _graphResult.Nodes;
+        var connected = new bool[nodes.Count, nodes.Count];
+        foreach (var edge in _graphResult.NodeConnections)
+        {
+            if (!indices.TryGetValue(edge.ParentNode, out int parent) ||
+                !indices.TryGetValue(edge.ChildNode, out int child)) continue;
+            connected[parent, child] = connected[child, parent] = true;
+        }
+
+        int width = _worldLogicData.TerrainSize.x;
+        int height = _worldLogicData.TerrainSize.y;
+        int processed = 0;
+        int batch = Mathf.Max(1, _partiSettings.batchSize);
+        for (int x = 0; x < width; x++)
+        {
+            _ct.ThrowIfCancellationRequested();
+            for (int y = 0; y < height; y++)
+            {
+                if (protectedSources[x, y] != 0)
+                {
+                    int owner = _worldLogicData.TerritoryWorld[x, y];
+                    for (int d = 0; d < _dx8.Length; d++)
+                    {
+                        int nx = x + _dx8[d], ny = y + _dy8[d];
+                        if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+                        int neighbor = _worldLogicData.TerritoryWorld[nx, ny];
+                        if (neighbor < 0 || neighbor == owner || connected[owner, neighbor] ||
+                            nodes[owner].RegionData == nodes[neighbor].RegionData) continue;
+
+                        // 보호 영역 옆에 다른 분기의 땅이 남아 우회로가 생기지 않도록 바다 한 칸을 확보합니다.
+                        if (protectedSources[nx, ny] != 0)
+                            throw new InvalidOperationException($"필수 육로가 다른 분기와 겹칩니다: {owner}, {neighbor}");
+                        _worldLogicData.TerritoryWorld[nx, ny] = OCEAN_MARKER;
+                    }
+                }
+
+                if (++processed >= batch)
+                {
+                    processed = 0;
+                    await UniTask.Yield(_ct);
+                }
+            }
+        }
+    }
+
+    private async UniTask PreserveConnectionAsync(Vector2 from, Vector2 to, int parent, int child,
+        float radius, int[,] protectedSources, List<(int parent, int child)> sources)
+    {
+        int width = _worldLogicData.TerrainSize.x;
+        int height = _worldLogicData.TerrainSize.y;
+        int minX = Mathf.Max(0, Mathf.FloorToInt(Mathf.Min(from.x, to.x) - radius));
+        int maxX = Mathf.Min(width - 1, Mathf.CeilToInt(Mathf.Max(from.x, to.x) + radius));
+        int minY = Mathf.Max(0, Mathf.FloorToInt(Mathf.Min(from.y, to.y) - radius));
+        int maxY = Mathf.Min(height - 1, Mathf.CeilToInt(Mathf.Max(from.y, to.y) + radius));
+        Vector2 direction = to - from;
+        float lengthSquared = direction.sqrMagnitude;
+        float radiusSquared = radius * radius;
+        int processed = 0;
+        int batch = Mathf.Max(1, _partiSettings.batchSize);
+        sources.Add((parent, child));
+        int source = sources.Count;
+
+        for (int x = minX; x <= maxX; x++)
+        {
+            _ct.ThrowIfCancellationRequested();
+            for (int y = minY; y <= maxY; y++)
+            {
+                Vector2 point = new Vector2(x, y);
+                float t = lengthSquared > 0f ? Mathf.Clamp01(Vector2.Dot(point - from, direction) / lengthSquared) : 0f;
+                float distanceSquared = (point - (from + direction * t)).sqrMagnitude;
+                if (distanceSquared <= radiusSquared)
+                {
+                    int owner = t < 0.5f ? parent : child;
+                    int previousSource = protectedSources[x, y];
+                    if (previousSource != 0)
+                    {
+                        var previous = sources[previousSource - 1];
+                        // 분기 교차부는 공통 지역에 맡겨 자식 지역이 다른 육로의 폭을 빼앗지 않게 합니다.
+                        if ((previous.parent == parent && previous.child == child) ||
+                            (previous.parent == child && previous.child == parent)) owner = _worldLogicData.TerritoryWorld[x, y];
+                        else if (previous.parent == parent || previous.parent == child) owner = previous.parent;
+                        else if (previous.child == parent || previous.child == child) owner = previous.child;
+                        else throw new InvalidOperationException("서로 연결되지 않은 필수 육로가 겹칩니다.");
+                    }
+                    else protectedSources[x, y] = source;
+
+                    _worldLogicData.TerritoryWorld[x, y] = owner;
+                }
+
+                if (++processed >= batch)
+                {
+                    processed = 0;
+                    await UniTask.Yield(_ct);
+                }
+            }
+        }
     }
 
     private async UniTask MarkBorderTilesAsync()

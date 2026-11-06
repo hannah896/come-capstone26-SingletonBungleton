@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: REG_Highlands
   m_EditorClassIdentifier: 
   RegionName: REG_Highlands
-  TerritoryScale: 5
+  TerritoryScale: 7
   POICandidates: []
   BaseHeightLevel: 2
   LandformType: 3

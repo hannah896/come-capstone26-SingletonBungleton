@@ -49,7 +49,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc092bb28ad34ba9b736cfe6bb827801, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnRule: {fileID: 11400000, guid: 8fb4a4ed72d644739806657131301c17, type: 2}
+  spawnRule: {fileID: 11400000, guid: 550a50c57a75a6347871fe2f38cd01bb, type: 2}
   placementSettings:
     placementRadius: 3
     maxHeightDifference: 2

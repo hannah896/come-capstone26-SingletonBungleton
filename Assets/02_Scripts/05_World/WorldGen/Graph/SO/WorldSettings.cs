@@ -168,6 +168,10 @@ public class PartitionSettings
     public int borderWidth = 2;              // 영역 경계 두께
     public float oceanThreshold = 0.85f;     // 바다로 처리할 맵 가장자리 비율
 
+    [Header("필수 육로")]
+    [Tooltip("그래프상 연결된 두 지역 사이에 확보할 최소 육지 폭(타일). 노이즈와 해안선 처리로 끊기지 않습니다.")]
+    [Min(2)] public int minimumConnectionWidth = 16;
+
     [Header("Performance")]
     public int batchSize = 100000;             // 비동기 처리 시 배치 크기
 }

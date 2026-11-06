@@ -13,41 +13,28 @@ MonoBehaviour:
   m_Name: ForestRule
   m_EditorClassIdentifier: 
   ObjectRules:
-  - ruleName: Fir
-    prefabKey: ResourceNode_Fir
+  - prefabKey: ResourceNode_Fir
     density: 0.1
-  - ruleName: Rock
-    prefabKey: ResourceNode_Rock
+  - prefabKey: ResourceNode_Rock
     density: 0.05
-  - ruleName: Grass
-    prefabKey: ResourceNode_Grass
+  - prefabKey: ResourceNode_Grass
     density: 0.1
-  - ruleName: Branch
-    prefabKey: ResourceNode_Branch
+  - prefabKey: ResourceNode_Branch
     density: 0.1
   ItemRules:
-  - ruleName: Flower
-    prefabKey: Resource_Flower
+  - prefabKey: Resource_Flower
     minCount: 14
     maxCount: 28
-  - ruleName: Berry
-    prefabKey: Resource_Berry
+  - prefabKey: Resource_Berry
     minCount: 10
     maxCount: 20
-  - ruleName: Mushroom
-    prefabKey: Resource_Mushroom
+  - prefabKey: Resource_Mushroom
     minCount: 10
     maxCount: 20
-  - ruleName: Carrot
-    prefabKey: Resource_Carrot
+  - prefabKey: Resource_Carrot
     minCount: 6
     maxCount: 12
   SpawnerRules:
-  - ruleName: TreantTreeEvergreen
-    prefabKey: TreeantTreeSpawner
-    minCount: 3
-    maxCount: 5
-  - ruleName: TreantMinionEvergreen
-    prefabKey: TreeantMinionSpawner
-    minCount: 3
-    maxCount: 5
+  - prefabKey: TreantMinionEvergreenSpawner
+    minCount: 5
+    maxCount: 9

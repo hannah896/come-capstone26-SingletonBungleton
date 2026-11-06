@@ -22,7 +22,7 @@ MonoBehaviour:
     MinWetDays: 1.5
     MaxWetDays: 3.5
   BiomeDisposeRule: {fileID: 11400000, guid: ab5047a8ceaec814a89d6e7af4c94077, type: 2}
-  BiomeSpawnRule: {fileID: 0}
+  BiomeSpawnRule: {fileID: 11400000, guid: 0c80a4b8f9e3baa4b8c87c2529804120, type: 2}
   TopKey: Plains_Top
   AltKey: Plains_Alt
   CliffKey: 

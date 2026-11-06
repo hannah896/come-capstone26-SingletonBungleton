@@ -22,7 +22,7 @@ MonoBehaviour:
     MinWetDays: 10
     MaxWetDays: 15
   BiomeDisposeRule: {fileID: 11400000, guid: fc1f6d3c56bb2b14ea505d2a92d0e0cf, type: 2}
-  BiomeSpawnRule: {fileID: 0}
+  BiomeSpawnRule: {fileID: 11400000, guid: 922f31819afe2c04f806d3c5fc529ee9, type: 2}
   TopKey: Savanna_Top
   AltKey: Savanna_Alt
   CliffKey: 

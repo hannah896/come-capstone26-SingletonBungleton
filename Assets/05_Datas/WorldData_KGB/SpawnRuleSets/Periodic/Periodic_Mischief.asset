@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ruleId: Periodic_Mischief
   monsterKey: Mischief
-  intervalDays: 7
+  intervalDays: 4
   firstDelayDays: 3
   allowedTimePhases: 13
   minSpawnCount: 1

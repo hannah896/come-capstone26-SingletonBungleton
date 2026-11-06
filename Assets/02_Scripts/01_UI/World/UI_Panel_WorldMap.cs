@@ -32,8 +32,8 @@ public class UI_Panel_WorldMap : UI_Panel
     [SerializeField] private Sprite _firIcon;
     [SerializeField] private Sprite _grassIcon;
     [SerializeField] private Sprite _rockIcon;
-    [SerializeField, Min(1f)] private float _compactResourceIconSize = 30f;
-    [SerializeField, Min(1f)] private float _expandedResourceIconSize = 60f;
+    [SerializeField, Min(1f)] private float _compactResourceIconSize = 100f;
+    [SerializeField, Min(1f)] private float _expandedResourceIconSize = 150f;
     [SerializeField, Min(0)] private int _maxPooledResourceGraphics = 32;
 
     [Header("Viewport Settings")]

@@ -14,7 +14,7 @@
 1. **자연 스폰**: 바이옴이 참조하는 `BiomeSets/DesertSpawnRuleSet` 등의 `NatureSpawnRules`에 `Nature/Nature_Demon` 등 몬스터별 규칙을 추가한다. 플레이어 기준 최소·최대 생성 거리는 각 규칙이 아닌 `WorldSettings.DynamicSpawnSettings`에서 공통 설정한다.
 2. **스폰 오브젝트**: 몬스터 집 등 표시할 프리팹을 Addressables에 등록하고, 프리팹 루트에 `MonsterSpawnSource` 컴포넌트를 붙인다. `spawnRule`에 `Source/Source_TreantMinion` 또는 `Source/Source_TreantTree` 등 생성 규칙을 연결한다. 컴포넌트의 `placementSettings`에 배치 반경·허용 높이 차이·월드 시작점과의 최소 거리를 지정한다. `SourceSpawnRule`은 몬스터 종류·시간대·주기·확률·생성 수·생존 수·생성 반경·활성화 거리만 담당한다.
 
-바이옴의 `BiomeDisposeRule > SpawnerRules`에는 `ruleName`, `prefabKey`, `minCount`, `maxCount`만 입력한다. `prefabKey`는 스폰 프리팹의 Address이고 `minCount/maxCount`는 지역마다 배치할 집의 수다. 프리팹의 몬스터 생성 규칙을 이 목록에서 다시 연결하지 않는다. 현재 `TreeantMinionSpawner`와 `TreeantTreeSpawner`에는 각각 대응하는 Source 규칙과 기존 배치 조건이 연결되어 있다. 어느 바이옴에 얼마나 배치할지는 `SpawnerRules`에서 설정한다.
+바이옴의 `BiomeDisposeRule > SpawnerRules`에는 `prefabKey`, `minCount`, `maxCount`만 입력한다. `prefabKey`는 스폰 프리팹의 Address이고 `minCount/maxCount`는 지역마다 배치할 집의 수다. 프리팹의 몬스터 생성 규칙을 이 목록에서 다시 연결하지 않는다. 현재 `TreeantMinionSpawner`와 `TreeantTreeSpawner`에는 각각 대응하는 Source 규칙과 기존 배치 조건이 연결되어 있다. 어느 바이옴에 얼마나 배치할지는 `SpawnerRules`에서 설정한다.
 
 월드 생성 과정은 같은 프리팹 에셋을 한 번 읽어 설정을 캐시하고, 실제 인스턴스를 만들지 않고 배치 타일·ID와 별도의 논리 스폰 소스 목록을 만든다. `WorldMonsterSpawnDirector`가 이 목록을 받아 생성·저장·복구를 관리하므로 호스트의 청크가 로드되지 않아도 원격 플레이어 주변에서 검사할 수 있다. 집 프리팹에는 독립적으로 생성하는 기존 `MonsterSpawner` 컴포넌트를 추가하지 않는다. 집을 부술 수 있게 만들 경우 기존 배치 오브젝트처럼 청크의 배치 ID에 파괴 상태를 기록해야 스폰이 중단된다. 프리팹 배치 조건을 바꾼 뒤에는 새 월드로 확인한다.
 3. **월드 최초 배치**: 바이옴의 `BiomeSpawnRule > InitialSpawnRules`에 `Initial/Initial_MischiefExample`을 추가한다. 월드 생성 시 몬스터의 타일과 ID가 확정되고, 실제 프리팹은 플레이어가 가까워졌을 때 생성된다. 사망 상태와 살아 있는 몬스터의 위치·체력은 저장된다.
