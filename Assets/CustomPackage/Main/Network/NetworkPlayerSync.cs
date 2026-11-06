@@ -124,6 +124,29 @@ public class NetworkPlayerSync : NetworkBehaviour
     /// <summary>원격 캐릭터의 사망 여부 (소유자가 보고한 값).</summary>
     public bool IsRemoteDead => Object != null && Object.IsValid && NetIsDead;
 
+    private float _nextWorldTeleportRequest;
+
+    public void RequestWorldTeleport(int id, int version)
+    {
+        if (Object.HasStateAuthority) HandleWorldTeleportRequest(id, version);
+        else if (Object.HasInputAuthority) Rpc_RequestWorldTeleport(id, version);
+    }
+
+    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+    private void Rpc_RequestWorldTeleport(int id, int version) => HandleWorldTeleportRequest(id, version);
+
+    private void HandleWorldTeleportRequest(int id, int version)
+    {
+        bool approved = Time.unscaledTime >= _nextWorldTeleportRequest && WorldTeleporter.IsRequestValid(_player, id);
+        if (approved) _nextWorldTeleportRequest = Time.unscaledTime + 1f;
+        if (Object.HasInputAuthority) WorldTeleporter.CompleteRequest(_player, id, version, approved);
+        else Rpc_WorldTeleportApproved(id, version, approved);
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority)]
+    private void Rpc_WorldTeleportApproved(int id, int version, NetworkBool approved) =>
+        WorldTeleporter.CompleteRequest(_player, id, version, approved);
+
     /// <summary>원격 캐릭터가 불 켜진 횃불을 들고 있는지 (복제된 손 아이템 뷰 기준).</summary>
     public bool IsHoldingTorch => _equipmentView != null && _equipmentView.IsTorchLit;
 

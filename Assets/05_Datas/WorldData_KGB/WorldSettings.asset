@@ -67,6 +67,14 @@ MonoBehaviour:
       serializedVersion: 2
       m_Bits: 0
     SpawnHeightOffset: 0.1
+  TeleportSettings:
+    hpCost: 10
+    egoCost: 10
+    hungerCost: 10
+    maxSlope: 35
+    shortcutMinSeaDistance: 24
+    shortcutMaxDistance: 128
+    shortcutMinBranchProgress: 0.65
   PeriodicSpawnRules: []
   BossSpawnRule: {fileID: 11400000, guid: 5581ca8174e549c3b7a414a19dcc88ac, type: 2}
   _enableStepByStep: 1

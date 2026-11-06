@@ -23,8 +23,8 @@ public class UI_Panel_WorldMap : UI_Panel
     [FormerlySerializedAs("_rotatePlayerMarker")]
     [SerializeField] private bool _rotateSightArea = true;
     [SerializeField] private bool _hideMarkerOutsideWorld = true;
-    [SerializeField, Min(1f)] private float _compactMarkerSize = 15f;
-    [SerializeField, Min(1f)] private float _expandedMarkerSize = 50f;
+    [SerializeField, Min(1f)] private float _compactMarkerSize = 30f;
+    [SerializeField, Min(1f)] private float _expandedMarkerSize = 60f;
 
     [Header("Resource Node Icons")]
     [SerializeField] private Sprite _branchIcon;
@@ -32,8 +32,8 @@ public class UI_Panel_WorldMap : UI_Panel
     [SerializeField] private Sprite _firIcon;
     [SerializeField] private Sprite _grassIcon;
     [SerializeField] private Sprite _rockIcon;
-    [SerializeField, Min(1f)] private float _compactResourceIconSize = 16f;
-    [SerializeField, Min(1f)] private float _expandedResourceIconSize = 30f;
+    [SerializeField, Min(1f)] private float _compactResourceIconSize = 30f;
+    [SerializeField, Min(1f)] private float _expandedResourceIconSize = 60f;
     [SerializeField, Min(0)] private int _maxPooledResourceGraphics = 32;
 
     [Header("Viewport Settings")]
@@ -44,6 +44,7 @@ public class UI_Panel_WorldMap : UI_Panel
     [SerializeField, Min(0.01f)] private float _zoomStep = 0.2f;
 
     private UI_MapViewport _navigation;
+    private UI_TeleportMarkerGraphic _teleportMarkers;
     private WorldMap _worldMap;
     private WorldMapData _mapData;
     private Transform _target;
@@ -120,6 +121,18 @@ public class UI_Panel_WorldMap : UI_Panel
             _zoom, _maxZoom, _zoomStep, fillViewport: false, followTarget: true);
         if (_navigation != null) _mapImage = _navigation.MapImage;
         CreateResourceMarkerLayer();
+        if (_navigation != null)
+        {
+            var markerObject = new GameObject("TeleportMarkers", typeof(RectTransform), typeof(UI_TeleportMarkerGraphic));
+            markerObject.layer = gameObject.layer;
+            var rect = (RectTransform)markerObject.transform;
+            rect.SetParent(_navigation.Viewport, false);
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            if (_playerMarker != null) rect.SetSiblingIndex(_playerMarker.GetSiblingIndex());
+            _teleportMarkers = markerObject.GetComponent<UI_TeleportMarkerGraphic>();
+        }
         if (_navigation != null) _navigation.OnViewChanged += HandleMapViewChanged;
         SpriteAtlasManager.atlasRegistered += HandleResourceAtlasRegistered;
         SetExpanded(false);
@@ -130,6 +143,7 @@ public class UI_Panel_WorldMap : UI_Panel
     public void SetExpanded(bool expanded)
     {
         _isExpanded = expanded;
+        _teleportMarkers?.Configure(_mapData, _navigation, expanded);
         float markerSize = expanded ? _expandedMarkerSize : _compactMarkerSize;
         if (_playerMarker != null)
         {
@@ -271,6 +285,7 @@ public class UI_Panel_WorldMap : UI_Panel
     {
         bool mapChanged = !ReferenceEquals(_mapData, data);
         _mapData = data;
+        _teleportMarkers?.Configure(_mapData, _navigation, _isExpanded);
         if (_mapImage != null) _mapImage.Sprite = _mapData?.Sprite;
         RefreshVisibility();
         UpdatePlayerMarker();
@@ -295,6 +310,7 @@ public class UI_Panel_WorldMap : UI_Panel
         ClearResourceMarkers();
         ClearResourceChunkCache();
         _mapData = null;
+        _teleportMarkers?.Configure(null, _navigation, _isExpanded);
         if (_mapImage != null) _mapImage.Sprite = null;
         _navigation?.ResetView();
         RefreshVisibility();
@@ -427,6 +443,7 @@ public class UI_Panel_WorldMap : UI_Panel
 
     private void HandleMapViewChanged()
     {
+        _teleportMarkers?.RefreshPositions();
         if (_mapData?.LogicData == null || _navigation == null) return;
         Rect visible = _navigation.VisibleNormalizedRect;
         if (!_hasResourceCoverage || _resourceCoverageZoom != _navigation.Zoom
@@ -494,7 +511,8 @@ public class UI_Panel_WorldMap : UI_Panel
             && entry.Normalized.y >= _resourceCoverage.yMin && entry.Normalized.y <= _resourceCoverage.yMax
             && !chunk.IsObjectDestroyed(entry.Dispose.instanceId)
             && spawner?.IsSpawnExcluded(entry.Dispose.instanceId) != true
-            && !WorldSpawnArea.Contains(_mapData.LogicData, entry.Position);
+            && !WorldSpawnArea.Contains(_mapData.LogicData, entry.Position)
+            && !WorldTeleportPlacement.Contains(_mapData.LogicData, entry.Position);
     }
 
     private void ClearResourceChunkCache()

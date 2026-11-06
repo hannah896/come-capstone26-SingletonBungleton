@@ -63,7 +63,9 @@ public class WorldObjectSpawner
 
             // 배치 ID와 시드 난수열은 유지하고 실제 생성만 막아 이전 저장본도 복원할 수 있게 한다.
             Vector3 position = GetDisposeWorldPosition(chunk, dispose, _chunkSize);
-            if (WorldSpawnArea.Contains(_logicData, position))
+            bool isTeleport = _logicData.FindTeleportByInstanceId(dispose.instanceId) != null;
+            if (WorldSpawnArea.Contains(_logicData, position) ||
+                !isTeleport && WorldTeleportPlacement.Contains(_logicData, position))
             {
                 ExcludeSpawn(chunk, dispose.instanceId);
                 continue;
@@ -82,7 +84,8 @@ public class WorldObjectSpawner
             instance.transform.SetPositionAndRotation(position, dispose.rotation);
             instance.transform.localScale = dispose.scale;
 
-            if (WorldSpawnArea.Intersects(_logicData, instance))
+            if (WorldSpawnArea.Intersects(_logicData, instance) ||
+                !isTeleport && WorldTeleportPlacement.Intersects(_logicData, instance))
             {
                 ExcludeSpawn(chunk, dispose.instanceId);
                 Extensions.Despawn(instance);
@@ -108,7 +111,9 @@ public class WorldObjectSpawner
         if (chunk == null || dispose == null || string.IsNullOrEmpty(dispose.prefabName)) return;
         if (_chunkSize <= 0) return;
         Vector3 position = GetDisposeWorldPosition(chunk, dispose, _chunkSize);
-        if (WorldSpawnArea.Contains(_logicData, position))
+        bool isTeleport = _logicData.FindTeleportByInstanceId(dispose.instanceId) != null;
+        if (WorldSpawnArea.Contains(_logicData, position) ||
+            !isTeleport && WorldTeleportPlacement.Contains(_logicData, position))
         {
             ExcludeSpawn(chunk, dispose.instanceId);
             return;
@@ -125,7 +130,8 @@ public class WorldObjectSpawner
         // 3. 기존 로직을 재사용하여 정확한 높이(HeightMap)와 위치, 회전, 크기 적용
         instance.transform.SetPositionAndRotation(position, dispose.rotation);
         instance.transform.localScale = dispose.scale;
-        if (WorldSpawnArea.Intersects(_logicData, instance))
+        if (WorldSpawnArea.Intersects(_logicData, instance) ||
+            !isTeleport && WorldTeleportPlacement.Intersects(_logicData, instance))
         {
             ExcludeSpawn(chunk, dispose.instanceId);
             Extensions.Despawn(instance);

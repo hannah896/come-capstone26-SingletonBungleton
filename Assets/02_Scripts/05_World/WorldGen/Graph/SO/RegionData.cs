@@ -41,6 +41,30 @@ public class RegionData : ScriptableObject
     // 예: "Gold_Key", "Magic_Staff"
     public List<string> GivenKeyIDs;
 
+    /// <summary>진입에 필요한 티어입니다. 그래프 깊이와 별개로 기존 잠금 데이터에서 계산합니다.</summary>
+    public int RequiredTier
+    {
+        get
+        {
+            int tier = 0;
+            if (LockIDs == null) return tier;
+            foreach (string id in LockIDs)
+            {
+                int required = id switch
+                {
+                    Locks.LOCK_TIER1 => 1,
+                    Locks.LOCK_TIER2 => 2,
+                    Locks.LOCK_TIER3 => 3,
+                    Locks.LOCK_TIER4 => 4,
+                    Locks.LOCK_TIER5 => 5,
+                    _ => 0
+                };
+                tier = Math.Max(tier, required);
+            }
+            return tier;
+        }
+    }
+
     public bool IsUnlockable(List<string> preRegionKeys)
     {
         if (LockIDs == null || LockIDs.Count == 0) return true;

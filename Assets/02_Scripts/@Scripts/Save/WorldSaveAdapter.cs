@@ -21,6 +21,8 @@ public static class WorldSaveAdapter
             branch = settings.WorldBranch,
             loop = settings.WorldLoop,
             size = settings.WorldSize,
+            teleportVersion = 1,
+            teleports = world.CurrentLogicData.Teleports.Select(p => p.Copy()).ToList(),
             totalSeconds = WorldClock.Instance != null ? WorldClock.Instance.SaveTime() : 0f,
             weather = WorldWeatherController.Instance != null && WorldWeatherController.Instance.IsInitialized
                 ? WorldWeatherController.Instance.Capture() : null,
@@ -93,6 +95,24 @@ public static class WorldSaveAdapter
     {
         Validate(data);
         if (logic == null) throw new ArgumentNullException(nameof(logic));
+        if (data.teleportVersion == 1)
+        {
+            WorldTeleportPlacement.Validate(data.teleports, logic);
+            var generatedIds = new HashSet<int>(logic.Teleports.Select(p => p.id));
+            var restoredIds = new HashSet<int>(data.teleports.Select(p => p.id));
+            foreach (ChunkData chunk in logic.GetAllChunks())
+                if (chunk.DisposeDatas.Any(p => !generatedIds.Contains(p.instanceId) && restoredIds.Contains(p.instanceId)))
+                    throw new InvalidOperationException("저장한 텔레포트 ID가 기존 월드 배치와 충돌합니다.");
+            foreach (ChunkData chunk in logic.GetAllChunks()) chunk.DisposeDatas.RemoveAll(p => generatedIds.Contains(p.instanceId));
+            logic.Teleports.Clear();
+            foreach (var entry in data.teleports)
+            {
+                var copy = entry.Copy();
+                logic.Teleports.Add(copy);
+                logic.GetOrCreateChunk(logic.GetChunkCoord(copy.tile.x, copy.tile.y)).DisposeDatas.Add(copy.CreateDispose());
+            }
+            logic.InvalidatePlacementIndex();
+        }
         foreach (ChunkData chunk in logic.GetAllChunks()) chunk.ClearDestroyedObjects();
         foreach (DestroyedObjectSaveData destroyed in data.destroyedObjects)
         {
@@ -194,6 +214,11 @@ public static class WorldSaveAdapter
             throw new InvalidOperationException("월드 저장 목록이 누락되었습니다.");
 
         // 이전 저장 파일에는 몬스터 상태 항목이 없을 수 있습니다.
+        if (data.teleportVersion < 0 || data.teleportVersion > 1 ||
+            data.teleportVersion == 1 && data.teleports == null ||
+            data.teleportVersion == 0 && data.teleports != null && data.teleports.Count > 0)
+            throw new InvalidOperationException("텔레포트 저장 버전 또는 배치 목록이 올바르지 않습니다.");
+        if (data.teleportVersion == 1) WorldTeleportPlacement.Validate(data.teleports);
         data.monsterSpawns ??= new MonsterSpawnSaveData();
         ValidateMonsterSpawns(data.monsterSpawns);
         // Unity 인라인 직렬화가 구버전의 null 날씨를 빈 객체로 만든 경우도 호환합니다.

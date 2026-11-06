@@ -38,6 +38,11 @@ public class WorldLogicData
     public InfluenceData[,] RegionEdgeDataWorld { get; set; } // 지역 경계 거리 기반 영향력 (0.0 ~ 1.0)
 
     public Vector2Int SpawnTile { get; set; }
+    public List<WorldTeleportPlacement> Teleports { get; } = new();
+
+    /// <summary>일반 배치의 instanceId로 텔레포트 전용 연결/비용 정보를 조회합니다.</summary>
+    public WorldTeleportPlacement FindTeleportByInstanceId(int instanceId) =>
+        instanceId != 0 ? Teleports.Find(p => p.id == instanceId) : null;
 
 
     public WorldLogicData(Vector2Int gridSize, int chunkSize)
@@ -73,6 +78,7 @@ public class WorldLogicData
 
     // 배치 오브젝트 instanceId → 소속 청크 (멀티 자원 동기화에서 ID만으로 청크를 찾기 위해 사용)
     private Dictionary<int, ChunkData> _chunkByInstanceId;
+    public void InvalidatePlacementIndex() => _chunkByInstanceId = null;
 
     /// <summary>
     /// 배치 오브젝트의 instanceId로 소속 청크를 찾는다. 없으면 null.

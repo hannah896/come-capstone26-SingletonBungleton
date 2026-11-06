@@ -85,6 +85,8 @@ public class WorldSettings : ScriptableObject
     public PartitionSettings PartitionSettings = new PartitionSettings();
     public DisposeSettings DisposeSettings = new DisposeSettings();
     public DynamicSpawnSettings DynamicSpawnSettings = new DynamicSpawnSettings();
+    [Header("지형 텔레포트")]
+    public WorldTeleportSettings TeleportSettings = new();
     [Header("월드 공통 주기적 몬스터 스폰")]
     [Tooltip("바이옴별 SpawnRuleSet과 관계없이 월드 전체에서 월드 시계의 누적 게임 시간으로 실행할 규칙입니다.")]
     [FormerlySerializedAs("PeriodicMonsterSpawnRules")]

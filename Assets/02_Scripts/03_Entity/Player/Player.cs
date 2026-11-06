@@ -61,6 +61,9 @@ public class Player : MonoBehaviour, IDamageable
     public bool IsGrounded => motor != null && motor.IsGrounded;
     public bool IsLocalPlayer => IsLocalPlayerObject();
     public bool IsSaveReady { get; private set; }
+    public bool IsWorldTeleporting { get; internal set; }
+    internal int WorldTeleportRequestVersion { get; set; }
+    internal bool IsWorldTeleportApprovalPending { get; set; }
     public bool IsSpawnIntroPlaying => _spawnIntroRequested || _spawnIntro != null;
     private bool _spawnIntroRequested;
     private PlayerSpawnIntro _spawnIntro;
@@ -257,6 +260,8 @@ public class Player : MonoBehaviour, IDamageable
 
     private void OnDisable()
     {
+        IsWorldTeleporting = false;
+        IsWorldTeleportApprovalPending = false;
         Main.Loop.OnGameUpdate -= OnLoopGameUpdate;
         Main.Loop.OnUpdate -= OnLoopUpdate;
         if (IsLocalPlayerObject() && Main.Input != null)
@@ -276,6 +281,13 @@ public class Player : MonoBehaviour, IDamageable
         // (단일 플레이어는 NetworkObject가 없어 IsLocalPlayerObject()==true → 그대로 동작)
         if (!IsLocalPlayerObject())
             return;
+
+        if (IsWorldTeleporting)
+        {
+            inputData?.SuppressAllInputs();
+            motor.ResetVelocity();
+            return;
+        }
 
         if (IsSpawnIntroPlaying)
         {
@@ -339,7 +351,7 @@ public class Player : MonoBehaviour, IDamageable
         if (!IsLocalPlayerObject())
             return;
 
-        if (IsSpawnIntroPlaying) return;
+        if (IsSpawnIntroPlaying || IsWorldTeleporting) return;
 
         machine.OnGameUpdate(deltaTime);
     }

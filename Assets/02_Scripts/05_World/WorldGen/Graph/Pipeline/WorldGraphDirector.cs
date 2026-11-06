@@ -41,6 +41,7 @@ public class WorldGraphDirector : MonoBehaviour
             new ItemDisposer(),
             new SpawnerDisposer(),
             new InitialMonsterDisposer(),
+            new TeleportDisposer(),
             new ChunkSlicer(),
             new PoolPreloader()
         };

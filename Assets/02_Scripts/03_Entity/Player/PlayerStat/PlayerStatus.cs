@@ -121,6 +121,32 @@ public class PlayerStatus
             OnDamaged?.Invoke(finalDamage);
     }
 
+    /// <summary>텔레포트 비용은 전투 피해가 아니며 HP는 최소 1을 남깁니다.</summary>
+    public bool CanPayTeleport(TeleportCost cost, float amount)
+    {
+        if (float.IsNaN(amount) || float.IsInfinity(amount) || amount < 0f) return false;
+        return cost switch
+        {
+            TeleportCost.None => amount == 0f,
+            TeleportCost.Hp => CurrentHp - amount >= 1f,
+            TeleportCost.Ego => CurrentEgo >= amount,
+            TeleportCost.Hunger => CurrentHunger >= amount,
+            _ => false
+        };
+    }
+
+    public bool TryPayTeleport(TeleportCost cost, float amount)
+    {
+        if (!CanPayTeleport(cost, amount)) return false;
+        switch (cost)
+        {
+            case TeleportCost.Hp: CurrentHp -= amount; break;
+            case TeleportCost.Ego: CurrentEgo -= amount; break;
+            case TeleportCost.Hunger: CurrentHunger -= amount; break;
+        }
+        return true;
+    }
+
     /// <summary>
     /// 허기를 시간 경과에 따라 감소시킵니다.
     /// HungerDrain은 분당 감소량이므로 초당으로 환산합니다.

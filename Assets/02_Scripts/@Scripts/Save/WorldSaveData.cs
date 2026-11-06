@@ -17,6 +17,8 @@ public sealed class WorldSaveData
     public List<DroppedItemSaveData> droppedItems = new();
     public MonsterSpawnSaveData monsterSpawns = new();
     public NetworkWorldSaveData network;
+    public int teleportVersion; // 0: 구버전(필드 누락이 빈 목록으로 역직렬화되어도 생성 배치를 유지합니다).
+    public List<WorldTeleportPlacement> teleports;
 }
 
 [Serializable]

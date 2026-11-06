@@ -1,6 +1,7 @@
 ﻿using Cysharp.Threading.Tasks;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Unity.Burst;
 using UnityEngine;
@@ -274,7 +275,19 @@ public class WorldGenManager : MonoBehaviour
             if (savedWorld != null)
             {
                 // 생성된 배치 목록에 먼저 변경분을 얹어야 채집한 자원이 다시 스폰되지 않는다.
+                // 복원이 연결 ID를 교체할 수 있으므로 원본 배치는 기존 ID로 정리합니다.
+                var generatedTeleportIds = new HashSet<int>(logicData.Teleports.Select(p => p.id));
                 WorldSaveAdapter.ApplyChunkChanges(savedWorld, logicData);
+                // 지문/전역 배치 조회도 실제 청크에 복원한 텔레포트 정보를 사용합니다.
+                var placements = _worldGraphDirector.GetWorldDisposeData();
+                placements.DisposeDatas.RemoveAll(p => generatedTeleportIds.Contains(p.instanceId));
+                placements.ObjectDisposes.RemoveAll(p => generatedTeleportIds.Contains(p.instanceId));
+                foreach (var teleport in logicData.Teleports)
+                {
+                    var placement = teleport.CreateDispose();
+                    placements.DisposeDatas.Add(placement);
+                    placements.ObjectDisposes.Add(placement);
+                }
                 WorldClock clock = WorldClock.Instance;
                 if (clock == null) clock = new GameObject(nameof(WorldClock)).AddComponent<WorldClock>();
                 clock.EnsureInitialized();

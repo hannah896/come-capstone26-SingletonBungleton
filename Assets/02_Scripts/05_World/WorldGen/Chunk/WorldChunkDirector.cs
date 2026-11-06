@@ -2,6 +2,7 @@ using System.Linq;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
+using System.Threading;
 
 public class WorldChunkDirector : MonoBehaviour
 {
@@ -104,6 +105,46 @@ public class WorldChunkDirector : MonoBehaviour
         }
 
         return startingCoord;
+    }
+
+    /// <summary>현재 발판은 유지하면서 도착지 주변 지형·콜라이더·오브젝트를 먼저 준비합니다.</summary>
+    public async UniTask PrepareTeleportAsync(Vector3 destination, CancellationToken token)
+    {
+        WorldLogicData requestedLogic = _logicData;
+        await UniTask.WaitUntil(() => !_isUpdatingChunks, cancellationToken: token);
+        if (!_isInitialized || requestedLogic != _logicData) throw new System.InvalidOperationException("청크가 초기화되지 않았거나 월드가 변경되었습니다.");
+        _isUpdatingChunks = true;
+        try
+        {
+            Vector2Int center = _logicData.GetChunkCoord(Mathf.FloorToInt(destination.x), Mathf.FloorToInt(destination.z));
+            for (int x = -1; x <= 1; x++)
+                for (int y = -1; y <= 1; y++)
+                {
+                    token.ThrowIfCancellationRequested();
+                    if (requestedLogic != _logicData) throw new System.OperationCanceledException("월드가 변경되었습니다.");
+                    Vector2Int coord = center + new Vector2Int(x, y);
+                    if (_activeChunks.ContainsKey(coord)) continue;
+                    var chunk = _logicData.GetOrCreateChunk(coord);
+                    _activeChunks.Add(coord, chunk);
+                    try { await RenderAndSpawnChunkAsync(chunk, token); }
+                    catch
+                    {
+                        _activeChunks.Remove(coord);
+                        _objectSpawner.DespawnChunkObjects(coord);
+                        _renderDirector.UnloadChunk(coord);
+                        throw;
+                    }
+                }
+        }
+        finally
+        {
+            _isUpdatingChunks = false;
+            if (_hasPendingRequest)
+            {
+                _hasPendingRequest = false;
+                RequestChunkUpdate(_pendingCoord).Forget();
+            }
+        }
     }
 
     private void OnChunkUpdate(float deltaTime)
@@ -242,11 +283,12 @@ public class WorldChunkDirector : MonoBehaviour
         }
     }
 
-    private async UniTask RenderAndSpawnChunkAsync(ChunkData chunk)
+    private async UniTask RenderAndSpawnChunkAsync(ChunkData chunk, CancellationToken token = default)
     {
         await _renderDirector.AddChunkRenderAsync(chunk);
-
-        await _objectSpawner.SpawnChunkObjectsAsync(chunk, this.GetCancellationTokenOnDestroy());
+        token.ThrowIfCancellationRequested();
+        await _objectSpawner.SpawnChunkObjectsAsync(chunk,
+            token.CanBeCanceled ? token : this.GetCancellationTokenOnDestroy());
 
     }
 

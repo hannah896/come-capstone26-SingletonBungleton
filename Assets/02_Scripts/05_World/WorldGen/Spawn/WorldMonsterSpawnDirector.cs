@@ -386,6 +386,8 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             SpawnerPlacementSettings placementSettings = state.Definition.PlacementSettings;
             if (state.Spawning || now < state.NextTime || rule == null) continue;
             if (WorldSpawnArea.Contains(_logic, state.Placement.tilePosition, placementSettings.placementRadius)) continue;
+            if (WorldTeleportPlacement.Contains(_logic, new Vector3(state.Placement.tilePosition.x, 0f,
+                    state.Placement.tilePosition.y), placementSettings.placementRadius)) continue;
             WorldGenManager world = WorldGenManager.Instance;
             if (world != null && world.CurrentLogicData == _logic &&
                 world.ChunkDirector?.ObjectSpawner?.IsSpawnExcluded(pair.Key) == true) continue;
@@ -759,7 +761,8 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         int z = Mathf.FloorToInt(position.z);
         return _logic != null && x >= 0 && z >= 0 && x < _logic.TerrainSize.x && z < _logic.TerrainSize.y &&
             _logic.GetRegionAt(x, z) >= 0 &&
-            !WorldSpawnArea.Contains(_logic, position, _settings.CollisionCheckRadius);
+            !WorldSpawnArea.Contains(_logic, position, _settings.CollisionCheckRadius) &&
+            !WorldTeleportPlacement.Contains(_logic, position, _settings.CollisionCheckRadius);
     }
 
     private Vector3 TilePosition(Vector2Int tile)
