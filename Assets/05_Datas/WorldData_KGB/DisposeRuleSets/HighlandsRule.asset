@@ -26,9 +26,9 @@ MonoBehaviour:
     minCount: 6
     maxCount: 12
   SpawnerRules:
-  - prefabKey: TreantMinionAutmnSpawner
+  - prefabKey: TreeantMinionAutmnSpawner
     minCount: 3
     maxCount: 5
-  - prefabKey: TreantTreeAutmnSpawner
+  - prefabKey: TreeantTreeAutmnSpawner
     minCount: 2
     maxCount: 3
