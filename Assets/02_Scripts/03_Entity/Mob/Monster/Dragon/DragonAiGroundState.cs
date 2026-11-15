@@ -31,11 +31,14 @@ public class DragonAiGroundState : DragonGroundState
         brain = dragonBrain;
     }
 
-    /// <summary>호스트(또는 싱글)에서 학습 모델이 준비돼 있을 때만 쓴다. 멀티 클라는 호스트가 계산한 결과를 복제로 받는다.</summary>
+    /// <summary>
+    /// 호스트(또는 싱글)에서 학습 모델이 준비돼 있을 때만 쓴다. 멀티 클라는 호스트가 계산한 결과를 복제로 받는다.
+    /// 주의: Monster.IsSimulatedPeer는 "이 피어가 AI를 직접 돌리는가"이므로 호스트·싱글에서 true다.
+    /// </summary>
     public static bool CanUse(DragonBoss owner, out IDragonBrain brain)
     {
         brain = null;
-        if (owner == null || Monster.IsSimulatedPeer) return false;
+        if (owner == null || !Monster.IsSimulatedPeer) return false;
 
         brain = owner.GetComponent<IDragonBrain>();
         return brain != null && brain.IsReady;
@@ -122,6 +125,9 @@ public class DragonAiGroundState : DragonGroundState
 
         if (!boss.IsSkillReady(skill)) return false;
 
+        // 사거리를 크게 벗어난 물기·브레스는 허공에 쏘는 모양이 되므로 '다가가기'로 대신한다 (학습 정책의 어색한 선택만 막는 안전장치)
+        if (IsFarOutOfRange(skill)) return false;
+
         // 돌진은 기존 규칙처럼 가장 먼 플레이어를 노린다
         if (skill == DragonSkill.Charge)
         {
@@ -131,6 +137,24 @@ public class DragonAiGroundState : DragonGroundState
 
         sm.ToSkill(skill);
         return true;
+    }
+
+    // 물기는 사거리의 1.5배, 브레스는 1.25배를 넘으면 '크게 벗어났다'고 본다. 돌진·빙탄은 원거리 패턴이라 제한하지 않는다.
+    private const float BiteGuardRatio = 1.5f;
+    private const float BreathGuardRatio = 1.25f;
+
+    private bool IsFarOutOfRange(DragonSkill skill)
+    {
+        var d = boss.Data;
+        if (d == null) return false;
+
+        float dist = boss.TargetDistance;
+        switch (skill)
+        {
+            case DragonSkill.Bite: return dist > d.BiteRange * BiteGuardRatio;
+            case DragonSkill.Breath: return dist > d.BreathRange * BreathGuardRatio;
+            default: return false;
+        }
     }
 
     // 정지 거리 밖이면 걷고, 안이면 제자리에서 몸만 돌린다 (DragonGroundState.Approach와 같은 동작)

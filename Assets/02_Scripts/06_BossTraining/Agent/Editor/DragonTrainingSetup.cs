@@ -183,17 +183,19 @@ namespace SingletonBungleton.BossTraining.Editor
 
         // 학습 아레나에 모델을 꽂아 같은 조건(300판)으로 평가한다. 파이썬 트레이너 없이 Play하면 모델로 추론하고 CSV에 "trained"로 기록된다.
         [MenuItem("Tools/보스 학습/학습 아레나에 모델 연결 (평가용)")]
-        public static void AssignModelToTrainingArena() => SetTrainingArenaModel(true);
+        public static void AssignModelToTrainingArena() => SetTrainingArenaModelAtPath(ModelPath);
 
         [MenuItem("Tools/보스 학습/학습 아레나에서 모델 해제 (규칙 기반/학습용)")]
-        public static void ClearModelFromTrainingArena() => SetTrainingArenaModel(false);
+        public static void ClearModelFromTrainingArena() => SetTrainingArenaModelAtPath(null);
 
-        private static void SetTrainingArenaModel(bool assign)
+        /// <summary>학습 아레나 프리팹에 모델(.onnx)을 꽂는다. 경로가 비어 있으면 모델을 뗀다.</summary>
+        public static void SetTrainingArenaModelAtPath(string modelPath)
         {
-            var model = assign ? AssetDatabase.LoadAssetAtPath<Object>(ModelPath) : null;
+            bool assign = !string.IsNullOrEmpty(modelPath);
+            var model = assign ? AssetDatabase.LoadAssetAtPath<Object>(modelPath) : null;
             if (assign && model == null)
             {
-                Debug.LogError($"[용 학습] 학습된 모델이 없습니다: {ModelPath}");
+                Debug.LogError($"[용 학습] 학습된 모델이 없습니다: {modelPath}");
                 return;
             }
 
