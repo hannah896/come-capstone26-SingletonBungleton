@@ -27,11 +27,23 @@ public sealed class UI_TeleportMarkerGraphic : MaskableGraphic
         foreach (var entry in _data.LogicData.Teleports)
         {
             Vector2 normalized = _data.NormalizeWorldPosition(entry.Position(_data.LogicData));
+            if (!_data.IsNormalizedPositionExplored(normalized)) continue;
+            float brightness = _data.GetMarkerBrightness(normalized);
             Vector2 center = _navigation.NormalizedToViewportPosition(normalized);
-            Diamond(vh, center, _size * 0.5f, new Color32(30, 20, 35, 255));
-            Diamond(vh, center, _size * 0.38f, entry.highlands ?
-                new Color32(255, 220, 30, 255) : new Color32(185, 70, 255, 255));
+            Diamond(vh, center, _size * 0.5f, ApplyBrightness(new Color32(30, 20, 35, 255), brightness));
+            Diamond(vh, center, _size * 0.38f, ApplyBrightness(entry.highlands ?
+                new Color32(255, 220, 30, 255) : new Color32(185, 70, 255, 255), brightness));
         }
+    }
+
+    private static Color32 ApplyBrightness(Color32 color, float brightness)
+    {
+        if (brightness >= 0.999f) return color;
+        return new Color32(
+            (byte)Mathf.Clamp(Mathf.RoundToInt(color.r * brightness), 0, 255),
+            (byte)Mathf.Clamp(Mathf.RoundToInt(color.g * brightness), 0, 255),
+            (byte)Mathf.Clamp(Mathf.RoundToInt(color.b * brightness), 0, 255),
+            color.a);
     }
 
     private static void Diamond(VertexHelper vh, Vector2 center, float radius, Color32 tint)

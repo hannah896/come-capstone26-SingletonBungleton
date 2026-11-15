@@ -15,11 +15,13 @@ public sealed class UI_ResourceMarkerGraphic : MaskableGraphic
     {
         public readonly Sprite Sprite;
         public readonly Vector2 NormalizedPosition;
+        public readonly byte Shade;
 
-        public Icon(Sprite sprite, Vector2 normalizedPosition)
+        public Icon(Sprite sprite, Vector2 normalizedPosition, byte shade = 255)
         {
             Sprite = sprite;
             NormalizedPosition = normalizedPosition;
+            Shade = shade;
         }
     }
 
@@ -77,11 +79,19 @@ public sealed class UI_ResourceMarkerGraphic : MaskableGraphic
         if (contentSize.x <= 0f || contentSize.y <= 0f) return;
         bool pixelPerfect = canvas != null && canvas.renderMode != RenderMode.WorldSpace
             && canvas.scaleFactor != 0f && canvas.pixelPerfect;
-        Color32 tint = color;
+        Color32 baseTint = color;
         foreach (Icon icon in _icons)
         {
             Sprite sprite = icon.Sprite;
             if (sprite == null || sprite.texture != _texture) continue;
+            byte shade = icon.Shade;
+            Color32 tint = shade == 255
+                ? baseTint
+                : new Color32(
+                    (byte)(baseTint.r * shade / 255),
+                    (byte)(baseTint.g * shade / 255),
+                    (byte)(baseTint.b * shade / 255),
+                    baseTint.a);
             if (!_spriteGeometry.TryGetValue(sprite, out SpriteGeometry geometry))
             {
                 Vector4 padding = DataUtility.GetPadding(sprite);

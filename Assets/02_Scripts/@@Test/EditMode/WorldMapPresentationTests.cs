@@ -107,12 +107,13 @@ public class WorldMapPresentationTests : InputTestFixture
     {
         var target = new GameObject("MapTarget").transform;
         target.SetParent(_root.transform, false);
+        target.position = new Vector3(600f, 0f, 400f);
         Invoke(_hud, "SetTarget", target);
-        _navigation.GetType().GetProperty("Zoom").SetValue(_navigation, 4f);
+        _navigation.GetType().GetProperty("Zoom").SetValue(_navigation, 8f);
         _navigation.GetType().GetProperty("IsNavigating").SetValue(_navigation, true);
-        _navigation.GetType().GetField("_center", Members).SetValue(_navigation, new Vector2(0.6f, 0.4f));
+        _navigation.GetType().GetField("_center", Members).SetValue(_navigation, new Vector2(0.2f, 0.8f));
         Layout();
-        Vector2 center = (Vector2)Field(_navigation, "_center");
+        Vector2 playerNormalized = new Vector2(0.6f, 0.4f);
         var image = (Component)Property(_navigation, "MapImage");
 
         for (int i = 0; i < 10; i++)
@@ -121,12 +122,13 @@ public class WorldMapPresentationTests : InputTestFixture
             Layout();
             Assert.That(Property(_hud, "WorldMapView"), Is.SameAs(_map));
             Assert.That(image.GetComponent<Image>().sprite, Is.SameAs(_sprite));
-            Assert.That(Property(_navigation, "Zoom"), Is.EqualTo(4f));
-            Assert.That(Vector2.Distance((Vector2)Field(_navigation, "_center"), center), Is.LessThan(0.001f));
+            Assert.That(Property(_navigation, "Zoom"), Is.EqualTo(6f));
+            Assert.That(Property(_navigation, "IsNavigating"), Is.False);
+            Assert.That(Vector2.Distance((Vector2)Field(_navigation, "_center"), playerNormalized), Is.LessThan(0.001f));
             Assert.That(Property(_map, "Target"), Is.SameAs(target));
             Assert.That(_hud.GetComponentsInChildren(FindType("UI_Panel_WorldMap"), true).Length, Is.EqualTo(1));
             var marker = (RectTransform)Field(_map, "_playerMarker");
-            Assert.That(marker.sizeDelta.x, Is.EqualTo(i % 2 == 0 ? 50f : 15f));
+            Assert.That(marker.sizeDelta.x, Is.EqualTo(i % 2 == 0 ? 60f : 18f));
         }
     }
 
@@ -277,7 +279,7 @@ public class WorldMapPresentationTests : InputTestFixture
             pointerId = -1
         };
         ((IScrollHandler)_navigation).OnScroll(pointer);
-        Assert.That((float)Property(_navigation, "Zoom"), Is.GreaterThan(4f));
+        Assert.That((float)Property(_navigation, "Zoom"), Is.GreaterThan(6f));
         ((IBeginDragHandler)_navigation).OnBeginDrag(pointer);
         pointer.delta = new Vector2(12f, -8f);
         pointer.position += pointer.delta;
@@ -546,7 +548,7 @@ public class WorldMapPresentationTests : InputTestFixture
         Assert.That(_map.GetComponent<Canvas>().overrideSorting, Is.False);
 
         // 지도만 이동/확대해도 자원 좌표를 다시 대입하지 않고 고정 크기로 따라와야 한다.
-        _navigation.GetType().GetProperty("Zoom").SetValue(_navigation, 6f);
+        _navigation.GetType().GetProperty("Zoom").SetValue(_navigation, 8f);
         target.position = new Vector3(51, 0, 51);
         Invoke(_map, "UpdatePlayerMarker");
         Layout();
@@ -668,6 +670,60 @@ public class WorldMapPresentationTests : InputTestFixture
         Assert.That(Invoke(spawner, "IsSpawnExcluded", 1), Is.EqualTo(false));
     }
 
+    [Test]
+    public void FogOfWar_HidesUnexploredMarkersDimsVisitedAndRestoresFromBase64()
+    {
+        var logic = Activator.CreateInstance(FindType("WorldLogicData"), new Vector2Int(100, 100), 10);
+        logic.GetType().GetProperty("SpawnTile").SetValue(logic, new Vector2Int(10, 10));
+
+        var nearDispose = Activator.CreateInstance(FindType("DisposeData"));
+        nearDispose.GetType().GetField("instanceId").SetValue(nearDispose, 101);
+        nearDispose.GetType().GetField("prefabName").SetValue(nearDispose, "ResourceNode_Fir");
+        nearDispose.GetType().GetField("tilePosition").SetValue(nearDispose, new Vector2Int(50, 50));
+        ((System.Collections.IList)Property(Invoke(logic, "GetOrCreateChunk", new Vector2Int(5, 5)), "DisposeDatas")).Add(nearDispose);
+
+        var farDispose = Activator.CreateInstance(FindType("DisposeData"));
+        farDispose.GetType().GetField("instanceId").SetValue(farDispose, 102);
+        farDispose.GetType().GetField("prefabName").SetValue(farDispose, "ResourceNode_Fir");
+        farDispose.GetType().GetField("tilePosition").SetValue(farDispose, new Vector2Int(58, 58));
+        ((System.Collections.IList)Property(Invoke(logic, "GetOrCreateChunk", new Vector2Int(5, 5)), "DisposeDatas")).Add(farDispose);
+
+        var data = Activator.CreateInstance(FindType("WorldMapData"), _texture, _sprite, new Vector2Int(100, 100), logic);
+        Invoke(data, "InitializeFogOfWar", 4f);
+
+        var target = CreateMapTarget("FogLocalTarget", new Vector3(50, 0, 50));
+        Invoke(_map, "SetTarget", target);
+        Invoke(_map, "HandleDataChanged", data);
+        Layout();
+        Invoke(_map, "RefreshResourceMarkers");
+        Invoke(_map, "FlushResourceChanges");
+
+        var markers = (System.Collections.IDictionary)Field(_map, "_resourceMarkers");
+        Assert.That(markers.Contains(nearDispose), Is.True, "현재 시야 내 자원은 표시되어야 한다.");
+        Assert.That(markers.Contains(farDispose), Is.False, "미탐사 지역의 자원은 안개 아래 숨겨야 한다.");
+        Assert.That(Invoke(data, "GetMarkerBrightness", new Vector2(0.5f, 0.5f)), Is.EqualTo(1f));
+
+        // 플레이어가 이동하면 이전 위치는 탐사 완료(반투명 안개) 상태로 남고 마커 밝기가 낮아진다.
+        target.position = new Vector3(58, 0, 58);
+        Invoke(_map, "UpdatePlayerMarker");
+        Invoke(_map, "FlushResourceChanges");
+        Assert.That(markers.Contains(nearDispose), Is.True, "이미 탐사한 지역의 자원은 시야가 떠나도 유지된다.");
+        Assert.That(markers.Contains(farDispose), Is.True, "새로 밝힌 지역의 자원이 나타난다.");
+        Assert.That((float)Invoke(data, "GetMarkerBrightness", new Vector2(0.5f, 0.5f)), Is.LessThan(1f));
+
+        string savedBase64 = (string)Invoke(data, "CaptureExploredFogBase64");
+        Assert.That(savedBase64, Is.Not.Empty);
+
+        var restoredData = Activator.CreateInstance(FindType("WorldMapData"), _texture, _sprite, new Vector2Int(100, 100), logic);
+        Invoke(restoredData, "InitializeFogOfWar", 4f);
+        Assert.That(Invoke(restoredData, "RestoreExploredFogBase64", savedBase64), Is.EqualTo(true));
+        Assert.That(Invoke(restoredData, "IsNormalizedPositionExplored", new Vector2(0.5f, 0.5f)), Is.EqualTo(true));
+        Assert.That(Invoke(restoredData, "IsNormalizedPositionExplored", new Vector2(0.9f, 0.9f)), Is.EqualTo(false));
+
+        Invoke(data, "Dispose");
+        Invoke(restoredData, "Dispose");
+    }
+
     private Transform CreateMapTarget(string name, Vector3 position)
     {
         var target = new GameObject(name).transform;
@@ -689,7 +745,7 @@ public class WorldMapPresentationTests : InputTestFixture
 
     private void AssertDefaultView()
     {
-        Assert.That((float)Property(_navigation, "Zoom"), Is.EqualTo(4f));
+        Assert.That((float)Property(_navigation, "Zoom"), Is.EqualTo(6f));
         Assert.That(Property(_navigation, "IsNavigating"), Is.False);
         var marker = (RectTransform)Field(_map, "_playerMarker");
         Assert.That(marker.anchoredPosition.magnitude, Is.LessThan(0.001f),
