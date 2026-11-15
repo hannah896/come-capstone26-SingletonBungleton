@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Snow
   m_EditorClassIdentifier: 
   BiomeType: 3
-  DebugColor: {r: 1, g: 1, b: 1, a: 1}
+  DebugColor: {r: 0.8792453, g: 0.86099684, b: 0.86099684, a: 1}
   BaseTemperature: 0
   Weather:
     Precipitation: 2

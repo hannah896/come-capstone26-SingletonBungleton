@@ -85,11 +85,12 @@ public sealed class UI_MapViewport : MonoBehaviour, IScrollHandler, IBeginDragHa
             viewport.gameObject.AddComponent<RectMask2D>();
 
         // 빈 여백 위에서도 입력을 받고, 지도 밖으로는 입력 영역이 확장되지 않게 한다.
+        // 지도 바깥 여백은 미탐사 안개와 같은 완전한 검은색으로 채운다.
         if (!viewport.TryGetComponent<Graphic>(out var hitArea))
         {
             hitArea = viewport.gameObject.AddComponent<Image>();
-            hitArea.color = Color.clear;
         }
+        hitArea.color = Color.black;
         hitArea.enabled = true;
         hitArea.raycastTarget = true;
         // 투명한 입력 영역도 GraphicRaycaster의 검사 대상으로 유지한다.

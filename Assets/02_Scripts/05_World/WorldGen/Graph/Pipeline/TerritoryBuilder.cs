@@ -25,7 +25,6 @@ public class TerritoryBuilder : IGraphPipelineStage
 
     public const int OCEAN_MARKER = -1;
     public const int BORDER_MARKER = -2;
-    private const int SMOOTHING_DIRECTIONS = 4;
     #endregion
 
     #region Fields
@@ -37,15 +36,11 @@ public class TerritoryBuilder : IGraphPipelineStage
     private CancellationToken _ct;
 
     private SpatialGrid<NodeSpatialData> _nodeSpatialGrid;
-    private List<NodeSpatialData> _nodeSpatialCache;        // 노드의 공간 데이터를 캐싱하는 리스트 (인덱스 기반 접근용)          
-    private static readonly int[] _dx4 = { -1, 1, 0, 0 };
-    private static readonly int[] _dy4 = { 0, 0, -1, 1 };
+    private List<NodeSpatialData> _nodeSpatialCache;        // 노드의 공간 데이터를 캐싱하는 리스트 (인덱스 기반 접근용)
 
-    // ★ 추가: 8방향 (영토 테두리 등 정밀 연산용)
+    // 8방향 (영토 테두리 및 연결선 분리 탐색용)
     private static readonly int[] _dx8 = { -1, 1, 0, 0, -1, -1, 1, 1 };
     private static readonly int[] _dy8 = { 0, 0, -1, 1, -1, 1, -1, 1 };
-    // 대각선(인덱스 4~7)은 거리 1.414f, 상하좌우(인덱스 0~3)는 거리 1.0f
-    private static readonly float[] _dist8 = { 1.0f, 1.0f, 1.0f, 1.0f, 1.414f, 1.414f, 1.414f, 1.414f };
 
     #endregion
 
@@ -72,6 +67,17 @@ public class TerritoryBuilder : IGraphPipelineStage
             RegionNoiseFactor = Mathf.Sin(index * 0.7f) * 0.5f + 0.5f;
             TerritoryWeight = territoryWeight;
         }
+    }
+
+    /// <summary>
+    /// Burst Job 내부에서 사용하기 위한 블리터블(Unmanaged) 공간 데이터 구조체
+    /// </summary>
+    private struct SpatialPointData
+    {
+        public int NodeIndex;
+        public float2 Position;
+        public float RegionNoiseFactor;
+        public float TerritoryWeight;
     }
 
     // 시드 동일 = 결과 동일을 보장하기 위해 엄격 모드 고정 (LandformJobs.HeightGenerationJob 주석 참고)
@@ -118,6 +124,535 @@ public class TerritoryBuilder : IGraphPipelineStage
 
             // 계산된 최종 값을 배열에 저장
             NoiseMap[index] = (noiseResult / maxValue) * NoiseStrength;
+        }
+    }
+
+    /// <summary>
+    /// Phase 3: 도메인 워핑 + 보로노이 분할 + 비연결 지역 분리 병렬 Job
+    /// </summary>
+    [BurstCompile(FloatMode = FloatMode.Strict, FloatPrecision = FloatPrecision.High, CompileSynchronously = true)]
+    private struct AssignTerritoryJob : IJobParallelFor
+    {
+        public int Width;
+        public int Height;
+        public int GridW;
+        public int GridH;
+        public int CellSize;
+        public int NodeCount;
+        public float NoiseStrength;
+
+        [ReadOnly] public NativeArray<float> NoiseMap;
+        [ReadOnly] public NativeArray<float> NodeRadius;
+        [ReadOnly] public NativeArray<int2> GridCellRanges;
+        [ReadOnly] public NativeArray<SpatialPointData> GridBucketItems;
+        [ReadOnly] public NativeArray<byte> ShouldSeparateMatrix;
+
+        [WriteOnly] public NativeArray<int> TerritoryMap;
+
+        public void Execute(int index)
+        {
+            int x = index % Width;
+            int y = index / Width;
+
+            // 도메인 워핑 (cnoise는 -1 ~ 1 범위 반환)
+            float warpFreq = 0.035f;
+            float warpStrength = 15.0f;
+
+            float warpX = noise.cnoise(new float2(x * warpFreq + 12.3f, y * warpFreq + 45.6f)) * warpStrength;
+            float warpY = noise.cnoise(new float2(x * warpFreq + 78.9f, y * warpFreq + 12.3f)) * warpStrength;
+            float2 tilePos = new float2(x + warpX, y + warpY);
+
+            int idx1 = -1;
+            float dist1 = float.MaxValue;
+            int idx2 = -1;
+            float dist2 = float.MaxValue;
+
+            float noiseOffset = NoiseMap[index];
+
+            int gx = x / CellSize;
+            int gy = y / CellSize;
+            if (gx >= 0 && gx < GridW && gy >= 0 && gy < GridH)
+            {
+                int2 range = GridCellRanges[gy * GridW + gx];
+                int start = range.x;
+                int end = start + range.y;
+
+                for (int i = start; i < end; i++)
+                {
+                    SpatialPointData spatialData = GridBucketItems[i];
+                    float distance = math.distance(tilePos, spatialData.Position);
+                    float weightedDistance = distance - spatialData.TerritoryWeight;
+
+                    if (distance - NoiseStrength > dist2) continue;
+
+                    float distortedDistance = weightedDistance + (noiseOffset * spatialData.RegionNoiseFactor);
+
+                    if (distortedDistance < dist1)
+                    {
+                        if (idx1 != spatialData.NodeIndex && idx1 != -1)
+                        {
+                            dist2 = dist1;
+                            idx2 = idx1;
+                        }
+
+                        dist1 = distortedDistance;
+                        idx1 = spatialData.NodeIndex;
+                    }
+                    else if (distortedDistance < dist2 && spatialData.NodeIndex != idx1)
+                    {
+                        dist2 = distortedDistance;
+                        idx2 = spatialData.NodeIndex;
+                    }
+                }
+            }
+
+            int finalOwner = OCEAN_MARKER;
+            if (idx1 != -1 && dist1 <= NodeRadius[idx1])
+            {
+                float dynamicSeparationGap = DEFAULT_SEPARATION_GAP + (noiseOffset * 2f);
+                bool shouldSeparate = false;
+
+                if (idx2 != -1 && (dist2 - dist1) < dynamicSeparationGap)
+                {
+                    shouldSeparate = ShouldSeparateMatrix[idx1 * NodeCount + idx2] != 0;
+                }
+
+                if (!shouldSeparate)
+                {
+                    finalOwner = idx1;
+                }
+            }
+
+            TerritoryMap[index] = finalOwner;
+        }
+    }
+
+    /// <summary>
+    /// Phase 4: 고립된 섬(Orphan) 타일 병합 병렬 Job
+    /// </summary>
+    [BurstCompile(FloatMode = FloatMode.Strict, FloatPrecision = FloatPrecision.High, CompileSynchronously = true)]
+    private struct CleanUpOrphanTilesJob : IJobParallelFor
+    {
+        public int Width;
+        public int Height;
+
+        [ReadOnly] public NativeArray<int> ReadTerritory;
+        [WriteOnly] public NativeArray<int> WriteTerritory;
+
+        public void Execute(int index)
+        {
+            int x = index % Width;
+            int y = index / Width;
+
+            int currentOwner = ReadTerritory[index];
+
+            // 맵 가장자리 또는 바다는 정화 대상에서 제외
+            if (x <= 0 || x >= Width - 1 || y <= 0 || y >= Height - 1 || currentOwner == OCEAN_MARKER)
+            {
+                WriteTerritory[index] = currentOwner;
+                return;
+            }
+
+            // 8방향 이웃 소유자 수집 (기존 탐색 순서: (-1,-1),(0,-1),(1,-1),(-1,0),(1,0),(-1,1),(0,1),(1,1))
+            int n0 = ReadTerritory[(y - 1) * Width + (x - 1)];
+            int n1 = ReadTerritory[(y - 1) * Width + x];
+            int n2 = ReadTerritory[(y - 1) * Width + (x + 1)];
+            int n3 = ReadTerritory[y * Width + (x - 1)];
+            int n4 = ReadTerritory[y * Width + (x + 1)];
+            int n5 = ReadTerritory[(y + 1) * Width + (x - 1)];
+            int n6 = ReadTerritory[(y + 1) * Width + x];
+            int n7 = ReadTerritory[(y + 1) * Width + (x + 1)];
+
+            int sameOwnerCount = 0;
+            if (n0 == currentOwner) sameOwnerCount++;
+            if (n1 == currentOwner) sameOwnerCount++;
+            if (n2 == currentOwner) sameOwnerCount++;
+            if (n3 == currentOwner) sameOwnerCount++;
+            if (n4 == currentOwner) sameOwnerCount++;
+            if (n5 == currentOwner) sameOwnerCount++;
+            if (n6 == currentOwner) sameOwnerCount++;
+            if (n7 == currentOwner) sameOwnerCount++;
+
+            if (sameOwnerCount > 2)
+            {
+                WriteTerritory[index] = currentOwner;
+                return;
+            }
+
+            // 주변 8칸 중 바다를 제외한 최다 빈도 소유자 탐색 (동률 시 먼저 등장한 방향 우선 유지)
+            int bestOwner = currentOwner;
+            int bestCount = 0;
+
+            CheckCandidate(n0, n0, n1, n2, n3, n4, n5, n6, n7, ref bestOwner, ref bestCount);
+            CheckCandidate(n1, n0, n1, n2, n3, n4, n5, n6, n7, ref bestOwner, ref bestCount);
+            CheckCandidate(n2, n0, n1, n2, n3, n4, n5, n6, n7, ref bestOwner, ref bestCount);
+            CheckCandidate(n3, n0, n1, n2, n3, n4, n5, n6, n7, ref bestOwner, ref bestCount);
+            CheckCandidate(n4, n0, n1, n2, n3, n4, n5, n6, n7, ref bestOwner, ref bestCount);
+            CheckCandidate(n5, n0, n1, n2, n3, n4, n5, n6, n7, ref bestOwner, ref bestCount);
+            CheckCandidate(n6, n0, n1, n2, n3, n4, n5, n6, n7, ref bestOwner, ref bestCount);
+            CheckCandidate(n7, n0, n1, n2, n3, n4, n5, n6, n7, ref bestOwner, ref bestCount);
+
+            WriteTerritory[index] = bestOwner;
+        }
+
+        private static void CheckCandidate(
+            int candidate,
+            int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7,
+            ref int bestOwner, ref int bestCount)
+        {
+            if (candidate == OCEAN_MARKER) return;
+
+            int count = 0;
+            if (n0 == candidate) count++;
+            if (n1 == candidate) count++;
+            if (n2 == candidate) count++;
+            if (n3 == candidate) count++;
+            if (n4 == candidate) count++;
+            if (n5 == candidate) count++;
+            if (n6 == candidate) count++;
+            if (n7 == candidate) count++;
+
+            if (count > bestCount)
+            {
+                bestCount = count;
+                bestOwner = candidate;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Phase 5-1: 맵 가장자리 해안선 절삭 병렬 Job
+    /// </summary>
+    [BurstCompile(FloatMode = FloatMode.Strict, FloatPrecision = FloatPrecision.High, CompileSynchronously = true)]
+    private struct ApplyOceanEdgeJob : IJobParallelFor
+    {
+        public int Width;
+        public int Height;
+        public float HalfWidth;
+        public float HalfHeight;
+        public float NoiseStrength;
+        public float ThresholdLimit;
+
+        [ReadOnly] public NativeArray<float> NoiseMap;
+        public NativeArray<int> TerritoryMap;
+
+        public void Execute(int index)
+        {
+            int x = index % Width;
+            int y = index / Width;
+
+            float edgeDistanceX = math.min((float)x, (float)(Width - 1 - x)) / HalfWidth;
+            float edgeDistanceY = math.min((float)y, (float)(Height - 1 - y)) / HalfHeight;
+            float edgeDistance = math.min(edgeDistanceX, edgeDistanceY);
+
+            float oceanNoise = (NoiseMap[index] / NoiseStrength) * OCEAN_NOISE_SCALE;
+
+            if (edgeDistance + oceanNoise < ThresholdLimit)
+            {
+                TerritoryMap[index] = OCEAN_MARKER;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Phase 5-3: 영토 경계선 타일 마킹 병렬 Job
+    /// </summary>
+    [BurstCompile(FloatMode = FloatMode.Strict, FloatPrecision = FloatPrecision.High, CompileSynchronously = true)]
+    private struct MarkBorderTilesJob : IJobParallelFor
+    {
+        public int Width;
+        public int Height;
+
+        [ReadOnly] public NativeArray<int> TerritoryMap;
+        [WriteOnly] public NativeArray<int> BorderMap;
+
+        public void Execute(int index)
+        {
+            int x = index % Width;
+            int y = index / Width;
+
+            if (x <= 0 || x >= Width - 1 || y <= 0 || y >= Height - 1)
+            {
+                BorderMap[index] = 0;
+                return;
+            }
+
+            int currentRegion = TerritoryMap[index];
+            if (currentRegion == OCEAN_MARKER)
+            {
+                BorderMap[index] = 0;
+                return;
+            }
+
+            int left = TerritoryMap[index - 1];
+            int right = TerritoryMap[index + 1];
+            int down = TerritoryMap[index - Width];
+            int up = TerritoryMap[index + Width];
+
+            bool isBorder =
+                (left != currentRegion && left != OCEAN_MARKER) ||
+                (right != currentRegion && right != OCEAN_MARKER) ||
+                (down != currentRegion && down != OCEAN_MARKER) ||
+                (up != currentRegion && up != OCEAN_MARKER);
+
+            BorderMap[index] = isBorder ? BORDER_MARKER : 0;
+        }
+    }
+
+    /// <summary>
+    /// Phase 7-1: 해안선(4방향) 및 지역 경계(8방향) 거리 BFS 및 노드별 최대 깊이 산출 Job
+    /// </summary>
+    [BurstCompile(FloatMode = FloatMode.Strict, FloatPrecision = FloatPrecision.High, CompileSynchronously = true)]
+    private struct InfluenceBfsJob : IJob
+    {
+        public int Width;
+        public int Height;
+
+        [ReadOnly] public NativeArray<int> TerritoryMap;
+        [ReadOnly] public NativeArray<int> NodeRegionIds;
+
+        public NativeArray<int> QueueOcean;
+        public NativeArray<int> QueueEdge;
+        public NativeArray<byte> VisitedOcean;
+        public NativeArray<byte> VisitedEdge;
+
+        public NativeArray<int> DistanceToOcean;
+        public NativeArray<float> DistanceToEdge;
+        public NativeArray<int> NodeMaxOceanDepth;
+        public NativeArray<float> NodeMaxEdgeDepth;
+
+        public void Execute()
+        {
+            int headOcean = 0;
+            int tailOcean = 0;
+            int headEdge = 0;
+            int tailEdge = 0;
+
+            for (int i = 0; i < NodeMaxOceanDepth.Length; i++)
+            {
+                NodeMaxOceanDepth[i] = 1;
+                NodeMaxEdgeDepth[i] = 1f;
+            }
+
+            // 1. 초기 시드(바다 및 지역 경계선) 큐 삽입 (기존 (x, y) 순회 순서 동일 유지)
+            for (int x = 0; x < Width; x++)
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    int idx = y * Width + x;
+                    int ownerNode = TerritoryMap[idx];
+
+                    if (ownerNode == OCEAN_MARKER)
+                    {
+                        DistanceToOcean[idx] = 0;
+                        VisitedOcean[idx] = 1;
+                        QueueOcean[tailOcean++] = idx;
+                        DistanceToEdge[idx] = 0f;
+                    }
+                    else
+                    {
+                        DistanceToOcean[idx] = int.MaxValue;
+                        DistanceToEdge[idx] = float.MaxValue;
+
+                        int myRegion = NodeRegionIds[ownerNode];
+                        bool isBorder = false;
+
+                        for (int d = 0; d < 8; d++)
+                        {
+                            int nx = x + GetDx8(d);
+                            int ny = y + GetDy8(d);
+
+                            if (nx < 0 || nx >= Width || ny < 0 || ny >= Height)
+                            {
+                                isBorder = true;
+                                break;
+                            }
+
+                            int neighborNode = TerritoryMap[ny * Width + nx];
+                            if (neighborNode == OCEAN_MARKER || NodeRegionIds[neighborNode] != myRegion)
+                            {
+                                isBorder = true;
+                                break;
+                            }
+                        }
+
+                        if (isBorder)
+                        {
+                            DistanceToEdge[idx] = 0f;
+                            VisitedEdge[idx] = 1;
+                            QueueEdge[tailEdge++] = idx;
+                        }
+                    }
+                }
+            }
+
+            // 2-1. 해안선 4방향 BFS
+            while (headOcean < tailOcean)
+            {
+                int currIdx = QueueOcean[headOcean++];
+                int cx = currIdx % Width;
+                int cy = currIdx / Width;
+                int currDist = DistanceToOcean[currIdx];
+
+                for (int d = 0; d < 4; d++)
+                {
+                    int nx = cx + GetDx8(d);
+                    int ny = cy + GetDy8(d);
+
+                    if (nx >= 0 && nx < Width && ny >= 0 && ny < Height)
+                    {
+                        int nIdx = ny * Width + nx;
+                        if (VisitedOcean[nIdx] == 0 && TerritoryMap[nIdx] >= 0)
+                        {
+                            VisitedOcean[nIdx] = 1;
+                            DistanceToOcean[nIdx] = currDist + 1;
+                            QueueOcean[tailOcean++] = nIdx;
+                        }
+                    }
+                }
+            }
+
+            // 2-2. 지역 경계선 8방향 BFS
+            while (headEdge < tailEdge)
+            {
+                int currIdx = QueueEdge[headEdge++];
+                int cx = currIdx % Width;
+                int cy = currIdx / Width;
+                float currDist = DistanceToEdge[currIdx];
+
+                int myOwner = TerritoryMap[currIdx];
+                int myRegion = NodeRegionIds[myOwner];
+
+                for (int d = 0; d < 8; d++)
+                {
+                    int nx = cx + GetDx8(d);
+                    int ny = cy + GetDy8(d);
+
+                    if (nx >= 0 && nx < Width && ny >= 0 && ny < Height)
+                    {
+                        int nIdx = ny * Width + nx;
+                        if (VisitedEdge[nIdx] == 0)
+                        {
+                            int neighborNode = TerritoryMap[nIdx];
+                            if (neighborNode != OCEAN_MARKER && NodeRegionIds[neighborNode] == myRegion)
+                            {
+                                VisitedEdge[nIdx] = 1;
+                                DistanceToEdge[nIdx] = currDist + GetDist8(d);
+                                QueueEdge[tailEdge++] = nIdx;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. 각 노드별 최대 깊이 계산
+            int totalLength = Width * Height;
+            for (int idx = 0; idx < totalLength; idx++)
+            {
+                int owner = TerritoryMap[idx];
+                if (owner >= 0)
+                {
+                    int oceanDist = DistanceToOcean[idx];
+                    if (oceanDist > NodeMaxOceanDepth[owner])
+                        NodeMaxOceanDepth[owner] = oceanDist;
+
+                    float edgeDist = DistanceToEdge[idx];
+                    if (edgeDist > NodeMaxEdgeDepth[owner])
+                        NodeMaxEdgeDepth[owner] = edgeDist;
+                }
+            }
+        }
+
+        private static int GetDx8(int d)
+        {
+            switch (d)
+            {
+                case 0: return -1;
+                case 1: return 1;
+                case 2: return 0;
+                case 3: return 0;
+                case 4: return -1;
+                case 5: return -1;
+                case 6: return 1;
+                default: return 1;
+            }
+        }
+
+        private static int GetDy8(int d)
+        {
+            switch (d)
+            {
+                case 0: return 0;
+                case 1: return 0;
+                case 2: return -1;
+                case 3: return 1;
+                case 4: return -1;
+                case 5: return 1;
+                case 6: return -1;
+                default: return 1;
+            }
+        }
+
+        private static float GetDist8(int d)
+        {
+            return d < 4 ? 1.0f : 1.414f;
+        }
+    }
+
+    /// <summary>
+    /// Phase 7-2: 거리 정규화 및 SmoothStep 가중치 병렬 계산 Job
+    /// </summary>
+    [BurstCompile(FloatMode = FloatMode.Strict, FloatPrecision = FloatPrecision.High, CompileSynchronously = true)]
+    private struct ComputeInfluenceWeightsJob : IJobParallelFor
+    {
+        [ReadOnly] public NativeArray<int> TerritoryMap;
+        [ReadOnly] public NativeArray<int> DistanceToOcean;
+        [ReadOnly] public NativeArray<float> DistanceToEdge;
+        [ReadOnly] public NativeArray<int> NodeMaxOceanDepth;
+        [ReadOnly] public NativeArray<float> NodeMaxEdgeDepth;
+
+        [WriteOnly] public NativeArray<InfluenceData> CoastlineData;
+        [WriteOnly] public NativeArray<InfluenceData> RegionEdgeData;
+
+        public void Execute(int index)
+        {
+            int owner = TerritoryMap[index];
+            if (owner >= 0)
+            {
+                int oceanDist = DistanceToOcean[index];
+                float edgeDist = DistanceToEdge[index];
+
+                float currentMaxOceanDepth = math.max(1f, (float)NodeMaxOceanDepth[owner]);
+                float coastPercentage = (float)oceanDist / currentMaxOceanDepth;
+
+                float currentMaxEdgeDepth = math.max(1f, NodeMaxEdgeDepth[owner]);
+                float edgePercentage = edgeDist / currentMaxEdgeDepth;
+
+                CoastlineData[index] = new InfluenceData
+                {
+                    Distance = oceanDist,
+                    Weight = SmoothStepRange(0.1f, 1.0f, coastPercentage)
+                };
+
+                RegionEdgeData[index] = new InfluenceData
+                {
+                    Distance = edgeDist,
+                    Weight = SmoothStepRange(0.1f, 1.0f, edgePercentage)
+                };
+            }
+            else
+            {
+                CoastlineData[index] = new InfluenceData { Distance = 0f, Weight = 0f };
+                RegionEdgeData[index] = new InfluenceData { Distance = 0f, Weight = 0f };
+            }
+        }
+
+        // Mathf.SmoothStep(from, to, Mathf.Clamp01(t))와 동일한 보간 연산
+        private static float SmoothStepRange(float from, float to, float t)
+        {
+            t = math.clamp(t, 0f, 1f);
+            t = t * t * (3f - 2f * t);
+            return math.lerp(from, to, t);
         }
     }
     #endregion
@@ -282,45 +817,46 @@ public class TerritoryBuilder : IGraphPipelineStage
         float offsetX = _prng.Next(-10000, 10000);
         float offsetY = _prng.Next(-10000, 10000);
 
-        // 1. Job에 넘겨줄 1차원 배열(NativeArray) 생성 (TempJob으로 선언하여 메모리 누수 원천 차단)
         NativeArray<float> nativeNoise = new NativeArray<float>(totalLength, Allocator.TempJob);
+        JobHandle handle = default;
 
-        // 2. Job들에 넘겨줄 데이터 포장
-        NoiseGenerationJob job = new NoiseGenerationJob
+        try
         {
-            NoiseMap = nativeNoise,
-            Width = width,
-            OffsetX = offsetX,
-            OffsetY = offsetY,
-            NoiseScale = _partiSettings.noiseScale,
-            Octaves = NOISE_OCTAVES,
-            AmplitudeDecay = NOISE_AMPLITUDE_DECAY,
-            FrequencyGrowth = NOISE_FREQUENCY_GROWTH,
-            NoiseStrength = _partiSettings.noiseStrength
-        };
-
-        // 3. 작업 시작 64개씩 묶어서 여러 CPU 코어에 할당
-        JobHandle handle = job.Schedule(totalLength, 64);
-
-        // 4. 유니티 메인 스레드가 프리즈되지 않도록, 백그라운드에서 작업이 끝날 때까지 비동기로 기다림.
-        while (!handle.IsCompleted)
-        {
-            await UniTask.Yield(_ct);
-        }
-        handle.Complete(); // 작업 완료 보장
-
-        // 5. 완료된 1차원 연산 결과를 우리의 2D 바구니(NoiseWorld)로  복사
-        int index = 0;
-        for (int y = 0; y < height; y++)
-        {
-            for (int x = 0; x < width; x++)
+            NoiseGenerationJob job = new NoiseGenerationJob
             {
-                _worldLogicData.NoiseWorld[x, y] = nativeNoise[index++];
+                NoiseMap = nativeNoise,
+                Width = width,
+                OffsetX = offsetX,
+                OffsetY = offsetY,
+                NoiseScale = _partiSettings.noiseScale,
+                Octaves = NOISE_OCTAVES,
+                AmplitudeDecay = NOISE_AMPLITUDE_DECAY,
+                FrequencyGrowth = NOISE_FREQUENCY_GROWTH,
+                NoiseStrength = _partiSettings.noiseStrength
+            };
+
+            handle = job.Schedule(totalLength, 64);
+
+            while (!handle.IsCompleted)
+            {
+                await UniTask.Yield(_ct);
+            }
+            handle.Complete();
+
+            int index = 0;
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    _worldLogicData.NoiseWorld[x, y] = nativeNoise[index++];
+                }
             }
         }
-
-        // 6. NativeArray 메모리 수동 해제
-        nativeNoise.Dispose();
+        finally
+        {
+            handle.Complete();
+            if (nativeNoise.IsCreated) nativeNoise.Dispose();
+        }
 
         if (_worldSettings.EnableStepByStep)
             await UniTask.Delay(System.TimeSpan.FromSeconds(_worldSettings.StepDelay), cancellationToken: _ct);
@@ -341,73 +877,139 @@ public class TerritoryBuilder : IGraphPipelineStage
             return;
         }
 
+        int width = _worldLogicData.TerrainSize.x;
+        int height = _worldLogicData.TerrainSize.y;
+        int totalLength = width * height;
+        int nodeCount = nodes.Count;
+
         HashSet<(RegionData, RegionData)> connectedRegions = BuildConnectedRegionsSet();
 
-        float mapArea = _worldLogicData.TerrainSize.x * _worldLogicData.TerrainSize.y;
-        float avgAreaPerNode = mapArea / nodes.Count;
+        float mapArea = width * height;
+        float avgAreaPerNode = mapArea / nodeCount;
         float baseRadius = Mathf.Sqrt(avgAreaPerNode / Mathf.PI);
 
         float avgScale = nodes.Average(n => (n.RegionData != null) ? n.RegionData.TerritoryScale : 1f);
 
-        float[] nodeRadius = new float[nodes.Count];
-        for (int i = 0; i < nodes.Count; i++)
+        // 공간 그리드(SpatialGrid) 버킷을 1차원 NativeArray로 평탄화
+        int cellCount = _nodeSpatialGrid.CellCount;
+        int totalBucketItems = 0;
+        for (int c = 0; c < cellCount; c++)
         {
-            float scale = (nodes[i].RegionData != null) ? nodes[i].RegionData.TerritoryScale : 1f;
-            float countScale = Mathf.Sqrt(scale / Mathf.Max(0.1f, avgScale)); 
-            
-            float radius = baseRadius * countScale;                  
-            nodeRadius[i] = Mathf.Clamp(radius, baseRadius * 0.4f, baseRadius * 2.2f);
+            totalBucketItems += _nodeSpatialGrid.GetBucketByCellIndex(c).Count;
         }
 
-        int processedCount = 0;
+        NativeArray<float> nativeNoise = new NativeArray<float>(totalLength, Allocator.TempJob);
+        NativeArray<float> nativeNodeRadius = new NativeArray<float>(nodeCount, Allocator.TempJob);
+        NativeArray<int2> nativeCellRanges = new NativeArray<int2>(cellCount, Allocator.TempJob);
+        NativeArray<SpatialPointData> nativeBucketItems = new NativeArray<SpatialPointData>(Mathf.Max(1, totalBucketItems), Allocator.TempJob);
+        NativeArray<byte> nativeShouldSeparate = new NativeArray<byte>(nodeCount * nodeCount, Allocator.TempJob);
+        NativeArray<int> nativeTerritory = new NativeArray<int>(totalLength, Allocator.TempJob);
+        JobHandle handle = default;
+
+        float radiusSum = 0f;
         int landCount = 0;
 
-        for (int x = 0; x < _worldLogicData.TerrainSize.x; x++)
+        try
         {
-            for (int y = 0; y < _worldLogicData.TerrainSize.y; y++)
+            for (int i = 0; i < nodeCount; i++)
             {
-                _ct.ThrowIfCancellationRequested();
+                float scale = (nodes[i].RegionData != null) ? nodes[i].RegionData.TerritoryScale : 1f;
+                float countScale = Mathf.Sqrt(scale / Mathf.Max(0.1f, avgScale));
+                float radius = Mathf.Clamp(baseRadius * countScale, baseRadius * 0.4f, baseRadius * 2.2f);
+                nativeNodeRadius[i] = radius;
+                radiusSum += radius;
+            }
 
-                // 도메인 워핑
-                float warpFreq = 0.035f;
-                float warpStrength = 15.0f; // 너무 뾰족하지 않게 살짝 약화 
-                
-                float warpX = (Mathf.PerlinNoise(x * warpFreq + 12.3f, y * warpFreq + 45.6f) * 2f - 1f) * warpStrength;
-                float warpY = (Mathf.PerlinNoise(x * warpFreq + 78.9f, y * warpFreq + 12.3f) * 2f - 1f) * warpStrength;
-
-                Vector2 warpedPos = new Vector2(x + warpX, y + warpY);
-
-                var (idx1, dist1, idx2, dist2) = FindTopTwoNodesOptimized(warpedPos, x, y);
-
-                int finalOwner = OCEAN_MARKER;
-
-                if (idx1 != -1 && dist1 <= nodeRadius[idx1])
+            // 노드 쌍별 분리 여부 행렬 사전 구축
+            for (int i = 0; i < nodeCount; i++)
+            {
+                RegionData r1 = nodes[i].RegionData;
+                for (int j = 0; j < nodeCount; j++)
                 {
-                    float dynamicSeparationGap = DEFAULT_SEPARATION_GAP + (_worldLogicData.NoiseWorld[x, y] * 2f);
-
-                    bool shouldSeparate = ShouldSeparateRegions(
-                        idx2, dist1, dist2, dynamicSeparationGap,
-                        nodes, connectedRegions, idx1
-                    );
-
-                    if (!shouldSeparate)
-                    {
-                        finalOwner = idx1;
-                        landCount++;
-                    }
+                    RegionData r2 = nodes[j].RegionData;
+                    bool separate = (r1 != r2) && !connectedRegions.Contains((r1, r2));
+                    nativeShouldSeparate[i * nodeCount + j] = separate ? (byte)1 : (byte)0;
                 }
+            }
 
-                _worldLogicData.TerritoryWorld[x, y] = finalOwner;
-
-                processedCount++;
-                if (processedCount % _partiSettings.batchSize == 0)
+            // SpatialGrid 평탄화
+            int cursor = 0;
+            for (int c = 0; c < cellCount; c++)
+            {
+                var bucket = _nodeSpatialGrid.GetBucketByCellIndex(c);
+                int count = bucket.Count;
+                nativeCellRanges[c] = new int2(cursor, count);
+                for (int k = 0; k < count; k++)
                 {
-                    await UniTask.Yield(_ct);
+                    var item = bucket[k];
+                    nativeBucketItems[cursor++] = new SpatialPointData
+                    {
+                        NodeIndex = item.Index,
+                        Position = new float2(item.Position.x, item.Position.y),
+                        RegionNoiseFactor = item.RegionNoiseFactor,
+                        TerritoryWeight = item.TerritoryWeight
+                    };
+                }
+            }
+
+            // NoiseWorld 복사
+            int idx = 0;
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    nativeNoise[idx++] = _worldLogicData.NoiseWorld[x, y];
+                }
+            }
+
+            var job = new AssignTerritoryJob
+            {
+                Width = width,
+                Height = height,
+                GridW = _nodeSpatialGrid.GridWidth,
+                GridH = _nodeSpatialGrid.GridHeight,
+                CellSize = _nodeSpatialGrid.CellSize,
+                NodeCount = nodeCount,
+                NoiseStrength = _partiSettings.noiseStrength,
+                NoiseMap = nativeNoise,
+                NodeRadius = nativeNodeRadius,
+                GridCellRanges = nativeCellRanges,
+                GridBucketItems = nativeBucketItems,
+                ShouldSeparateMatrix = nativeShouldSeparate,
+                TerritoryMap = nativeTerritory
+            };
+
+            handle = job.Schedule(totalLength, 64);
+
+            while (!handle.IsCompleted)
+            {
+                await UniTask.Yield(_ct);
+            }
+            handle.Complete();
+
+            idx = 0;
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    int owner = nativeTerritory[idx++];
+                    _worldLogicData.TerritoryWorld[x, y] = owner;
+                    if (owner != OCEAN_MARKER) landCount++;
                 }
             }
         }
+        finally
+        {
+            handle.Complete();
+            if (nativeNoise.IsCreated) nativeNoise.Dispose();
+            if (nativeNodeRadius.IsCreated) nativeNodeRadius.Dispose();
+            if (nativeCellRanges.IsCreated) nativeCellRanges.Dispose();
+            if (nativeBucketItems.IsCreated) nativeBucketItems.Dispose();
+            if (nativeShouldSeparate.IsCreated) nativeShouldSeparate.Dispose();
+            if (nativeTerritory.IsCreated) nativeTerritory.Dispose();
+        }
 
-        float avgRadius = nodeRadius.Length > 0 ? nodeRadius.Average() : 0f;
+        float avgRadius = nodeCount > 0 ? radiusSum / nodeCount : 0f;
         Debug.Log($"[TilePartitioner] 땅 타일: {landCount}개 / 바다 타일: {mapArea - landCount}개 | 평균 반경: {avgRadius:F2}");
 
         if (_worldSettings.EnableStepByStep)
@@ -446,82 +1048,8 @@ public class TerritoryBuilder : IGraphPipelineStage
 
         return connectedRegions;
     }
-
-    /// <summary>
-    /// 두 Region을 분리해야 하는지 판단
-    /// </summary>
-    private bool ShouldSeparateRegions(
-        int idx2, float dist1, float dist2, float separationGap,
-        List<Node> nodes, HashSet<(RegionData, RegionData)> connectedRegions, int idx1)
-    {
-        if (idx2 == -1) return false;
-
-        float diff = dist2 - dist1;
-        if (diff >= separationGap) return false;
-
-        Node node1 = nodes[idx1];
-        Node node2 = nodes[idx2];
-
-        if (node1.RegionData == node2.RegionData) return false;
-
-        return !connectedRegions.Contains((node1.RegionData, node2.RegionData));
-    }
-
-    /// <summary>
-    /// SpatialGrid를 활용한 최근접 노드 검색
-    /// </summary>
-    private (int idx1, float dist1, int idx2, float dist2) FindTopTwoNodesOptimized(
-        Vector2 tilePos, int x, int y)
-    {
-        int idx1 = -1; float dist1 = float.MaxValue;
-        int idx2 = -1; float dist2 = float.MaxValue;
-
-        float noiseOffset = _worldLogicData.NoiseWorld[x, y];
-        var nearbyNodes = _nodeSpatialGrid.GetItemsAt(x, y);
-
-        if (nearbyNodes == null || nearbyNodes.Count == 0)
-        {
-            return (idx1, dist1, idx2, dist2);
-        }
-
-        foreach (var spatialData in nearbyNodes)
-        {
-            float distance = Vector2.Distance(tilePos, spatialData.Position);
-            float weightedDistance = distance - spatialData.TerritoryWeight;
-
-            // 조기 종료 최적화
-            if (distance - _partiSettings.noiseStrength > dist2) continue;
-
-            float distortedDistance = weightedDistance + (noiseOffset * spatialData.RegionNoiseFactor);
-
-            if (distortedDistance < dist1)
-            {
-                // ★ 중요: 밀려나는 녀석이 1등과 다른 소속 당원일 때만 2등으로 인정!
-                // (내부에서 설치한 브릿지 포인트들끼리 경쟁하는 현상 방지)
-                if (idx1 != spatialData.Index && idx1 != -1)
-                {
-                    dist2 = dist1;
-                    idx2 = idx1;
-                }
-
-                dist1 = distortedDistance;
-                idx1 = spatialData.Index;
-            }
-            else if (distortedDistance < dist2 && spatialData.Index != idx1)
-            {
-                dist2 = distortedDistance;
-                idx2 = spatialData.Index;
-            }
-        }
-
-        return (idx1, dist1, idx2, dist2);
-    }
     #endregion
 
-    ///<summary>
-    ///
-    ///</summary> 
-    ///<returns></returns>
     #region Phase 4: Orphan Tile Cleanup
     /// <summary>
     /// 노이즈로 인해 발생한 고립된 섬(Orphan) 타일들을 주변 영토로 병합
@@ -530,63 +1058,61 @@ public class TerritoryBuilder : IGraphPipelineStage
     {
         int width = _worldLogicData.TerrainSize.x;
         int height = _worldLogicData.TerrainSize.y;
-        int[,] newTerritory = new int[width, height];
+        int totalLength = width * height;
 
-        // 원본 배열 복사해서 작업 (동시에 변경되면 계산이 꼬임 방지)
-        Array.Copy(_worldLogicData.TerritoryWorld, newTerritory, _worldLogicData.TerritoryWorld.Length);
-
-        // 8방향 탐색용 (대각선 포함)
-        int[] dx8 = { -1, 0, 1, -1, 1, -1, 0, 1 };
-        int[] dy8 = { -1, -1, -1, 0, 0, 1, 1, 1 };
-
+        NativeArray<int> readTerritory = new NativeArray<int>(totalLength, Allocator.TempJob);
+        NativeArray<int> writeTerritory = new NativeArray<int>(totalLength, Allocator.TempJob);
+        JobHandle handle = default;
         int cleanedCount = 0;
 
-
-        Dictionary<int, int> neighborCounts = new Dictionary<int, int>(8);
-
-        for (int x = 1; x < width - 1; x++)
+        try
         {
-            for (int y = 1; y < height - 1; y++)
+            int idx = 0;
+            for (int y = 0; y < height; y++)
             {
-                int currentOwner = _worldLogicData.TerritoryWorld[x, y];
-
-                // 바다는 정화 대상에서 제외
-                if (currentOwner == OCEAN_MARKER) continue;
-
-                neighborCounts.Clear();
-                int sameOwnerCount = 0;
-
-                // 주변 8방향 조사
-                for (int i = 0; i < 8; i++)
+                for (int x = 0; x < width; x++)
                 {
-                    int nx = x + dx8[i];
-                    int ny = y + dy8[i];
-                    int neighborOwner = _worldLogicData.TerritoryWorld[nx, ny];
-
-                    if (neighborOwner == currentOwner)
-                        sameOwnerCount++;
-
-                    if (neighborOwner != OCEAN_MARKER)
-                    {
-                        if (!neighborCounts.ContainsKey(neighborOwner))
-                            neighborCounts[neighborOwner] = 0;
-                        neighborCounts[neighborOwner]++;
-                    }
+                    readTerritory[idx++] = _worldLogicData.TerritoryWorld[x, y];
                 }
+            }
 
-                // ★ 핵심: 내 주변 8칸 중 나랑 같은 구역이 2칸 이하라면 고립된 것으로 판단
-                if (sameOwnerCount <= 2 && neighborCounts.Count > 0)
+            var job = new CleanUpOrphanTilesJob
+            {
+                Width = width,
+                Height = height,
+                ReadTerritory = readTerritory,
+                WriteTerritory = writeTerritory
+            };
+
+            handle = job.Schedule(totalLength, 64);
+
+            while (!handle.IsCompleted)
+            {
+                await UniTask.Yield(_ct);
+            }
+            handle.Complete();
+
+            idx = 0;
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
                 {
-                    // 주변에서 가장 많이 인접한 구역을 찾아서 편입됨
-                    int majorityOwner = neighborCounts.OrderByDescending(kv => kv.Value).First().Key;
-                    newTerritory[x, y] = majorityOwner;
-                    cleanedCount++;
+                    int newOwner = writeTerritory[idx++];
+                    if (_worldLogicData.TerritoryWorld[x, y] != newOwner)
+                    {
+                        _worldLogicData.TerritoryWorld[x, y] = newOwner;
+                        cleanedCount++;
+                    }
                 }
             }
         }
+        finally
+        {
+            handle.Complete();
+            if (readTerritory.IsCreated) readTerritory.Dispose();
+            if (writeTerritory.IsCreated) writeTerritory.Dispose();
+        }
 
-        // 정화된 배열로 덮어쓰기
-        _worldLogicData.TerritoryWorld = newTerritory;
         Debug.Log($"[TerritoryBuilder] 알박기 타일 정화 완료: {cleanedCount}개 타일 수정됨");
 
         if (_worldSettings.EnableStepByStep)
@@ -598,34 +1124,61 @@ public class TerritoryBuilder : IGraphPipelineStage
     #region Phase 5: Border and Ocean Processing
     private async UniTask ProcessBordersAsync()
     {
-        int processedCount = 0;
-        float halfWidth = _worldLogicData.TerrainSize.x * 0.5f;
-        float halfHeight = _worldLogicData.TerrainSize.y * 0.5f;
+        int width = _worldLogicData.TerrainSize.x;
+        int height = _worldLogicData.TerrainSize.y;
+        int totalLength = width * height;
 
-        for (int x = 0; x < _worldLogicData.TerrainSize.x; x++)
+        NativeArray<float> nativeNoise = new NativeArray<float>(totalLength, Allocator.TempJob);
+        NativeArray<int> nativeTerritory = new NativeArray<int>(totalLength, Allocator.TempJob);
+        JobHandle handle = default;
+
+        try
         {
-            for (int y = 0; y < _worldLogicData.TerrainSize.y; y++)
+            int idx = 0;
+            for (int y = 0; y < height; y++)
             {
-                _ct.ThrowIfCancellationRequested();
-
-                // 가장자리 거리 계산 최적화
-                float edgeDistanceX = Mathf.Min(x, _worldLogicData.TerrainSize.x - 1 - x) / halfWidth;
-                float edgeDistanceY = Mathf.Min(y, _worldLogicData.TerrainSize.y - 1 - y) / halfHeight;
-                float edgeDistance = Mathf.Min(edgeDistanceX, edgeDistanceY);
-
-                float oceanNoise = _worldLogicData.NoiseWorld[x, y] / _partiSettings.noiseStrength * OCEAN_NOISE_SCALE;
-
-                if (edgeDistance + oceanNoise < (1f - _partiSettings.oceanThreshold))
+                for (int x = 0; x < width; x++)
                 {
-                    _worldLogicData.TerritoryWorld[x, y] = OCEAN_MARKER;
-                }
-
-                processedCount++;
-                if (processedCount % _partiSettings.batchSize == 0)
-                {
-                    await UniTask.Yield(_ct);
+                    nativeNoise[idx] = _worldLogicData.NoiseWorld[x, y];
+                    nativeTerritory[idx] = _worldLogicData.TerritoryWorld[x, y];
+                    idx++;
                 }
             }
+
+            var job = new ApplyOceanEdgeJob
+            {
+                Width = width,
+                Height = height,
+                HalfWidth = width * 0.5f,
+                HalfHeight = height * 0.5f,
+                NoiseStrength = _partiSettings.noiseStrength,
+                ThresholdLimit = 1f - _partiSettings.oceanThreshold,
+                NoiseMap = nativeNoise,
+                TerritoryMap = nativeTerritory
+            };
+
+            handle = job.Schedule(totalLength, 64);
+
+            while (!handle.IsCompleted)
+            {
+                await UniTask.Yield(_ct);
+            }
+            handle.Complete();
+
+            idx = 0;
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    _worldLogicData.TerritoryWorld[x, y] = nativeTerritory[idx++];
+                }
+            }
+        }
+        finally
+        {
+            handle.Complete();
+            if (nativeNoise.IsCreated) nativeNoise.Dispose();
+            if (nativeTerritory.IsCreated) nativeTerritory.Dispose();
         }
 
         // 노이즈/바다/고립 타일 정리가 끝난 뒤 보호하므로 이후 단계에서 육로가 다시 깎이지 않습니다.
@@ -709,12 +1262,12 @@ public class TerritoryBuilder : IGraphPipelineStage
                             throw new InvalidOperationException($"필수 육로가 다른 분기와 겹칩니다: {owner}, {neighbor}");
                         _worldLogicData.TerritoryWorld[nx, ny] = OCEAN_MARKER;
                     }
-                }
 
-                if (++processed >= batch)
-                {
-                    processed = 0;
-                    await UniTask.Yield(_ct);
+                    if (++processed >= batch)
+                    {
+                        processed = 0;
+                        await UniTask.Yield(_ct);
+                    }
                 }
             }
         }
@@ -775,44 +1328,57 @@ public class TerritoryBuilder : IGraphPipelineStage
 
     private async UniTask MarkBorderTilesAsync()
     {
-        _worldLogicData.BorderWorld = new int[_worldLogicData.TerrainSize.x, _worldLogicData.TerrainSize.y];
-        //System.Array.Copy(_territoryWorld, _borderWorld, _territoryWorld.Length);
+        int width = _worldLogicData.TerrainSize.x;
+        int height = _worldLogicData.TerrainSize.y;
+        int totalLength = width * height;
 
-        int processedCount = 0;
+        _worldLogicData.BorderWorld = new int[width, height];
 
-        for (int x = 1; x < _worldLogicData.TerrainSize.x - 1; x++)
+        NativeArray<int> nativeTerritory = new NativeArray<int>(totalLength, Allocator.TempJob);
+        NativeArray<int> nativeBorder = new NativeArray<int>(totalLength, Allocator.TempJob);
+        JobHandle handle = default;
+
+        try
         {
-            for (int y = 1; y < _worldLogicData.TerrainSize.y - 1; y++)
+            int idx = 0;
+            for (int y = 0; y < height; y++)
             {
-                _ct.ThrowIfCancellationRequested();
-
-                int currentRegion = _worldLogicData.TerritoryWorld[x, y];
-                if (currentRegion == OCEAN_MARKER) continue;
-
-                bool isBorder = false;
-                for (int d = 0; d < SMOOTHING_DIRECTIONS; d++)
+                for (int x = 0; x < width; x++)
                 {
-                    int nx = x + _dx4[d];
-                    int ny = y + _dy4[d];
-
-                    if (_worldLogicData.TerritoryWorld[nx, ny] != currentRegion && _worldLogicData.TerritoryWorld[nx, ny] != OCEAN_MARKER)
-                    {
-                        isBorder = true;
-                        break;
-                    }
-                }
-
-                if (isBorder)
-                {
-                    _worldLogicData.BorderWorld[x, y] = BORDER_MARKER;
-                }
-
-                processedCount++;
-                if (processedCount % _partiSettings.batchSize == 0)
-                {
-                    await UniTask.Yield(_ct);
+                    nativeTerritory[idx++] = _worldLogicData.TerritoryWorld[x, y];
                 }
             }
+
+            var job = new MarkBorderTilesJob
+            {
+                Width = width,
+                Height = height,
+                TerritoryMap = nativeTerritory,
+                BorderMap = nativeBorder
+            };
+
+            handle = job.Schedule(totalLength, 64);
+
+            while (!handle.IsCompleted)
+            {
+                await UniTask.Yield(_ct);
+            }
+            handle.Complete();
+
+            idx = 0;
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    _worldLogicData.BorderWorld[x, y] = nativeBorder[idx++];
+                }
+            }
+        }
+        finally
+        {
+            handle.Complete();
+            if (nativeTerritory.IsCreated) nativeTerritory.Dispose();
+            if (nativeBorder.IsCreated) nativeBorder.Dispose();
         }
     }
     #endregion
@@ -827,28 +1393,24 @@ public class TerritoryBuilder : IGraphPipelineStage
         var nodes = _graphResult.Nodes;
         if (nodes == null) return;
 
+        int nodeCount = nodes.Count;
         foreach (var node in nodes)
         {
             node.OwnedTiles.Clear();
         }
 
-        int processedCount = 0;
+        int width = _worldLogicData.TerrainSize.x;
+        int height = _worldLogicData.TerrainSize.y;
 
-        for (int x = 0; x < _worldLogicData.TerrainSize.x; x++)
+        for (int x = 0; x < width; x++)
         {
-            for (int y = 0; y < _worldLogicData.TerrainSize.y; y++)
+            _ct.ThrowIfCancellationRequested();
+            for (int y = 0; y < height; y++)
             {
                 int nodeIndex = _worldLogicData.TerritoryWorld[x, y];       // 타일에 할당된 노드 인덱스
-                if (nodeIndex >= 0 && nodeIndex < nodes.Count)
+                if (nodeIndex >= 0 && nodeIndex < nodeCount)
                 {
                     nodes[nodeIndex].OwnedTiles.Add(new Vector2Int(x, y));
-                }
-
-                processedCount++;
-                if (processedCount % (_partiSettings.batchSize * 5) == 0)
-                {
-                    _ct.ThrowIfCancellationRequested();
-                    await UniTask.Yield(_ct);
                 }
             }
         }
@@ -863,193 +1425,126 @@ public class TerritoryBuilder : IGraphPipelineStage
     {
         int width = _worldLogicData.TerrainSize.x;
         int height = _worldLogicData.TerrainSize.y;
+        int totalLength = width * height;
+        var nodes = _graphResult.Nodes;
+        int nodeCount = nodes != null ? nodes.Count : 0;
+        int safeNodeCount = Mathf.Max(1, nodeCount);
 
-        // Node ID로 RegionData를 빠르게 찾기 위한 매핑 배열
-        RegionData[] nodeToRegion = _graphResult.Nodes.Select(n => n.RegionData).ToArray();
-        // 해안선(Ocean) 까지의 거리 계산용 데이터
-        int[,] distanceToOcean = new int[width, height];
-        bool[,] visited = new bool[width, height];
-        Queue<Vector2Int> queueOcean = new Queue<Vector2Int>();
+        // RegionData 참조를 정수 ID로 매핑하여 Burst Job에서 비교 가능하도록 변환
+        var regionIdMap = new Dictionary<RegionData, int>( safeNodeCount );
+        int nextRegionId = 1;
 
-        // 영토 경계선(Edge) 까지의 거리 계산용 데이터
-        float[,] distanceToEdge = new float[width, height];
-        bool[,] visitedEdge = new bool[width, height];
-        Queue<Vector2Int> queueEdge = new Queue<Vector2Int>();
+        NativeArray<int> nativeTerritory = new NativeArray<int>(totalLength, Allocator.TempJob);
+        NativeArray<int> nativeNodeRegionIds = new NativeArray<int>(safeNodeCount, Allocator.TempJob);
+        NativeArray<int> queueOcean = new NativeArray<int>(totalLength, Allocator.TempJob);
+        NativeArray<int> queueEdge = new NativeArray<int>(totalLength, Allocator.TempJob);
+        NativeArray<byte> visitedOcean = new NativeArray<byte>(totalLength, Allocator.TempJob);
+        NativeArray<byte> visitedEdge = new NativeArray<byte>(totalLength, Allocator.TempJob);
+        NativeArray<int> distanceToOcean = new NativeArray<int>(totalLength, Allocator.TempJob);
+        NativeArray<float> distanceToEdge = new NativeArray<float>(totalLength, Allocator.TempJob);
+        NativeArray<int> nodeMaxOceanDepth = new NativeArray<int>(safeNodeCount, Allocator.TempJob);
+        NativeArray<float> nodeMaxEdgeDepth = new NativeArray<float>(safeNodeCount, Allocator.TempJob);
+        NativeArray<InfluenceData> coastlineData = new NativeArray<InfluenceData>(totalLength, Allocator.TempJob);
+        NativeArray<InfluenceData> regionEdgeData = new NativeArray<InfluenceData>(totalLength, Allocator.TempJob);
 
+        JobHandle bfsHandle = default;
+        JobHandle weightsHandle = default;
 
-        // 1. 바다(OCEAN_MARKER) 타일 큐에 넣기
-        for (int x = 0; x < width; x++)
+        try
         {
-            for (int y = 0; y < height; y++)
+            for (int i = 0; i < nodeCount; i++)
             {
-                int ownerNode = _worldLogicData.TerritoryWorld[x, y];
-                if (ownerNode == OCEAN_MARKER)
+                RegionData region = nodes[i].RegionData;
+                if (region == null)
                 {
-                    distanceToOcean[x, y] = 0;
-                    visited[x, y] = true;
-                    queueOcean.Enqueue(new Vector2Int(x, y));
-                    distanceToEdge[x, y] = 0f;
+                    // RegionData가 null인 노드는 고유 음수 ID 부여 (자기 자신과만 동일 Region 취급)
+                    nativeNodeRegionIds[i] = -(i + 1);
                 }
                 else
                 {
-                    distanceToOcean[x, y] = int.MaxValue;
-                    distanceToEdge[x, y] = float.MaxValue;
-
-                    RegionData myRegion = nodeToRegion[ownerNode];
-                    bool isBorder = false;
-                    // ★ Fields의 8방향 상수 사용
-                    for (int d = 0; d < 8; d++)
+                    if (!regionIdMap.TryGetValue(region, out int rId))
                     {
-                        int nx = x + _dx8[d];
-                        int ny = y + _dy8[d];
-                        // 맵 밖이거나
-                        if (nx < 0 || nx >= width || ny < 0 || ny >= height)
-                        {
-                            isBorder = true;
-                            break;
-                        }
-
-                        int neighborNode = _worldLogicData.TerritoryWorld[nx, ny];
-                        // 이웃이 바다이거나, "소속 Region"이 다르면 경계선! (같은 Region 내의 다른 Node는 무시)
-                        if (neighborNode == OCEAN_MARKER || nodeToRegion[neighborNode] != myRegion)
-                        {
-                            isBorder = true;
-                            break;
-                        }
+                        rId = nextRegionId++;
+                        regionIdMap[region] = rId;
                     }
-
-                    if (isBorder)
-                    {
-                        distanceToEdge[x, y] = 0f;
-                        visitedEdge[x, y] = true;
-                        queueEdge.Enqueue(new Vector2Int(x, y));
-                    }
+                    nativeNodeRegionIds[i] = rId;
                 }
             }
-        }
 
-        // 2-1 . BFS로 해안선 거리 계산 (육지 전체의 뼈대 잡기)
-        while (queueOcean.Count > 0)
-        {
-            Vector2Int current = queueOcean.Dequeue();
-            int currentDist = distanceToOcean[current.x, current.y];
-
-            for (int d = 0; d < 4; d++)
-            {
-                int nx = current.x + _dx4[d];
-                int ny = current.y + _dy4[d];
-
-                if (nx >= 0 && nx < width && ny >= 0 && ny < height)
-                {
-                    if (!visited[nx, ny] && _worldLogicData.TerritoryWorld[nx, ny] >= 0)
-                    {
-                        visited[nx, ny] = true;
-                        distanceToOcean[nx, ny] = currentDist + 1;
-                        queueOcean.Enqueue(new Vector2Int(nx, ny));
-                    }
-                }
-            }
-        }
-        // 2-2. BFS로 영토 경계선까지의 거리 계산 (영토 내부의 세밀한 영향력 계산용)
-        while (queueEdge.Count > 0)
-        {
-            Vector2Int current = queueEdge.Dequeue();
-            float currentDist = distanceToEdge[current.x, current.y];
-
-            int myOwner = _worldLogicData.TerritoryWorld[current.x, current.y];
-            RegionData myRegion = nodeToRegion[myOwner];
-
-            for (int d = 0; d < 8; d++)
-            {
-                int nx = current.x + _dx8[d]; // ★ Fields 상수
-                int ny = current.y + _dy8[d]; // ★ Fields 상수
-
-                if (nx >= 0 && nx < width && ny >= 0 && ny < height)
-                {
-                    if (!visitedEdge[nx, ny])
-                    {
-                        int neighborNode = _worldLogicData.TerritoryWorld[nx, ny];
-                        if (neighborNode != OCEAN_MARKER)
-                        {
-                            RegionData neighborRegion = nodeToRegion[neighborNode];
-
-                            // 같은 Region 이면 거리를 전파하며 통과합니다!
-                            if (neighborRegion == myRegion)
-                            {
-                                visitedEdge[nx, ny] = true;
-                                distanceToEdge[nx, ny] = currentDist + _dist8[d];
-                                queueEdge.Enqueue(new Vector2Int(nx, ny));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        // ==========================================================
-        // 3. [통합 for문] 각 영토별 최대 깊이 구하기
-        // ==========================================================
-        Dictionary<int, int> regionMaxOceanDepth = new Dictionary<int, int>();
-        Dictionary<int, float> regionMaxEdgeDepth = new Dictionary<int, float>();
-
-        for (int x = 0; x < width; x++)
-        {
+            int idx = 0;
             for (int y = 0; y < height; y++)
             {
-                int owner = _worldLogicData.TerritoryWorld[x, y];
-                if (owner >= 0)
+                for (int x = 0; x < width; x++)
                 {
-                    // 바다 깊이 갱신
-                    if (!regionMaxOceanDepth.ContainsKey(owner)) regionMaxOceanDepth[owner] = 1;
-                    if (distanceToOcean[x, y] > regionMaxOceanDepth[owner])
-                        regionMaxOceanDepth[owner] = distanceToOcean[x, y];
-
-                    // 경계선 깊이 갱신
-                    if (!regionMaxEdgeDepth.ContainsKey(owner)) regionMaxEdgeDepth[owner] = 1f;
-                    if (distanceToEdge[x, y] > regionMaxEdgeDepth[owner])
-                        regionMaxEdgeDepth[owner] = distanceToEdge[x, y];
+                    nativeTerritory[idx++] = _worldLogicData.TerritoryWorld[x, y];
                 }
             }
-        }
 
-        // ==========================================================
-        // 4. [통합 for문] 바구니에 담기 & 정규화(0~1)
-        // ==========================================================
-        for (int x = 0; x < width; x++)
-        {
+            var bfsJob = new InfluenceBfsJob
+            {
+                Width = width,
+                Height = height,
+                TerritoryMap = nativeTerritory,
+                NodeRegionIds = nativeNodeRegionIds,
+                QueueOcean = queueOcean,
+                QueueEdge = queueEdge,
+                VisitedOcean = visitedOcean,
+                VisitedEdge = visitedEdge,
+                DistanceToOcean = distanceToOcean,
+                DistanceToEdge = distanceToEdge,
+                NodeMaxOceanDepth = nodeMaxOceanDepth,
+                NodeMaxEdgeDepth = nodeMaxEdgeDepth
+            };
+
+            var weightsJob = new ComputeInfluenceWeightsJob
+            {
+                TerritoryMap = nativeTerritory,
+                DistanceToOcean = distanceToOcean,
+                DistanceToEdge = distanceToEdge,
+                NodeMaxOceanDepth = nodeMaxOceanDepth,
+                NodeMaxEdgeDepth = nodeMaxEdgeDepth,
+                CoastlineData = coastlineData,
+                RegionEdgeData = regionEdgeData
+            };
+
+            bfsHandle = bfsJob.Schedule();
+            weightsHandle = weightsJob.Schedule(totalLength, 64, bfsHandle);
+
+            while (!weightsHandle.IsCompleted)
+            {
+                await UniTask.Yield(_ct);
+            }
+            weightsHandle.Complete();
+
+            idx = 0;
             for (int y = 0; y < height; y++)
             {
-                int owner = _worldLogicData.TerritoryWorld[x, y];
-                _worldLogicData.DistanceToOceanWorld[x, y] = distanceToOcean[x, y];
-
-                if (owner >= 0)     // 육지 타일인 경우
+                for (int x = 0; x < width; x++)
                 {
-                    // 4-1. 전역 영향력 (바다 기준)
-                    float currentMaxOceanDepth = Mathf.Max(1f, regionMaxOceanDepth[owner]);
-                    float coastPercentage = (float)distanceToOcean[x, y] / currentMaxOceanDepth;
-                    _worldLogicData.CoastlineDataWorld[x, y] = new InfluenceData
-                    {
-                        Distance = distanceToOcean[x, y],
-                        Weight = Mathf.SmoothStep(0.1f, 1.0f, Mathf.Clamp01(coastPercentage))
-                    };
-
-
-                    // 4-2. 지역 영향력 (영토 경계선 기준) ★ 추가된 데이터
-                    float currentMaxEdgeDepth = Mathf.Max(1f, regionMaxEdgeDepth[owner]);
-                    float edgePercentage = distanceToEdge[x, y] / currentMaxEdgeDepth;
-                    _worldLogicData.RegionEdgeDataWorld[x, y] = new InfluenceData
-                    {
-                        Distance = distanceToEdge[x, y],
-                        Weight = Mathf.SmoothStep(0.1f, 1.0f, Mathf.Clamp01(edgePercentage))
-                    };
-                }
-                else
-                {
-                    _worldLogicData.CoastlineDataWorld[x, y] = new InfluenceData { Distance = 0f, Weight = 0f };
-                    _worldLogicData.RegionEdgeDataWorld[x, y] = new InfluenceData { Distance = 0f, Weight = 0f };
+                    _worldLogicData.DistanceToOceanWorld[x, y] = distanceToOcean[idx];
+                    _worldLogicData.CoastlineDataWorld[x, y] = coastlineData[idx];
+                    _worldLogicData.RegionEdgeDataWorld[x, y] = regionEdgeData[idx];
+                    idx++;
                 }
             }
         }
-
+        finally
+        {
+            weightsHandle.Complete();
+            bfsHandle.Complete();
+            if (nativeTerritory.IsCreated) nativeTerritory.Dispose();
+            if (nativeNodeRegionIds.IsCreated) nativeNodeRegionIds.Dispose();
+            if (queueOcean.IsCreated) queueOcean.Dispose();
+            if (queueEdge.IsCreated) queueEdge.Dispose();
+            if (visitedOcean.IsCreated) visitedOcean.Dispose();
+            if (visitedEdge.IsCreated) visitedEdge.Dispose();
+            if (distanceToOcean.IsCreated) distanceToOcean.Dispose();
+            if (distanceToEdge.IsCreated) distanceToEdge.Dispose();
+            if (nodeMaxOceanDepth.IsCreated) nodeMaxOceanDepth.Dispose();
+            if (nodeMaxEdgeDepth.IsCreated) nodeMaxEdgeDepth.Dispose();
+            if (coastlineData.IsCreated) coastlineData.Dispose();
+            if (regionEdgeData.IsCreated) regionEdgeData.Dispose();
+        }
 
         Debug.Log("[TerritoryBuilder] 영토 맞춤형 영향력 맵 생성 완료");
         if (_worldSettings.EnableStepByStep) await UniTask.Yield(_ct);

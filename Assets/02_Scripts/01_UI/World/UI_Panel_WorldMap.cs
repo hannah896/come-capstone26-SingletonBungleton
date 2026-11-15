@@ -32,25 +32,29 @@ public class UI_Panel_WorldMap : UI_Panel
     [SerializeField] private Sprite _firIcon;
     [SerializeField] private Sprite _grassIcon;
     [SerializeField] private Sprite _rockIcon;
-    [SerializeField, Min(1f)] private float _compactResourceIconSize = 100f;
-    [SerializeField, Min(1f)] private float _expandedResourceIconSize = 150f;
+    [SerializeField, Min(1f)] private float _compactResourceIconSize = 40f;
+    [SerializeField, Min(1f)] private float _expandedResourceIconSize = 60f;
     [SerializeField, Min(0)] private int _maxPooledResourceGraphics = 32;
 
     [Header("Viewport Settings")]
     [Tooltip("인게임 진입 및 더블클릭 시 플레이어 주변을 보여 주는 기본 확대 배율이다.")]
-    [SerializeField, Min(1f)] private float _zoom = 4f;
+    [SerializeField, Min(1f)] private float _zoom = 6f;
     [SerializeField, Min(1f)] private float _maxZoom = 16f;
     [Tooltip("휠 한 칸마다 변경할 배율의 비율. 0.2이면 20%씩 확대한다.")]
     [SerializeField, Min(0.01f)] private float _zoomStep = 0.2f;
 
     private UI_MapViewport _navigation;
     private UI_TeleportMarkerGraphic _teleportMarkers;
+    private Image _fogOverlayImage;
     private WorldMap _worldMap;
     private WorldMapData _mapData;
     private Transform _target;
     private float _nextTargetSearchTime;
     private float _nextRemoteSearchTime;
     private bool _isExpanded;
+    private int _lastFogExplorationVersion = -1;
+    private int _lastFogVisionVersion = -1;
+    private readonly List<Vector3> _fogPartyPositions = new(8);
     private readonly Dictionary<Transform, RectTransform> _remoteMarkers = new();
     private readonly HashSet<Transform> _remoteTargets = new();
     private readonly List<Transform> _removedTargets = new();
@@ -121,9 +125,10 @@ public class UI_Panel_WorldMap : UI_Panel
             _zoom, _maxZoom, _zoomStep, fillViewport: false, followTarget: true);
         if (_navigation != null) _mapImage = _navigation.MapImage;
         CreateResourceMarkerLayer();
+        CreateFogOverlayLayer();
         if (_navigation != null)
         {
-            var markerObject = new GameObject("TeleportMarkers", typeof(RectTransform), typeof(UI_TeleportMarkerGraphic));
+            var markerObject = new GameObject("TeleportMarkers", typeof(RectTransform), typeof(Canvas), typeof(UI_TeleportMarkerGraphic));
             markerObject.layer = gameObject.layer;
             var rect = (RectTransform)markerObject.transform;
             rect.SetParent(_navigation.Viewport, false);
@@ -133,15 +138,18 @@ public class UI_Panel_WorldMap : UI_Panel
             if (_playerMarker != null) rect.SetSiblingIndex(_playerMarker.GetSiblingIndex());
             _teleportMarkers = markerObject.GetComponent<UI_TeleportMarkerGraphic>();
         }
+        if (_playerMarker != null && !_playerMarker.TryGetComponent<Canvas>(out _))
+            _playerMarker.gameObject.AddComponent<Canvas>();
         if (_navigation != null) _navigation.OnViewChanged += HandleMapViewChanged;
         SpriteAtlasManager.atlasRegistered += HandleResourceAtlasRegistered;
         SetExpanded(false);
         return true;
     }
 
-    /// <summary>지도 배율은 유지하고 표시 모드에 맞는 마커 크기만 적용한다.</summary>
+    /// <summary>표시 모드에 맞는 마커 크기를 적용하고, 전체 지도를 여닫을 때 플레이어 중심으로 맞춘다.</summary>
     public void SetExpanded(bool expanded)
     {
+        bool modeChanged = _isExpanded != expanded;
         _isExpanded = expanded;
         _teleportMarkers?.Configure(_mapData, _navigation, expanded);
         float markerSize = expanded ? _expandedMarkerSize : _compactMarkerSize;
@@ -155,8 +163,19 @@ public class UI_Panel_WorldMap : UI_Panel
         float resourceSize = expanded ? _expandedResourceIconSize : _compactResourceIconSize;
         foreach (ResourceColumn column in _resourceColumns.Values)
             foreach (UI_ResourceMarkerGraphic graphic in column.Graphics) graphic.SetIconSize(resourceSize);
-        _navigation?.CancelDrag();
-        _navigation?.Refresh();
+        if (_navigation != null)
+        {
+            _navigation.CancelDrag();
+            if (!expanded || modeChanged)
+            {
+                UpdatePlayerMarker();
+                _navigation.ResetView();
+            }
+            else
+            {
+                _navigation.Refresh();
+            }
+        }
         RefreshResourceMarkers();
     }
 
@@ -221,6 +240,7 @@ public class UI_Panel_WorldMap : UI_Panel
             RefreshRemotePlayers();
         }
         UpdateRemotePlayerMarkers();
+        UpdateFogOfWarState();
         FlushResourceChanges();
     }
 
@@ -285,10 +305,17 @@ public class UI_Panel_WorldMap : UI_Panel
     {
         bool mapChanged = !ReferenceEquals(_mapData, data);
         _mapData = data;
+        if (mapChanged)
+        {
+            _lastFogExplorationVersion = -1;
+            _lastFogVisionVersion = -1;
+        }
         _teleportMarkers?.Configure(_mapData, _navigation, _isExpanded);
         if (_mapImage != null) _mapImage.Sprite = _mapData?.Sprite;
+        if (_fogOverlayImage != null) _fogOverlayImage.sprite = _mapData?.FogSprite;
         RefreshVisibility();
         UpdatePlayerMarker();
+        UpdateFogOfWarState();
         if (mapChanged) _navigation?.ResetView();
         if (mapChanged) _nextRemoteSearchTime = 0f;
         if (mapChanged)
@@ -310,8 +337,11 @@ public class UI_Panel_WorldMap : UI_Panel
         ClearResourceMarkers();
         ClearResourceChunkCache();
         _mapData = null;
+        _lastFogExplorationVersion = -1;
+        _lastFogVisionVersion = -1;
         _teleportMarkers?.Configure(null, _navigation, _isExpanded);
         if (_mapImage != null) _mapImage.Sprite = null;
+        if (_fogOverlayImage != null) _fogOverlayImage.sprite = null;
         _navigation?.ResetView();
         RefreshVisibility();
     }
@@ -319,6 +349,8 @@ public class UI_Panel_WorldMap : UI_Panel
     private void RefreshVisibility()
     {
         if (_mapImage != null) _mapImage.Image.enabled = _mapData?.Sprite != null;
+        if (_fogOverlayImage != null)
+            _fogOverlayImage.enabled = _mapData != null && _mapData.HasFogOfWar && _mapData.FogSprite != null;
         if (_playerMarker != null) _playerMarker.gameObject.SetActive(_mapData != null && _target != null);
     }
 
@@ -358,6 +390,7 @@ public class UI_Panel_WorldMap : UI_Panel
 
         Vector2 normalized = _mapData.NormalizeWorldPosition(position);
         _navigation?.SetMarkerPosition(normalized);
+        UpdateFogOfWarState();
     }
 
     private void RefreshRemotePlayers()
@@ -383,7 +416,7 @@ public class UI_Panel_WorldMap : UI_Panel
         if (target == null || target == _target || _remoteMarkers.ContainsKey(target)
             || _navigation == null || _playerMarker == null || _remoteMarkerTemplate == null) return;
 
-        var marker = new GameObject("RemotePlayerMarker", typeof(RectTransform)).GetComponent<RectTransform>();
+        var marker = new GameObject("RemotePlayerMarker", typeof(RectTransform), typeof(Canvas)).GetComponent<RectTransform>();
         marker.gameObject.layer = _playerMarker.gameObject.layer;
         marker.SetParent(_navigation.Viewport, false);
         marker.anchorMin = marker.anchorMax = Vector2.one * 0.5f;
@@ -505,10 +538,43 @@ public class UI_Panel_WorldMap : UI_Panel
             ? world.ChunkDirector?.ObjectSpawner : null;
     }
 
+    private void UpdateFogOfWarState()
+    {
+        if (_mapData == null || !_mapData.HasFogOfWar) return;
+
+        _fogPartyPositions.Clear();
+        if (_target != null && _target.gameObject.activeInHierarchy)
+            _fogPartyPositions.Add(_target.position);
+        foreach (Transform remote in _remoteMarkers.Keys)
+        {
+            if (remote != null && remote.gameObject.activeInHierarchy)
+                _fogPartyPositions.Add(remote.position);
+        }
+        if (_fogPartyPositions.Count > 0)
+        {
+            float sightRadius = _worldMap != null ? _worldMap.SightRadius : _mapData.SightRadius;
+            _mapData.UpdatePartyVision(_fogPartyPositions, sightRadius, out _);
+        }
+
+        bool explorationChanged = _mapData.FogExplorationVersion != _lastFogExplorationVersion;
+        bool visionChanged = _mapData.FogVisionVersion != _lastFogVisionVersion;
+        if (!explorationChanged && !visionChanged) return;
+
+        _lastFogExplorationVersion = _mapData.FogExplorationVersion;
+        _lastFogVisionVersion = _mapData.FogVisionVersion;
+        if (explorationChanged)
+        {
+            foreach (ChunkData chunk in _watchedResourceChunks)
+                _dirtyResourceChunks.Add(chunk);
+        }
+        _teleportMarkers?.RefreshPositions();
+    }
+
     private bool ShouldShowResource(ResourceMarkerData entry, ChunkData chunk, WorldObjectSpawner spawner)
     {
         return entry.Normalized.x >= _resourceCoverage.xMin && entry.Normalized.x <= _resourceCoverage.xMax
             && entry.Normalized.y >= _resourceCoverage.yMin && entry.Normalized.y <= _resourceCoverage.yMax
+            && (_mapData == null || _mapData.IsNormalizedPositionExplored(entry.Normalized))
             && !chunk.IsObjectDestroyed(entry.Dispose.instanceId)
             && spawner?.IsSpawnExcluded(entry.Dispose.instanceId) != true
             && !WorldSpawnArea.Contains(_mapData.LogicData, entry.Position)
@@ -640,6 +706,25 @@ public class UI_Panel_WorldMap : UI_Panel
         "ResourceNode_Rock" => _rockIcon,
         _ => null
     };
+
+    private void CreateFogOverlayLayer()
+    {
+        if (_mapImage == null || _fogOverlayImage != null) return;
+        var fogObject = new GameObject("FogOverlay", typeof(RectTransform), typeof(Canvas), typeof(Image));
+        fogObject.layer = _mapImage.gameObject.layer;
+        var rect = (RectTransform)fogObject.transform;
+        rect.SetParent(_mapImage.Rect, false);
+        rect.SetAsLastSibling();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.sizeDelta = Vector2.zero;
+        rect.anchoredPosition = Vector2.zero;
+        _fogOverlayImage = fogObject.GetComponent<Image>();
+        _fogOverlayImage.raycastTarget = false;
+        _fogOverlayImage.maskable = true;
+        _fogOverlayImage.color = Color.white;
+        _fogOverlayImage.enabled = false;
+    }
 
     private void CreateResourceMarkerLayer()
     {

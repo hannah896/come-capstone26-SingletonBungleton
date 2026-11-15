@@ -5,9 +5,11 @@ using Cysharp.Threading.Tasks;
 
 public class TerrainBuilder
 {
-    private const int DEFAULT_DETAIL_RESOLUTION = 1024;
+    private const int DEFAULT_DETAIL_RESOLUTION = 128;
     private const int DEFAULT_DETAIL_RESOLUTION_PER_PATCH = 16;
     private const float DEFAULT_DETAIL_OBJECT_DISTANCE = 200f;
+
+    private float[,] _heightsBuffer;
 
     public async UniTask<(TerrainData, GameObject)> BuildChunkTerrainAsync(
         ChunkData chunk,
@@ -16,15 +18,16 @@ public class TerrainBuilder
         CancellationToken ct = default)
     {
         int chunkSize = settings.ChunkSize; // 64
+        int heightResolution = chunkSize + 1;
         float maxHeight = settings.GetHeight(HeightLevel.Max);
 
         TerrainData terrainData = new TerrainData();
-        terrainData.heightmapResolution = chunkSize + 1;
+        terrainData.heightmapResolution = heightResolution;
         terrainData.alphamapResolution = chunkSize * 2;
         terrainData.SetDetailResolution(DEFAULT_DETAIL_RESOLUTION, DEFAULT_DETAIL_RESOLUTION_PER_PATCH);   // (a,b) a : 1개의 터레인에 대한 그리드 수, b : 패치 크기 
         terrainData.size = new Vector3(chunkSize, maxHeight, chunkSize);
 
-        float[,] unityHeights = new float[chunkSize + 1, chunkSize + 1];
+        float[,] unityHeights = GetOrCreateHeightsBuffer(heightResolution);
 
         // 1. 청크 로컬 데이터만 순회
         for (int x = 0; x <= chunkSize; x++)
@@ -115,6 +118,18 @@ public class TerrainBuilder
         }
 
         terrain.materialTemplate = material;
+    }
+
+    private float[,] GetOrCreateHeightsBuffer(int resolution)
+    {
+        if (_heightsBuffer == null ||
+            _heightsBuffer.GetLength(0) != resolution ||
+            _heightsBuffer.GetLength(1) != resolution)
+        {
+            _heightsBuffer = new float[resolution, resolution];
+        }
+
+        return _heightsBuffer;
     }
 
     private bool _materialWarned;

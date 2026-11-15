@@ -109,7 +109,7 @@ MonoBehaviour:
   _compactResourceIconSize: 30
   _expandedResourceIconSize: 70
   _maxPooledResourceGraphics: 32
-  _zoom: 4
+  _zoom: 6
   _maxZoom: 16
   _zoomStep: 0.2
 --- !u!1 &8972288211390585324

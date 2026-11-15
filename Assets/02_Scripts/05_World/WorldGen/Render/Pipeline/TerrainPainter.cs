@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks;
+using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 using Unity.Jobs;
@@ -9,6 +10,33 @@ using Unity.Mathematics;
 public class TerrainPainter
 {
     private const int BLUR_RADIUS = 2;
+
+    private readonly Stack<float[,,]> _alphamapPool = new();
+
+    private float[,,] RentAlphamapBuffer(int height, int width, int layers)
+    {
+        while (_alphamapPool.Count > 0)
+        {
+            float[,,] pooled = _alphamapPool.Pop();
+            if (pooled != null &&
+                pooled.GetLength(0) == height &&
+                pooled.GetLength(1) == width &&
+                pooled.GetLength(2) == layers)
+            {
+                return pooled;
+            }
+        }
+
+        return new float[height, width, layers];
+    }
+
+    private void ReturnAlphamapBuffer(float[,,] buffer)
+    {
+        if (buffer != null)
+        {
+            _alphamapPool.Push(buffer);
+        }
+    }
 
     #region Job Structures
     [BurstCompile]
@@ -193,132 +221,166 @@ public class TerrainPainter
 
         int hWidth = terrainData.heightmapResolution;
         int hHeight = terrainData.heightmapResolution;
-        float[,] heights2D = terrainData.GetHeights(0, 0, hWidth, hHeight);
+        float maxHeight = terrainData.size.y;
+        bool canUseChunkHeights = chunk.HeightMap != null &&
+                                  chunk.HeightMap.GetLength(0) == hWidth &&
+                                  chunk.HeightMap.GetLength(1) == hHeight &&
+                                  maxHeight > 0f;
+        float[,] heights2D = canUseChunkHeights ? null : terrainData.GetHeights(0, 0, hWidth, hHeight);
 
         // =========================================================
         // 1. 메모리 직렬화 (2D/3D 배열을 1D NativeArray로 펼치기)
         // =========================================================
-        // 높이맵 직렬화  
         NativeArray<float> heightMap = new NativeArray<float>(hWidth * hHeight, Allocator.TempJob);
-
-        System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        for (int y = 0; y < hHeight; y++)
-        {
-            for (int x = 0; x < hWidth; x++)
-            {
-                heightMap[y * hWidth + x] = heights2D[y, x];
-            }
-            // 5ms 초과 시 다음 프레임으로 양보
-            if (stopwatch.ElapsedMilliseconds > 5)
-            {
-                await UniTask.Yield(ct);
-                stopwatch.Restart();
-            }
-        }
-        // 영토맵 직렬화
         NativeArray<int> territoryMap = new NativeArray<int>(chunkSize * chunkSize, Allocator.TempJob);
-        for (int y = 0; y < chunkSize; y++)
-        {
-            for (int x = 0; x < chunkSize; x++)
-            {
-                territoryMap[y * chunkSize + x] = chunk.TerritoryMap[x, y];
-            }
-        }
-        // 노드별 레이어 인덱스 매핑 생성 (노드 인덱스 -> (TopLayer, CliffLayer) 인덱스)
         int nodeCount = graphData.Nodes.Count;
         NativeArray<int3> nodeLayerIndices = new NativeArray<int3>(nodeCount, Allocator.TempJob);
-        for (int i = 0; i < nodeCount; i++)
-        {
-            var node = graphData.Nodes[i];
-            int tIdx = 0, aIdx = 0, cIdx = 0;
-
-            if (!string.IsNullOrEmpty(node.BiomeData?.TopKey) && palette.IndexMap.TryGetValue(node.BiomeData.TopKey, out int t)) tIdx = t;
-
-            // ★ AltKey 매핑 (에디터에서 비워뒀다면 자동으로 TopKey로 덮어씌워서 에러 방지)
-            if (!string.IsNullOrEmpty(node.BiomeData?.AltKey) && palette.IndexMap.TryGetValue(node.BiomeData.AltKey, out int a)) aIdx = a;
-            else aIdx = tIdx;
-
-            if (!string.IsNullOrEmpty(node.BiomeData?.CliffKey) && palette.IndexMap.TryGetValue(node.BiomeData.CliffKey, out int c)) cIdx = c;
-            else cIdx = tIdx;
-
-            // int3로 포장
-            nodeLayerIndices[i] = new int3(tIdx, aIdx, cIdx);
-        }
-
         NativeArray<float> alpha1D = new NativeArray<float>(totalPixels * numLayers, Allocator.TempJob);
         NativeArray<float> blur1D = new NativeArray<float>(totalPixels * numLayers, Allocator.TempJob);
+        JobHandle blurHandle = default;
+        float[,,] finalAlphamaps = null;
 
-        // =========================================================
-        // 2. 멀티코어 Job 스케줄링 및 대기
-        // =========================================================
-        PaintBaseJob paintJob = new PaintBaseJob
+        try
         {
-            AlphaWidth = alphaWidth,
-            AlphaHeight = alphaHeight,
-            ChunkSize = chunkSize,
-            NumLayers = numLayers,
-            MinCliffAngle = 25f,
-            MaxCliffAngle = 45f,
-            HeightmapWidth = hWidth,
-            HeightmapHeight = hHeight,
-            TerrainSize = terrainData.size,
-
-            ChunkWorldPos = new float2(chunk.ChunkCoord.x * chunkSize, chunk.ChunkCoord.y * chunkSize),
-
-            HeightMap = heightMap,
-            TerritoryMap = territoryMap,
-            NodeLayerIndices = nodeLayerIndices,
-            Alphamap = alpha1D
-        };
-        JobHandle paintHandle = paintJob.Schedule(totalPixels, 64);
-
-        BlurAlphamapJob blurJob = new BlurAlphamapJob
-        {
-            AlphaWidth = alphaWidth,
-            AlphaHeight = alphaHeight,
-            NumLayers = numLayers,
-            BlurRadius = BLUR_RADIUS,
-            InputMap = alpha1D,
-            OutputMap = blur1D
-        };
-        JobHandle blurHandle = blurJob.Schedule(totalPixels, 64, paintHandle);
-
-        while (!blurHandle.IsCompleted)
-        {
-            await UniTask.Yield(ct);
-        }
-        blurHandle.Complete();
-
-        // =========================================================
-        // 3. 유니티 포맷(float[,,])으로 복구 및 메모리 해제
-        // =========================================================
-        float[,,] finalAlphamaps = new float[alphaHeight, alphaWidth, numLayers];            
-        for (int y = 0; y < alphaHeight; y++)
-        {
-            for (int x = 0; x < alphaWidth; x++)
+            // 높이맵 직렬화
+            System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            if (canUseChunkHeights)
             {
-                int baseIdx = (y * alphaWidth + x) * numLayers;
-                for (int l = 0; l < numLayers; l++)
+                float invMaxHeight = 1f / maxHeight;
+                for (int y = 0; y < hHeight; y++)
                 {
-                    finalAlphamaps[y, x, l] = blur1D[baseIdx + l];
+                    for (int x = 0; x < hWidth; x++)
+                    {
+                        heightMap[y * hWidth + x] = Mathf.Clamp01(chunk.HeightMap[x, y] * invMaxHeight);
+                    }
                 }
             }
-            if (stopwatch.ElapsedMilliseconds > 5)
+            else
+            {
+                for (int y = 0; y < hHeight; y++)
+                {
+                    for (int x = 0; x < hWidth; x++)
+                    {
+                        heightMap[y * hWidth + x] = heights2D[y, x];
+                    }
+                    // 5ms 초과 시 다음 프레임으로 양보
+                    if (stopwatch.ElapsedMilliseconds > 5)
+                    {
+                        await UniTask.Yield(ct);
+                        stopwatch.Restart();
+                    }
+                }
+            }
+
+            // 영토맵 직렬화
+            for (int y = 0; y < chunkSize; y++)
+            {
+                for (int x = 0; x < chunkSize; x++)
+                {
+                    territoryMap[y * chunkSize + x] = chunk.TerritoryMap[x, y];
+                }
+            }
+
+            // 노드별 레이어 인덱스 매핑 생성 (노드 인덱스 -> (TopLayer, CliffLayer) 인덱스)
+            for (int i = 0; i < nodeCount; i++)
+            {
+                var node = graphData.Nodes[i];
+                int tIdx = 0, aIdx = 0, cIdx = 0;
+
+                if (!string.IsNullOrEmpty(node.BiomeData?.TopKey) && palette.IndexMap.TryGetValue(node.BiomeData.TopKey, out int t)) tIdx = t;
+
+                // ★ AltKey 매핑 (에디터에서 비워뒀다면 자동으로 TopKey로 덮어씌워서 에러 방지)
+                if (!string.IsNullOrEmpty(node.BiomeData?.AltKey) && palette.IndexMap.TryGetValue(node.BiomeData.AltKey, out int a)) aIdx = a;
+                else aIdx = tIdx;
+
+                if (!string.IsNullOrEmpty(node.BiomeData?.CliffKey) && palette.IndexMap.TryGetValue(node.BiomeData.CliffKey, out int c)) cIdx = c;
+                else cIdx = tIdx;
+
+                // int3로 포장
+                nodeLayerIndices[i] = new int3(tIdx, aIdx, cIdx);
+            }
+
+            // =========================================================
+            // 2. 멀티코어 Job 스케줄링 및 대기
+            // =========================================================
+            PaintBaseJob paintJob = new PaintBaseJob
+            {
+                AlphaWidth = alphaWidth,
+                AlphaHeight = alphaHeight,
+                ChunkSize = chunkSize,
+                NumLayers = numLayers,
+                MinCliffAngle = 25f,
+                MaxCliffAngle = 45f,
+                HeightmapWidth = hWidth,
+                HeightmapHeight = hHeight,
+                TerrainSize = terrainData.size,
+
+                ChunkWorldPos = new float2(chunk.ChunkCoord.x * chunkSize, chunk.ChunkCoord.y * chunkSize),
+
+                HeightMap = heightMap,
+                TerritoryMap = territoryMap,
+                NodeLayerIndices = nodeLayerIndices,
+                Alphamap = alpha1D
+            };
+            JobHandle paintHandle = paintJob.Schedule(totalPixels, 64);
+
+            BlurAlphamapJob blurJob = new BlurAlphamapJob
+            {
+                AlphaWidth = alphaWidth,
+                AlphaHeight = alphaHeight,
+                NumLayers = numLayers,
+                BlurRadius = BLUR_RADIUS,
+                InputMap = alpha1D,
+                OutputMap = blur1D
+            };
+            blurHandle = blurJob.Schedule(totalPixels, 64, paintHandle);
+
+            while (!blurHandle.IsCompleted)
             {
                 await UniTask.Yield(ct);
-                stopwatch.Restart();
+            }
+            blurHandle.Complete();
+
+            // =========================================================
+            // 3. 유니티 포맷(float[,,])으로 복구 및 재사용 버퍼 활용
+            // =========================================================
+            finalAlphamaps = RentAlphamapBuffer(alphaHeight, alphaWidth, numLayers);
+            stopwatch.Restart();
+            for (int y = 0; y < alphaHeight; y++)
+            {
+                for (int x = 0; x < alphaWidth; x++)
+                {
+                    int baseIdx = (y * alphaWidth + x) * numLayers;
+                    for (int l = 0; l < numLayers; l++)
+                    {
+                        finalAlphamaps[y, x, l] = blur1D[baseIdx + l];
+                    }
+                }
+                if (stopwatch.ElapsedMilliseconds > 5)
+                {
+                    await UniTask.Yield(ct);
+                    stopwatch.Restart();
+                }
             }
         }
+        finally
+        {
+            blurHandle.Complete();
+            if (heightMap.IsCreated) heightMap.Dispose();
+            if (territoryMap.IsCreated) territoryMap.Dispose();
+            if (nodeLayerIndices.IsCreated) nodeLayerIndices.Dispose();
+            if (alpha1D.IsCreated) alpha1D.Dispose();
+            if (blur1D.IsCreated) blur1D.Dispose();
+        }
 
-        heightMap.Dispose();
-        territoryMap.Dispose();
-        nodeLayerIndices.Dispose();
-        alpha1D.Dispose();
-        blur1D.Dispose();
-
-        await UniTask.Yield(ct); // SetAlphamaps 전 메인 스레드 숨 고르기
-
-        terrainData.SetAlphamaps(0, 0, finalAlphamaps);
-        Debug.Log($"🎨 [TerrainPainter] 청크 페인팅 완료! ({chunk.ChunkCoord.x}, {chunk.ChunkCoord.y})");
+        try
+        {
+            await UniTask.Yield(ct); // SetAlphamaps 전 메인 스레드 숨 고르기
+            terrainData.SetAlphamaps(0, 0, finalAlphamaps);
+        }
+        finally
+        {
+            ReturnAlphamapBuffer(finalAlphamaps);
+        }
     }
 }

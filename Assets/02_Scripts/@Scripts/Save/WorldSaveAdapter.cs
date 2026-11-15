@@ -27,7 +27,10 @@ public static class WorldSaveAdapter
             weather = WorldWeatherController.Instance != null && WorldWeatherController.Instance.IsInitialized
                 ? WorldWeatherController.Instance.Capture() : null,
             monsterSpawns = world.WorldMonsterSpawnDirector != null
-                ? world.WorldMonsterSpawnDirector.Capture() : new MonsterSpawnSaveData()
+                ? world.WorldMonsterSpawnDirector.Capture() : new MonsterSpawnSaveData(),
+            fogExploredBase64 = WorldMap.Instance != null && WorldMap.Instance.CurrentData != null && WorldMap.Instance.CurrentData.HasFogOfWar
+                ? WorldMap.Instance.CurrentData.CaptureExploredFogBase64()
+                : Main.Save?.PendingLoad?.world?.fogExploredBase64
         };
 
         foreach (ChunkData chunk in world.CurrentLogicData.GetAllChunks())
@@ -219,6 +222,7 @@ public static class WorldSaveAdapter
             data.teleportVersion == 0 && data.teleports != null && data.teleports.Count > 0)
             throw new InvalidOperationException("텔레포트 저장 버전 또는 배치 목록이 올바르지 않습니다.");
         if (data.teleportVersion == 1) WorldTeleportPlacement.Validate(data.teleports);
+        WorldMapData.ValidateExploredFogBase64(data.fogExploredBase64);
         data.monsterSpawns ??= new MonsterSpawnSaveData();
         ValidateMonsterSpawns(data.monsterSpawns);
         // Unity 인라인 직렬화가 구버전의 null 날씨를 빈 객체로 만든 경우도 호환합니다.

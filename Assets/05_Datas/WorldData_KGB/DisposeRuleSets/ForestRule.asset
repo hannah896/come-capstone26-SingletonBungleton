@@ -35,6 +35,6 @@ MonoBehaviour:
     minCount: 6
     maxCount: 12
   SpawnerRules:
-  - prefabKey: TreantMinionEvergreenSpawner
+  - prefabKey: TreeantMinionEvergreenSpawner
     minCount: 5
     maxCount: 9

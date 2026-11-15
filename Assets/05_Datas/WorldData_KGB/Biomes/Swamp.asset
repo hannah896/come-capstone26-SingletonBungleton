@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Swamp
   m_EditorClassIdentifier: 
   BiomeType: 4
-  DebugColor: {r: 0.9672885, g: 0, b: 1, a: 1}
+  DebugColor: {r: 0.6106159, g: 0.472346, b: 0.6150943, a: 1}
   BaseTemperature: 20
   Weather:
     Precipitation: 1
@@ -22,7 +22,7 @@ MonoBehaviour:
     MinWetDays: 1.5
     MaxWetDays: 3.5
   BiomeDisposeRule: {fileID: 11400000, guid: 72c571fa53f34064983540206a648f94, type: 2}
-  BiomeSpawnRule: {fileID: 0}
+  BiomeSpawnRule: {fileID: 11400000, guid: df1226a152db87f4fb6c52106c8f3c74, type: 2}
   TopKey: Swamp_Top
   AltKey: Swamp_Alt
   CliffKey: 
