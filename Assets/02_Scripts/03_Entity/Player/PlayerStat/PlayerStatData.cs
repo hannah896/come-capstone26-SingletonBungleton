@@ -8,9 +8,6 @@ public class PlayerStatData : EntityStatData
     public float SprintMultiplier = 1.5f;
     public float JumpForce = 8f;
 
-    [Header("월드 시간")]
-    public float DayDurationMinutes = 12f;
-
     [Header("허기")]
     public float MaxHunger = 150f;
     public float CurHunger = 150f;

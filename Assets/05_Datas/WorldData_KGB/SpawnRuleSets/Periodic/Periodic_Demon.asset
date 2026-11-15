@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f85485575214782b090b1cda532e569, type: 3}
   m_Name: Periodic_Demon
   m_EditorClassIdentifier: 
-  ruleId: Periodic_Mischief
-  monsterKey: Mischief
+  ruleId: Periodic_Demon
+  monsterKey: Demon
   intervalDays: 4
   firstDelayDays: 3
   allowedTimePhases: 13

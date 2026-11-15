@@ -107,12 +107,6 @@ namespace SingletonBungleton.BossTraining
                                     || (behavior.BehaviorType == BehaviorType.Default && behavior.Model != null);
                     arena.EvalLabel = useModel ? "trained" : "rule";
                 }
-
-#if UNITY_EDITOR
-                // 자동 실행 도구(DragonAutoRun)가 시드별 모델 평가를 구분하려고 라벨을 지정해 둔 경우 그것을 쓴다
-                string overrideLabel = UnityEditor.EditorPrefs.GetString("DragonEvalLabel", "");
-                if (!string.IsNullOrEmpty(overrideLabel)) arena.EvalLabel = overrideLabel;
-#endif
             }
         }
 

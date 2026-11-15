@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0c2895492932f54182ff7f8b8c5912f, type: 3}
   m_Name: PolarDragon
   m_EditorClassIdentifier: 
-  MaxHP: 6000
-  CurHP: 6000
+  MaxHP: 4500
+  CurHP: 4500
   MoveSpeed: 2.5
   AttackDamage: 30
   Defense: 10
@@ -51,7 +51,7 @@ MonoBehaviour:
   CounterFrontAngle: 70
   BiteRange: 8
   BiteAngle: 60
-  BiteDamage: 45
+  BiteDamage: 40
   BiteHitTime: 0.55
   BiteDuration: 1.33
   BiteKnockback: 10
@@ -63,7 +63,7 @@ MonoBehaviour:
   SpitInterval: 1
   SpitFlightTime: 0.9
   SpitImpactRadius: 2.2
-  SpitDamage: 25
+  SpitDamage: 22
   IcePatchRadius: 2.6
   IcePatchDuration: 6
   IcePatchSlow: 0.5
@@ -77,7 +77,7 @@ MonoBehaviour:
   BreathDuration: 3.33
   BreathSweepAngle: 90
   BreathTickInterval: 0.2
-  BreathTickDamage: 8
+  BreathTickDamage: 12
   FreezePerTick: 0.25
   FreezeDecayPerSecond: 0.25
   FreezeDuration: 2
@@ -87,7 +87,7 @@ MonoBehaviour:
   ChargeMaxDistance: 28
   ChargeOvershoot: 4
   ChargeWidth: 4.5
-  ChargeDamage: 40
+  ChargeDamage: 35
   ChargeKnockback: 16
   ChargeStunDuration: 3
   ChargeMinRange: 10

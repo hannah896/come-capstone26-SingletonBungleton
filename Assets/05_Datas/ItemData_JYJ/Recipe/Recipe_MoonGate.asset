@@ -18,23 +18,15 @@ MonoBehaviour:
   requiredStation: 0
   ingredients:
   - itemData: {fileID: 11400000, guid: b1ff45e4b9b37b542a5596b38218c1bc, type: 2}
-    amount: 3
-  - itemData: {fileID: 11400000, guid: d35d95bd2e4e7574e9345b144861254b, type: 2}
-    amount: 2
-  - itemData: {fileID: 11400000, guid: ae79b778153ba274a9a4c2048630aff3, type: 2}
-    amount: 2
-  - itemData: {fileID: 11400000, guid: 61bd9fd9c270114489e2b3c5652fddce, type: 2}
-    amount: 2
-  - itemData: {fileID: 11400000, guid: 36ef2812b1a546046b4171a9007b714a, type: 2}
     amount: 2
   - itemData: {fileID: 11400000, guid: e4357f2923375d84a8b999d80d337efa, type: 2}
-    amount: 6
+    amount: 4
   - itemData: {fileID: 11400000, guid: b50dca45200467b4595cbddcff9b6e89, type: 2}
-    amount: 10
+    amount: 6
   - itemData: {fileID: 11400000, guid: 1a846fdde396fc945acf993a20dd51e4, type: 2}
-    amount: 5
+    amount: 3
   - itemData: {fileID: 11400000, guid: 64bd351efb9aecd468e2cd3ba48367e7, type: 2}
-    amount: 12
+    amount: 8
   resultItem: {fileID: 11400000, guid: 6d2f59d96ebc5394ab2096b0804a5986, type: 2}
   resultAmount: 1
   craftTime: 0

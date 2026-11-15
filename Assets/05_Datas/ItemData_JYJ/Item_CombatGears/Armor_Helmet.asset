@@ -35,7 +35,7 @@ MonoBehaviour:
   attackDamage: 0
   attackRange: 0
   attackAngle: 90
-  defense: 15
+  defense: 10
   hungerRestore: 0
   healthRestore: 0
   egoRestore: 0

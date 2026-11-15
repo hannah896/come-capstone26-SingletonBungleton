@@ -33,7 +33,7 @@ MonoBehaviour:
   maxDurability: 100
   costPerDurability: 1
   attackDamage: 65
-  attackRange: 10
+  attackRange: 5.5
   attackAngle: 90
   defense: 0
   staffHealAmount: 0

@@ -15,7 +15,7 @@ MonoBehaviour:
   MaxHP: 50
   CurHP: 50
   MoveSpeed: 10
-  AttackDamage: 5
+  AttackDamage: 10
   Defense: 1
   MinAttackPeriod: 2
   FOV: 0

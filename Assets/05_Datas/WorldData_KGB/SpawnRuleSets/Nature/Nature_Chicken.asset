@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 49e6a274f1b34bca9bf4a2df6a7c18e5, type: 3}
   m_Name: Nature_Chicken
   m_EditorClassIdentifier: 
-  monsterKey: Chichken
+  monsterKey: Chicken
   allowedTimePhases: -1
   spawnInterval: 30
   stayDuration: 30
