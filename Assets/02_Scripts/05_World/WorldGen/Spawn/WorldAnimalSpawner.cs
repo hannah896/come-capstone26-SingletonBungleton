@@ -24,8 +24,9 @@ public sealed class WorldAnimalSpawner : MonoBehaviour
     // 종류별 목표 마리 수 (임시값)
     private static readonly Rule[] Rules =
     {
-        new Rule { Key = "Chicken", TargetCount = 6 },
-        new Rule { Key = "Deer", TargetCount = 4 },
+        new Rule { Key = "Chicken", TargetCount = 9 },
+        new Rule { Key = "Deer", TargetCount = 6 },
+        new Rule { Key = "Horse", TargetCount = 4 },
     };
 
     private const float MinSpawnDistance = 35f;
@@ -34,7 +35,7 @@ public sealed class WorldAnimalSpawner : MonoBehaviour
     private const float CheckInterval = 2f;
     private const int PositionTries = 8;
     // 사냥으로 죽은 동물은 바로 채우지 않고, 이만큼 지난 뒤에 다른 자리에서 새로 나온다 (초, 임시값)
-    private const float RespawnDelay = 90f;
+    private const float RespawnDelay = 75f;
 
     private readonly List<(Animal animal, string key)> spawned = new();
     private readonly List<(string key, float readyTime)> respawnQueue = new();

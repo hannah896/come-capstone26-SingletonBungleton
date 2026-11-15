@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Recipe_LunarForge
   m_EditorClassIdentifier: 
   recipeID: Recipe_LunarForge
-  recipeName: "\uBB38(\uB2EC) \uC5F0\uC131\uB300"
+  recipeName: "\uB2EC \uC5F0\uC131\uB300"
   category: 5
   requiredStation: 0
   ingredients:

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Weapon_MagicSword_Red
   m_EditorClassIdentifier: 
   itemID: MagicSword_Red
-  itemName: "\uB9C8\uB825 \uAC80 (\uC801)"
+  itemName: "\uC801\uC6D4\uAC80"
   description: "\uC545\uB9C8\uC758 \uBFD4\uC744 \uBCBC\uB9B0 \uBD89\uC740 \uB9C8\uB825
     \uAC80. \uB354 \uAC15\uD558\uAC8C \uD0C0\uC624\uB978\uB2E4."
   icon: {fileID: 21300000, guid: 4c8f662e8fb3ba145a28bfb72f9b3332, type: 3}

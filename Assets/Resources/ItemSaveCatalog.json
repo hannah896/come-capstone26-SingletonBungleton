@@ -193,6 +193,14 @@
             "itemKey": "Dish_MeatStew"
         },
         {
+            "itemId": "Medicine_Potion",
+            "itemKey": "Medicine_Potion"
+        },
+        {
+            "itemId": "Medicine_VitalElixir",
+            "itemKey": "Medicine_VitalElixir"
+        },
+        {
             "itemId": "Mineral_Coal",
             "itemKey": "Resource_Mineral_Coal"
         },
@@ -295,6 +303,14 @@
         {
             "itemId": "Spear",
             "itemKey": "Weapon_Spear"
+        },
+        {
+            "itemId": "Survival_Bandage",
+            "itemKey": "Survival_Bandage"
+        },
+        {
+            "itemId": "Survival_HerbSalve",
+            "itemKey": "Survival_HerbSalve"
         },
         {
             "itemId": "Sword",

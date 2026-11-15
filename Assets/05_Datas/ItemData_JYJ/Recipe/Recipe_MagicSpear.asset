@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Recipe_MagicSpear
   m_EditorClassIdentifier: 
   recipeID: Recipe_MagicSpear
-  recipeName: "\uB9C8\uB825 \uCC3D"
+  recipeName: "\uC6D4\uAD11\uCC3D"
   category: 9
   requiredStation: 0
   ingredients:

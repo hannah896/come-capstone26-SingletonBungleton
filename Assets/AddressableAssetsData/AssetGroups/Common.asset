@@ -70,6 +70,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 35f3741f5e5c5ad489688a6766c19852
+    m_Address: UI_Popup_Workbench
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 99820a9056e6b24439c600ec7b920a98
     m_Address: TreantProjectile
     m_ReadOnly: 0

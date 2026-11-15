@@ -15,10 +15,10 @@ MonoBehaviour:
   ObjectRules:
   - ruleName: Grass
     prefabKey: ResourceNode_Grass
-    density: 0.05
+    density: 0.03
   ItemRules:
   - ruleName: Mushroom
     prefabKey: Resource_Mushroom
-    minCount: 10
-    maxCount: 20
+    minCount: 15
+    maxCount: 30
   SpawnerRules: []

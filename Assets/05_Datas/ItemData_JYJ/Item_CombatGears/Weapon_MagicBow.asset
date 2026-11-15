@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Weapon_MagicBow
   m_EditorClassIdentifier: 
   itemID: MagicBow
-  itemName: "\uB9C8\uB825 \uD65C"
+  itemName: "\uC6D4\uAD11\uD65C"
   description: "\uB9C8\uB825\uC774 \uC751\uCD95\uB41C \uD65C. \uD654\uC0B4\uC774
     \uB9DE\uB294 \uACF3\uC5D0\uC11C \uB9C8\uB825\uC774 \uD130\uC9C4\uB2E4."
   icon: {fileID: 21300000, guid: b40984c8cde70b6428fa09030621c95a, type: 3}

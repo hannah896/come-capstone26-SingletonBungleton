@@ -254,7 +254,7 @@ public abstract class StorageStation : StationBase
 
         for (int i = slots.Count - 1; i >= 0; i--)
         {
-            if (slots[i] == itemData && stackCounts[i] <= 0)
+            if (ItemDataSO.IsSame(slots[i], itemData) && stackCounts[i] <= 0)
             {
                 ClearSlot(i);
                 continue;
@@ -308,7 +308,7 @@ public abstract class StorageStation : StationBase
 
         int count = 0;
         for (int i = 0; i < slots.Count; i++)
-            if (slots[i] == itemData && stackCounts[i] > 0)
+            if (ItemDataSO.IsSame(slots[i], itemData) && stackCounts[i] > 0)
                 count += stackCounts[i];
 
         return count;
@@ -328,7 +328,7 @@ public abstract class StorageStation : StationBase
         {
             ItemDataSO itemData = counts[i] > 0 ? items[i] : null;
             int stack = itemData != null ? counts[i] : 0;
-            if (slots[i] == itemData && stackCounts[i] == stack) continue;
+            if (ItemDataSO.IsSame(slots[i], itemData) && stackCounts[i] == stack) continue;
 
             slots[i] = itemData;
             stackCounts[i] = stack;

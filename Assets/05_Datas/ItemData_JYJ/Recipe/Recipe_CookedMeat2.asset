@@ -11,9 +11,9 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 64f7e092734e07b468c75b5208bc1759, type: 3}
   m_Name: Recipe_CookedMeat2
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   recipeID: Recipe_CookedMeat2
-  recipeName: 구운고기2
+  recipeName: "\uAD6C\uC6B4 \uB9D0\uACE0\uAE30"
   category: 8
   requiredStation: 0
   ingredients:

@@ -14,20 +14,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ObjectRules:
   - prefabKey: ResourceNode_Fir
-    density: 0.02
+    density: 0.012
   - prefabKey: ResourceNode_Grass
-    density: 0.02
+    density: 0.012
   ItemRules:
   - prefabKey: Resource_Flower
     minCount: 4
     maxCount: 8
   - prefabKey: Booty_Egg
+    minCount: 9
+    maxCount: 18
+  - prefabKey: Resource_Carrot
     minCount: 6
     maxCount: 12
-  - prefabKey: Resource_Carrot
-    minCount: 4
-    maxCount: 8
   - prefabKey: Resource_Berry
-    minCount: 4
-    maxCount: 8
+    minCount: 6
+    maxCount: 12
   SpawnerRules: []

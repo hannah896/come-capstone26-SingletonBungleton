@@ -122,6 +122,9 @@ public class ItemDataSO : ScriptableObject
     [FormerlySerializedAs("sanityRestore")]
     public float egoRestore = 0f;
 
+    [Tooltip("먹으면 영구적으로 늘어나는 최대 체력 (0 = 없음). 총 증가량 상한은 PlayerStatus.MaxHpBonusCap")]
+    public float maxHpBonus = 0f;
+
     [Tooltip("소비기한 (분 단위, 0 = 부패 없음)")]
     public float expirationTime = 0f;
 
@@ -154,6 +157,18 @@ public class ItemDataSO : ScriptableObject
 
     [Tooltip("체크 박스 중심 오프셋")]
     public Vector3 placementCheckCenterOffset;
+
+    /// <summary>
+    /// 같은 아이템인지 itemID로 비교한다.
+    /// 빌드에서는 같은 SO가 Resources(레시피)와 Addressables 번들(아이템 프리팹)에 따로 복사돼 참조가 서로 달라질 수 있으므로,
+    /// 인벤토리·창고의 개수 세기/소모/겹치기는 참조 비교 대신 이 함수를 쓴다.
+    /// </summary>
+    public static bool IsSame(ItemDataSO a, ItemDataSO b)
+    {
+        if (a == b) return true;
+        if (a == null || b == null) return false;
+        return !string.IsNullOrEmpty(a.itemID) && a.itemID == b.itemID;
+    }
 
     private void OnValidate()
     {

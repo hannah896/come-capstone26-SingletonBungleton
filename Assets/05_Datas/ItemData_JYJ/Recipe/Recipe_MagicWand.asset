@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Recipe_MagicWand
   m_EditorClassIdentifier: 
   recipeID: Recipe_MagicWand
-  recipeName: "\uB9C8\uB825 \uC9C0\uD321\uC774"
+  recipeName: "\uC6D4\uAD11\uC9C0\uD321\uC774"
   category: 9
   requiredStation: 0
   ingredients:

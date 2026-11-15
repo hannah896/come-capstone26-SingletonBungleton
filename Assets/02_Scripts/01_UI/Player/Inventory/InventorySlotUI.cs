@@ -26,6 +26,7 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnte
     private EquipSlot equipSlot = EquipSlot.None;
     private bool isEquipmentSlot;
     private bool referencesResolved;
+    private bool hovered;
 
     private void Awake()
     {
@@ -55,6 +56,7 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnte
         isEquipmentSlot = false;
 
         RefreshItem(itemData, stack, true);
+        if (hovered) ShowNameTooltip();
     }
 
     public void RefreshEquipment(EquipSlot slot, ItemDataSO itemData)
@@ -65,6 +67,7 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnte
         isEquipmentSlot = true;
 
         RefreshItem(itemData, 1, false);
+        if (hovered) ShowNameTooltip();
     }
 
     public void SetFocused(bool focused)
@@ -129,18 +132,49 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnte
 
     public void OnPointerEnter(PointerEventData eventData)
     {
+        hovered = true;
+        ShowNameTooltip();
+
         if (playerInventory == null || isEquipmentSlot) return;
         playerInventory.SetHoveredSlot(slotIndex);
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
+        hovered = false;
+        ItemNameTooltip.Hide();
+
         if (playerInventory == null || isEquipmentSlot) return;
         playerInventory.ClearHoveredSlot(slotIndex);
     }
 
+    // 마우스를 올린 슬롯의 아이템 이름을 말풍선으로 보여준다 (빈 칸이면 숨긴다)
+    private void ShowNameTooltip()
+    {
+        if (playerInventory == null) return;
+
+        ItemDataSO item = null;
+        if (isEquipmentSlot)
+        {
+            item = playerInventory.GetEquippedItem(equipSlot);
+        }
+        else if (slotIndex >= 0 && slotIndex < playerInventory.Slots.Count
+                 && slotIndex < playerInventory.StackCounts.Count && playerInventory.StackCounts[slotIndex] > 0)
+        {
+            item = playerInventory.Slots[slotIndex];
+        }
+
+        ItemNameTooltip.Show(item != null ? item.itemName : string.Empty, stackText != null ? stackText.font : null);
+    }
+
     private void OnDisable()
     {
+        if (hovered)
+        {
+            hovered = false;
+            ItemNameTooltip.Hide();
+        }
+
         // 인벤토리 패널이 닫히는 등 비활성화될 때는 OnPointerExit이 보장되지 않으므로 직접 해제한다.
         if (playerInventory != null && !isEquipmentSlot)
             playerInventory.ClearHoveredSlot(slotIndex);

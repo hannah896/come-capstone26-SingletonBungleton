@@ -15,16 +15,16 @@ MonoBehaviour:
   ObjectRules:
   - ruleName: Fir
     prefabKey: ResourceNode_Fir
-    density: 0.1
+    density: 0.06
   - ruleName: Grass
     prefabKey: ResourceNode_Grass
-    density: 0.1
+    density: 0.06
   - ruleName: Branch
     prefabKey: ResourceNode_Branch
-    density: 0.1
+    density: 0.06
   - ruleName: Bush
     prefabKey: ResourceNode_Bush
-    density: 0.1
+    density: 0.06
   ItemRules:
   - ruleName: Flower
     prefabKey: Resource_Flower
@@ -32,10 +32,10 @@ MonoBehaviour:
     maxCount: 28
   - ruleName: Carrot
     prefabKey: Resource_Carrot
-    minCount: 10
-    maxCount: 20
+    minCount: 15
+    maxCount: 30
   - ruleName: Egg
     prefabKey: Booty_Egg
-    minCount: 6
-    maxCount: 12
+    minCount: 9
+    maxCount: 18
   SpawnerRules: []

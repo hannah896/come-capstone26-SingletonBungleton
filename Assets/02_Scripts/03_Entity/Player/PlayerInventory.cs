@@ -220,7 +220,7 @@ public partial class PlayerInventory : MonoBehaviour
         float earliest = -1f;
         for (int i = 0; i < slots.Count; i++)
         {
-            if (slots[i] != itemData || stackCounts[i] <= 0) continue;
+            if (!ItemDataSO.IsSame(slots[i], itemData) || stackCounts[i] <= 0) continue;
             if (expirationTimestamps[i] <= 0f) continue;
 
             float remaining = Mathf.Max(0f, expirationTimestamps[i] - SavePlayClock.Now);
@@ -246,7 +246,7 @@ public partial class PlayerInventory : MonoBehaviour
         {
             if (slots[i] == null)
                 addable += maxStack;
-            else if (itemData.isStackable && slots[i] == itemData)
+            else if (itemData.isStackable && ItemDataSO.IsSame(slots[i], itemData))
                 // 같은 아이템인데 수량이 0으로 남은 슬롯은 AddItem이 비운 뒤 새로 채운다
                 addable += stackCounts[i] <= 0 ? maxStack : Mathf.Max(0, maxStack - stackCounts[i]);
         }
@@ -261,13 +261,13 @@ public partial class PlayerInventory : MonoBehaviour
 
         for (int i = slots.Count - 1; i >= 0; i--)
         {
-            if (slots[i] == itemData && stackCounts[i] <= 0)
+            if (ItemDataSO.IsSame(slots[i], itemData) && stackCounts[i] <= 0)
             {
                 ClearSlot(i);
                 continue;
             }
 
-            if (slots[i] != itemData) continue;
+            if (!ItemDataSO.IsSame(slots[i], itemData)) continue;
 
             int removeAmount = Mathf.Min(stackCounts[i], amount);
             stackCounts[i] -= removeAmount;
@@ -297,7 +297,7 @@ public partial class PlayerInventory : MonoBehaviour
 
         int count = 0;
         for (int i = 0; i < slots.Count; i++)
-            if (slots[i] == itemData && stackCounts[i] > 0)
+            if (ItemDataSO.IsSame(slots[i], itemData) && stackCounts[i] > 0)
                 count += stackCounts[i];
 
         return count;
@@ -315,6 +315,12 @@ public partial class PlayerInventory : MonoBehaviour
         if (!IsEdible(itemData)) return false;
         if (owner == null || owner.Stat == null) return false;
 
+        // 최대 체력만 올리는 아이템인데 이미 상한이면 낭비하지 않고 먹지 않는다
+        if (itemData.maxHpBonus > 0f && owner.Stat.IsMaxHpBonusFull
+            && itemData.hungerRestore == 0 && itemData.healthRestore == 0 && itemData.egoRestore == 0)
+            return false;
+
+        owner.Stat.AddMaxHp(itemData.maxHpBonus);
         owner.Stat.RestoreHunger(itemData.hungerRestore);
         owner.Stat.RestoreHp(itemData.healthRestore);
         owner.Stat.RestoreEgo(itemData.egoRestore);
@@ -521,7 +527,7 @@ public partial class PlayerInventory : MonoBehaviour
 
         for (int i = 0; i < slots.Count; i++)
         {
-            if (slots[i] == itemData)
+            if (ItemDataSO.IsSame(slots[i], itemData))
                 return EquipFromSlot(i);
         }
 
@@ -583,7 +589,7 @@ public partial class PlayerInventory : MonoBehaviour
         if (!itemData.isStackable) return false;
         int maxStack = Mathf.Max(1, itemData.maxStack);
         for (int i = 0; i < slots.Count; i++)
-            if (slots[i] == itemData && stackCounts[i] < maxStack)
+            if (ItemDataSO.IsSame(slots[i], itemData) && stackCounts[i] < maxStack)
                 return true;
         return false;
     }
@@ -1133,6 +1139,14 @@ public partial class PlayerInventory : MonoBehaviour
 
     private static bool TryGetPickupCandidate(Collider col, out PickupCandidate candidate)
     {
+        // 설치된 건축물(PlacedStructure)과 월드에 놓인 구조물(Structure)은 G로 줍지 못한다. 망치로만 철거한다.
+        // (바닥에 떨어진 건축물 '아이템'은 위 컴포넌트가 없으므로 그대로 주울 수 있다)
+        if (col.GetComponentInParent<PlacedStructure>() != null || col.GetComponentInParent<Structure>() != null)
+        {
+            candidate = default;
+            return false;
+        }
+
         Item worldItem = col.GetComponentInParent<Item>();
         if (worldItem != null && worldItem.ItemDataSO != null)
         {

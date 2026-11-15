@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Recipe_MagicBow
   m_EditorClassIdentifier: 
   recipeID: Recipe_MagicBow
-  recipeName: "\uB9C8\uB825 \uD65C"
+  recipeName: "\uC6D4\uAD11\uD65C"
   category: 9
   requiredStation: 0
   ingredients:

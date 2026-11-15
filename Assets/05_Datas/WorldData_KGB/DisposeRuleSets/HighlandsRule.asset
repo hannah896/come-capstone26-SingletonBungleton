@@ -14,13 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ObjectRules:
   - prefabKey: ResourceNode_Fir
-    density: 0.1
+    density: 0.06
   - prefabKey: ResourceNode_Grass
-    density: 0.1
+    density: 0.06
   - prefabKey: ResourceNode_Branch
-    density: 0.1
+    density: 0.06
   - prefabKey: ResourceNode_Bush
-    density: 0.05
+    density: 0.03
   ItemRules:
   - prefabKey: Resource_Flower
     minCount: 6

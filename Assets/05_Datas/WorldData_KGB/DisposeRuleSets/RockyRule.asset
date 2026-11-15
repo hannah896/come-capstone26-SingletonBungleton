@@ -15,9 +15,9 @@ MonoBehaviour:
   ObjectRules:
   - ruleName: Rock
     prefabKey: ResourceNode_Rock
-    density: 0.1
+    density: 0.06
   - ruleName: Grass
     prefabKey: ResourceNode_Grass
-    density: 0.02
+    density: 0.012
   ItemRules: []
   SpawnerRules: []

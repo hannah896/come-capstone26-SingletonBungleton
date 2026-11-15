@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Recipe_MagicShield
   m_EditorClassIdentifier: 
   recipeID: Recipe_MagicShield
-  recipeName: "\uB9C8\uB825 \uBC29\uD328"
+  recipeName: "\uC6D4\uAD11\uBC29\uD328"
   category: 9
   requiredStation: 0
   ingredients:

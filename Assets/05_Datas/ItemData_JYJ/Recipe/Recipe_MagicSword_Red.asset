@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Recipe_MagicSword_Red
   m_EditorClassIdentifier: 
   recipeID: Recipe_MagicSword_Red
-  recipeName: "\uB9C8\uB825 \uAC80 (\uC801)"
+  recipeName: "\uC801\uC6D4\uAC80"
   category: 9
   requiredStation: 0
   ingredients:

@@ -30,5 +30,5 @@ public enum StationType
     CookingPot,  // 요리솥
     Furnace,     // 화덕
     Refrigerator, // 냉장고 (보관 중 소비기한이 느리게 간다)
-    LunarForge   // 문(달) 연성대 (2단계 작업대: 마력 무기 제작)
+    LunarForge   // 달 연성대 (2단계 작업대: 마력 무기 제작)
 }

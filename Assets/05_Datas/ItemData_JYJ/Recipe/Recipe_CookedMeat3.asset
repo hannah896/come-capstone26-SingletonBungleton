@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Recipe_CookedMeat3
   m_EditorClassIdentifier:
   recipeID: Recipe_CookedMeat3
-  recipeName: 구운고기3
+  recipeName: "\uAD6C\uC6B4 \uC0AC\uC2B4\uACE0\uAE30"
   category: 8
   requiredStation: 0
   ingredients:

@@ -13,17 +13,19 @@ MonoBehaviour:
   m_Name: Food_CookedMeat2
   m_EditorClassIdentifier: 
   itemID: CookedMeat2
-  itemName: "\uAD6C\uC6B4\uACE0\uAE302"
-  description: "\uC74C\uC2DD_\uAD6C\uC6B4\uACE0\uAE302 \uC785\uB2C8\uB2E4."
+  itemName: "\uAD6C\uC6B4 \uB9D0\uACE0\uAE30"
+  description: "\uC74C\uC2DD_\uAD6C\uC6B4 \uB9D0\uACE0\uAE30 \uC785\uB2C8\uB2E4."
   icon: {fileID: 21300000, guid: 4fe5618eee2825449aff1361cce934e3, type: 3}
   prefab: {fileID: 828052658877537744, guid: 3700a27fbb9b3294cbf0d5fd13a83831, type: 3}
   itemType: 4
   survivalToolType: 0
-  harvestableResources: 
+  harvestableNodeTypes: 
   combatGearType: 0
   resourceType: 0
   bootyType: 0
   foodType: 2
+  dishType: 0
+  specialType: 0
   isStackable: 1
   maxStack: 10
   equipSlot: 0
@@ -32,11 +34,23 @@ MonoBehaviour:
   costPerDurability: 1
   attackDamage: 0
   attackRange: 0
+  attackAngle: 90
   defense: 0
+  staffHealAmount: 0
+  staffCooldown: 6
+  attackEffectKey: 
+  attackEffectScale: 1
+  attackEffectLifetime: 2
+  emitsLight: 0
+  lightColor: {r: 0.55, g: 0.75, b: 1, a: 1}
+  lightIntensity: 3
+  lightRange: 7
   hungerRestore: 30
   healthRestore: 10
   egoRestore: 3
+  maxHpBonus: 0
   expirationTime: 8640
+  tags: 0
   isPlaceable: 0
   placementPrefab: {fileID: 0}
   placementFootprint: {x: 1, y: 1}

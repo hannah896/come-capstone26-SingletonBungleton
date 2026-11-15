@@ -15,16 +15,16 @@ MonoBehaviour:
   ObjectRules:
   - ruleName: Fir
     prefabKey: ResourceNode_Fir
-    density: 0.05
+    density: 0.03
   - ruleName: Rock
     prefabKey: ResourceNode_Rock
-    density: 0.05
+    density: 0.03
   - ruleName: Ice
     prefabKey: ResourceNode_Ice
-    density: 0.1
+    density: 0.06
   ItemRules:
   - ruleName: Berry
     prefabKey: Resource_Berry
-    minCount: 4
-    maxCount: 8
+    minCount: 6
+    maxCount: 12
   SpawnerRules: []

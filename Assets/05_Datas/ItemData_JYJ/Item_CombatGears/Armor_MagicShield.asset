@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Armor_MagicShield
   m_EditorClassIdentifier: 
   itemID: MagicShield
-  itemName: "\uB9C8\uB825 \uBC29\uD328"
+  itemName: "\uC6D4\uAD11\uBC29\uD328"
   description: "\uB9C8\uB825\uC774 \uC11C\uB9B0 \uBC29\uD328. \uC6B0\uD074\uB9AD\uC73C\uB85C
     \uACF5\uACA9\uC744 \uB9C9\uB294\uB2E4."
   icon: {fileID: 21300000, guid: 43702e88b352ff748a9d4bc4ad895ad8, type: 3}

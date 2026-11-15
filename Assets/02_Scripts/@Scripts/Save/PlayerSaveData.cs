@@ -23,6 +23,7 @@ public class PlayerStatusSaveData
     public float hp;
     public float hunger;
     public float ego;
+    public float maxHpBonus; // 아이템으로 영구히 늘린 최대 체력 (구버전 세이브는 0)
     public float temperature;
     public float wetness;
     public float dotDamagePerTick;

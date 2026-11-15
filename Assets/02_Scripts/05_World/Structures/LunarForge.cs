@@ -1,7 +1,7 @@
 using Cysharp.Threading.Tasks;
 
 /// <summary>
-/// 문(달) 연성대 (2단계 작업대). 작업대와 같은 방식으로, E키로 열면 마력 무기 제작 전용 팝업이 뜬다.
+/// 달 연성대 (2단계 작업대). 작업대와 같은 방식으로, E키로 열면 마력 무기 제작 전용 팝업이 뜬다.
 /// </summary>
 public class LunarForge : CraftingStation
 {

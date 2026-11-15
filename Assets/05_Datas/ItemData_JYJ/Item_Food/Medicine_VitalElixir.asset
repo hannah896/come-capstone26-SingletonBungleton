@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30a0b1b343f7b6a4081def429327b6e1, type: 3}
+  m_Name: Medicine_VitalElixir
+  m_EditorClassIdentifier: 
+  itemID: Medicine_VitalElixir
+  itemName: "\uCCB4\uB825 \uC601\uC57D"
+  description: "\uB9C8\uC2DC\uBA74 \uCD5C\uB300 \uCCB4\uB825\uC774 \uC601\uAD6C\uD788
+    \uB298\uC5B4\uB09C\uB2E4. (\uCD5C\uB300 +100)"
+  icon: {fileID: 21300000, guid: 9298606fe61da4241bd099a4114d0b0f, type: 3}
+  prefab: {fileID: 0}
+  itemType: 4
+  survivalToolType: 0
+  harvestableNodeTypes: 
+  combatGearType: 0
+  resourceType: 0
+  bootyType: 0
+  foodType: 0
+  dishType: 0
+  specialType: 0
+  isStackable: 1
+  maxStack: 5
+  equipSlot: 0
+  hasDurability: 0
+  maxDurability: 100
+  costPerDurability: 1
+  attackDamage: 0
+  attackRange: 1.5
+  attackAngle: 90
+  defense: 0
+  staffHealAmount: 0
+  staffCooldown: 6
+  attackEffectKey: 
+  attackEffectScale: 1
+  attackEffectLifetime: 2
+  emitsLight: 0
+  lightColor: {r: 0.55, g: 0.75, b: 1, a: 1}
+  lightIntensity: 3
+  lightRange: 7
+  hungerRestore: 0
+  healthRestore: 30
+  egoRestore: 0
+  maxHpBonus: 20
+  expirationTime: 0
+  tags: 0
+  isPlaceable: 0
+  placementPrefab: {fileID: 0}
+  placementFootprint: {x: 1, y: 1}
+  placementPivotOffset: {x: 0, y: 0, z: 0}
+  placementSnapToGrid: 1
+  placementCheckHeight: 2
+  placementCheckCenterOffset: {x: 0, y: 0, z: 0}

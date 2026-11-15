@@ -14,26 +14,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ObjectRules:
   - prefabKey: ResourceNode_Fir
-    density: 0.1
+    density: 0.06
   - prefabKey: ResourceNode_Rock
-    density: 0.05
+    density: 0.03
   - prefabKey: ResourceNode_Grass
-    density: 0.1
+    density: 0.06
   - prefabKey: ResourceNode_Branch
-    density: 0.1
+    density: 0.06
   ItemRules:
   - prefabKey: Resource_Flower
     minCount: 14
     maxCount: 28
   - prefabKey: Resource_Berry
-    minCount: 10
-    maxCount: 20
+    minCount: 15
+    maxCount: 30
   - prefabKey: Resource_Mushroom
-    minCount: 10
-    maxCount: 20
+    minCount: 15
+    maxCount: 30
   - prefabKey: Resource_Carrot
-    minCount: 6
-    maxCount: 12
+    minCount: 9
+    maxCount: 18
   SpawnerRules:
   - prefabKey: TreeantMinionEvergreenSpawner
     minCount: 5

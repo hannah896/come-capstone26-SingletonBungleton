@@ -35,16 +35,27 @@ MonoBehaviour:
   costPerDurability: 1
   attackDamage: 0
   attackRange: 0
+  attackAngle: 90
   defense: 0
+  staffHealAmount: 0
+  staffCooldown: 6
+  attackEffectKey: 
+  attackEffectScale: 1
+  attackEffectLifetime: 2
+  emitsLight: 0
+  lightColor: {r: 0.55, g: 0.75, b: 1, a: 1}
+  lightIntensity: 3
+  lightRange: 7
   hungerRestore: 0
   healthRestore: 0
   egoRestore: 0
+  maxHpBonus: 0
   expirationTime: 0
   tags: 0
   isPlaceable: 1
   placementPrefab: {fileID: 2001000000000001, guid: 13a5c8965c9d77c4c836b95ed45b2e50, type: 3}
   placementFootprint: {x: 1, y: 1}
-  placementPivotOffset: {x: 0, y: 0, z: 0}
+  placementPivotOffset: {x: 0, y: -0.29047912, z: 0}
   placementSnapToGrid: 1
   placementCheckHeight: 2
   placementCheckCenterOffset: {x: 0, y: 0, z: 0}

@@ -270,12 +270,33 @@ public class PlayerStatus
     public void RestoreHp(float amount)
         => CurrentHp = Mathf.Clamp(CurrentHp + amount, 0f, MaxHp);
 
+    /// <summary>아이템(체력 영약 등)으로 영구히 늘린 최대 체력 총량의 상한.</summary>
+    public const float MaxHpBonusCap = 100f;
+
+    /// <summary>지금까지 아이템으로 늘린 최대 체력 총량. 저장/불러오기 대상.</summary>
+    public float MaxHpBonus { get; private set; }
+
+    /// <summary>상한에 도달해 더 늘릴 수 없는지.</summary>
+    public bool IsMaxHpBonusFull => MaxHpBonus >= MaxHpBonusCap;
+
+    /// <summary>최대 체력을 영구히 늘린다(상한 적용). 늘어난 만큼 현재 체력도 함께 오른다. 실제로 늘어난 양을 반환한다.</summary>
+    public float AddMaxHp(float amount)
+    {
+        if (amount <= 0f) return 0f;
+        float applied = Mathf.Min(amount, MaxHpBonusCap - MaxHpBonus);
+        if (applied <= 0f) return 0f;
+        MaxHpBonus += applied;
+        MaxHp += applied;
+        CurrentHp = Mathf.Clamp(CurrentHp + applied, 0f, MaxHp);
+        return applied;
+    }
+
     public void RestoreEgo(float amount)
         => CurrentEgo = Mathf.Clamp(CurrentEgo + amount, 0f, MaxEgo);
 
     public PlayerStatusSaveData CaptureSaveData() => new()
     {
-        hp = CurrentHp, hunger = CurrentHunger, ego = CurrentEgo,
+        hp = CurrentHp, hunger = CurrentHunger, ego = CurrentEgo, maxHpBonus = MaxHpBonus,
         temperature = Temperature, wetness = Wetness,
         dotDamagePerTick = dotDamagePerTick, dotTickInterval = dotTickInterval,
         dotTickTimer = dotTickTimer, dotTicksLeft = dotTicksLeft
@@ -284,6 +305,10 @@ public class PlayerStatus
     public void RestoreSaveData(PlayerStatusSaveData saved)
     {
         if (saved == null) throw new ArgumentNullException(nameof(saved));
+        // 저장된 최대 체력 보너스를 먼저 반영해야 현재 체력이 잘리지 않는다 (보너스는 기본 최대 체력 위에 얹는다)
+        MaxHp -= MaxHpBonus;
+        MaxHpBonus = Mathf.Clamp(saved.maxHpBonus, 0f, MaxHpBonusCap);
+        MaxHp += MaxHpBonus;
         CurrentHp = Mathf.Clamp(saved.hp, 0f, MaxHp);
         CurrentHunger = Mathf.Clamp(saved.hunger, 0f, MaxHunger);
         CurrentEgo = Mathf.Clamp(saved.ego, 0f, MaxEgo);
