@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Start
   m_EditorClassIdentifier: 
   BiomeType: 0
-  DebugColor: {r: 0.16470589, g: 0.16470589, b: 0.16470589, a: 1}
+  DebugColor: {r: 0.41058415, g: 0.5169811, b: 0.39310074, a: 1}
   BaseTemperature: 20
   Weather:
     Precipitation: 1

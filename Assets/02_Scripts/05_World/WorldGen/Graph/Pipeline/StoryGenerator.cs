@@ -159,26 +159,31 @@ public class StoryGenerator : IGraphPipelineStage
         if (_storyData.FixedRegions == null)
             return;
 
-        var candidateRegions = _storyData.FixedRegions.ToList();
+        var startRegionData = _storyData.StartRegion;
+        var candidateRegions = _storyData.FixedRegions
+            .Where(r => r != null && r != startRegionData)
+            .ToList();
 
         _availableKeys = new();
 
-        var startRegionData = _storyData.StartRegion;
-        _storyResult.Nodes.Add(new Node
+        if (startRegionData != null)
         {
-            RegionData = startRegionData,
-            Depth = 1,
-        });
-
-        // 시작 Region의 열쇠 획득
-        if (startRegionData.GivenKeyIDs != null)
-        {
-            foreach (var key in startRegionData.GivenKeyIDs)
+            _storyResult.Nodes.Add(new Node
             {
-                if (!_availableKeys.Contains(key))
+                RegionData = startRegionData,
+                Depth = 1,
+            });
+
+            // 시작 Region의 열쇠 획득
+            if (startRegionData.GivenKeyIDs != null)
+            {
+                foreach (var key in startRegionData.GivenKeyIDs)
                 {
-                    _availableKeys.Add(key);
-                    Debug.Log($"[Start Region] 초기 열쇠 획득: {key}");
+                    if (!_availableKeys.Contains(key))
+                    {
+                        _availableKeys.Add(key);
+                        Debug.Log($"[Start Region] 초기 열쇠 획득: {key}");
+                    }
                 }
             }
         }
@@ -201,10 +206,18 @@ public class StoryGenerator : IGraphPipelineStage
     #region Phase2 : Side Region Generation
     private async UniTask GenerateSideRegionsAsync()
     {
-        // 1. 메인 스토리 구역의 일정 비율만큼 사이드 구역 배치
-        int maxSideRegions = Mathf.RoundToInt(_storyData.FixedRegions.Count * _storyData.SideRegionRatio);
+        if (_storyData.SideRegions == null || _storyData.FixedRegions == null)
+            return;
 
-        var candidateSideRegions = _storyData.SideRegions.ToList();
+        var startRegionData = _storyData.StartRegion;
+        int validFixedCount = _storyData.FixedRegions.Count(r => r != null && r != startRegionData);
+
+        // 1. 메인 스토리 구역의 일정 비율만큼 사이드 구역 배치
+        int maxSideRegions = Mathf.RoundToInt(validFixedCount * _storyData.SideRegionRatio);
+
+        var candidateSideRegions = _storyData.SideRegions
+            .Where(r => r != null && r != startRegionData)
+            .ToList();
 
         int placedCount = 0;
 

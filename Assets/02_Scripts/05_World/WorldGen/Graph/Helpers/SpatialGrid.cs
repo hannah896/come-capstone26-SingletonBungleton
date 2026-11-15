@@ -15,6 +15,12 @@ public class SpatialGrid<T>
     // 실제 데이터를 담을 버킷 
     private List<T>[] _buckets;
 
+    public int CellSize => _cellSize;
+    public int GridWidth => _gridW;
+    public int GridHeight => _gridH;
+    public int CellCount => _buckets.Length;
+    public List<T> GetBucketByCellIndex(int cellIndex) => _buckets[cellIndex];
+
     public SpatialGrid(int worldWidth, int worldHeight, int cellSize)
     {
         _width = worldWidth;

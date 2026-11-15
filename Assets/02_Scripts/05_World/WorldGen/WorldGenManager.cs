@@ -638,13 +638,16 @@ public class WorldGenManager : MonoBehaviour
     /// 맵 생성이 끝난 뒤 캐릭터를 소환하기까지 두는 대기 시간(초).
     /// (WorldGenManager는 동적 생성돼 인스펙터 주입 경로가 없으므로 상수로 둔다)
     /// </summary>
-    private const float SpawnDelaySeconds = 5f;
+    private const float SpawnDelaySeconds = 0.2f;
 
-    // 스폰 전 대기. 로딩 게이지가 멈춘 것처럼 보이지 않도록 진행률을 함께 올린다.
+    // 스폰 전 대기. 지형·구조물 콜라이더의 트랜스폼을 즉시 물리 엔진에 동기화하고,
+    // 로딩 게이지가 멈춘 것처럼 보이지 않도록 진행률을 함께 올린다.
     private async UniTask WaitBeforeSpawnAsync(CancellationToken token)
     {
         const float startProgress = 0.85f;
         const float endProgress = 0.95f;
+
+        Physics.SyncTransforms();
 
         float elapsed = 0f;
         while (elapsed < SpawnDelaySeconds)

@@ -71,8 +71,6 @@ public sealed class InputActions_PlayerInputHandler : InputActions
         p.RotateView.canceled += OnRotateViewCanceled;
         p.ScrollWheel.performed += OnScrollWheel;
         p.ScrollWheel.canceled += OnScrollCanceled;
-        p.Previous.performed += OnPrevious;
-        p.Next.performed += OnNext;
         p.InventorySlot.performed += OnInventorySlot;
         isConnected = true;
 
@@ -112,8 +110,6 @@ public sealed class InputActions_PlayerInputHandler : InputActions
         p.RotateView.canceled -= OnRotateViewCanceled;
         p.ScrollWheel.performed -= OnScrollWheel;
         p.ScrollWheel.canceled -= OnScrollCanceled;
-        p.Previous.performed -= OnPrevious;
-        p.Next.performed -= OnNext;
         p.InventorySlot.performed -= OnInventorySlot;
 
         // 홀드 상태가 true로 남으면 다음 액션이 저절로 반복된다.
@@ -267,18 +263,6 @@ public sealed class InputActions_PlayerInputHandler : InputActions
     {
         if (inputData == null) return;
         inputData.QuickSlotScrollDelta = 0;
-    }
-
-    private void OnPrevious(InputAction.CallbackContext ctx)
-    {
-        if (inputData == null) return;
-        inputData.QuickSlotScrollDelta = 1;
-    }
-
-    private void OnNext(InputAction.CallbackContext ctx)
-    {
-        if (inputData == null) return;
-        inputData.QuickSlotScrollDelta = -1;
     }
 
 }

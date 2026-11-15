@@ -80,5 +80,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 8f51c0bb01b6ea142bc27eefb3a1d8fe, type: 2}
   - {fileID: 11400000, guid: 6a701122a9564a03b4b201643321b2c7, type: 2}
   BossSpawnRule: {fileID: 11400000, guid: 5581ca8174e549c3b7a414a19dcc88ac, type: 2}
-  _enableStepByStep: 1
+  _enableStepByStep: 0
   _stepDelay: 0.1

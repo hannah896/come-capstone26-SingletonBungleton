@@ -29,15 +29,22 @@ public static class LockResolver
     /// </summary>
     public static bool CanUnlock(string lockID, List<string> availableKeys)
     {
+        if (string.IsNullOrEmpty(lockID) || lockID == Locks.LOCK_NONE)
+            return true;
+
         // 1. 등록되지 않은 잠금은 "조건 없음"으로 간주하여 통과 (또는 false로 막을 수도 있음)
-        if (!_lockRules.ContainsKey(lockID))
+        if (!_lockRules.TryGetValue(lockID, out var validKeys))
         {
             Debug.LogWarning($"[LockResolver] 정의되지 않은 잠금 ID입니다: {lockID}");
             return true;
         }
 
-        // 2. 필요한 열쇠 목록 가져오기
-        var validKeys = _lockRules[lockID];
+        // 2. 필요한 열쇠 목록이 비어 있으면 조건 없음으로 간주하여 통과
+        if (validKeys == null || validKeys.Count == 0)
+            return true;
+
+        if (availableKeys == null)
+            return false;
 
         // 3. 플레이어가 가진 열쇠 중 하나라도 일치하면 성공
         foreach (var key in validKeys)
