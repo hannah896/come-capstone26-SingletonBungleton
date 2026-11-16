@@ -13,15 +13,13 @@ public class UI_Panel_WorldMap : UI_Panel
     [Header("UI References")]
     [SerializeField] private UI_Image _mapImage;
     [SerializeField] private RectTransform _playerMarker;
-    [Tooltip("플레이어 이미지와 분리하여 카메라 방향을 따라 회전할 시야각 루트다.")]
-    [SerializeField] private RectTransform _sightArea;
     [Tooltip("로컬 인디케이터의 Marker 이미지만 연결한다. 원격 플레이어에게는 시야선을 복제하지 않는다.")]
     [SerializeField] private RectTransform _remoteMarkerTemplate;
 
     [Header("Marker Settings")]
-    [Tooltip("플레이어 이미지는 고정하고 Main Camera의 수평 시야 방향에 맞춰 시야각만 회전한다.")]
-    [FormerlySerializedAs("_rotatePlayerMarker")]
-    [SerializeField] private bool _rotateSightArea = true;
+    [Tooltip("Main Camera의 수평 시야 방향에 맞춰 로컬 플레이어 마커와 시야선을 함께 회전한다.")]
+    [FormerlySerializedAs("_rotateSightArea")]
+    [SerializeField] private bool _rotatePlayerMarker = true;
     [SerializeField] private bool _hideMarkerOutsideWorld = true;
     [SerializeField, Min(1f)] private float _compactMarkerSize = 30f;
     [SerializeField, Min(1f)] private float _expandedMarkerSize = 60f;
@@ -114,8 +112,6 @@ public class UI_Panel_WorldMap : UI_Panel
         ConfigureMapCanvas();
         if (!TryGetComponent<GraphicRaycaster>(out _)) gameObject.AddComponent<GraphicRaycaster>();
 
-        if (_sightArea == null && _playerMarker != null)
-            _sightArea = _playerMarker.Find("SightArea") as RectTransform;
         if (_playerMarker != null) _playerMarker.localRotation = Quaternion.identity;
         if (_remoteMarkerTemplate == null && _playerMarker != null)
             _remoteMarkerTemplate = _playerMarker.Find("Marker") as RectTransform;
@@ -165,6 +161,7 @@ public class UI_Panel_WorldMap : UI_Panel
             foreach (UI_ResourceMarkerGraphic graphic in column.Graphics) graphic.SetIconSize(resourceSize);
         if (_navigation != null)
         {
+            _navigation.ZoomAroundTarget = !expanded;
             _navigation.CancelDrag();
             if (!expanded || modeChanged)
             {
@@ -204,7 +201,7 @@ public class UI_Panel_WorldMap : UI_Panel
 
     private void HandleWillRenderCanvases()
     {
-        UpdateSightAreaRotation();
+        UpdatePlayerMarkerRotation();
         // 레이아웃이 LateUpdate 뒤에 바뀐 경우에도 렌더 전에 한 번만 반영한다.
         FlushResourceChanges();
     }
@@ -850,10 +847,10 @@ public class UI_Panel_WorldMap : UI_Panel
         _dirtyResourceChunks.Clear();
     }
 
-    private void UpdateSightAreaRotation()
+    private void UpdatePlayerMarkerRotation()
     {
-        if (!_rotateSightArea || !isActiveAndEnabled || _target == null
-            || _sightArea == null || !_sightArea.gameObject.activeInHierarchy) return;
+        if (!_rotatePlayerMarker || !isActiveAndEnabled || _target == null
+            || _playerMarker == null || !_playerMarker.gameObject.activeInHierarchy) return;
 
         Camera viewCamera = Camera.main;
         Vector3 forward = viewCamera != null ? viewCamera.transform.forward : _target.forward;
@@ -862,6 +859,6 @@ public class UI_Panel_WorldMap : UI_Panel
         if (heading.sqrMagnitude < 0.000001f) return;
 
         float yaw = Mathf.Atan2(heading.x, heading.y) * Mathf.Rad2Deg;
-        _sightArea.localRotation = Quaternion.Euler(0f, 0f, -yaw);
+        _playerMarker.localRotation = Quaternion.Euler(0f, 0f, -yaw);
     }
 }

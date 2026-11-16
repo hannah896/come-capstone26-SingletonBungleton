@@ -10,9 +10,9 @@ using UnityEngine;
 /// </summary>
 public class WorldTimeDebugWindow : EditorWindow
 {
-    // 인게임 1시간 = 현실 60초 (하루 1440초 / 24시간)
-    private const float SecondsPerHour = 60f;
-    private const float SecondsPerDay = 1440f;
+    // 인게임 1시간 = 하루 길이 / 24시간 (하루 720초 기준 30초)
+    private const float SecondsPerDay = WorldClock.SecondsPerDay;
+    private const float SecondsPerHour = SecondsPerDay / 24f;
 
     private static readonly float[] ScalePresets = { 1f, 2f, 5f, 10f, 30f, 60f, 120f };
 
@@ -56,7 +56,7 @@ public class WorldTimeDebugWindow : EditorWindow
 
         float elapsed = clock.ElapsedSecondsToday;
         int hour = Mathf.FloorToInt(elapsed / SecondsPerHour);
-        int minute = Mathf.FloorToInt(elapsed % SecondsPerHour);
+        int minute = Mathf.FloorToInt((elapsed % SecondsPerHour) / SecondsPerHour * 60f);
 
         EditorGUILayout.LabelField("날짜", $"{clock.CurrentDay}일차");
         EditorGUILayout.LabelField("시각", $"{hour:00}:{minute:00}");

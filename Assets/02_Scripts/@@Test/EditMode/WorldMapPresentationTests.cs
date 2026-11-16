@@ -134,7 +134,7 @@ public class WorldMapPresentationTests : InputTestFixture
 
     [TestCase(false)]
     [TestCase(true)]
-    public void CameraHeading_RotatesOnlySightAreaAndKeepsPlayerImageUpright(bool expanded)
+    public void CameraHeading_RotatesPlayerImageAndSightAreaTogether(bool expanded)
     {
         var target = CreateMapTarget("LocalTarget", new Vector3(500f, 0f, 500f));
         Invoke(_hud, "SetTarget", target);
@@ -142,11 +142,11 @@ public class WorldMapPresentationTests : InputTestFixture
         Layout();
 
         var playerRoot = (RectTransform)Field(_map, "_playerMarker");
-        var sightArea = (RectTransform)Field(_map, "_sightArea");
+        Transform sightArea = playerRoot.Find("SightArea");
         Transform markerImage = playerRoot.Find("Marker");
-        Assert.That(sightArea, Is.SameAs(playerRoot.Find("SightArea")));
+        Assert.That(sightArea, Is.Not.Null);
         Assert.That(markerImage, Is.Not.Null);
-        Quaternion imageRotation = markerImage.rotation;
+        Vector2 markerPosition = playerRoot.anchoredPosition;
 
         Camera viewCamera = Camera.main;
         GameObject cameraObject = null;
@@ -164,19 +164,19 @@ public class WorldMapPresentationTests : InputTestFixture
             foreach (float yaw in new[] { 0f, 90f, 180f, 270f })
             {
                 viewCamera.transform.rotation = Quaternion.Euler(35f, yaw, 0f);
-                Invoke(_map, "UpdateSightAreaRotation");
-                Assert.That(Quaternion.Angle(sightArea.localRotation, Quaternion.Euler(0f, 0f, -yaw)),
-                    Is.LessThan(0.01f), "시야각만 카메라의 수평 방향을 따라야 한다.");
-                Assert.That(Quaternion.Angle(playerRoot.localRotation, Quaternion.identity),
-                    Is.LessThan(0.01f));
-                Assert.That(Quaternion.Angle(markerImage.rotation, imageRotation),
-                    Is.LessThan(0.01f), "카메라를 돌려도 플레이어 이미지는 고정되어야 한다.");
+                Invoke(_map, "UpdatePlayerMarkerRotation");
+                Quaternion expectedRotation = playerRoot.parent.rotation * Quaternion.Euler(0f, 0f, -yaw);
+                Assert.That(Quaternion.Angle(sightArea.rotation, expectedRotation),
+                    Is.LessThan(0.01f), "시야선은 카메라의 수평 방향을 따라야 한다.");
+                Assert.That(Quaternion.Angle(markerImage.rotation, expectedRotation),
+                    Is.LessThan(0.01f), "플레이어 마커가 시야선과 같은 방향을 가리켜야 한다.");
+                Assert.That(playerRoot.anchoredPosition, Is.EqualTo(markerPosition));
             }
 
-            Quaternion previousSightRotation = sightArea.localRotation;
+            Quaternion previousMarkerRotation = markerImage.rotation;
             viewCamera.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-            Invoke(_map, "UpdateSightAreaRotation");
-            Assert.That(Quaternion.Angle(sightArea.localRotation, previousSightRotation),
+            Invoke(_map, "UpdatePlayerMarkerRotation");
+            Assert.That(Quaternion.Angle(markerImage.rotation, previousMarkerRotation),
                 Is.LessThan(0.01f), "수직 시선에서는 마지막 수평 방향을 유지한다.");
         }
         finally
@@ -257,9 +257,51 @@ public class WorldMapPresentationTests : InputTestFixture
         AssertDefaultView();
     }
 
+    [Test]
+    public void MiniMapScroll_ZoomsAroundPlayerAndResumesFollowingAfterDrag()
+    {
+        var target = CreateMapTarget("MiniMapTarget", new Vector3(700f, 0f, 400f));
+        Invoke(_hud, "SetTarget", target);
+        Layout();
+
+        var viewport = (RectTransform)_navigation.transform;
+        var eventsObject = new GameObject("MiniMapEventSystem", typeof(EventSystem));
+        eventsObject.transform.SetParent(_root.transform, false);
+        var pointer = new PointerEventData(eventsObject.GetComponent<EventSystem>())
+        {
+            button = PointerEventData.InputButton.Left,
+            pointerId = -1,
+            position = RectTransformUtility.WorldToScreenPoint(null,
+                viewport.TransformPoint(viewport.rect.center + viewport.rect.size * 0.25f)),
+            scrollDelta = Vector2.up * 2f
+        };
+        float defaultZoom = (float)Property(_navigation, "Zoom");
+        ((IScrollHandler)_navigation).OnScroll(pointer);
+        float enlargedZoom = (float)Property(_navigation, "Zoom");
+        Assert.That(enlargedZoom, Is.GreaterThan(defaultZoom));
+        AssertPlayerCentered();
+
+        target.position = new Vector3(995f, 0f, 5f);
+        Invoke(_map, "LateUpdate");
+        AssertPlayerCentered();
+        Assert.That(Property(_navigation, "Zoom"), Is.EqualTo(enlargedZoom));
+
+        ((IBeginDragHandler)_navigation).OnBeginDrag(pointer);
+        pointer.delta = new Vector2(-12f, 8f);
+        pointer.position += pointer.delta;
+        ((IDragHandler)_navigation).OnDrag(pointer);
+        ((IEndDragHandler)_navigation).OnEndDrag(pointer);
+        Assert.That(Property(_navigation, "IsNavigating"), Is.True);
+        pointer.Reset();
+        pointer.scrollDelta = Vector2.down;
+        ((IScrollHandler)_navigation).OnScroll(pointer);
+        Assert.That((float)Property(_navigation, "Zoom"), Is.LessThan(enlargedZoom));
+        AssertPlayerCentered();
+    }
+
     [TestCase(false)]
     [TestCase(true)]
-    public void DoubleClick_RestoresPlayerCenteredDefaultAfterExploration(bool expanded)
+    public void DoubleClick_RestoresPlayerTrackingAndKeepsZoomAfterExploration(bool expanded)
     {
         var target = new GameObject("ExploredMapTarget").transform;
         target.SetParent(_root.transform, false);
@@ -274,12 +316,15 @@ public class WorldMapPresentationTests : InputTestFixture
         var pointer = new PointerEventData(eventsObject.GetComponent<EventSystem>())
         {
             button = PointerEventData.InputButton.Left,
-            position = RectTransformUtility.WorldToScreenPoint(null, viewport.position),
+            position = RectTransformUtility.WorldToScreenPoint(null,
+                viewport.TransformPoint(viewport.rect.center + viewport.rect.size * 0.25f)),
             scrollDelta = Vector2.up * 2f,
             pointerId = -1
         };
         ((IScrollHandler)_navigation).OnScroll(pointer);
-        Assert.That((float)Property(_navigation, "Zoom"), Is.GreaterThan(6f));
+        float chosenZoom = (float)Property(_navigation, "Zoom");
+        Assert.That(chosenZoom, Is.GreaterThan(6f));
+        Assert.That(Property(_navigation, "IsNavigating"), Is.EqualTo(expanded));
         ((IBeginDragHandler)_navigation).OnBeginDrag(pointer);
         pointer.delta = new Vector2(12f, -8f);
         pointer.position += pointer.delta;
@@ -296,8 +341,14 @@ public class WorldMapPresentationTests : InputTestFixture
         pointer.clickCount = 2;
         ((IPointerClickHandler)_navigation).OnPointerClick(pointer);
         Layout();
-        AssertDefaultView();
+        Assert.That(Property(_navigation, "Zoom"), Is.EqualTo(chosenZoom));
+        AssertPlayerCentered();
         Assert.That(pointer.used, Is.True);
+
+        target.position = new Vector3(300f, 0f, 300f);
+        Invoke(_map, "LateUpdate");
+        AssertPlayerCentered();
+        Assert.That(Property(_navigation, "Zoom"), Is.EqualTo(chosenZoom));
     }
 
     [Test]
@@ -746,6 +797,11 @@ public class WorldMapPresentationTests : InputTestFixture
     private void AssertDefaultView()
     {
         Assert.That((float)Property(_navigation, "Zoom"), Is.EqualTo(6f));
+        AssertPlayerCentered();
+    }
+
+    private void AssertPlayerCentered()
+    {
         Assert.That(Property(_navigation, "IsNavigating"), Is.False);
         var marker = (RectTransform)Field(_map, "_playerMarker");
         Assert.That(marker.anchoredPosition.magnitude, Is.LessThan(0.001f),

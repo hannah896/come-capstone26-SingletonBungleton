@@ -16,7 +16,7 @@ MonoBehaviour:
   ResourceNodeType: 1
   MaxHealth: 6
   GatherAmount: 1
-  RespawnTime: 300
+  RespawnTime: 2160
   RequiredTool: 1
   Drops:
   - DropPrefabKey: Resource_Wood_Branch

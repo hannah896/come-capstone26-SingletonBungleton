@@ -22,7 +22,7 @@ MonoBehaviour:
   JumpForce: 10.1
   MaxHunger: 150
   CurHunger: 150
-  HungerDrain: 7
+  HungerDrain: 12.5
   HungerHPDecreaseRate: 3
   MaxEgo: 200
   CurEgo: 200

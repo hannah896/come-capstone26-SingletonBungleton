@@ -27,7 +27,7 @@ public class WorldClock : MonoBehaviour
     public static WorldClock Instance { get; private set; }
 
     [Header("Time Settings")]
-    private const float SECONDS_PER_DAY = 1440f; // 기본값: 현실 24분
+    private const float SECONDS_PER_DAY = 720f; // 기본값: 현실 12분
     /// <summary>월드 시계의 게임 초 단위 하루 길이입니다. 날짜 기반 일정의 내부 변환에 사용합니다.</summary>
     public const float SecondsPerDay = SECONDS_PER_DAY;
     public const float SunriseSeconds = SECONDS_PER_DAY * 0.25f; // 일출 06:00에 다음 일차 시작

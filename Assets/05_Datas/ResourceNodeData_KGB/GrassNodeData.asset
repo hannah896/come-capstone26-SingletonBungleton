@@ -16,7 +16,7 @@ MonoBehaviour:
   ResourceNodeType: 3
   MaxHealth: 1
   GatherAmount: 1
-  RespawnTime: 120
+  RespawnTime: 2160
   RequiredTool: 3
   Drops:
   - DropPrefabKey: Resource_Plant_Grass

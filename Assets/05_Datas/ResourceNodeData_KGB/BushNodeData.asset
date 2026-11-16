@@ -16,7 +16,7 @@ MonoBehaviour:
   ResourceNodeType: 3
   MaxHealth: 4
   GatherAmount: 1
-  RespawnTime: 120
+  RespawnTime: 2160
   RequiredTool: 1
   Drops:
   - DropPrefabKey: Resource_Berry

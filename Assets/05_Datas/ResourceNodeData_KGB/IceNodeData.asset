@@ -16,7 +16,7 @@ MonoBehaviour:
   ResourceNodeType: 2
   MaxHealth: 6
   GatherAmount: 1
-  RespawnTime: 300
+  RespawnTime: 2160
   RequiredTool: 2
   Drops:
   - DropPrefabKey: Resource_Ice

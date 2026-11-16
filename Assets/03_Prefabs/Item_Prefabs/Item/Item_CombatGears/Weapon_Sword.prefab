@@ -50,7 +50,7 @@ MonoBehaviour:
   _itemSO: {fileID: 11400000, guid: 7e761d3834f7336428fb3e220a2e08b9, type: 2}
   stackCount: 1
   _torchLight: {fileID: 0}
-  placedRespawnSeconds: 1440
+  placedRespawnSeconds: 2160
 --- !u!54 &6214074232569020760
 Rigidbody:
   m_ObjectHideFlags: 0

@@ -49,7 +49,7 @@ public static class SaveFlowSmokeTest
                 structure.AddComponent<PersistentStructure>().Initialize(bonfire);
                 // 화면 밖 청크까지 동일한 배치 ID로 재생성되는지 실제 월드에서 확인한다.
                 var chunk = WorldGenManager.Instance.CurrentLogicData.GetAllChunks().First(c => c.DisposeDatas.Count > 0);
-                chunk.MarkObjectDestroyed(chunk.DisposeDatas[0].instanceId, WorldClock.Instance.TotalInGameSeconds + 1440f);
+                chunk.MarkObjectDestroyed(chunk.DisposeDatas[0].instanceId, WorldClock.Instance.TotalInGameSeconds + WorldClock.SecondsPerDay);
 
                 if (!await Main.Save.SaveAndExitAsync(false)) throw new InvalidOperationException(Main.Save.LastError);
             }

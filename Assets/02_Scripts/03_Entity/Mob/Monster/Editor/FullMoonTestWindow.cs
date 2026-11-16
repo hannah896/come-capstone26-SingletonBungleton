@@ -21,7 +21,7 @@ public class FullMoonTestWindow : EditorWindow
     private const string DishFolder = "Assets/05_Datas/ItemData_JYJ/Item_Dish/";
     private const string MoonGateItemPath = "Assets/05_Datas/ItemData_JYJ/Item_SurvivalTools/Tool_MoonGate.asset";
 
-    // 보스 생성 시각: 22시 (하루 1440초 중 1320초)
+    // 보스 생성 시각: 22시 (하루 720초 중 660초)
     private const float NightSeconds = WorldClock.SecondsPerDay * 22f / 24f;
 
     private static readonly string[] BasicGear =

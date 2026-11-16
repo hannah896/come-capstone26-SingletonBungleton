@@ -16,9 +16,9 @@ public class WorldClockDayBoundaryTests
     {
         // Awake/OnDestroy의 매니저 초기화 없이 실제 시계와 타이머 로직만 검증한다.
         _clock = FormatterServices.GetUninitializedObject(FindType("WorldClock"));
-        _timer = Activator.CreateInstance(FindType("NyoTimer"), "test-clock", 1440f, false, true, true);
+        _timer = Activator.CreateInstance(FindType("NyoTimer"), "test-clock", 720f, false, true, true);
         _clock.GetType().GetField("_dayTimer", Members).SetValue(_clock, _timer);
-        _timer.GetType().GetProperty("Current").SetValue(_timer, 1080f);
+        _timer.GetType().GetProperty("Current").SetValue(_timer, 540f);
         ConnectTimer("OnTimeEnd", "HandleDayEnded");
         ConnectTimer("OnSecond", "CheckTimeFlow");
         Call(_clock, "CheckTimeFlow", _timer);
@@ -29,14 +29,14 @@ public class WorldClockDayBoundaryTests
     [Test]
     public void LocalTimer_KeepsDateAtMidnight_AndAdvancesOnceAtSunrise()
     {
-        Call(_clock, "SyncTime", 0, 1439f);
+        Call(_clock, "SyncTime", 0, 719f);
         Call(_timer, "OnUpdate", 1f);
         AssertDate(1, 0);
         Assert.That(Get<int>("DaysPassed"), Is.EqualTo(1), "Transport date still wraps at midnight.");
-        Assert.That(Get<float>("TotalInGameSeconds"), Is.EqualTo(1440f));
+        Assert.That(Get<float>("TotalInGameSeconds"), Is.EqualTo(720f));
         Assert.That(_dayEvents, Is.Empty);
 
-        Call(_timer, "OnUpdate", 359f);
+        Call(_timer, "OnUpdate", 179f);
         AssertDate(1, 0);
         Call(_timer, "OnUpdate", 1f);
         AssertDate(2, 1);
@@ -47,11 +47,11 @@ public class WorldClockDayBoundaryTests
     [Test]
     public void SkipTime_ChangesDateAtSunrise_InsteadOfMidnight()
     {
-        Call(_clock, "SyncTime", 0, 1439f);
+        Call(_clock, "SyncTime", 0, 719f);
         Call(_clock, "SkipTime", 1f);
         AssertDate(1, 0);
         Assert.That(_dayEvents, Is.Empty);
-        Call(_clock, "SkipTime", 359f);
+        Call(_clock, "SkipTime", 179f);
         AssertDate(1, 0);
         Call(_clock, "SkipTime", 1f);
         AssertDate(2, 1);
@@ -61,44 +61,44 @@ public class WorldClockDayBoundaryTests
     [Test]
     public void SyncTime_DetectsSunrise_WithoutTransportDateChanging()
     {
-        Call(_clock, "SyncTime", 1, 359f);
+        Call(_clock, "SyncTime", 1, 179f);
         AssertDate(1, 0);
         Assert.That(_dayEvents, Is.Empty);
-        Call(_clock, "SyncTime", 1, 360f);
+        Call(_clock, "SyncTime", 1, 180f);
         AssertDate(2, 1);
-        Call(_clock, "SyncTime", 1, 360f);
+        Call(_clock, "SyncTime", 1, 180f);
         Assert.That(_dayEvents, Is.EqualTo(new[] { 1 }));
     }
 
     [Test]
     public void SkipTime_ReportsEveryCrossedSunrise()
     {
-        Call(_clock, "SkipTime", 1440f * 3f);
+        Call(_clock, "SkipTime", 720f * 3f);
         AssertDate(4, 3);
         Assert.That(_dayEvents, Is.EqualTo(new[] { 1, 2, 3 }));
-        Assert.That(Get<float>("TotalInGameSeconds"), Is.EqualTo(1440f * 3f + 360f));
+        Assert.That(Get<float>("TotalInGameSeconds"), Is.EqualTo(720f * 3f + 180f));
     }
 
     [Test]
     public void FullMoon_StartsOnFifthSunrise_AndLastsThroughFollowingNight()
     {
-        Call(_clock, "SyncTime", 4, 359f);
+        Call(_clock, "SyncTime", 4, 179f);
         AssertDate(4, 3);
         _dayEvents.Clear();
-        Call(_clock, "SyncTime", 4, 360f);
+        Call(_clock, "SyncTime", 4, 180f);
         AssertDate(5, 4);
         Assert.That(_dayEvents, Is.EqualTo(new[] { 4 }), "Boss date must advance on the same sunrise.");
-        Call(_clock, "SyncTime", 5, 359f);
+        Call(_clock, "SyncTime", 5, 179f);
         AssertDate(5, 4);
         Assert.That(_dayEvents.Count, Is.EqualTo(1));
-        Call(_clock, "SyncTime", 5, 360f);
+        Call(_clock, "SyncTime", 5, 180f);
         AssertDate(6, 5);
     }
 
-    [TestCase(1799f, 1, 0)]
-    [TestCase(1800f, 2, 1)]
-    [TestCase(6119f, 4, 3)]
-    [TestCase(6120f, 5, 4)]
+    [TestCase(899f, 1, 0)]
+    [TestCase(900f, 2, 1)]
+    [TestCase(3059f, 4, 3)]
+    [TestCase(3060f, 5, 4)]
     public void LoadTime_PreservesSavedTimestamp_AndRefreshesDateOnce(float saved, int day, int phase)
     {
         Call(_clock, "LoadTime", saved);
@@ -110,11 +110,11 @@ public class WorldClockDayBoundaryTests
     [Test]
     public void SyncTime_RewindRefreshesDateOnce()
     {
-        Call(_clock, "SyncTime", 4, 360f);
+        Call(_clock, "SyncTime", 4, 180f);
         _dayEvents.Clear();
-        Call(_clock, "SyncTime", 2, 359f);
+        Call(_clock, "SyncTime", 2, 179f);
         AssertDate(2, 1);
-        Call(_clock, "SyncTime", 2, 359f);
+        Call(_clock, "SyncTime", 2, 179f);
         Assert.That(_dayEvents, Is.EqualTo(new[] { 1 }));
     }
 

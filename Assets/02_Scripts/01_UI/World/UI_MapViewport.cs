@@ -6,7 +6,7 @@ using UnityEngine.InputSystem.UI;
 #endif
 
 /// <summary>
-/// 미니맵과 월드맵의 표시 영역, 커서 기준 줌, 드래그 이동을 공통으로 처리한다.
+/// 미니맵과 월드맵의 표시 영역, 줌, 드래그 이동을 공통으로 처리한다.
 /// 지도와 마커는 같은 좌표 변환을 쓰되 마커의 화면 크기는 유지한다.
 /// </summary>
 [DisallowMultipleComponent]
@@ -37,6 +37,7 @@ public sealed class UI_MapViewport : MonoBehaviour, IScrollHandler, IBeginDragHa
     public float Zoom { get; private set; }
     public bool IsNavigating { get; private set; }
     public Vector2 FocusPosition { get; set; } = Middle;
+    internal bool ZoomAroundTarget { get; set; }
     /// <summary>현재 표시 영역이 지도에서 차지하는 정규화 좌표 범위다.</summary>
     public Rect VisibleNormalizedRect
     {
@@ -132,8 +133,13 @@ public sealed class UI_MapViewport : MonoBehaviour, IScrollHandler, IBeginDragHa
     public void ResetView()
     {
         Zoom = _initialZoom;
+        Recenter();
+    }
+
+    private void Recenter()
+    {
         IsNavigating = false;
-        _dragPointerId = null;
+        CancelDrag();
         _center = _followTarget ? FocusPosition : Middle;
         Refresh();
     }
@@ -188,9 +194,6 @@ public sealed class UI_MapViewport : MonoBehaviour, IScrollHandler, IBeginDragHa
     {
         if (!CanNavigate() || !RectTransformUtility.RectangleContainsScreenPoint(
                 _viewport, eventData.position, eventData.enterEventCamera)) return;
-        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                _viewport, eventData.position, eventData.enterEventCamera, out Vector2 cursor)) return;
-
         float ticks = eventData.scrollDelta.y;
 #if ENABLE_INPUT_SYSTEM
         // Input System UI 모듈의 기본값은 휠 한 칸당 6이다. 레거시 입력과 감도를 맞춘다.
@@ -200,13 +203,24 @@ public sealed class UI_MapViewport : MonoBehaviour, IScrollHandler, IBeginDragHa
         float nextZoom = Mathf.Clamp(Zoom * Mathf.Pow(1f + _zoomStep, ticks), 1f, _maxZoom);
         if (Mathf.Approximately(Zoom, nextZoom)) return;
 
-        Refresh();
-        cursor -= _viewport.rect.center;
-        float ratio = nextZoom / Zoom;
-        _center = MapViewportGeometry.ZoomCenter(_center, cursor, _contentSize, ratio);
-        Zoom = nextZoom;
-        IsNavigating = true;
-        Refresh();
+        if (_followTarget && ZoomAroundTarget)
+        {
+            Zoom = nextZoom;
+            Recenter();
+        }
+        else
+        {
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    _viewport, eventData.position, eventData.enterEventCamera, out Vector2 cursor)) return;
+
+            Refresh();
+            cursor -= _viewport.rect.center;
+            float ratio = nextZoom / Zoom;
+            _center = MapViewportGeometry.ZoomCenter(_center, cursor, _contentSize, ratio);
+            Zoom = nextZoom;
+            IsNavigating = true;
+            Refresh();
+        }
         eventData.Use();
     }
 
@@ -250,7 +264,7 @@ public sealed class UI_MapViewport : MonoBehaviour, IScrollHandler, IBeginDragHa
     public void OnPointerClick(PointerEventData eventData)
     {
         if (eventData.button != PointerEventData.InputButton.Left || eventData.clickCount != 2 || !CanNavigate()) return;
-        ResetView();
+        Recenter();
         eventData.Use();
     }
 

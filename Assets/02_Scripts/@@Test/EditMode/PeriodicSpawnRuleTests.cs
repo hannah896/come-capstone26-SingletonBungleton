@@ -38,9 +38,9 @@ public class PeriodicSpawnRuleTests
         _state = null;
     }
 
-    [TestCase(3, 0, 4320f, 0f)]
-    [TestCase(3, 2, 4320f, 2880f)]
-    [TestCase(0, -2, 1440f, 0f)]
+    [TestCase(3, 0, 2160f, 0f)]
+    [TestCase(3, 2, 2160f, 1440f)]
+    [TestCase(0, -2, 720f, 0f)]
     public void DaySettings_ConvertToWorldClockTime_AndClampInvalidDays(
         int intervalDays, int firstDelayDays, float expectedInterval, float expectedDelay)
     {
@@ -55,31 +55,31 @@ public class PeriodicSpawnRuleTests
     public void Interval_ChecksAtDeadline_AndSchedulesThreeGameDaysLater()
     {
         Set(_rule, "intervalDays", 3);
-        const float firstDeadline = 2880f;
+        const float firstDeadline = 1440f;
         Set(_state, "NextTime", firstDeadline);
 
         UpdatePeriodic(firstDeadline - 1f);
         Assert.That(Get(_state, "NextTime"), Is.EqualTo(firstDeadline), "A check must not run before the game-time deadline.");
 
         UpdatePeriodic(firstDeadline);
-        Assert.That(Get(_state, "NextTime"), Is.EqualTo(7200f), "At the deadline, the next check must be three game days later.");
+        Assert.That(Get(_state, "NextTime"), Is.EqualTo(3600f), "At the deadline, the next check must be three game days later.");
 
         UpdatePeriodic(firstDeadline + 1f);
-        Assert.That(Get(_state, "NextTime"), Is.EqualTo(7200f), "Repeated updates must not consume another interval early.");
+        Assert.That(Get(_state, "NextTime"), Is.EqualTo(3600f), "Repeated updates must not consume another interval early.");
     }
 
     [Test]
     public void Interval_AfterSkippingManyDays_SchedulesOneCheckFromCurrentTime()
     {
         Set(_rule, "intervalDays", 3);
-        Set(_state, "NextTime", 1440f);
-        const float jumpedTime = 14400f;
+        Set(_state, "NextTime", 720f);
+        const float jumpedTime = 7200f;
 
         UpdatePeriodic(jumpedTime);
 
-        Assert.That(Get(_state, "NextTime"), Is.EqualTo(18720f));
+        Assert.That(Get(_state, "NextTime"), Is.EqualTo(9360f));
         UpdatePeriodic(jumpedTime);
-        Assert.That(Get(_state, "NextTime"), Is.EqualTo(18720f), "Skipped dates must not replay multiple overdue checks.");
+        Assert.That(Get(_state, "NextTime"), Is.EqualTo(9360f), "Skipped dates must not replay multiple overdue checks.");
     }
 
     private void UpdatePeriodic(float now) => Call(_director, "UpdatePeriodic", now);

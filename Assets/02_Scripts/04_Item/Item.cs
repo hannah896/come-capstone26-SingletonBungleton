@@ -20,8 +20,8 @@ public class Item : MonoBehaviour, IDisposeInitializable, IPoolable
     [SerializeField] private Light _torchLight;
 
     [Header("=== 월드 배치 ===")]
-    [Tooltip("월드 생성으로 배치된 아이템을 주운 뒤 다시 생기기까지의 인게임 시간(초). 기본 1일")]
-    [SerializeField, Min(0f)] private float placedRespawnSeconds = 1440f;
+    [Tooltip("월드 생성으로 배치된 아이템을 주운 뒤 다시 생기기까지의 인게임 시간(초). 기본 3일")]
+    [SerializeField, Min(0f)] private float placedRespawnSeconds = 2160f;
 
     [System.NonSerialized]
     public ItemData itemData;  // 런타임 전용 — Awake에서 _itemSO 기반으로 생성

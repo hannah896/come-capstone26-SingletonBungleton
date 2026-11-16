@@ -16,7 +16,7 @@ MonoBehaviour:
   ResourceNodeType: 0
   MaxHealth: 1
   GatherAmount: 1
-  RespawnTime: 180
+  RespawnTime: 2160
   RequiredTool: 3
   Drops:
   - DropPrefabKey: Resource_Potato

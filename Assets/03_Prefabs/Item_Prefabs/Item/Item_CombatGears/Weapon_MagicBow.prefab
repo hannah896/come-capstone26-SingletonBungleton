@@ -98,7 +98,7 @@ MonoBehaviour:
   _itemSO: {fileID: 11400000, guid: ce4c22b952346d2408ed34c930dcc88c, type: 2}
   stackCount: 1
   _torchLight: {fileID: 0}
-  placedRespawnSeconds: 1440
+  placedRespawnSeconds: 2160
 --- !u!1001 &7909090309076932851
 PrefabInstance:
   m_ObjectHideFlags: 0

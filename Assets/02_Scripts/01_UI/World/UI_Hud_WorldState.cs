@@ -18,7 +18,6 @@ public class UI_Hud_WorldState : UI_Hud
     [SerializeField] private Transform _target;
 
     [Header("World State Views-Bottom")]
-    //[SerializeField] private UI_Panel_MoonSpiritFill _moonSpiritFill;
     [SerializeField] private UI_Panel_MoonShape _moonShape;
 
 
