@@ -141,7 +141,7 @@ public class JSAMManager : PrimaryManager
     }
 
     /// <summary>
-    /// SFX를 재생합니다.
+    /// 화면 위치에 관계없이 2D SFX를 재생합니다.
     /// </summary>
     public void PlaySFX(AudioLibrarySounds clip, float vol = 0.8f)
     {
@@ -151,7 +151,9 @@ public class JSAMManager : PrimaryManager
         // 같은 프레임의 Loop.GameUpdate(몬스터 AI·사망 타이머)가 통째로 건너뛰어지므로 여기서 막고 경고만 남긴다.
         try
         {
-            AudioManager.PlaySound(clip);
+            var channel = AudioManager.PlaySound(clip);
+            if (channel != null)
+                channel.AudioSource.spatialBlend = 0f;
         }
         catch (System.Collections.Generic.KeyNotFoundException)
         {
@@ -167,12 +169,17 @@ public class JSAMManager : PrimaryManager
     private bool CanPlaySFX => AudioManager.Instance != null && _settingPrefs != null && SetSFX;
 
     /// <summary>
-    /// 월드 위치에서 SFX를 재생합니다(3D). 사운드 에셋의 spatialize가 켜져 있어야 거리 감쇠가 적용됩니다.
+    /// 월드 위치에서 SFX를 재생합니다. 공간화된 효과음은 최대 거리에서 음량이 0이 됩니다.
     /// </summary>
     public void PlaySFXAt(AudioLibrarySounds clip, Vector3 position)
     {
         if (!CanPlaySFX) return;
-        try { AudioManager.PlaySound(clip, position); }
+        try
+        {
+            var channel = AudioManager.PlaySound(clip, position);
+            if (channel != null)
+                channel.AudioSource.rolloffMode = AudioRolloffMode.Linear;
+        }
         catch (System.Collections.Generic.KeyNotFoundException) { WarnMissing(clip); }
     }
 
@@ -182,7 +189,13 @@ public class JSAMManager : PrimaryManager
     public void PlaySFXOn(AudioLibrarySounds clip, Transform target)
     {
         if (!CanPlaySFX || target == null) return;
-        try { AudioManager.PlaySound(clip, target); }
+        try
+        {
+            var channel = AudioManager.PlaySound(clip, target);
+            // 위치 재생에 쓰였던 채널을 재사용해도 추적음에는 기존 감쇠를 적용한다.
+            if (channel != null)
+                channel.AudioSource.rolloffMode = AudioRolloffMode.Logarithmic;
+        }
         catch (System.Collections.Generic.KeyNotFoundException) { WarnMissing(clip); }
     }
 

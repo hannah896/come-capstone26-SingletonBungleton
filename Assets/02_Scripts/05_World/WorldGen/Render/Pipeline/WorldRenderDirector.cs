@@ -13,6 +13,8 @@ public interface IChunkRenderer
 public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
 {
     private const float WATER_PLANE_UNIT_SIZE = 10f;
+    // 1인칭 카메라의 원거리 클립면(5,000)과 화면 모서리까지 수면이 이어지도록 한다.
+    private const float OCEAN_PADDING_PER_SIDE = 10000f;
     private const string TERRAIN_LAYER_NAME = "Ground";
 
     private TerrainBuilder _terrainBuilder;
@@ -275,8 +277,9 @@ public class WorldRenderDirector : MonoBehaviour, IChunkRenderer
         float seaLevel = _settings.GetHeight(HeightLevel.Ocean);
 
         Vector3 position = new Vector3(worldSize.x * 0.5f, seaLevel, worldSize.y * 0.5f);
-        float scaleX = worldSize.x / WATER_PLANE_UNIT_SIZE;
-        float scaleZ = worldSize.y / WATER_PLANE_UNIT_SIZE;
+        float totalPadding = OCEAN_PADDING_PER_SIDE * 2f;
+        float scaleX = (worldSize.x + totalPadding) / WATER_PLANE_UNIT_SIZE;
+        float scaleZ = (worldSize.y + totalPadding) / WATER_PLANE_UNIT_SIZE;
 
         _waterInstance.transform.SetPositionAndRotation(position, Quaternion.identity);
         _waterInstance.transform.localScale = new Vector3(scaleX, 1f, scaleZ);

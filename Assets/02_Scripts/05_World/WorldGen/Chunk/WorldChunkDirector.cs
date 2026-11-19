@@ -124,7 +124,7 @@ public class WorldChunkDirector : MonoBehaviour
                     if (requestedLogic != _logicData) throw new System.OperationCanceledException("월드가 변경되었습니다.");
                     Vector2Int coord = center + new Vector2Int(x, y);
                     if (_activeChunks.ContainsKey(coord)) continue;
-                    var chunk = _logicData.GetOrCreateChunk(coord);
+                    if (!_logicData.TryGetChunk(coord, out ChunkData chunk)) continue;
                     _activeChunks.Add(coord, chunk);
                     try { await RenderAndSpawnChunkAsync(chunk, token); }
                     catch
@@ -260,8 +260,8 @@ public class WorldChunkDirector : MonoBehaviour
                 continue;
             }
 
-            ChunkData chunk = _logicData.GetOrCreateChunk(coord);
-            if (chunk == null)
+            // 월드 외곽은 수면으로 덮이며, 생성되지 않은 청크에 지형을 만들 필요가 없다.
+            if (!_logicData.TryGetChunk(coord, out ChunkData chunk))
             {
                 continue;
             }
