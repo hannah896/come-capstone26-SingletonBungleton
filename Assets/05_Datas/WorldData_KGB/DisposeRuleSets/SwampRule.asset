@@ -13,12 +13,10 @@ MonoBehaviour:
   m_Name: SwampRule
   m_EditorClassIdentifier:
   ObjectRules:
-  - ruleName: Grass
-    prefabKey: ResourceNode_Grass
-    density: 0.03
+  - prefabKey: ResourceNode_Grass
+    density: 0.04
   ItemRules:
-  - ruleName: Mushroom
-    prefabKey: Resource_Mushroom
+  - prefabKey: Resource_Mushroom
     minCount: 15
     maxCount: 30
   SpawnerRules: []

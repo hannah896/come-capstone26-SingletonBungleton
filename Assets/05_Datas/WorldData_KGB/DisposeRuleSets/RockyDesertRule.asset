@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: RockyDesertRule
   m_EditorClassIdentifier: 
   ObjectRules:
-  - ruleName: Rock
-    prefabKey: ResourceNode_Rock
-    density: 0.036
+  - prefabKey: ResourceNode_Rock
+    density: 0.038
+  - prefabKey: ResourceNode_Branch
+    density: 0.01
   ItemRules: []

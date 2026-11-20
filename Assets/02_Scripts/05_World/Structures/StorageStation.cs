@@ -488,6 +488,22 @@ public abstract class StorageStation : StationBase
         return Mathf.Clamp01(_durabilities[index] / Mathf.Max(0.001f, slots[index].maxDurability));
     }
 
+    /// <summary>
+    /// 슬롯 음식의 신선도 비율(0~1, 1 = 갓 만든 상태). 소비기한이 없거나 빈 칸이면 -1.
+    /// GetRemainingSeconds가 보관함 배수(냉장고 3배)를 되돌린 값이라, 냉장고에서는 게이지가 그만큼 천천히 줄어든다.
+    /// </summary>
+    public float GetSpoilPercent(int index)
+    {
+        if (index < 0 || index >= slots.Count || slots[index] == null || stackCounts[index] <= 0) return -1f;
+
+        float totalSeconds = slots[index].expirationTime * 60f;
+        if (totalSeconds <= 0f) return -1f;
+
+        float remaining = GetRemainingSeconds(index);
+        if (remaining < 0f) return -1f;
+        return Mathf.Clamp01(remaining / totalSeconds);
+    }
+
     public ItemStackSaveData CaptureSlot(int index)
     {
         if (index < 0 || index >= slots.Count || slots[index] == null || stackCounts[index] <= 0) return null;

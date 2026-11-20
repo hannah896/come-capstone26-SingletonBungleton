@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Initial_Deer
   m_EditorClassIdentifier: 
   monsterKey: Deer
-  minCountPerRegion: 5
-  maxCountPerRegion: 8
-  minPlacementDistance: 10
-  minDistanceFromWorldStart: 15
+  minCountPerRegion: 8
+  maxCountPerRegion: 12
+  minPlacementDistance: 35
+  minDistanceFromWorldStart: 40

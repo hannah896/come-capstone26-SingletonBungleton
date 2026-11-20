@@ -13,15 +13,14 @@ MonoBehaviour:
   m_Name: SnowRule
   m_EditorClassIdentifier:
   ObjectRules:
-  - ruleName: Fir
-    prefabKey: ResourceNode_Fir
+  - prefabKey: ResourceNode_Fir
+    density: 0.04
+  - prefabKey: ResourceNode_Rock
+    density: 0.02
+  - prefabKey: ResourceNode_Ice
     density: 0.03
-  - ruleName: Rock
-    prefabKey: ResourceNode_Rock
+  - prefabKey: ResourceNode_Branch
     density: 0.03
-  - ruleName: Ice
-    prefabKey: ResourceNode_Ice
-    density: 0.06
   ItemRules:
   - ruleName: Berry
     prefabKey: Resource_Berry

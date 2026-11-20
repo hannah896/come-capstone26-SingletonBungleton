@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 49e6a274f1b34bca9bf4a2df6a7c18e5, type: 3}
   m_Name: Nature_Horse
   m_EditorClassIdentifier: 
-  monsterKey: Deer
+  monsterKey: Horse
   allowedTimePhases: -1
-  spawnInterval: 30
+  spawnInterval: 20
   stayDuration: 30
-  spawnChance: 0.5
+  spawnChance: 1
   minSpawnCount: 1
-  maxSpawnCount: 2
+  maxSpawnCount: 1
   slotCost: 1

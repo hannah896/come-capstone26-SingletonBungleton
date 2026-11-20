@@ -15,5 +15,5 @@ MonoBehaviour:
   monsterKey: Chicken
   minCountPerRegion: 8
   maxCountPerRegion: 14
-  minPlacementDistance: 10
-  minDistanceFromWorldStart: 15
+  minPlacementDistance: 30
+  minDistanceFromWorldStart: 40

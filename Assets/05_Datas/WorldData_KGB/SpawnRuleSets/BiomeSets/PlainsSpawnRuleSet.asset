@@ -16,6 +16,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 70b9f2eb41e182546a0ba14aa11ccade, type: 2}
   - {fileID: 11400000, guid: 0241cf99655e8eb458c9ec237dda46f5, type: 2}
   - {fileID: 11400000, guid: 8426c112dd5779542995736176616854, type: 2}
+  - {fileID: 11400000, guid: cb4f24a585fe43fd8a64230d4616f627, type: 2}
   InitialSpawnRules:
   - {fileID: 11400000, guid: 6fc347e331ca43d088cfa33c2b7c670b, type: 2}
   - {fileID: 11400000, guid: d583b944ca76b0445b818481539f5583, type: 2}
+  - {fileID: 11400000, guid: 849944b33746447fa78e9efe2b3a55f0, type: 2}

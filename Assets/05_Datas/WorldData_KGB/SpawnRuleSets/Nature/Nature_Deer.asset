@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   monsterKey: Deer
   allowedTimePhases: -1
-  spawnInterval: 30
+  spawnInterval: 20
   stayDuration: 30
-  spawnChance: 0.5
+  spawnChance: 0.8
   minSpawnCount: 1
   maxSpawnCount: 2
   slotCost: 1

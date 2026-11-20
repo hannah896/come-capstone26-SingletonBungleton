@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9d5926c90fb14efc91c929d0addc5651, type: 3}
   m_Name: Initial_Horse
   m_EditorClassIdentifier: 
-  monsterKey: Deer
-  minCountPerRegion: 5
-  maxCountPerRegion: 8
-  minPlacementDistance: 10
-  minDistanceFromWorldStart: 15
+  monsterKey: Horse
+  minCountPerRegion: 4
+  maxCountPerRegion: 6
+  minPlacementDistance: 40
+  minDistanceFromWorldStart: 40

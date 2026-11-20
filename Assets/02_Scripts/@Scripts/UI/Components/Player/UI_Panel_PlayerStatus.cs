@@ -194,6 +194,9 @@ public class UI_Panel_PlayerStatus : UI_Panel
         text.Initialize();
         if (text.TMP != null)
             text.TMP.raycastTarget = false;
+
+        // 마우스를 올렸을 때 나오는 남은 수치 글자는 검정색
+        text.SetColor(Color.black);
     }
 
     private static void SetTextVisible(UI_Text text, bool visible)

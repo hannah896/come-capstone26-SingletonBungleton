@@ -15,5 +15,7 @@ MonoBehaviour:
   NatureSpawnRules:
   - {fileID: 11400000, guid: 0241cf99655e8eb458c9ec237dda46f5, type: 2}
   - {fileID: 11400000, guid: 3ec4bf35303d4c48915156504a449c80, type: 2}
+  - {fileID: 11400000, guid: cb4f24a585fe43fd8a64230d4616f627, type: 2}
   InitialSpawnRules:
   - {fileID: 11400000, guid: d583b944ca76b0445b818481539f5583, type: 2}
+  - {fileID: 11400000, guid: 849944b33746447fa78e9efe2b3a55f0, type: 2}

@@ -14,6 +14,15 @@ public class BreakableResourceNode : ResourceNode
     {
         base.OnDestroyed(context);
         SpawnDestroyFxAsync().Forget();
+
+        // 열매 덤불은 도끼로 없앨 때 열매를 주지 않는다 (열매는 G키 채집으로만)
+        if (!ResourceNodeData.KeepAfterHarvest)
+            SpawnDropsAsync(context).Forget();
+    }
+
+    // 열매 덤불: 덤불은 남기고 드롭(열매)만 인벤토리로 받는다
+    protected override void OnHarvestedKeepingNode(DamageContext context)
+    {
         SpawnDropsAsync(context).Forget();
     }
 

@@ -62,11 +62,19 @@ public class UI_Popup_Chest : UI_Popup
             if (slotUIs[i] == null) continue;
 
             if (i < storage.SlotCount)
-                slotUIs[i].Refresh(storage.Slots[i], storage.StackCounts[i], storage.GetDurabilityPercent(i));
+            {
+                // 도구는 내구도, 음식은 신선도(남은 소비기한)를 같은 게이지로 보여준다
+                float bar = storage.GetDurabilityPercent(i);
+                if (bar < 0f) bar = storage.GetSpoilPercent(i);
+                slotUIs[i].Refresh(storage.Slots[i], storage.StackCounts[i], bar);
+            }
             else
                 slotUIs[i].Refresh(null, 0);
         }
     }
+
+    /// <summary>슬롯 음식의 신선도(0~1). 슬롯 UI가 시간이 흐르는 동안 게이지를 갱신하려고 읽는다. 없으면 -1.</summary>
+    public float GetSpoilPercent(int index) => storage != null ? storage.GetSpoilPercent(index) : -1f;
 
     /// <summary>보관함 칸 클릭 → 스택 전부 인벤토리로 (들어갈 만큼만).</summary>
     public void OnStorageSlotClicked(int index)

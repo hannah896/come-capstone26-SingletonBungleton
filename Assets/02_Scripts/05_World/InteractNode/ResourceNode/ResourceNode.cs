@@ -1,4 +1,5 @@
 using System.Linq;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 /// <summary>
@@ -13,7 +14,7 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
     public ResourceNodeType NodeType => _resourceNodeData != null ? _resourceNodeData.ResourceNodeType : ResourceNodeType.None;
 
     /// <summary>도구 없이 G키(줍기)로 바로 채집 가능한 노드인지 (풀 등).</summary>
-    public bool IsHandPickable => _resourceNodeData != null && _resourceNodeData.HandPickable && !_isDestroyed;
+    public bool IsHandPickable => _resourceNodeData != null && _resourceNodeData.HandPickable && !_isDestroyed && !_berriesPicked;
 
     /// <summary>G키 줍기로 즉시 채집한다. Drops를 (설정에 따라) 인벤토리로 보내고 노드를 소진시킨다.</summary>
     public void HandPick(DamageContext context)
@@ -21,6 +22,13 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
         if (!IsHandPickable) return;
         Extensions.PlaySFXAt(AudioLibrarySounds.PickBush, transform.position);
         PlayerNetFx.ShareSound(AudioLibrarySounds.PickBush, transform.position);
+
+        // 열매 덤불: 덤불은 그대로 두고 열매만 따서 인벤토리로 받는다 (시간이 지나면 다시 열린다)
+        if (_resourceNodeData.KeepAfterHarvest)
+        {
+            HarvestKeepingNode(context);
+            return;
+        }
 
         // 멀티: 즉시 소진 = 최대 체력만큼 데미지를 보고해 호스트가 파괴를 확정하게 한다
         if (IsNetworkManaged)
@@ -38,6 +46,13 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
     private int _currentHealth;
     private int _remainingGather;
     private bool _isDestroyed;
+
+    // 열매 덤불: 열매를 딴 상태와 다시 열릴 시각(인게임 초). 노드는 사라지지 않는다.
+    // 이 피어에서만 관리한다 (월드 세이브/멀티 공유는 하지 않음 — 청크가 다시 로드되면 열매가 다시 열려 있다).
+    private bool _berriesPicked;
+    private float _berryRegrowAt;
+    private int _berryVersion;     // 풀 재사용/재채집 때 이전 재생성 대기를 무효화한다
+    private Transform _berryRoot;
     private DisposeData _placement;
     private ChunkData _chunk;
 
@@ -69,7 +84,68 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
         _isDestroyed = false;
         _hasLocalContext = false;
         _lastLocalContext = default;
+
+        // 풀에서 재사용된 열매 덤불은 열매가 달린 상태로 되돌린다
+        _berryVersion++;
+        _berriesPicked = false;
+        SetBerriesVisible(true);
     }
+
+    #region 열매 덤불
+    private void HarvestKeepingNode(DamageContext context)
+    {
+        _berriesPicked = true;
+        _deathPosition = transform.position;     // 인벤토리가 가득 차면 덤불 옆 바닥에 떨어뜨린다
+        SetBerriesVisible(false);
+
+        WorldClock clock = WorldClock.Instance;
+        _berryRegrowAt = (clock != null ? clock.TotalInGameSeconds : 0f) + _resourceNodeData.RespawnTime;
+        int version = ++_berryVersion;
+        RegrowBerriesAsync(version).Forget();
+
+        OnHarvestedKeepingNode(context);
+    }
+
+    // 인게임 시간으로 재생성 시각이 될 때까지 가끔 확인한다 (노드마다 Update를 돌리지 않으려고 대기 방식으로 처리)
+    private async UniTaskVoid RegrowBerriesAsync(int version)
+    {
+        var token = this.GetCancellationTokenOnDestroy();
+        while (version == _berryVersion && _berriesPicked)
+        {
+            await UniTask.Delay(3000, cancellationToken: token).SuppressCancellationThrow();
+            if (token.IsCancellationRequested || version != _berryVersion) return;
+
+            WorldClock clock = WorldClock.Instance;
+            if (clock == null || clock.TotalInGameSeconds >= _berryRegrowAt)
+            {
+                _berriesPicked = false;
+                SetBerriesVisible(true);
+                return;
+            }
+        }
+    }
+
+    private void SetBerriesVisible(bool visible)
+    {
+        if (_resourceNodeData == null || !_resourceNodeData.KeepAfterHarvest) return;
+
+        if (_berryRoot == null)
+            _berryRoot = FindDeepChild(transform, _resourceNodeData.HarvestHideChildName);
+        if (_berryRoot != null)
+            _berryRoot.gameObject.SetActive(visible);
+    }
+
+    private static Transform FindDeepChild(Transform root, string childName)
+    {
+        if (string.IsNullOrEmpty(childName)) return null;
+        foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+            if (t != root && t.name == childName) return t;
+        return null;
+    }
+
+    /// <summary>열매를 땄을 때 호출된다. 덤불은 남아 있다. (드롭 지급은 자식 클래스에서)</summary>
+    protected virtual void OnHarvestedKeepingNode(DamageContext context) { }
+    #endregion
 
     private void RememberLocalContext(DamageContext context)
     {
@@ -114,6 +190,9 @@ public abstract class ResourceNode : MonoBehaviour, IInteractable, IDamageable, 
     public bool CanDamage(DamageContext context)
     {
         if (_isDestroyed || context.Amount <= 0) return false;
+
+        // 열매 덤불: 열매는 G키로만 따고, 덤불 자체는 도끼(Chop)로만 없앨 수 있다 (없앨 때는 열매가 나오지 않는다)
+        if (_resourceNodeData.KeepAfterHarvest && context.ActionType != ActionType.Chop) return false;
 
         // 필요 도구 체크
         HarvestToolType required = _resourceNodeData.RequiredTool;

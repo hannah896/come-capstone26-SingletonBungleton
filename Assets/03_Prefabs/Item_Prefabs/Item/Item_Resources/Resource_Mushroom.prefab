@@ -28,8 +28,8 @@ Transform:
   m_GameObject: {fileID: 988704522028723821}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 2.2, y: 2.2, z: 2.2}
+  m_LocalPosition: {x: 0, y: 0.016, z: 0}
+  m_LocalScale: {x: 2.8, y: 2.8, z: 2.8}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2876757556168325256}
@@ -98,6 +98,8 @@ MonoBehaviour:
   _itemSO: {fileID: 11400000, guid: b31cbed3d4a14b1eb22f49f28a0cca37, type: 2}
   stackCount: 1
   _torchLight: {fileID: 0}
+  placedRespawnSeconds: 2160
+  plantedScaleMultiplier: {x: 1.3, y: 1.3, z: 1.3}
 --- !u!1001 &2334820346356047715
 PrefabInstance:
   m_ObjectHideFlags: 0

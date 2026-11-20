@@ -13,16 +13,13 @@ MonoBehaviour:
   m_Name: DesertRule
   m_EditorClassIdentifier: 
   ObjectRules:
-  - ruleName: Branch
-    prefabKey: ResourceNode_Branch
+  - prefabKey: ResourceNode_Branch
     density: 0.06
   ItemRules:
-  - ruleName: Potato
-    prefabKey: Resource_Potato
+  - prefabKey: Resource_Potato
     minCount: 15
     maxCount: 30
-  - ruleName: Mushroom
-    prefabKey: Resource_Mushroom
+  - prefabKey: Resource_Mushroom
     minCount: 6
     maxCount: 12
   SpawnerRules: []
