@@ -25,3 +25,7 @@ MonoBehaviour:
     DropChance: 1
   DropRadius: 0.5
   DropFxPrefabKey: 
+  GatherDirectlyToInventory: 1
+  HandPickable: 1
+  KeepAfterHarvest: 1
+  HarvestHideChildName: Cherries

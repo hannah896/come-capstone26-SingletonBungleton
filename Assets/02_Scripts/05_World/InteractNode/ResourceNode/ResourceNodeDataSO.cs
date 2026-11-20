@@ -33,6 +33,13 @@ public class ResourceNodeData : ScriptableObject
 
     [Tooltip("체크하면 도구 없이 G키(줍기)로 바로 채집된다. (풀 등)")]
     public bool HandPickable = false;
+
+    [Header("Berry Bush (열매 덤불)")]
+    [Tooltip("체크하면 G키로 채집해도 노드는 사라지지 않고, 아래 이름의 자식 오브젝트(열매)만 숨겨진다. 재생성 시간이 지나면 열매가 다시 열린다. 도끼로는 덤불 자체를 없앨 수 있고, 그때는 열매가 나오지 않는다.")]
+    public bool KeepAfterHarvest = false;
+
+    [Tooltip("KeepAfterHarvest일 때 채집하면 숨길 자식 오브젝트 이름 (프리팹 안의 열매 묶음)")]
+    public string HarvestHideChildName = "";
     private void OnValidate()
     {
         Name = name;

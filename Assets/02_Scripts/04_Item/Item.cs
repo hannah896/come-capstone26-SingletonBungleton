@@ -23,6 +23,15 @@ public class Item : MonoBehaviour, IDisposeInitializable, IPoolable
     [Tooltip("월드 생성으로 배치된 아이템을 주운 뒤 다시 생기기까지의 인게임 시간(초). 기본 3일")]
     [SerializeField, Min(0f)] private float placedRespawnSeconds = 2160f;
 
+    [Tooltip("월드 생성으로 '심어질 때만' 루트에 추가로 주는 회전(오일러, 배치 회전 뒤에 적용). 당근처럼 땅에 박힌 모습용. 드롭/장착 때는 적용되지 않는다.")]
+    [SerializeField] private Vector3 plantedModelEuler = Vector3.zero;
+
+    [Tooltip("월드 생성으로 심어질 때 배치 스케일(0.8~1.2 무작위)에 곱하는 크기 배율. WorldObjectSpawner가 루트 스케일을 배치 값으로 덮어쓰므로, 프리팹 크기를 월드에도 반영하려면 여기에 넣는다. (1,1,1) = 모델 원래 크기.")]
+    [SerializeField] private Vector3 plantedScaleMultiplier = Vector3.one;
+
+    [Tooltip("월드 생성으로 심어질 때 모델 높이의 이 비율만큼을 땅에 묻는다 (0 = 안 묻음/원점 그대로, 0.5 = 반쯤 박힘). 회전·크기를 적용한 뒤 렌더러 경계로 계산하므로 모델 원점 위치와 상관없다.")]
+    [SerializeField, Range(0f, 1f)] private float plantedBuryFraction = 0f;
+
     [System.NonSerialized]
     public ItemData itemData;  // 런타임 전용 — Awake에서 _itemSO 기반으로 생성
     private float spoilDeadline = -1f;
@@ -95,6 +104,36 @@ public class Item : MonoBehaviour, IDisposeInitializable, IPoolable
             stackable.stackCount = _prefabStackCount;
         if (ItemDataSO != null)
             ResetWorldViewState(ItemDataSO.itemType);
+
+        // WorldObjectSpawner가 배치 회전(Y축 무작위)을 준 뒤 이 메서드를 부르므로, 그 위에 '심은 모습' 회전을 얹는다.
+        // 루트 전체를 돌리므로 줍기용 콜라이더도 모델과 함께 선다. 스폰할 때마다 배치 회전을 새로 받으므로 쌓이지 않는다.
+        if (plantedModelEuler != Vector3.zero)
+            transform.rotation = transform.rotation * Quaternion.Euler(plantedModelEuler);
+
+        // 스폰 직전에 localScale이 배치 값(0.8~1.2)으로 새로 설정되므로 곱해도 쌓이지 않는다.
+        if (plantedScaleMultiplier != Vector3.one)
+            transform.localScale = Vector3.Scale(transform.localScale, plantedScaleMultiplier);
+
+        // 회전·크기를 적용한 뒤, 렌더러 경계 기준으로 모델의 일부를 땅속에 묻는다 (지면 높이 = 스폰이 정한 루트 y).
+        if (plantedBuryFraction > 0f)
+            BuryIntoGround(plantedBuryFraction);
+    }
+
+    private void BuryIntoGround(float fraction)
+    {
+        float groundY = transform.position.y;
+        bool any = false;
+        Bounds bounds = default;
+        foreach (Renderer r in GetComponentsInChildren<Renderer>(true))
+        {
+            if (r is ParticleSystemRenderer) continue;
+            if (!any) { bounds = r.bounds; any = true; }
+            else bounds.Encapsulate(r.bounds);
+        }
+        if (!any) return;
+
+        float targetMinY = groundY - bounds.size.y * fraction;
+        transform.position += Vector3.up * (targetMinY - bounds.min.y);
     }
 
     /// <summary>풀에서 재사용돼 드롭 등 다른 용도로 쓰일 때 이전 배치 정보를 지운다.</summary>

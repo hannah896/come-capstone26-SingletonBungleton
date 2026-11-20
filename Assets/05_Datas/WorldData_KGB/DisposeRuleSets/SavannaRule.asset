@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ObjectRules:
   - prefabKey: ResourceNode_Fir
-    density: 0.012
+    density: 0.016
   - prefabKey: ResourceNode_Grass
-    density: 0.012
+    density: 0.016
   ItemRules:
   - prefabKey: Resource_Flower
     minCount: 4

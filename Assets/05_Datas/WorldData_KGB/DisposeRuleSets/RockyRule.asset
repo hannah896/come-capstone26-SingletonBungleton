@@ -13,11 +13,9 @@ MonoBehaviour:
   m_Name: RockyRule
   m_EditorClassIdentifier:
   ObjectRules:
-  - ruleName: Rock
-    prefabKey: ResourceNode_Rock
-    density: 0.06
-  - ruleName: Grass
-    prefabKey: ResourceNode_Grass
-    density: 0.012
+  - prefabKey: ResourceNode_Rock
+    density: 0.05
+  - prefabKey: ResourceNode_Grass
+    density: 0.016
   ItemRules: []
   SpawnerRules: []

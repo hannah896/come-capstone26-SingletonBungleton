@@ -29,7 +29,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.12390172, z: -0, w: 0.9922945}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.2, y: 1.2, z: 1.2}
+  m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5385263912260774544}
@@ -98,6 +98,7 @@ MonoBehaviour:
   _itemSO: {fileID: 11400000, guid: 5b13a9bd863b9e54eb8fd4b90bdc23ed, type: 2}
   stackCount: 1
   _torchLight: {fileID: 0}
+  plantedScaleMultiplier: {x: 2, y: 2, z: 2}
 --- !u!1001 &5770057350149585089
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -120,7 +121,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1922773605599711825, guid: 2d92fe1acdcfcb244bcbcfb357dc9548, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 0.04
       objectReference: {fileID: 0}
     - target: {fileID: 1922773605599711825, guid: 2d92fe1acdcfcb244bcbcfb357dc9548, type: 3}
       propertyPath: m_LocalPosition.z

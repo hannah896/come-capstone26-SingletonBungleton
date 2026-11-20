@@ -16,6 +16,7 @@ public class StorageSlotUI : MonoBehaviour, IPointerClickHandler
     private UI_Popup_Chest owner;
     private int slotIndex = -1;
     private DurabilityBarView durabilityView;
+    private bool trackSpoil;   // 음식 칸: 시간이 지나면서 줄어드는 신선도 게이지를 계속 갱신
 
     private DurabilityBarView DurabilityView => durabilityView ??= new DurabilityBarView(transform);
 
@@ -49,11 +50,20 @@ public class StorageSlotUI : MonoBehaviour, IPointerClickHandler
         }
         if (stackBG != null) stackBG.SetActive(showStack);
 
+        trackSpoil = !itemData.hasDurability && itemData.expirationTime > 0f;
         DurabilityView.Set(durabilityPercent);
+    }
+
+    // 소비기한은 시간이 지나면 계속 변하므로 이벤트 대신 매 프레임 비율만 확인한다 (바뀔 때만 실제로 갱신됨)
+    private void Update()
+    {
+        if (trackSpoil && owner != null)
+            DurabilityView.Set(owner.GetSpoilPercent(slotIndex));
     }
 
     private void Clear()
     {
+        trackSpoil = false;
         DurabilityView.Hide();
         if (iconImage != null)
         {

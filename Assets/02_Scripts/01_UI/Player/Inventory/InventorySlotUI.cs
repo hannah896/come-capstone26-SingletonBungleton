@@ -19,6 +19,7 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnte
 
     private DurabilityBarView durabilityView;
     private bool trackDurability;
+    private bool trackSpoil;   // 음식: 내구도 대신 신선도 게이지
     private bool stackTextNormalized;
 
     private int slotIndex;
@@ -206,7 +207,9 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnte
             stackText.text = showStack ? stack.ToString() : string.Empty;
         }
 
-        trackDurability = itemData.hasDurability;
+        // 도구는 내구도, 음식은 신선도(남은 소비기한)를 같은 게이지로 보여준다
+        trackSpoil = !itemData.hasDurability && !isEquipmentSlot && itemData.expirationTime > 0f;
+        trackDurability = itemData.hasDurability || trackSpoil;
         if (trackDurability)
             UpdateDurabilityBar();
         else
@@ -225,6 +228,7 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnte
         if (stackBG != null) stackBG.SetActive(false);
         if (stackText != null) stackText.text = string.Empty;
         trackDurability = false;
+        trackSpoil = false;
         DurabilityView.Hide();
     }
 
@@ -265,9 +269,12 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnte
     {
         if (!trackDurability || playerInventory == null) return;
 
-        DurabilityView.Set(isEquipmentSlot
+        float percent = isEquipmentSlot
             ? playerInventory.GetEquippedDurabilityPercent(equipSlot)
-            : playerInventory.GetSlotDurabilityPercent(slotIndex));
+            : trackSpoil
+                ? playerInventory.GetSlotSpoilPercent(slotIndex)
+                : playerInventory.GetSlotDurabilityPercent(slotIndex);
+        DurabilityView.Set(percent);
     }
 
     private void ResolveReferences()
