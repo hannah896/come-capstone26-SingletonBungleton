@@ -226,13 +226,17 @@ public class DynamicSpawnSettings
     [Header("추가 스폰 방식 공통 제한")]
     [Tooltip("집·월드 최초 배치·주기 스폰이 동시에 유지할 최대 몬스터 수입니다.")]
     [Min(0)] public int MaxAdditionalMonsters = 30;
+    [Tooltip("월드 최초 배치·주기 스폰이 동시에 유지할 최대 동물 수입니다. 몬스터 상한과 별도로 집계합니다.")]
+    [Min(0)] public int MaxAdditionalAnimals = 30;
     [Min(0f)] public float InitialMonsterActivationDistance = 80f;
     [Min(0f)] public float InitialMonsterDespawnDistance = 120f;
     [Min(0f)] public float AdditionalMonsterDespawnDistance = 140f;
 
     [Header("Spawn Budget")]
-    [Tooltip("DynamicSpawnDirector가 동시에 유지할 수 있는 전체 스폰 슬롯입니다.")]
+    [Tooltip("DynamicSpawnDirector가 동시에 유지할 수 있는 전체 몬스터 스폰 슬롯입니다.")]
     [Min(0)] public int MaxSpawnSlots = 30;
+    [Tooltip("DynamicSpawnDirector가 동시에 유지할 수 있는 전체 동물 스폰 슬롯입니다. 몬스터 슬롯과 별도로 집계합니다.")]
+    [Min(0)] public int MaxAnimalSpawnSlots = 20;
 
     [Header("Runtime Tracking")]
     [Tooltip("플레이어와 활성 청크 목록을 다시 찾는 간격입니다.")]

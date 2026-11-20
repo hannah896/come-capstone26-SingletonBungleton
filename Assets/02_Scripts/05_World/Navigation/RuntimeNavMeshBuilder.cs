@@ -22,6 +22,8 @@ public class RuntimeNavMeshBuilder : MonoBehaviour
     [Header("빌드 영역")]
     [Tooltip("타깃 중심으로 굽는 영역 크기(m)")]
     [SerializeField] private Vector3 buildSize = new Vector3(120f, 80f, 120f);
+    [Tooltip("해수면(HeightLevel.Ocean) 위로 이 높이(m) 미만은 NavMesh 빌드에서 제외한다(해저 지형 제외)")]
+    [SerializeField] private float seaLevelMargin = 0.5f;
     [Tooltip("재빌드 주기(초). 새로 로드된 청크를 반영한다")]
     [SerializeField] private float rebuildInterval = 5f;
     [Tooltip("마지막 빌드 중심에서 이 거리(m) 이상 벗어나면 주기와 상관없이 재빌드한다")]
@@ -36,6 +38,7 @@ public class RuntimeNavMeshBuilder : MonoBehaviour
     private readonly List<NavMeshBuildMarkup> markups = new List<NavMeshBuildMarkup>();
 
     private Vector3 lastCenter;
+    private Bounds lastBounds;
     private bool hasBuilt;
     private float timer;
     private float findTargetTimer;
@@ -98,7 +101,7 @@ public class RuntimeNavMeshBuilder : MonoBehaviour
 
     private void Rebuild(Vector3 center)
     {
-        var bounds = new Bounds(center, buildSize);
+        Bounds bounds = ComputeBuildBounds(center);
 
         sources.Clear();
         NavMeshBuilder.CollectSources(bounds, includeLayers, geometry, 0, markups, sources);
@@ -116,7 +119,24 @@ public class RuntimeNavMeshBuilder : MonoBehaviour
         buildOperation = NavMeshBuilder.UpdateNavMeshDataAsync(navMeshData, settings, sources, bounds);
 
         lastCenter = center;
+        lastBounds = bounds;
         hasBuilt = true;
+    }
+
+    // 월드 씬에서는 해수면 이하(y=0 해저 Terrain)에 NavMesh가 구워지지 않도록 빌드 하한을 끌어올린다.
+    private Bounds ComputeBuildBounds(Vector3 center)
+    {
+        WorldSettings worldSettings = WorldGenManager.Instance != null ? WorldGenManager.Instance.WorldSettings : null;
+        if (worldSettings == null)
+            return new Bounds(center, buildSize);
+
+        float minAllowedY = worldSettings.GetHeight(HeightLevel.Ocean) + Mathf.Max(0f, seaLevelMargin);
+        float minY = Mathf.Max(center.y - buildSize.y * 0.5f, minAllowedY);
+        float maxY = Mathf.Max(center.y + buildSize.y * 0.5f, minY + 1f);
+
+        var boundsCenter = new Vector3(center.x, (minY + maxY) * 0.5f, center.z);
+        var boundsSize = new Vector3(buildSize.x, maxY - minY, buildSize.z);
+        return new Bounds(boundsCenter, boundsSize);
     }
 
     private static bool IsDynamicActor(NavMeshBuildSource source)
@@ -132,6 +152,6 @@ public class RuntimeNavMeshBuilder : MonoBehaviour
     {
         if (!hasBuilt) return;
         Gizmos.color = new Color(0.2f, 0.8f, 1f, 0.35f);
-        Gizmos.DrawWireCube(lastCenter, buildSize);
+        Gizmos.DrawWireCube(lastBounds.center, lastBounds.size);
     }
 }

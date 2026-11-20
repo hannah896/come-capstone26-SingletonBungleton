@@ -140,5 +140,65 @@ public class WorldLogicData
             return -1; // OCEAN_MARKER
         return TerritoryWorld[x, y];
     }
+
+    /// <summary>지정 월드 좌표가 바다(-1)가 아닌 육지 영역인지 판별한다.</summary>
+    public bool IsLand(float worldX, float worldZ)
+        => GetRegionAt(Mathf.FloorToInt(worldX), Mathf.FloorToInt(worldZ)) >= 0;
+
+    /// <summary>지정 타일 좌표가 육지 영역인지 판별한다.</summary>
+    public bool IsLand(int tileX, int tileZ)
+        => GetRegionAt(tileX, tileZ) >= 0;
+
+    /// <summary>지정 월드 좌표의 오브젝트 점유 여부를 안전하게 조회한다.</summary>
+    public bool IsOccupied(float worldX, float worldZ)
+    {
+        if (OccupiedWorld == null) return false;
+        int x = Mathf.FloorToInt(worldX);
+        int z = Mathf.FloorToInt(worldZ);
+        if (x < 0 || x >= TerrainSize.x || z < 0 || z >= TerrainSize.y) return true;
+        return OccupiedWorld[x, z];
+    }
+
+    /// <summary>
+    /// 월드 실수 좌표(worldX, worldZ)의 지형 높이를 인접 4개 격자점으로 쌍선형 보간해 반환한다.
+    /// 해안선 인접 타일에서는 바다(-50) 코너를 제외하고 육지 코너만 가중 평균해 절벽 왜곡을 막는다.
+    /// </summary>
+    public float SampleHeight(float worldX, float worldZ)
+    {
+        if (TerrainSize.x <= 0 || TerrainSize.y <= 0) return 0f;
+
+        int x0 = Mathf.Clamp(Mathf.FloorToInt(worldX), 0, TerrainSize.x - 1);
+        int z0 = Mathf.Clamp(Mathf.FloorToInt(worldZ), 0, TerrainSize.y - 1);
+
+        if (HeightWorld == null)
+            return Mathf.Max(0f, GetHeightAt(x0, z0));
+
+        int x1 = Mathf.Min(x0 + 1, TerrainSize.x - 1);
+        int z1 = Mathf.Min(z0 + 1, TerrainSize.y - 1);
+        float tx = Mathf.Clamp01(worldX - x0);
+        float tz = Mathf.Clamp01(worldZ - z0);
+
+        float sum = 0f;
+        float weightSum = 0f;
+
+        AccumulateLandCorner(x0, z0, (1f - tx) * (1f - tz), ref sum, ref weightSum);
+        AccumulateLandCorner(x1, z0, tx * (1f - tz), ref sum, ref weightSum);
+        AccumulateLandCorner(x0, z1, (1f - tx) * tz, ref sum, ref weightSum);
+        AccumulateLandCorner(x1, z1, tx * tz, ref sum, ref weightSum);
+
+        return weightSum > 0f ? sum / weightSum : 0f;
+    }
+
+    private void AccumulateLandCorner(int x, int z, float weight, ref float sum, ref float weightSum)
+    {
+        if (weight <= 0f) return;
+        if (TerritoryWorld != null && TerritoryWorld[x, z] < 0) return;
+
+        float h = HeightWorld[x, z];
+        if (h < 0f) return;
+
+        sum += h * weight;
+        weightSum += weight;
+    }
     
 }

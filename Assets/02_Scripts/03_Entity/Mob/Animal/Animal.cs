@@ -94,6 +94,22 @@ public class Animal : Mob
 
     private readonly Collider[] threatBuffer = new Collider[16];
     private readonly RaycastHit[] groundBuffer = new RaycastHit[8];
+    private NavMeshPath navPathBuffer;
+
+    // 원격 게스트 주변(호스트에 청크/NavMesh 미로드)용 논리 지형 폴백 이동
+    private bool useFallbackMove;
+    private Vector3 fallbackDestination;
+    private float fallbackMoveSpeed;
+    private float fallbackNavRecheckTimer;
+    private const float FallbackArriveDistance = 0.35f;
+    private const float FallbackTurnSpeed = 360f;
+    private const float FallbackNavRecheckInterval = 1f;
+
+    // 원격 게스트 주변(호스트에 지형 콜라이더 미로드)용 코드 포물선 넉백
+    private bool useFallbackKnockback;
+    private Vector3 fallbackKnockbackVelocity;
+    private Vector3 lastValidLandPosition;
+    private bool hasLastValidLandPosition;
 
     /// <summary>FleeRange 등 동물 전용 스탯 접근용.</summary>
     protected AnimalStatData AnimalData => statData as AnimalStatData;
@@ -160,6 +176,7 @@ public class Animal : Mob
         hasNetTarget = false;
         hasHitFrom = false;
         lastAttacker = null;
+        hasLastValidLandPosition = false;
         CurrentAnimId = AnimalAnimId.None;
         stateMachine = new AnimalStateMachine(this);
     }
@@ -189,6 +206,19 @@ public class Animal : Mob
         }
 
         TryRegisterScenePlaced();
+        if (IsValidLandPoint(transform.position))
+        {
+            lastValidLandPosition = transform.position;
+            hasLastValidLandPosition = true;
+        }
+
+        if (useFallbackKnockback)
+            TickFallbackKnockback(deltaTime);
+        else if (!rb.isKinematic)
+            GuardPhysicsKnockbackCoast();
+        else if (useFallbackMove)
+            TickFallbackMove(deltaTime);
+
         stateMachine.OnUpdate(deltaTime);
     }
 
@@ -227,40 +257,141 @@ public class Animal : Mob
     #endregion
 
     #region NavMesh Locomotion
+    private static WorldLogicData LogicData
+        => WorldGenManager.Instance != null ? WorldGenManager.Instance.CurrentLogicData : null;
+
+    private static float? SeaLevel
+    {
+        get
+        {
+            WorldSettings settings = WorldGenManager.Instance != null ? WorldGenManager.Instance.WorldSettings : null;
+            return settings != null ? settings.GetHeight(HeightLevel.Ocean) : (float?)null;
+        }
+    }
+
+    /// <summary>월드 씬에서 지정 좌표가 육지이고 해수면 위인지 확인한다. 테스트 씬(월드 데이터 없음)이면 true.</summary>
+    private static bool IsValidLandPoint(Vector3 pos)
+    {
+        WorldLogicData logic = LogicData;
+        if (logic != null && !logic.IsLand(pos.x, pos.z))
+            return false;
+
+        float? seaLevel = SeaLevel;
+        if (seaLevel.HasValue && pos.y <= seaLevel.Value + 0.1f)
+            return false;
+
+        return true;
+    }
+
+    /// <summary>두 지점 사이 직선 구간이 바다를 가로지르지 않는지 샘플링 검사한다.</summary>
+    private static bool IsLandSegmentClear(WorldLogicData logic, Vector3 from, Vector3 to)
+    {
+        if (logic == null) return true;
+        if (!logic.IsLand(to.x, to.z)) return false;
+
+        Vector3 diff = to - from;
+        diff.y = 0f;
+        float dist = diff.magnitude;
+        int steps = Mathf.Max(2, Mathf.CeilToInt(dist));
+
+        for (int i = 1; i <= steps; i++)
+        {
+            float t = (float)i / steps;
+            float x = Mathf.Lerp(from.x, to.x, t);
+            float z = Mathf.Lerp(from.z, to.z, t);
+            if (!logic.IsLand(x, z))
+                return false;
+        }
+
+        return true;
+    }
+
+    private bool HasCompleteNavPath(Vector3 destination)
+    {
+        if (!agent.enabled || !agent.isOnNavMesh) return false;
+        navPathBuffer ??= new NavMeshPath();
+        return agent.CalculatePath(destination, navPathBuffer) && navPathBuffer.status == NavMeshPathStatus.PathComplete;
+    }
+
     /// <summary>지정 위치로 순간이동시키고 가능하면 NavMesh에 붙인다. 스폰 직후 사용.</summary>
     public void PlaceAt(Vector3 position)
     {
+        useFallbackMove = false;
+        useFallbackKnockback = false;
+        fallbackKnockbackVelocity = Vector3.zero;
+
         if (agent.enabled) agent.enabled = false;
         transform.position = position;
+
+        if (IsValidLandPoint(position))
+        {
+            lastValidLandPosition = position;
+            hasLastValidLandPosition = true;
+        }
+
         TryAttachAgent();
     }
 
-    /// <summary>주변 NavMesh를 찾아 Agent를 켠다. 아직 NavMesh가 없으면(런타임 빌드 전) false.</summary>
+    /// <summary>주변 NavMesh를 찾아 Agent를 켠다. 아직 NavMesh가 없으면(런타임 빌드 전/원격 청크) false.</summary>
     public bool TryAttachAgent()
     {
-        if (agent.enabled && agent.isOnNavMesh) return true;
-        if (!rb.isKinematic) return false; // 넉백으로 공중에 떠 있는 중
+        if (agent.enabled && agent.isOnNavMesh)
+        {
+            if (IsValidLandPoint(transform.position))
+                return true;
+
+            agent.enabled = false;
+        }
+
+        if (!rb.isKinematic || useFallbackKnockback) return false; // 넉백으로 공중에 떠 있는 중
 
         if (!NavMesh.SamplePosition(transform.position, out NavMeshHit hit, navSampleDistance, agent.areaMask))
             return false;
 
+        if (!IsValidLandPoint(hit.position))
+            return false;
+
         agent.enabled = true;
         agent.Warp(hit.position);
-        return agent.isOnNavMesh;
+        if (agent.isOnNavMesh)
+        {
+            useFallbackMove = false;
+            return true;
+        }
+
+        agent.enabled = false;
+        return false;
     }
 
-    /// <summary>목적지로 이동 시작. NavMesh에 붙지 못했거나 경로가 없으면 false.</summary>
+    /// <summary>목적지로 이동 시작. NavMesh가 있으면 Agent로, 원격 청크(미로드)에서는 논리 지형 폴백으로 이동한다.</summary>
     public bool MoveTo(Vector3 destination, float speed)
     {
-        if (!TryAttachAgent()) return false;
+        if (!IsValidLandPoint(destination)) return false;
 
-        agent.speed = speed;
-        agent.isStopped = false;
-        return agent.SetDestination(destination);
+        if (TryAttachAgent())
+        {
+            useFallbackMove = false;
+            agent.speed = speed;
+            agent.isStopped = false;
+            return agent.SetDestination(destination);
+        }
+
+        WorldLogicData logic = LogicData;
+        if (logic == null) return false;
+
+        destination.y = logic.SampleHeight(destination.x, destination.z);
+        if (!IsValidLandPoint(destination)) return false;
+
+        fallbackDestination = destination;
+        fallbackMoveSpeed = speed;
+        useFallbackMove = true;
+        fallbackNavRecheckTimer = FallbackNavRecheckInterval;
+        return true;
     }
 
     public void StopMoving()
     {
+        useFallbackMove = false;
         if (!agent.enabled || !agent.isOnNavMesh) return;
         agent.isStopped = true;
         agent.ResetPath();
@@ -269,23 +400,108 @@ public class Animal : Mob
     /// <summary>목적지에 도착했거나 더 갈 수 없는 상태인지.</summary>
     public bool HasArrived()
     {
+        if (useFallbackMove)
+        {
+            Vector3 diff = fallbackDestination - transform.position;
+            diff.y = 0f;
+            return diff.sqrMagnitude <= FallbackArriveDistance * FallbackArriveDistance;
+        }
+
         if (!agent.enabled || !agent.isOnNavMesh) return true;
         if (agent.pathPending) return false;
         if (agent.pathStatus == NavMeshPathStatus.PathInvalid) return true;
         return agent.remainingDistance <= agent.stoppingDistance + 0.1f;
     }
 
-    /// <summary>현재 위치 기준 WanderRadius 안에서 NavMesh 위의 랜덤 지점을 고른다.</summary>
+    // 원격 게스트 주변(호스트에 NavMesh 미로드)에서 논리 지형 높이를 따라 부드럽게 이동한다.
+    private void TickFallbackMove(float deltaTime)
+    {
+        WorldLogicData logic = LogicData;
+        if (logic == null)
+        {
+            useFallbackMove = false;
+            return;
+        }
+
+        // 호스트가 가까이 다가와 NavMesh가 생겼다면 Agent 모드로 자동 복귀한다.
+        fallbackNavRecheckTimer -= deltaTime;
+        if (fallbackNavRecheckTimer <= 0f)
+        {
+            fallbackNavRecheckTimer = FallbackNavRecheckInterval;
+            if (TryAttachAgent())
+            {
+                agent.speed = fallbackMoveSpeed;
+                agent.isStopped = false;
+                agent.SetDestination(fallbackDestination);
+                return;
+            }
+        }
+
+        Vector3 dir = fallbackDestination - transform.position;
+        dir.y = 0f;
+        float dist = dir.magnitude;
+        if (dist <= FallbackArriveDistance)
+        {
+            useFallbackMove = false;
+            return;
+        }
+
+        Vector3 flatDir = dir / dist;
+        Quaternion look = Quaternion.LookRotation(flatDir);
+        transform.rotation = Quaternion.RotateTowards(transform.rotation, look, FallbackTurnSpeed * deltaTime);
+
+        float step = Mathf.Min(dist, fallbackMoveSpeed * deltaTime);
+        Vector3 next = transform.position + flatDir * step;
+
+        if (!logic.IsLand(next.x, next.z))
+        {
+            useFallbackMove = false;
+            return;
+        }
+
+        next.y = logic.SampleHeight(next.x, next.z);
+        transform.position = next;
+    }
+
+    /// <summary>현재 위치 기준 WanderRadius 안에서 육지 위의 랜덤 지점을 고른다.</summary>
     public bool TryGetWanderPoint(out Vector3 point)
     {
-        for (int i = 0; i < 6; i++)
+        if (TryAttachAgent())
         {
-            Vector2 offset = Random.insideUnitCircle * WanderRadius;
-            Vector3 candidate = transform.position + new Vector3(offset.x, 0f, offset.y);
-
-            if (NavMesh.SamplePosition(candidate, out NavMeshHit hit, 2f, agent.areaMask))
+            for (int i = 0; i < 6; i++)
             {
+                Vector2 offset = Random.insideUnitCircle * WanderRadius;
+                Vector3 candidate = transform.position + new Vector3(offset.x, 0f, offset.y);
+
+                if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 2f, agent.areaMask))
+                    continue;
+                if (!IsValidLandPoint(hit.position) || !HasCompleteNavPath(hit.position))
+                    continue;
+
                 point = hit.position;
+                return true;
+            }
+
+            point = transform.position;
+            return false;
+        }
+
+        WorldLogicData logic = LogicData;
+        if (logic != null)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                Vector2 offset = Random.insideUnitCircle * WanderRadius;
+                if (offset.sqrMagnitude < 1f) continue;
+
+                Vector3 candidate = transform.position + new Vector3(offset.x, 0f, offset.y);
+                if (!IsLandSegmentClear(logic, transform.position, candidate)) continue;
+                if (logic.IsOccupied(candidate.x, candidate.z)) continue;
+
+                candidate.y = logic.SampleHeight(candidate.x, candidate.z);
+                if (!IsValidLandPoint(candidate)) continue;
+
+                point = candidate;
                 return true;
             }
         }
@@ -295,7 +511,7 @@ public class Animal : Mob
     }
 
     /// <summary>
-    /// 위협 반대 방향으로 fleeStepDistance만큼 떨어진 NavMesh 지점을 고른다.
+    /// 위협 반대 방향으로 fleeStepDistance만큼 떨어진 육지 지점을 고른다.
     /// 정반대가 막혀 있으면(벽/바다) 좌우로 각도를 벌려가며 찾는다.
     /// </summary>
     public bool TryGetFleePoint(Vector3 threatPosition, out Vector3 point)
@@ -305,15 +521,49 @@ public class Animal : Mob
         if (away.sqrMagnitude < 0.0001f) away = -transform.forward;
         away.Normalize();
 
-        float[] angles = { 0f, 30f, -30f, 60f, -60f, 90f, -90f };
-        foreach (float angle in angles)
-        {
-            Vector3 dir = Quaternion.Euler(0f, angle, 0f) * away;
-            Vector3 candidate = transform.position + dir * fleeStepDistance;
+        float[] angles = { 0f, 30f, -30f, 60f, -60f, 90f, -90f, 120f, -120f };
 
-            if (NavMesh.SamplePosition(candidate, out NavMeshHit hit, 3f, agent.areaMask))
+        if (TryAttachAgent())
+        {
+            foreach (float angle in angles)
             {
+                Vector3 dir = Quaternion.Euler(0f, angle, 0f) * away;
+                Vector3 candidate = transform.position + dir * fleeStepDistance;
+
+                if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 3f, agent.areaMask))
+                    continue;
+                if (!IsValidLandPoint(hit.position) || !HasCompleteNavPath(hit.position))
+                    continue;
+
+                Vector3 moved = hit.position - transform.position;
+                moved.y = 0f;
+                if (moved.sqrMagnitude < 1.5f * 1.5f)
+                    continue;
+
                 point = hit.position;
+                return true;
+            }
+
+            point = transform.position;
+            return false;
+        }
+
+        WorldLogicData logic = LogicData;
+        if (logic != null)
+        {
+            foreach (float angle in angles)
+            {
+                Vector3 dir = Quaternion.Euler(0f, angle, 0f) * away;
+                Vector3 candidate = transform.position + dir * fleeStepDistance;
+
+                if (!IsLandSegmentClear(logic, transform.position, candidate))
+                    continue;
+
+                candidate.y = logic.SampleHeight(candidate.x, candidate.z);
+                if (!IsValidLandPoint(candidate))
+                    continue;
+
+                point = candidate;
                 return true;
             }
         }
@@ -398,14 +648,17 @@ public class Animal : Mob
     #endregion
 
     #region Knockback
-    /// <summary>Agent를 끄고 Rigidbody를 물리로 전환해 공격자 반대 방향 위로 튕겨 올린다.</summary>
+    /// <summary>
+    /// Agent를 끄고 공격자 반대 방향 위로 튕겨 올린다.
+    /// 지형 콜라이더가 로드된 곳(호스트 주변)은 Rigidbody 물리로,
+    /// 콜라이더가 없는 원격 게스트 주변은 논리 지형 기반 포물선 넉백으로 시뮬레이션한다.
+    /// </summary>
     public void BeginKnockback()
     {
         StopMoving();
         agent.enabled = false;
-
-        rb.isKinematic = false;
-        rb.linearVelocity = Vector3.zero;
+        useFallbackKnockback = false;
+        fallbackKnockbackVelocity = Vector3.zero;
 
         Vector3 away = hasHitFrom ? transform.position - lastHitFrom : -transform.forward;
         away.y = 0f;
@@ -413,12 +666,96 @@ public class Animal : Mob
 
         float up = AnimalData != null ? AnimalData.KnockbackUpForce : 4f;
         float back = AnimalData != null ? AnimalData.KnockbackBackForce : 3f;
-        rb.AddForce(Vector3.up * up + away * back, ForceMode.VelocityChange);
+        Vector3 initialVelocity = Vector3.up * up + away * back;
+
+        if (HasLoadedGroundColliderBelow() || LogicData == null)
+        {
+            rb.isKinematic = false;
+            rb.linearVelocity = Vector3.zero;
+            rb.AddForce(initialVelocity, ForceMode.VelocityChange);
+            return;
+        }
+
+        // 호스트에 청크 콜라이더가 없는 원격 구역: 물리 중력으로 떨어지지 않도록 Kinematic 유지 + 코드 포물선
+        if (!rb.isKinematic)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.isKinematic = true;
+        }
+        useFallbackKnockback = true;
+        fallbackKnockbackVelocity = initialVelocity;
+    }
+
+    private bool HasLoadedGroundColliderBelow()
+    {
+        int count = Physics.RaycastNonAlloc(transform.position + Vector3.up * 5f, Vector3.down, groundBuffer,
+            25f, groundMask, QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < count; i++)
+        {
+            if (groundBuffer[i].collider.attachedRigidbody == rb) continue;
+            if (IsValidLandPoint(groundBuffer[i].point)) return true;
+        }
+
+        return false;
+    }
+
+    // 원격 게스트 주변 포물선 넉백 진행. 바다 진입은 수평 정지로 차단하고 논리 지형 높이에 착지한다.
+    private void TickFallbackKnockback(float deltaTime)
+    {
+        WorldLogicData logic = LogicData;
+        fallbackKnockbackVelocity += Physics.gravity * deltaTime;
+        Vector3 next = transform.position + fallbackKnockbackVelocity * deltaTime;
+
+        if (logic != null && !logic.IsLand(next.x, next.z))
+        {
+            next.x = transform.position.x;
+            next.z = transform.position.z;
+            fallbackKnockbackVelocity.x = 0f;
+            fallbackKnockbackVelocity.z = 0f;
+        }
+
+        float groundY = logic != null ? logic.SampleHeight(next.x, next.z) : next.y;
+        if (fallbackKnockbackVelocity.y <= 0f && next.y <= groundY)
+        {
+            next.y = groundY;
+            fallbackKnockbackVelocity = Vector3.zero;
+        }
+
+        transform.position = next;
+    }
+
+    // 물리 넉백 중 고지대 절벽(InvisibleWall 상단 초과) 등에서 바다 쪽으로 넘어가는 것을 차단한다.
+    private void GuardPhysicsKnockbackCoast()
+    {
+        WorldLogicData logic = LogicData;
+        if (logic == null) return;
+
+        Vector3 pos = transform.position;
+        if (IsValidLandPoint(pos)) return;
+
+        if (hasLastValidLandPosition)
+        {
+            float safeY = Mathf.Max(pos.y, logic.SampleHeight(lastValidLandPosition.x, lastValidLandPosition.z));
+            transform.position = new Vector3(lastValidLandPosition.x, safeY, lastValidLandPosition.z);
+        }
+
+        if (!rb.isKinematic)
+            rb.linearVelocity = new Vector3(0f, Mathf.Min(rb.linearVelocity.y, 0f), 0f);
     }
 
     /// <summary>하강 중이고 발밑 가까이에 지면이 있는지.</summary>
     public bool IsGrounded()
     {
+        if (useFallbackKnockback)
+        {
+            if (fallbackKnockbackVelocity.y > 0.1f) return false;
+            WorldLogicData logic = LogicData;
+            float groundY = logic != null ? logic.SampleHeight(transform.position.x, transform.position.z) : transform.position.y;
+            return transform.position.y <= groundY + groundCheckDistance;
+        }
+
         if (rb.linearVelocity.y > 0.1f) return false;
 
         const float originOffset = 0.2f;
@@ -434,9 +771,12 @@ public class Animal : Mob
         return false;
     }
 
-    /// <summary>착지 처리: 물리를 멈추고 다시 NavMesh Agent로 복귀한다.</summary>
+    /// <summary>착지 처리: 물리를 멈추고 다시 NavMesh Agent(또는 논리 지형)로 복귀한다.</summary>
     public void EndKnockback()
     {
+        useFallbackKnockback = false;
+        fallbackKnockbackVelocity = Vector3.zero;
+
         if (!rb.isKinematic)
         {
             rb.linearVelocity = Vector3.zero;
@@ -444,12 +784,25 @@ public class Animal : Mob
             rb.isKinematic = true;
         }
 
-        TryAttachAgent();
+        WorldLogicData logic = LogicData;
+        if (logic != null && !IsValidLandPoint(transform.position) && hasLastValidLandPosition)
+            transform.position = lastValidLandPosition;
+
+        if (!TryAttachAgent() && logic != null && logic.IsLand(transform.position.x, transform.position.z))
+        {
+            Vector3 pos = transform.position;
+            pos.y = logic.SampleHeight(pos.x, pos.z);
+            transform.position = pos;
+        }
     }
 
     // 평소 상태(Agent 대기 + Kinematic)로 되돌린다. Agent는 NavMesh가 확인될 때 TryAttachAgent가 켠다.
     private void ResetPhysics()
     {
+        useFallbackMove = false;
+        useFallbackKnockback = false;
+        fallbackKnockbackVelocity = Vector3.zero;
+
         if (rb != null)
         {
             if (!rb.isKinematic)

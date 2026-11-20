@@ -324,7 +324,7 @@ public class Treeguard : Monster
 
         PlayAnim(running ? MonsterAnimId.Run : MonsterAnimId.Move);
         FaceTargetStep(deltaTime);
-        transform.position += transform.forward * (speed * deltaTime);
+        TryMovePlanar(transform.forward * (speed * deltaTime));
     }
     #endregion
 

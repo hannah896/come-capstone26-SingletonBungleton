@@ -29,8 +29,9 @@ public class MischiefLeapState : MobState<Monster>
         startPos = mischief.transform.position;
 
         Vector3 dir = mischief.LeapDirection();
-        landPos = startPos + dir * mischief.JumpDistance;
-        landPos.y = startPos.y; // 수평 이동만; Y는 포물선으로 별도 계산
+        Vector3 rawLandPos = startPos + dir * mischief.JumpDistance;
+        rawLandPos.y = startPos.y;
+        landPos = mischief.ClampLandDestination(startPos, rawLandPos);
 
         // 도약 방향을 즉시 바라보게 한다.
         if (dir.sqrMagnitude > 0.0001f)
@@ -47,9 +48,9 @@ public class MischiefLeapState : MobState<Monster>
         progress += time / duration;
         float p = Mathf.Clamp01(progress);
 
-        // 수평은 시작→착지 선형 보간, 수직은 4·p·(1-p) 포물선(정점 p=0.5에서 JumpHeight)
+        // 수평은 시작→착지 선형 보간, 수직은 시작~착지 높이 보간 + 4·p·(1-p) 포물선(정점 p=0.5에서 JumpHeight)
         Vector3 flat = Vector3.Lerp(startPos, landPos, p);
-        float y = startPos.y + mischief.JumpHeight * 4f * p * (1f - p);
+        float y = Mathf.Lerp(startPos.y, landPos.y, p) + mischief.JumpHeight * 4f * p * (1f - p);
         mischief.transform.position = new Vector3(flat.x, y, flat.z);
 
         if (progress < 1f) return;

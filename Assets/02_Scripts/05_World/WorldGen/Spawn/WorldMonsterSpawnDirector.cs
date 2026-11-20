@@ -23,13 +23,14 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
     private const float BossDropHeight = 30f;
     private const float BossDropDuration = 1.2f;
 
-    private readonly Dictionary<Monster, ActiveMonster> _active = new();
+    private readonly Dictionary<Mob, ActiveMob> _active = new();
     private readonly List<MemberState> _dormantMembers = new();
     private readonly HashSet<int> _activeInitialIds = new();
     private readonly HashSet<int> _pendingInitialIds = new();
     private readonly HashSet<string> _invalidMonsterKeys = new();
     private float _checkCooldown;
-    private int _pendingCount;
+    private int _pendingMonsterCount;
+    private int _pendingAnimalCount;
     private int _epoch;
     private bool _initialized;
 
@@ -131,12 +132,12 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
     public MonsterSpawnSaveData Capture()
     {
         var data = new MonsterSpawnSaveData();
-        foreach (ActiveMonster active in _active.Values)
+        foreach (ActiveMob active in _active.Values)
         {
-            if (active.Dead || active.Monster == null || !active.Monster.isActiveAndEnabled) continue;
+            if (active.Dead || active.Mob == null || !active.Mob.isActiveAndEnabled) continue;
             if (active.InitialId != 0 && _initial.TryGetValue(active.InitialId, out InitialState state))
-                SaveLiveState(state, active.Monster);
-            else if (active.InitialId == 0 && active.Monster.Status != null && !active.Monster.Status.IsDead)
+                SaveLiveState(state, active.Mob);
+            else if (active.InitialId == 0 && active.Mob.Status != null && !active.Mob.Status.IsDead)
                 data.members.Add(ToMemberSaveData(active));
         }
 
@@ -274,7 +275,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         _cancellation?.Cancel();
         _cancellation?.Dispose();
         _cancellation = null;
-        foreach (ActiveMonster active in new List<ActiveMonster>(_active.Values))
+        foreach (ActiveMob active in new List<ActiveMob>(_active.Values))
         {
             if (despawnOwnedMonsters) DespawnOwned(active);
             else Forget(active, saveLive: false);
@@ -289,7 +290,8 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         _dormantMembers.Clear();
         _players.Clear();
         _invalidMonsterKeys.Clear();
-        _pendingCount = 0;
+        _pendingMonsterCount = 0;
+        _pendingAnimalCount = 0;
         _logic = null;
         _settings = null;
     }
@@ -322,10 +324,10 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
 
     private void ReapInactive()
     {
-        foreach (ActiveMonster active in new List<ActiveMonster>(_active.Values))
+        foreach (ActiveMob active in new List<ActiveMob>(_active.Values))
         {
-            Monster monster = active.Monster;
-            if (monster == null || !monster.isActiveAndEnabled)
+            Mob mob = active.Mob;
+            if (mob == null || !mob.isActiveAndEnabled)
             {
                 Forget(active, saveLive: !active.Dead);
                 continue;
@@ -333,13 +335,13 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             if (active.Dead) continue;
             if (active.InitialId == 0)
             {
-                if (!AnyPlayerNear(monster.transform.position, _settings.AdditionalMonsterDespawnDistance))
+                if (!AnyPlayerNear(mob.transform.position, _settings.AdditionalMonsterDespawnDistance))
                     DespawnOwned(active, saveLive: true);
                 continue;
             }
             float distance = Mathf.Max(_settings.InitialMonsterActivationDistance,
                 _settings.InitialMonsterDespawnDistance);
-            if (!AnyPlayerNear(monster.transform.position, distance))
+            if (!AnyPlayerNear(mob.transform.position, distance))
             {
                 DespawnOwned(active, saveLive: true);
             }
@@ -351,13 +353,15 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         for (int i = _dormantMembers.Count - 1; i >= 0; i--)
         {
             MemberState member = _dormantMembers[i];
+            string key = ResolveMemberKey(member);
+            bool isAnimal = IsAnimalKey(key);
             // 보스 복원도 일반 추가 몬스터 수 제한으로 막지 않습니다.
-            if (AvailableCount <= 0 && string.IsNullOrEmpty(member.BossId)) continue;
+            if (GetAvailableCount(isAnimal) <= 0 && string.IsNullOrEmpty(member.BossId)) continue;
             if (member.Pending || !ValidPosition(member.Position) ||
                 !AnyPlayerNear(member.Position, _settings.InitialMonsterActivationDistance)) continue;
             member.Pending = true;
-            _pendingCount++;
-            SpawnMemberAsync(member, _epoch, _cancellation.Token).Forget();
+            AddPending(isAnimal, 1);
+            SpawnMemberAsync(member, isAnimal, _epoch, _cancellation.Token).Forget();
         }
     }
 
@@ -365,15 +369,16 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
     {
         foreach (KeyValuePair<int, InitialState> pair in _initial)
         {
-            if (AvailableCount <= 0) return;
             InitialState state = pair.Value;
             if (state.Dead || _activeInitialIds.Contains(pair.Key) || _pendingInitialIds.Contains(pair.Key)) continue;
+            bool isAnimal = IsAnimalKey(state.Placement.monsterKey);
+            if (GetAvailableCount(isAnimal) <= 0) continue;
             Vector3 position = state.HasLiveState ? state.Position : TilePosition(state.Placement.tile);
             if (!AnyPlayerNear(position, _settings.InitialMonsterActivationDistance)) continue;
             if (!ValidPosition(position)) continue;
             _pendingInitialIds.Add(pair.Key);
-            _pendingCount++;
-            SpawnInitialAsync(state, position, _epoch, _cancellation.Token).Forget();
+            AddPending(isAnimal, 1);
+            SpawnInitialAsync(state, position, isAnimal, _epoch, _cancellation.Token).Forget();
         }
     }
 
@@ -399,13 +404,15 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             float activationDistance = rule.activationDistance > 0f
                 ? rule.activationDistance : _settings.AdditionalMonsterDespawnDistance;
             if (!AnyPlayerNear(center, activationDistance)) continue;
-            int available = Mathf.Min(AvailableCount, Mathf.Max(0, rule.maxAlive - CountActiveForSource(pair.Key)));
+            bool isAnimal = IsAnimalKey(rule.monsterKey);
+            int available = Mathf.Min(GetAvailableCount(isAnimal), Mathf.Max(0, rule.maxAlive - CountActiveForSource(pair.Key)));
             int count = Mathf.Min(available, RandomCount(rule.minSpawnCount, rule.maxSpawnCount));
             if (count <= 0) continue;
             state.Spawning = true;
-            _pendingCount += count;
+            AddPending(isAnimal, count);
             SpawnGroupAsync(rule.monsterKey, count, center, Mathf.Min(placementSettings.placementRadius, rule.spawnRadius),
-                rule.spawnRadius, pair.Key, null, _ => state.Spawning = false, _epoch, _cancellation.Token).Forget();
+                rule.spawnRadius, pair.Key, null, _ => state.Spawning = false, _epoch, _cancellation.Token,
+                isAnimal: isAnimal).Forget();
         }
     }
 
@@ -420,7 +427,8 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             // 시간 건너뛰기로 여러 회차가 지났어도 한 번만 검사합니다.
             state.NextTime = now + rule.IntervalInGameSeconds;
             if (!TimeAllowed(rule.allowedTimePhases) || !ValidMonsterKey(rule.monsterKey)) continue;
-            int available = Mathf.Min(AvailableCount, Mathf.Max(0, rule.maxAlive - CountActiveForPeriodic(pair.Key)));
+            bool isAnimal = IsAnimalKey(rule.monsterKey);
+            int available = Mathf.Min(GetAvailableCount(isAnimal), Mathf.Max(0, rule.maxAlive - CountActiveForPeriodic(pair.Key)));
             int count = Mathf.Min(available, RandomCount(rule.minSpawnCount, rule.maxSpawnCount));
             if (count <= 0) continue;
 
@@ -443,9 +451,10 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             }
 
             state.Spawning = true;
-            _pendingCount += count;
+            AddPending(isAnimal, count);
             SpawnGroupAsync(rule.monsterKey, count, center, minRadius, maxRadius, 0,
-                pair.Key, _ => state.Spawning = false, _epoch, _cancellation.Token).Forget();
+                pair.Key, _ => state.Spawning = false, _epoch, _cancellation.Token,
+                isAnimal: isAnimal).Forget();
         }
     }
 
@@ -475,7 +484,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         float maxRadius = Mathf.Max(minRadius, rule.maxDistanceFromPlayer);
 
         state.Spawning = true;
-        _pendingCount++;
+        AddPending(isAnimal: false, 1);
         float statMultiplier = rule.GetStatMultiplier(fullMoonDay);
         SpawnGroupAsync(key, 1, center, minRadius, maxRadius, 0, null,
             spawnedCount =>
@@ -484,7 +493,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
                 // 위치 탐색이나 비동기 생성이 실패하면 다음 갱신에서 다시 시도한다.
                 if (spawnedCount > 0) state.LastFullMoonDay = Mathf.Max(state.LastFullMoonDay, fullMoonDay);
             }, _epoch, _cancellation.Token,
-            minRadius, rule.ruleId, statMultiplier).Forget();
+            minRadius, rule.ruleId, statMultiplier, isAnimal: false).Forget();
     }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -497,10 +506,10 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         if (_boss == null) return;
 
         string ruleId = _boss.Rule.ruleId;
-        var owned = new List<ActiveMonster>();
-        foreach (ActiveMonster active in _active.Values)
+        var owned = new List<ActiveMob>();
+        foreach (ActiveMob active in _active.Values)
             if (active.BossId == ruleId) owned.Add(active);
-        foreach (ActiveMonster active in owned) DespawnOwned(active);
+        foreach (ActiveMob active in owned) DespawnOwned(active);
         _dormantMembers.RemoveAll(member => member.BossId == ruleId);
 
         _boss.LastFullMoonDay = fullMoonDay - 1;
@@ -513,8 +522,8 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         get
         {
             if (_boss == null) return null;
-            foreach (ActiveMonster active in _active.Values)
-                if (active.BossId == _boss.Rule.ruleId && !active.Dead && active.Monster != null) return active.Monster;
+            foreach (ActiveMob active in _active.Values)
+                if (active.BossId == _boss.Rule.ruleId && !active.Dead && active.Mob is Monster monster) return monster;
             return null;
         }
     }
@@ -534,14 +543,14 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             _boss.PendingFullMoonDay = Mathf.Max(_boss.PendingFullMoonDay, currentDay);
     }
 
-    private async UniTaskVoid SpawnInitialAsync(InitialState state, Vector3 position, int epoch, CancellationToken token)
+    private async UniTaskVoid SpawnInitialAsync(InitialState state, Vector3 position, bool isAnimal, int epoch, CancellationToken token)
     {
         try
         {
-            Monster monster = await SpawnRegisteredAsync(state.Placement.monsterKey, position, token);
-            if (monster == null) return;
-            if (state.HasLiveState && state.Hp > 0f) monster.Status?.SetCurrentHp(state.Hp);
-            Track(monster, state.Placement.id, 0, null);
+            Mob mob = await SpawnRegisteredAsync(state.Placement.monsterKey, position, token);
+            if (mob == null) return;
+            if (state.HasLiveState && state.Hp > 0f) mob.Status?.SetCurrentHp(state.Hp);
+            Track(mob, state.Placement.id, 0, null, isAnimal: mob is Animal);
         }
         catch (OperationCanceledException) { }
         catch (Exception e) { UnityEngine.Debug.LogException(e, this); }
@@ -550,27 +559,27 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             if (epoch == _epoch)
             {
                 _pendingInitialIds.Remove(state.Placement.id);
-                _pendingCount = Mathf.Max(0, _pendingCount - 1);
+                AddPending(isAnimal, -1);
             }
         }
     }
 
-    private async UniTaskVoid SpawnMemberAsync(MemberState member, int epoch, CancellationToken token)
+    private async UniTaskVoid SpawnMemberAsync(MemberState member, bool isAnimal, int epoch, CancellationToken token)
     {
         try
         {
-            string key = member.SourceId != 0
-                ? _sources[member.SourceId].Definition.SpawnRule.monsterKey
-                : !string.IsNullOrEmpty(member.BossId)
-                    ? member.MonsterKey : _periodic[member.PeriodicId].Rule.monsterKey;
-            Monster monster = await SpawnRegisteredAsync(key, member.Position, token);
-            if (monster == null) return;
-            // 배율을 먼저 걸어야 저장된 체력이 늘어난 최대 체력 안에서 복원된다
-            monster.ApplyStatScale(member.StatMultiplier);
-            if (member.Hp > 0f) monster.Status?.SetCurrentHp(member.Hp);
-            // 복원된 보스는 떨어뜨리지 않고 실제 지면에만 붙인다 (예전에 파묻힌 채 저장됐어도 바로잡힌다)
-            if (!string.IsNullOrEmpty(member.BossId)) monster.DropFromSkyAsync(0f, 0.05f).Forget();
-            Track(monster, 0, member.SourceId, member.PeriodicId, member.BossId, key, member.StatMultiplier);
+            string key = ResolveMemberKey(member);
+            Mob mob = await SpawnRegisteredAsync(key, member.Position, token);
+            if (mob == null) return;
+            if (mob is Monster monster)
+            {
+                // 배율을 먼저 걸어야 저장된 체력이 늘어난 최대 체력 안에서 복원된다
+                monster.ApplyStatScale(member.StatMultiplier);
+                // 복원된 보스는 떨어뜨리지 않고 실제 지면에만 붙인다 (예전에 파묻힌 채 저장됐어도 바로잡힌다)
+                if (!string.IsNullOrEmpty(member.BossId)) monster.DropFromSkyAsync(0f, 0.05f).Forget();
+            }
+            if (member.Hp > 0f) mob.Status?.SetCurrentHp(member.Hp);
+            Track(mob, 0, member.SourceId, member.PeriodicId, member.BossId, key, member.StatMultiplier, isAnimal: mob is Animal);
             _dormantMembers.Remove(member);
         }
         catch (OperationCanceledException) { }
@@ -580,14 +589,14 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             if (epoch == _epoch)
             {
                 member.Pending = false;
-                _pendingCount = Mathf.Max(0, _pendingCount - 1);
+                AddPending(isAnimal, -1);
             }
         }
     }
 
     private async UniTaskVoid SpawnGroupAsync(string key, int count, Vector3 center, float minRadius,
         float maxRadius, int sourceId, string periodicId, Action<int> completed, int epoch, CancellationToken token,
-        float minDistanceFromPlayers = 0f, string bossId = null, float statMultiplier = 1f)
+        float minDistanceFromPlayers = 0f, string bossId = null, float statMultiplier = 1f, bool isAnimal = false)
     {
         int spawnedCount = 0;
         try
@@ -597,11 +606,14 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
                 token.ThrowIfCancellationRequested();
                 if (!TrySamplePosition(center, minRadius, maxRadius, out Vector3 position,
                         minDistanceFromPlayers)) continue;
-                Monster monster = await SpawnRegisteredAsync(key, position, token);
-                if (monster == null) continue;
-                monster.ApplyStatScale(statMultiplier);
-                if (!string.IsNullOrEmpty(bossId)) monster.DropFromSkyAsync(BossDropHeight, BossDropDuration).Forget();
-                Track(monster, 0, sourceId, periodicId, bossId, key, statMultiplier);
+                Mob mob = await SpawnRegisteredAsync(key, position, token);
+                if (mob == null) continue;
+                if (mob is Monster monster)
+                {
+                    monster.ApplyStatScale(statMultiplier);
+                    if (!string.IsNullOrEmpty(bossId)) monster.DropFromSkyAsync(BossDropHeight, BossDropDuration).Forget();
+                }
+                Track(mob, 0, sourceId, periodicId, bossId, key, statMultiplier, isAnimal: mob is Animal);
                 spawnedCount++;
             }
         }
@@ -611,19 +623,43 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         {
             if (epoch == _epoch)
             {
-                _pendingCount = Mathf.Max(0, _pendingCount - count);
+                AddPending(isAnimal, -count);
                 completed?.Invoke(spawnedCount);
             }
         }
     }
 
-    private async UniTask<Monster> SpawnRegisteredAsync(string key, Vector3 position, CancellationToken token)
+    private async UniTask<Mob> SpawnRegisteredAsync(string key, Vector3 position, CancellationToken token)
     {
-        if (!ValidMonsterKey(key)) return null;
-        MonsterCatalog catalog = MonsterCatalog.Instance;
-        byte id = catalog.GetCatalogId(key);
-        MonsterCatalog.Entry entry = catalog.GetEntry(id);
-        Monster monster = await Monster.SpawnAsync(entry.addressableKey, entry.statData, position);
+        if (!TryResolveCatalog(key, out bool isAnimal, out byte id,
+                out MonsterCatalog.Entry monsterEntry, out AnimalCatalog.Entry animalEntry))
+        {
+            ValidMonsterKey(key); // 미등록 경고 1회 기록
+            return null;
+        }
+
+        if (isAnimal)
+        {
+            Animal animal = await Animal.SpawnAsync(animalEntry.addressableKey, animalEntry.statData, position);
+            if (animal == null) return null;
+            if (token.IsCancellationRequested || !_initialized)
+            {
+                Extensions.Despawn(animal.gameObject);
+                token.ThrowIfCancellationRequested();
+                return null;
+            }
+#if PHOTON_FUSION
+            if (Main.Network != null && Main.Network.IsInRoom &&
+                (NetworkAnimalDirector.Instance == null || NetworkAnimalDirector.Instance.RegisterAnimal(animal, id) < 0))
+            {
+                Extensions.Despawn(animal.gameObject);
+                return null;
+            }
+#endif
+            return animal;
+        }
+
+        Monster monster = await Monster.SpawnAsync(monsterEntry.addressableKey, monsterEntry.statData, position);
         if (monster == null) return null;
         if (token.IsCancellationRequested || !_initialized)
         {
@@ -642,20 +678,20 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         return monster;
     }
 
-    private void Track(Monster monster, int initialId, int sourceId, string periodicId,
-        string bossId = null, string monsterKey = null, float statMultiplier = 1f)
+    private void Track(Mob mob, int initialId, int sourceId, string periodicId,
+        string bossId = null, string monsterKey = null, float statMultiplier = 1f, bool isAnimal = false)
     {
-        var active = new ActiveMonster { Monster = monster, InitialId = initialId, SourceId = sourceId,
+        var active = new ActiveMob { Mob = mob, IsAnimal = isAnimal, InitialId = initialId, SourceId = sourceId,
             PeriodicId = periodicId, BossId = bossId, MonsterKey = monsterKey, StatMultiplier = statMultiplier };
-        _active.Add(monster, active);
+        _active.Add(mob, active);
         if (initialId != 0) _activeInitialIds.Add(initialId);
-        monster.Died += HandleDied;
-        monster.Despawned += HandleDespawned;
+        mob.MobDied += HandleDied;
+        mob.MobDespawned += HandleDespawned;
     }
 
-    private void HandleDied(Monster monster)
+    private void HandleDied(Mob mob)
     {
-        if (!_active.TryGetValue(monster, out ActiveMonster active)) return;
+        if (!_active.TryGetValue(mob, out ActiveMob active)) return;
         active.Dead = true;
         if (active.InitialId != 0 && _initial.TryGetValue(active.InitialId, out InitialState state))
         {
@@ -664,66 +700,69 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         }
     }
 
-    private void HandleDespawned(Monster monster)
+    private void HandleDespawned(Mob mob)
     {
-        if (_active.TryGetValue(monster, out ActiveMonster active)) Forget(active, saveLive: !active.Dead);
+        if (_active.TryGetValue(mob, out ActiveMob active)) Forget(active, saveLive: !active.Dead);
     }
 
-    private void Forget(ActiveMonster active, bool saveLive)
+    private void Forget(ActiveMob active, bool saveLive)
     {
-        Monster monster = active.Monster;
-        if (saveLive && active.InitialId != 0 && monster != null &&
+        Mob mob = active.Mob;
+        if (saveLive && active.InitialId != 0 && mob != null &&
             _initial.TryGetValue(active.InitialId, out InitialState state) && !state.Dead)
-            SaveLiveState(state, monster);
-        else if (saveLive && active.InitialId == 0 && monster != null && monster.Status != null &&
-            !monster.Status.IsDead)
+            SaveLiveState(state, mob);
+        else if (saveLive && active.InitialId == 0 && mob != null && mob.Status != null &&
+            !mob.Status.IsDead)
             _dormantMembers.Add(new MemberState
             {
                 SourceId = active.SourceId,
                 PeriodicId = active.PeriodicId,
                 BossId = active.BossId,
                 MonsterKey = active.MonsterKey,
-                Position = monster.transform.position,
-                Hp = monster.Status.CurrentHp,
+                Position = mob.transform.position,
+                Hp = mob.Status.CurrentHp,
                 StatMultiplier = active.StatMultiplier
             });
-        if (!ReferenceEquals(monster, null))
+        if (!ReferenceEquals(mob, null))
         {
-            monster.Died -= HandleDied;
-            monster.Despawned -= HandleDespawned;
-            _active.Remove(monster);
+            mob.MobDied -= HandleDied;
+            mob.MobDespawned -= HandleDespawned;
+            _active.Remove(mob);
         }
         if (active.InitialId != 0) _activeInitialIds.Remove(active.InitialId);
     }
 
-    private void DespawnOwned(ActiveMonster active, bool saveLive = false)
+    private void DespawnOwned(ActiveMob active, bool saveLive = false)
     {
-        Monster monster = active.Monster;
+        Mob mob = active.Mob;
         Forget(active, saveLive);
-        if (monster == null) return;
+        if (mob == null) return;
 #if PHOTON_FUSION
-        NetworkMonsterDirector.Instance?.UnregisterMonster(monster);
+        if (mob is Animal animal)
+            NetworkAnimalDirector.Instance?.UnregisterAnimal(animal);
+        else if (mob is Monster monster)
+            NetworkMonsterDirector.Instance?.UnregisterMonster(monster);
 #endif
-        Extensions.Despawn(monster.gameObject);
+        Extensions.Despawn(mob.gameObject);
     }
 
-    private static void SaveLiveState(InitialState state, Monster monster)
+    private static void SaveLiveState(InitialState state, Mob mob)
     {
-        if (monster.Status == null || monster.Status.IsDead) return;
+        if (mob.Status == null || mob.Status.IsDead) return;
         state.HasLiveState = true;
-        state.Position = monster.transform.position;
-        state.Hp = monster.Status.CurrentHp;
+        state.Position = mob.transform.position;
+        state.Hp = mob.Status.CurrentHp;
     }
 
-    private static SpawnedMonsterSaveData ToMemberSaveData(ActiveMonster active)
+    private static SpawnedMonsterSaveData ToMemberSaveData(ActiveMob active)
         => new SpawnedMonsterSaveData
         {
             sourceId = active.SourceId,
             periodicRuleId = active.PeriodicId,
             bossRuleId = active.BossId,
             monsterKey = active.MonsterKey,
-            position = active.Monster.transform.position,
-            hp = active.Monster.Status.CurrentHp,
+            position = active.Mob.transform.position,
+            hp = active.Mob.Status.CurrentHp,
             statMultiplier = active.StatMultiplier
         };
 
@@ -743,7 +782,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             int x = Mathf.FloorToInt(candidate.x);
             int z = Mathf.FloorToInt(candidate.z);
             if (_logic.OccupiedWorld[x, z]) continue;
-            candidate.y = _logic.GetHeightAt(x, z) + _settings.SpawnHeightOffset;
+            candidate.y = _logic.SampleHeight(candidate.x, candidate.z) + _settings.SpawnHeightOffset;
             if (minDistanceFromPlayers > 0f && AnyPlayerNear(candidate, minDistanceFromPlayers)) continue;
             if (_settings.SpawnBlockingMask.value != 0 && _settings.CollisionCheckRadius > 0f &&
                 Physics.CheckSphere(candidate + Vector3.up * _settings.CollisionCheckRadius,
@@ -766,7 +805,7 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
     }
 
     private Vector3 TilePosition(Vector2Int tile)
-        => new Vector3(tile.x + 0.5f, _logic.GetHeightAt(tile.x, tile.y) + _settings.SpawnHeightOffset,
+        => new Vector3(tile.x + 0.5f, _logic.SampleHeight(tile.x + 0.5f, tile.y + 0.5f) + _settings.SpawnHeightOffset,
             tile.y + 0.5f);
 
     private bool AnyPlayerNear(Vector3 position, float distance)
@@ -788,22 +827,74 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
             (mask & clock.CurrentTimePhase.ToSpawnMask()) != 0;
     }
 
+    private string ResolveMemberKey(MemberState member)
+        => member.SourceId != 0
+            ? _sources[member.SourceId].Definition.SpawnRule.monsterKey
+            : !string.IsNullOrEmpty(member.BossId)
+                ? member.MonsterKey : _periodic[member.PeriodicId].Rule.monsterKey;
+
+    private static bool IsAnimalKey(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return false;
+        MonsterCatalog monsterCatalog = MonsterCatalog.Instance;
+        if (monsterCatalog != null && monsterCatalog.GetCatalogId(key) != 0) return false;
+        AnimalCatalog animalCatalog = AnimalCatalog.Instance;
+        return animalCatalog != null && animalCatalog.GetCatalogId(key) != 0;
+    }
+
+    private static bool TryResolveCatalog(string key, out bool isAnimal, out byte id,
+        out MonsterCatalog.Entry monsterEntry, out AnimalCatalog.Entry animalEntry)
+    {
+        isAnimal = false;
+        id = 0;
+        monsterEntry = null;
+        animalEntry = null;
+        if (string.IsNullOrWhiteSpace(key)) return false;
+
+        MonsterCatalog monsterCatalog = MonsterCatalog.Instance;
+        if (monsterCatalog != null)
+        {
+            byte monsterId = monsterCatalog.GetCatalogId(key);
+            MonsterCatalog.Entry entry = monsterCatalog.GetEntry(monsterId);
+            if (monsterId != 0 && entry != null && !string.IsNullOrWhiteSpace(entry.addressableKey))
+            {
+                id = monsterId;
+                monsterEntry = entry;
+                return true;
+            }
+        }
+
+        AnimalCatalog animalCatalog = AnimalCatalog.Instance;
+        if (animalCatalog != null)
+        {
+            byte animalId = animalCatalog.GetCatalogId(key);
+            AnimalCatalog.Entry entry = animalCatalog.GetEntry(animalId);
+            if (animalId != 0 && entry != null && !string.IsNullOrWhiteSpace(entry.addressableKey))
+            {
+                isAnimal = true;
+                id = animalId;
+                animalEntry = entry;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private bool ValidMonsterKey(string key)
     {
         if (string.IsNullOrWhiteSpace(key)) return false;
-        MonsterCatalog catalog = MonsterCatalog.Instance;
-        byte id = catalog != null ? catalog.GetCatalogId(key) : (byte)0;
-        if (id != 0 && catalog.GetEntry(id) != null) return true;
+        if (TryResolveCatalog(key, out _, out _, out _, out _)) return true;
         if (_invalidMonsterKeys.Add(key))
-            Debug.LogWarning($"[WorldMonsterSpawnDirector] MonsterCatalog에 '{key}'가 없습니다.", this);
+            Debug.LogWarning($"[WorldMonsterSpawnDirector] MonsterCatalog/AnimalCatalog에 '{key}'가 없습니다.", this);
         return false;
     }
 
     private int CountActiveForSource(int id)
     {
         int count = 0;
-        foreach (ActiveMonster active in _active.Values)
-            if (active.SourceId == id && !active.Dead && active.Monster != null && active.Monster.isActiveAndEnabled) count++;
+        foreach (ActiveMob active in _active.Values)
+            if (active.SourceId == id && !active.Dead && active.Mob != null && active.Mob.isActiveAndEnabled) count++;
         foreach (MemberState member in _dormantMembers)
             if (member.SourceId == id) count++;
         return count;
@@ -812,8 +903,8 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
     private int CountActiveForPeriodic(string id)
     {
         int count = 0;
-        foreach (ActiveMonster active in _active.Values)
-            if (active.PeriodicId == id && !active.Dead && active.Monster != null && active.Monster.isActiveAndEnabled) count++;
+        foreach (ActiveMob active in _active.Values)
+            if (active.PeriodicId == id && !active.Dead && active.Mob != null && active.Mob.isActiveAndEnabled) count++;
         foreach (MemberState member in _dormantMembers)
             if (member.PeriodicId == id) count++;
         return count;
@@ -822,22 +913,26 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
     private int CountActiveForBoss(string id)
     {
         int count = 0;
-        foreach (ActiveMonster active in _active.Values)
-            if (active.BossId == id && !active.Dead && active.Monster != null && active.Monster.isActiveAndEnabled) count++;
+        foreach (ActiveMob active in _active.Values)
+            if (active.BossId == id && !active.Dead && active.Mob != null && active.Mob.isActiveAndEnabled) count++;
         foreach (MemberState member in _dormantMembers)
             if (member.BossId == id) count++;
         return count;
     }
 
-    private int AvailableCount
+    private int GetAvailableCount(bool isAnimal)
     {
-        get
-        {
-            int count = _pendingCount;
-            foreach (ActiveMonster active in _active.Values)
-                if (!active.Dead && active.Monster != null && active.Monster.isActiveAndEnabled) count++;
-            return Mathf.Max(0, _settings.MaxAdditionalMonsters - count);
-        }
+        int count = isAnimal ? _pendingAnimalCount : _pendingMonsterCount;
+        foreach (ActiveMob active in _active.Values)
+            if (active.IsAnimal == isAnimal && !active.Dead && active.Mob != null && active.Mob.isActiveAndEnabled) count++;
+        int maxCount = isAnimal ? _settings.MaxAdditionalAnimals : _settings.MaxAdditionalMonsters;
+        return Mathf.Max(0, maxCount - count);
+    }
+
+    private void AddPending(bool isAnimal, int delta)
+    {
+        if (isAnimal) _pendingAnimalCount = Mathf.Max(0, _pendingAnimalCount + delta);
+        else _pendingMonsterCount = Mathf.Max(0, _pendingMonsterCount + delta);
     }
 
     private static int RandomCount(int minimum, int maximum)
@@ -884,9 +979,10 @@ public sealed class WorldMonsterSpawnDirector : MonoBehaviour
         public bool Spawning;
     }
 
-    private sealed class ActiveMonster
+    private sealed class ActiveMob
     {
-        public Monster Monster;
+        public Mob Mob;
+        public bool IsAnimal;
         public int InitialId;
         public int SourceId;
         public string PeriodicId;

@@ -94,6 +94,12 @@ public class Devil : Monster
     public bool IsFlying => Stance == DevilStance.Fly;
     /// <summary>비행 중에는 지상 배회(걷기)를 하지 않는다.</summary>
     public override bool CanWander => !IsFlying && base.CanWander;
+    /// <summary>비행·이륙·급강하·착지 중에는 Y를 지면으로 끌어내리지 않는다.</summary>
+    protected override bool SnapYToTerrain => !IsFlying
+        && stateMachine?.CurrentState is not DevilTakeOffState
+        && stateMachine?.CurrentState is not DevilLandState
+        && stateMachine?.CurrentState is not DevilDiveState
+        && base.SnapYToTerrain;
 
     public float SlashRange => DevilData != null ? DevilData.SlashRange : 2f;
     public float FireballCastTime => DevilData != null ? DevilData.FireballCastTime : 0.8f;
@@ -368,6 +374,10 @@ public class Devil : Monster
         if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, distance, mask, QueryTriggerInteraction.Ignore))
             return hit.point.y;
 
+        WorldLogicData logic = WorldGenManager.Instance != null ? WorldGenManager.Instance.CurrentLogicData : null;
+        if (logic != null && logic.IsLand(transform.position.x, transform.position.z))
+            return logic.SampleHeight(transform.position.x, transform.position.z);
+
         return groundY;
     }
 
@@ -382,7 +392,7 @@ public class Devil : Monster
 
         Vector3 nd = dir.normalized;
         FaceTargetStep(deltaTime);
-        transform.position += nd * (status.MoveSpeed * FlyMoveSpeedMultiplier * deltaTime);
+        TryMovePlanar(nd * (status.MoveSpeed * FlyMoveSpeedMultiplier * deltaTime));
     }
     #endregion
 

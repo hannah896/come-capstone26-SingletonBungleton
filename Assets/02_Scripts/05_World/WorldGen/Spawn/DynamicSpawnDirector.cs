@@ -4,11 +4,11 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 /// <summary>
-/// 플레이어 주변 바이옴의 SpawnRuleSet을 사용해 런타임 몬스터 스폰을 관리합니다.
+/// 플레이어 주변 바이옴의 SpawnRuleSet을 사용해 런타임 몬스터·동물 자연 스폰을 관리합니다.
 ///
-/// 실제 몬스터 생성/풀링은 Monster.SpawnAsync에, 멀티플레이 복제는
-/// NetworkMonsterDirector의 공개 API에 위임합니다. 이 디렉터는 자신이 생성한
-/// 몬스터만 추적하며 씬에 배치된 MonsterSpawner의 몬스터는 관리하지 않습니다.
+/// 몬스터는 MonsterCatalog / Monster.SpawnAsync / NetworkMonsterDirector를,
+/// 동물은 AnimalCatalog / Animal.SpawnAsync / NetworkAnimalDirector를 사용하며
+/// 스폰 슬롯 예산은 몬스터와 동물을 별도로 집계합니다.
 /// </summary>
 public sealed class DynamicSpawnDirector : MonoBehaviour
 {
@@ -19,16 +19,17 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
 
     private readonly List<Player> _players = new();
     private readonly HashSet<Vector2Int> _activeChunkCoords = new();
-    private readonly List<SpawnedMonsterRecord> _spawnedMonsters = new();
+    private readonly List<SpawnedMobRecord> _spawnedMobs = new();
     private readonly Dictionary<Player, Dictionary<NatureSpawnRule, RuleRuntimeState>> _ruleStates = new();
 
     private CancellationTokenSource _spawnCts;
     private float _targetRefreshCooldown;
-    private int _pendingSlotCost;
+    private int _pendingMonsterSlotCost;
+    private int _pendingAnimalSlotCost;
     private bool _isInitialized;
 
     public bool IsInitialized => _isInitialized;
-    public int SpawnedMonsterCount => _spawnedMonsters.Count;
+    public int SpawnedMonsterCount => _spawnedMobs.Count;
 
     /// <summary>
     /// 월드 생성 및 초기 청크 로드가 끝난 뒤 호출합니다.
@@ -83,12 +84,13 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
         if (despawnOwnedMonsters)
             DespawnAllOwnedMonsters();
         else
-            _spawnedMonsters.Clear();
+            _spawnedMobs.Clear();
 
         _players.Clear();
         _activeChunkCoords.Clear();
         _ruleStates.Clear();
-        _pendingSlotCost = 0;
+        _pendingMonsterSlotCost = 0;
+        _pendingAnimalSlotCost = 0;
 
         _logicData = null;
         _graphData = null;
@@ -203,7 +205,8 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
         if (string.IsNullOrWhiteSpace(rule.monsterKey))
             return false;
 
-        if (GetAvailableSlotBudget() < GetSlotCost(rule))
+        bool isAnimal = IsAnimalKey(rule.monsterKey);
+        if (GetAvailableSlotBudget(isAnimal) < GetSlotCost(rule))
             return false;
 
         WorldClock clock = WorldClock.Instance;
@@ -245,21 +248,23 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
         CancellationToken cancellationToken)
     {
         int reservedCost = 0;
+        bool isAnimal = false;
 
         try
         {
             if (sourcePlayer == null)
                 return;
 
-            MonsterCatalog catalog = MonsterCatalog.Instance;
-            byte catalogId = catalog.GetCatalogId(rule.monsterKey);
-            MonsterCatalog.Entry entry = catalog.GetEntry(catalogId);
-
-            if (catalogId == 0 || entry == null || string.IsNullOrWhiteSpace(entry.addressableKey))
+            if (!TryResolveCatalog(
+                rule.monsterKey,
+                out isAnimal,
+                out byte catalogId,
+                out MonsterCatalog.Entry monsterEntry,
+                out AnimalCatalog.Entry animalEntry))
             {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.LogWarning(
-                    $"[DynamicSpawnDirector] '{rule.monsterKey}'가 MonsterCatalog에 없습니다.",
+                    $"[DynamicSpawnDirector] '{rule.monsterKey}'가 MonsterCatalog/AnimalCatalog에 없습니다.",
                     this);
 #endif
                 return;
@@ -269,14 +274,15 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
             int minCount = Mathf.Max(0, rule.minSpawnCount);
             int maxCount = Mathf.Max(minCount, rule.maxSpawnCount);
             int desiredCount = UnityEngine.Random.Range(minCount, maxCount + 1);
-            int affordableCount = GetAvailableSlotBudget() / slotCost;
+            int affordableCount = GetAvailableSlotBudget(isAnimal) / slotCost;
             desiredCount = Mathf.Min(desiredCount, affordableCount);
 
             if (desiredCount <= 0)
                 return;
 
             reservedCost = desiredCount * slotCost;
-            _pendingSlotCost += reservedCost;
+            if (isAnimal) _pendingAnimalSlotCost += reservedCost;
+            else _pendingMonsterSlotCost += reservedCost;
 
             for (int i = 0; i < desiredCount; i++)
             {
@@ -288,28 +294,55 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
                 if (!TryFindSpawnPosition(sourcePlayer, sourceRuleSet, out Vector3 spawnPosition))
                     continue;
 
-                Monster monster = await Monster.SpawnAsync(
-                    entry.addressableKey,
-                    entry.statData,
-                    spawnPosition);
-
-                if (monster == null)
-                    continue;
-
-                if (cancellationToken.IsCancellationRequested || !_isInitialized)
+                Mob spawnedMob;
+                if (isAnimal)
                 {
-                    Extensions.Despawn(monster.gameObject);
-                    cancellationToken.ThrowIfCancellationRequested();
-                    continue;
+                    Animal animal = await Animal.SpawnAsync(
+                        animalEntry.addressableKey,
+                        animalEntry.statData,
+                        spawnPosition);
+                    if (animal == null) continue;
+
+                    if (cancellationToken.IsCancellationRequested || !_isInitialized)
+                    {
+                        Extensions.Despawn(animal.gameObject);
+                        cancellationToken.ThrowIfCancellationRequested();
+                        continue;
+                    }
+
+                    if (!TryRegisterNetworkAnimal(animal, catalogId))
+                    {
+                        Extensions.Despawn(animal.gameObject);
+                        continue;
+                    }
+
+                    spawnedMob = animal;
+                }
+                else
+                {
+                    Monster monster = await Monster.SpawnAsync(
+                        monsterEntry.addressableKey,
+                        monsterEntry.statData,
+                        spawnPosition);
+                    if (monster == null) continue;
+
+                    if (cancellationToken.IsCancellationRequested || !_isInitialized)
+                    {
+                        Extensions.Despawn(monster.gameObject);
+                        cancellationToken.ThrowIfCancellationRequested();
+                        continue;
+                    }
+
+                    if (!TryRegisterNetworkMonster(monster, catalogId))
+                    {
+                        Extensions.Despawn(monster.gameObject);
+                        continue;
+                    }
+
+                    spawnedMob = monster;
                 }
 
-                if (!TryRegisterNetworkMonster(monster, catalogId))
-                {
-                    Extensions.Despawn(monster.gameObject);
-                    continue;
-                }
-
-                _spawnedMonsters.Add(new SpawnedMonsterRecord(monster, rule, slotCost));
+                _spawnedMobs.Add(new SpawnedMobRecord(spawnedMob, rule, slotCost, isAnimal));
             }
         }
         catch (System.OperationCanceledException)
@@ -318,7 +351,8 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
         }
         finally
         {
-            _pendingSlotCost = Mathf.Max(0, _pendingSlotCost - reservedCost);
+            if (isAnimal) _pendingAnimalSlotCost = Mathf.Max(0, _pendingAnimalSlotCost - reservedCost);
+            else _pendingMonsterSlotCost = Mathf.Max(0, _pendingMonsterSlotCost - reservedCost);
             state.IsSpawning = false;
         }
     }
@@ -359,14 +393,14 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
 
             // 활성 청크 검사는 이 피어가 청크를 스트리밍하는 로컬 플레이어에게만 적용한다.
             // 멀티에서 호스트는 원격 플레이어 주변 청크를 로드하지 않으므로, 검사하면 클라 주변엔 영영 스폰되지 않는다.
-            // (높이는 논리 데이터에서 가져오고 몬스터는 transform으로 이동하므로 청크가 없어도 동작한다)
+            // (몬스터는 transform, 동물은 논리 지형 폴백 이동/넉백으로 청크 미로드 구역에서도 동작한다)
             Vector2Int chunkCoord = _logicData.GetChunkCoord(tileX, tileZ);
             if (sourcePlayer.IsLocalPlayer && !_activeChunkCoords.Contains(chunkCoord))
                 continue;
 
             Vector3 candidate = new Vector3(
                 worldX,
-                _logicData.GetHeightAt(tileX, tileZ) + _settings.SpawnHeightOffset,
+                _logicData.SampleHeight(worldX, worldZ) + _settings.SpawnHeightOffset,
                 worldZ);
 
             if (WorldSpawnArea.Contains(_logicData, candidate, _settings.CollisionCheckRadius))
@@ -439,8 +473,8 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
         return false;
     }
     /// <summary>
-    ///  업데이트 루프에서 스폰된 몬스터를 순회하며 플레이어와의 거리와 체류 시간을 확인하고 
-    ///  이후 필요에 따라 DespawnOwnedMonster를 호출합니다.
+    ///  업데이트 루프에서 스폰된 몬스터·동물을 순회하며 플레이어와의 거리와 체류 시간을 확인하고 
+    ///  이후 필요에 따라 DespawnOwnedMob을 호출합니다.
     /// </summary>
     /// <param name="deltaTime"></param>
     private void UpdateSpawnedMonsters(float deltaTime)
@@ -448,18 +482,18 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
         float despawnDistance = Mathf.Max(0f, _settings.DespawnDistanceFromPlayers);
         float despawnDistanceSqr = despawnDistance * despawnDistance;
 
-        for (int i = _spawnedMonsters.Count - 1; i >= 0; i--)
+        for (int i = _spawnedMobs.Count - 1; i >= 0; i--)
         {
-            SpawnedMonsterRecord record = _spawnedMonsters[i];
-            Monster monster = record.Monster;
+            SpawnedMobRecord record = _spawnedMobs[i];
+            Mob mob = record.Mob;
 
-            if (monster == null || !monster.isActiveAndEnabled)
+            if (mob == null || !mob.isActiveAndEnabled)
             {
-                _spawnedMonsters.RemoveAt(i);
+                _spawnedMobs.RemoveAt(i);
                 continue;
             }
 
-            if (IsWithinAnyPlayerDistance(monster.transform.position, despawnDistanceSqr))
+            if (IsWithinAnyPlayerDistance(mob.transform.position, despawnDistanceSqr))
             {
                 record.OutOfRangeTime = 0f;
                 continue;
@@ -469,8 +503,8 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
             if (record.OutOfRangeTime < Mathf.Max(0f, record.Rule.stayDuration))
                 continue;
 
-            DespawnOwnedMonster(record);
-            _spawnedMonsters.RemoveAt(i);
+            DespawnOwnedMob(record);
+            _spawnedMobs.RemoveAt(i);
         }
     }
 
@@ -491,17 +525,75 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
         return false;
     }
 
-    private int GetAvailableSlotBudget()
+    private int GetAvailableSlotBudget(bool isAnimal)
     {
-        int usedSlots = _pendingSlotCost;
-        for (int i = 0; i < _spawnedMonsters.Count; i++)
+        int usedSlots = isAnimal ? _pendingAnimalSlotCost : _pendingMonsterSlotCost;
+        for (int i = 0; i < _spawnedMobs.Count; i++)
         {
-            SpawnedMonsterRecord record = _spawnedMonsters[i];
-            if (record.Monster != null && record.Monster.isActiveAndEnabled)
+            SpawnedMobRecord record = _spawnedMobs[i];
+            if (record.IsAnimal == isAnimal && record.Mob != null && record.Mob.isActiveAndEnabled)
                 usedSlots += record.SlotCost;
         }
 
-        return Mathf.Max(0, _settings.MaxSpawnSlots - usedSlots);
+        int maxSlots = isAnimal ? _settings.MaxAnimalSpawnSlots : _settings.MaxSpawnSlots;
+        return Mathf.Max(0, maxSlots - usedSlots);
+    }
+
+    private static bool IsAnimalKey(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return false;
+
+        MonsterCatalog monsterCatalog = MonsterCatalog.Instance;
+        if (monsterCatalog != null && monsterCatalog.GetCatalogId(key) != 0)
+            return false;
+
+        AnimalCatalog animalCatalog = AnimalCatalog.Instance;
+        return animalCatalog != null && animalCatalog.GetCatalogId(key) != 0;
+    }
+
+    private static bool TryResolveCatalog(
+        string key,
+        out bool isAnimal,
+        out byte catalogId,
+        out MonsterCatalog.Entry monsterEntry,
+        out AnimalCatalog.Entry animalEntry)
+    {
+        isAnimal = false;
+        catalogId = 0;
+        monsterEntry = null;
+        animalEntry = null;
+
+        if (string.IsNullOrWhiteSpace(key))
+            return false;
+
+        MonsterCatalog monsterCatalog = MonsterCatalog.Instance;
+        if (monsterCatalog != null)
+        {
+            byte id = monsterCatalog.GetCatalogId(key);
+            MonsterCatalog.Entry entry = monsterCatalog.GetEntry(id);
+            if (id != 0 && entry != null && !string.IsNullOrWhiteSpace(entry.addressableKey))
+            {
+                catalogId = id;
+                monsterEntry = entry;
+                return true;
+            }
+        }
+
+        AnimalCatalog animalCatalog = AnimalCatalog.Instance;
+        if (animalCatalog != null)
+        {
+            byte id = animalCatalog.GetCatalogId(key);
+            AnimalCatalog.Entry entry = animalCatalog.GetEntry(id);
+            if (id != 0 && entry != null && !string.IsNullOrWhiteSpace(entry.addressableKey))
+            {
+                isAnimal = true;
+                catalogId = id;
+                animalEntry = entry;
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static int GetSlotCost(NatureSpawnRule rule)
@@ -531,22 +623,47 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
 #endif
     }
 
-    private void DespawnOwnedMonster(SpawnedMonsterRecord record)
+    private static bool TryRegisterNetworkAnimal(Animal animal, byte catalogId)
     {
-        Monster monster = record.Monster;
-        if (monster == null)
+#if PHOTON_FUSION
+        bool isMultiplayer = Main.Network != null && Main.Network.IsInRoom;
+        if (!isMultiplayer)
+            return true;
+
+        NetworkAnimalDirector director = NetworkAnimalDirector.Instance;
+        return director != null && director.RegisterAnimal(animal, catalogId) >= 0;
+#else
+        return true;
+#endif
+    }
+
+    private static void UnregisterNetworkAnimal(Animal animal)
+    {
+#if PHOTON_FUSION
+        NetworkAnimalDirector.Instance?.UnregisterAnimal(animal);
+#endif
+    }
+
+    private void DespawnOwnedMob(SpawnedMobRecord record)
+    {
+        Mob mob = record.Mob;
+        if (mob == null)
             return;
 
-        UnregisterNetworkMonster(monster);
-        Extensions.Despawn(monster.gameObject);
+        if (mob is Animal animal)
+            UnregisterNetworkAnimal(animal);
+        else if (mob is Monster monster)
+            UnregisterNetworkMonster(monster);
+
+        Extensions.Despawn(mob.gameObject);
     }
 
     private void DespawnAllOwnedMonsters()
     {
-        for (int i = _spawnedMonsters.Count - 1; i >= 0; i--)
-            DespawnOwnedMonster(_spawnedMonsters[i]);
+        for (int i = _spawnedMobs.Count - 1; i >= 0; i--)
+            DespawnOwnedMob(_spawnedMobs[i]);
 
-        _spawnedMonsters.Clear();
+        _spawnedMobs.Clear();
     }
 
     private void OnDestroy()
@@ -561,18 +678,20 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
         public bool IsSpawning;
     }
 
-    private sealed class SpawnedMonsterRecord
+    private sealed class SpawnedMobRecord
     {
-        public readonly Monster Monster;
+        public readonly Mob Mob;
         public readonly NatureSpawnRule Rule;
         public readonly int SlotCost;
+        public readonly bool IsAnimal;
         public float OutOfRangeTime;
 
-        public SpawnedMonsterRecord(Monster monster, NatureSpawnRule rule, int slotCost)
+        public SpawnedMobRecord(Mob mob, NatureSpawnRule rule, int slotCost, bool isAnimal)
         {
-            Monster = monster;
+            Mob = mob;
             Rule = rule;
             SlotCost = slotCost;
+            IsAnimal = isAnimal;
         }
     }
 }

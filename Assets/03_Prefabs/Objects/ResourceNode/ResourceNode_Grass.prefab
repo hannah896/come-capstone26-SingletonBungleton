@@ -12,6 +12,34 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3376835147132084980, guid: 0aa5afe4e5b9c18498b977f4dd657743, type: 3}
+      propertyPath: m_LocalReferencePoint.x
+      value: -0.0030054093
+      objectReference: {fileID: 0}
+    - target: {fileID: 3376835147132084980, guid: 0aa5afe4e5b9c18498b977f4dd657743, type: 3}
+      propertyPath: m_LocalReferencePoint.y
+      value: 0.8193746
+      objectReference: {fileID: 0}
+    - target: {fileID: 3376835147132084980, guid: 0aa5afe4e5b9c18498b977f4dd657743, type: 3}
+      propertyPath: m_LocalReferencePoint.z
+      value: -0.06432552
+      objectReference: {fileID: 0}
+    - target: {fileID: 3376835147132084980, guid: 0aa5afe4e5b9c18498b977f4dd657743, type: 3}
+      propertyPath: m_Size
+      value: 2.2376287
+      objectReference: {fileID: 0}
+    - target: {fileID: 5958638955905216864, guid: 0aa5afe4e5b9c18498b977f4dd657743, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 5958638955905216864, guid: 0aa5afe4e5b9c18498b977f4dd657743, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 5958638955905216864, guid: 0aa5afe4e5b9c18498b977f4dd657743, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8
+      objectReference: {fileID: 0}
     - target: {fileID: 6772570215700389274, guid: 0aa5afe4e5b9c18498b977f4dd657743, type: 3}
       propertyPath: m_Name
       value: ResourceNode_Grass
@@ -105,5 +133,5 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.9, y: 1.2, z: 0.9}
-  m_Center: {x: 0, y: 0.6, z: 0}
+  m_Size: {x: 0.72, y: 0.96, z: 0.72}
+  m_Center: {x: 0, y: 0.48, z: 0}

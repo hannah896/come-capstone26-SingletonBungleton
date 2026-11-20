@@ -29,8 +29,9 @@ public class DemonLeapState : MobState<Monster>
         startPos = demon.transform.position;
 
         Vector3 dir = demon.LeapDirection();
-        landPos = startPos + dir * demon.JumpDistance;
-        landPos.y = startPos.y; // 수평 이동만; Y는 포물선으로 별도 계산
+        Vector3 rawLandPos = startPos + dir * demon.JumpDistance;
+        rawLandPos.y = startPos.y;
+        landPos = demon.ClampLandDestination(startPos, rawLandPos);
 
         // 도약 방향을 즉시 바라보게 한다.
         if (dir.sqrMagnitude > 0.0001f)
@@ -47,9 +48,9 @@ public class DemonLeapState : MobState<Monster>
         progress += time / duration;
         float p = Mathf.Clamp01(progress);
 
-        // 수평은 시작→착지 선형 보간, 수직은 4·p·(1-p) 포물선(정점 p=0.5에서 JumpHeight)
+        // 수평은 시작→착지 선형 보간, 수직은 시작~착지 높이 보간 + 4·p·(1-p) 포물선(정점 p=0.5에서 JumpHeight)
         Vector3 flat = Vector3.Lerp(startPos, landPos, p);
-        float y = startPos.y + demon.JumpHeight * 4f * p * (1f - p);
+        float y = Mathf.Lerp(startPos.y, landPos.y, p) + demon.JumpHeight * 4f * p * (1f - p);
         demon.transform.position = new Vector3(flat.x, y, flat.z);
 
         if (progress < 1f) return;

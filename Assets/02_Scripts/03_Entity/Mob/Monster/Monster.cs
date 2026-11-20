@@ -90,8 +90,15 @@ public class Monster : Mob
     // 배회 기준점. 처음 Idle에 들어온 위치로 잡는다(스폰 위치는 OnSpawn 이후에 정해지므로).
     private Vector3 wanderHome;
     private bool hasWanderHome;
+    private bool isDroppingFromSky;
 
     private MonsterStatData MonsterData => statData as MonsterStatData;
+
+    /// <summary>월드 논리 지형 기반 바다 이탈 차단 및 높이 보정을 쓸지. 보스 아레나 전용 개체는 false.</summary>
+    protected virtual bool UseWorldTerrainClamp => !isDroppingFromSky;
+
+    /// <summary>이동 시 논리 지형 높이에 Y를 밀착시킬지. 비행 중인 몬스터는 오버라이드해 false로 둔다.</summary>
+    protected virtual bool SnapYToTerrain => UseWorldTerrainClamp;
 
     #region Network (호스트 권위 복제)
     /// <summary>
@@ -242,6 +249,7 @@ public class Monster : Mob
         hasHitFrom = false;
         knockbackVelocity = Vector3.zero;
         hasWanderHome = false;
+        isDroppingFromSky = false;
         hitFlash?.ResetColor();
         CurrentAnimId = MonsterAnimId.None;
         stateMachine = CreateStateMachine();
@@ -411,8 +419,79 @@ public class Monster : Mob
             return;
         }
 
-        transform.position += knockbackVelocity * deltaTime;
+        if (!TryMovePlanar(knockbackVelocity * deltaTime))
+        {
+            knockbackVelocity = Vector3.zero;
+            return;
+        }
         knockbackVelocity *= Mathf.Exp(-knockbackDamping * deltaTime);
+    }
+    #endregion
+
+    #region World Terrain Movement
+    /// <summary>
+    /// 수평 이동(horizontalDelta)을 적용한다. 월드 씬에서는 바다(-1) 진입을 차단하고,
+    /// 지상 상태(SnapYToTerrain == true)이면 논리 지형 높이에 Y를 밀착시킨다.
+    /// 바다 경계에 막혀 이동하지 못했으면 false.
+    /// </summary>
+    public bool TryMovePlanar(Vector3 horizontalDelta)
+    {
+        horizontalDelta.y = 0f;
+        if (horizontalDelta.sqrMagnitude <= 0f) return true;
+
+        Vector3 current = transform.position;
+        Vector3 next = current + horizontalDelta;
+
+        WorldLogicData logic = UseWorldTerrainClamp && WorldGenManager.Instance != null
+            ? WorldGenManager.Instance.CurrentLogicData
+            : null;
+
+        if (logic != null)
+        {
+            if (logic.IsLand(current.x, current.z) && !logic.IsLand(next.x, next.z))
+                return false;
+
+            if (SnapYToTerrain && logic.IsLand(next.x, next.z))
+                next.y = logic.SampleHeight(next.x, next.z);
+        }
+
+        transform.position = next;
+        return true;
+    }
+
+    /// <summary>
+    /// startPos → targetPos 직선 경로가 바다로 넘어가지 않도록 마지막 육지 좌표로 클램핑하고,
+    /// 필요 시 논리 지형 높이를 반영한다(도약 착지점 등).
+    /// </summary>
+    public Vector3 ClampLandDestination(Vector3 startPos, Vector3 targetPos, bool sampleTerrainY = true)
+    {
+        WorldLogicData logic = UseWorldTerrainClamp && WorldGenManager.Instance != null
+            ? WorldGenManager.Instance.CurrentLogicData
+            : null;
+
+        if (logic == null || !logic.IsLand(startPos.x, startPos.z))
+            return targetPos;
+
+        Vector3 diff = targetPos - startPos;
+        diff.y = 0f;
+        float dist = diff.magnitude;
+        int steps = Mathf.Max(1, Mathf.CeilToInt(dist * 2f));
+
+        Vector3 lastLand = startPos;
+        for (int i = 1; i <= steps; i++)
+        {
+            float t = (float)i / steps;
+            float x = Mathf.Lerp(startPos.x, targetPos.x, t);
+            float z = Mathf.Lerp(startPos.z, targetPos.z, t);
+            if (!logic.IsLand(x, z))
+                break;
+
+            lastLand.x = x;
+            lastLand.z = z;
+        }
+
+        lastLand.y = sampleTerrainY ? logic.SampleHeight(lastLand.x, lastLand.z) : targetPos.y;
+        return lastLand;
     }
     #endregion
 
@@ -425,19 +504,36 @@ public class Monster : Mob
         hasWanderHome = true;
     }
 
-    /// <summary>홈 주변 WanderRadius 안의 임의 지점. 너무 가까운 지점은 피한다.</summary>
+    /// <summary>홈 주변 WanderRadius 안의 임의 지점. 너무 가까운 지점과 바다는 피한다.</summary>
     public Vector3 PickWanderPoint()
     {
         EnsureWanderHome();
-        Vector2 offset = Random.insideUnitCircle * wanderRadius;
-        if (offset.sqrMagnitude < 1f) offset = offset.normalized * Mathf.Min(1f, wanderRadius);
 
-        Vector3 point = wanderHome + new Vector3(offset.x, 0f, offset.y);
-        point.y = transform.position.y;
-        return point;
+        WorldLogicData logic = UseWorldTerrainClamp && WorldGenManager.Instance != null
+            ? WorldGenManager.Instance.CurrentLogicData
+            : null;
+
+        for (int i = 0; i < 8; i++)
+        {
+            Vector2 offset = Random.insideUnitCircle * wanderRadius;
+            if (offset.sqrMagnitude < 1f) offset = offset.normalized * Mathf.Min(1f, wanderRadius);
+
+            Vector3 point = wanderHome + new Vector3(offset.x, 0f, offset.y);
+            if (logic != null)
+            {
+                if (!logic.IsLand(point.x, point.z)) continue;
+                point.y = logic.SampleHeight(point.x, point.z);
+                return point;
+            }
+
+            point.y = transform.position.y;
+            return point;
+        }
+
+        return transform.position;
     }
 
-    /// <summary>목표 지점으로 배회 속도만큼 걷는다. 도착하면 true.</summary>
+    /// <summary>목표 지점으로 배회 속도만큼 걷는다. 도착하거나 해안 경계에 닿으면 true.</summary>
     public bool WanderStep(Vector3 destination, float deltaTime, float arriveDistance)
     {
         Vector3 dir = destination - transform.position;
@@ -446,8 +542,7 @@ public class Monster : Mob
 
         Vector3 nd = dir.normalized;
         RotateTowards(nd, deltaTime);
-        transform.position += nd * WanderSpeed * deltaTime;
-        return false;
+        return !TryMovePlanar(nd * (WanderSpeed * deltaTime));
     }
     #endregion
 
@@ -526,7 +621,7 @@ public class Monster : Mob
 
         Vector3 nd = dir.normalized;
         RotateTowards(nd, deltaTime);
-        transform.position += nd * status.MoveSpeed * deltaTime;
+        TryMovePlanar(nd * (status.MoveSpeed * deltaTime));
     }
 
     /// <summary>이동 없이 타깃을 바라보도록 회전만 한다(공격 중 정렬).</summary>
@@ -590,29 +685,37 @@ public class Monster : Mob
     public async UniTaskVoid DropFromSkyAsync(float height, float duration)
     {
         var token = this.GetCancellationTokenOnDestroy();
-        Vector3 start = transform.position;
-        float groundY = FindGroundY(start, start.y);
-        float startY = groundY + Mathf.Max(0f, height);
-        transform.position = new Vector3(start.x, startY, start.z);
-
-        duration = Mathf.Max(0.05f, duration);
-        float elapsed = 0f;
-        while (elapsed < duration)
+        isDroppingFromSky = true;
+        try
         {
-            bool canceled = await UniTask.Yield(PlayerLoopTiming.Update, token).SuppressCancellationThrow();
-            if (canceled || !isActiveAndEnabled) return;
+            Vector3 start = transform.position;
+            float groundY = FindGroundY(start, start.y);
+            float startY = groundY + Mathf.Max(0f, height);
+            transform.position = new Vector3(start.x, startY, start.z);
 
-            elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / duration);
-            // 떨어지는 동안 AI가 수평으로 움직여도 그대로 두고 높이만 바꾼다
-            Vector3 current = transform.position;
-            transform.position = new Vector3(current.x, Mathf.Lerp(startY, groundY, t * t), current.z);
+            duration = Mathf.Max(0.05f, duration);
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                bool canceled = await UniTask.Yield(PlayerLoopTiming.Update, token).SuppressCancellationThrow();
+                if (canceled || !isActiveAndEnabled) return;
+
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                // 떨어지는 동안 AI가 수평으로 움직여도 그대로 두고 높이만 바꾼다
+                Vector3 current = transform.position;
+                transform.position = new Vector3(current.x, Mathf.Lerp(startY, groundY, t * t), current.z);
+            }
+
+            Vector3 landed = transform.position;
+            landed.y = FindGroundY(landed, groundY);
+            transform.position = landed;
+            OnLandedFromSky();
         }
-
-        Vector3 landed = transform.position;
-        landed.y = FindGroundY(landed, groundY);
-        transform.position = landed;
-        OnLandedFromSky();
+        finally
+        {
+            isDroppingFromSky = false;
+        }
     }
 
     /// <summary>하늘에서 떨어져 착지한 직후 호출된다 (지면 높이를 기억하는 몬스터가 오버라이드).</summary>
@@ -625,6 +728,11 @@ public class Monster : Mob
         if (Physics.Raycast(position + Vector3.up * 200f, Vector3.down, out RaycastHit hit, 400f, mask,
                 QueryTriggerInteraction.Ignore))
             return hit.point.y;
+
+        WorldLogicData logic = WorldGenManager.Instance != null ? WorldGenManager.Instance.CurrentLogicData : null;
+        if (logic != null && logic.IsLand(position.x, position.z))
+            return logic.SampleHeight(position.x, position.z);
+
         return fallback;
     }
 

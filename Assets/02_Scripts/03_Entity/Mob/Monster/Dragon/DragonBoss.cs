@@ -151,6 +151,7 @@ public class DragonBoss : Monster
     private AudioSource loopSource;
 
     private DragonStatData DragonData => statData as DragonStatData;
+    protected override bool UseWorldTerrainClamp => false;
 
     private static readonly List<DragonBoss> s_active = new List<DragonBoss>();
     /// <summary>풀에서 나와 있는 드래곤 전체 (보스 체력바가 표시할 보스를 고른다).</summary>

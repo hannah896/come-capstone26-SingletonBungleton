@@ -7,6 +7,11 @@ using UnityEngine;
 /// </summary>
 public abstract class Mob : MonoBehaviour, IDamageable, IPoolable
 {
+    /// <summary>풀 반환과 구별되는 실제 사망 알림. 몬스터/동물 공통 스폰 디렉터 추적에 사용한다.</summary>
+    public event System.Action<Mob> MobDied;
+    /// <summary>풀로 반환(디스폰)되는 시점의 알림.</summary>
+    public event System.Action<Mob> MobDespawned;
+
     #region Status & Data
     [SerializeField] protected EntityStatData statData;
     [SerializeField] protected DropTableSO dropTable;
@@ -75,7 +80,12 @@ public abstract class Mob : MonoBehaviour, IDamageable, IPoolable
         InitStatus();
     }
 
-    public virtual void OnDespawn() { }
+    public virtual void OnDespawn()
+    {
+        MobDespawned?.Invoke(this);
+        MobDied = null;
+        MobDespawned = null;
+    }
     #endregion
 
     protected virtual void OnEnable()
@@ -135,6 +145,7 @@ public abstract class Mob : MonoBehaviour, IDamageable, IPoolable
 
         isDying = true;
         deathTimer = deathFallbackTimeout;
+        MobDied?.Invoke(this);
         OnDeath();
 
         if (deathTimer <= 0f) FinishDeath(); // 연출을 쓰지 않는 Mob은 즉시 정리

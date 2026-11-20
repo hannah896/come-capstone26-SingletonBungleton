@@ -61,7 +61,8 @@ public class TreantMinionRollState : MobState<Monster>
             return;
         }
 
-        treant.transform.position += direction * (treant.RollSpeed * time);
+        if (!treant.TryMovePlanar(direction * (treant.RollSpeed * time)))
+            remaining = 0f;
 
         // 아직 아무도 못 받았을 때만 판정한다(한 돌진 = 한 타격).
         if (hitPlayer == null)
