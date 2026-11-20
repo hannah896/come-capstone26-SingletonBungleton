@@ -103,6 +103,9 @@ public static class SaveFileStore
         foreach (var job in player.crafting.pending)
             if (job == null || string.IsNullOrWhiteSpace(job.recipeId) || !Finite(job.remainingSeconds) || job.remainingSeconds < 0f)
                 throw new InvalidDataException("제작 대기 정보가 올바르지 않습니다.");
+        if (player.hasDeathMarker &&
+            (!Finite(player.deathMarkerPosition.x) || !Finite(player.deathMarkerPosition.y) || !Finite(player.deathMarkerPosition.z)))
+            throw new InvalidDataException("사망 마커 좌표가 올바르지 않습니다.");
         if (player.hasLocalStructures) WorldSaveAdapter.ValidateStructures(player.localStructures);
     }
 

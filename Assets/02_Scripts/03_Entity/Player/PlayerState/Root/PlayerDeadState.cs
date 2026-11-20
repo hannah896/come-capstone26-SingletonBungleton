@@ -49,14 +49,20 @@ public class PlayerDeadState : PlayerRootStateBase
         if (UI_Popup_Pause.IsOpen)
             UI_Popup_Pause.CloseIfOpen();
 
+        bool restoring = Main.Save != null && Main.Save.IsRestoring;
+
         // 소지품 전량 드롭 — 부활하면 빈손으로 시작한다.
         // (보스 아레나 안에서는 떨구지 않는다)
-        int droppedCount = (Main.Save != null && Main.Save.IsRestoring) || Entity.InBossArena
+        int droppedCount = restoring || Entity.InBossArena
             ? 0 : Entity.Inventory != null ? Entity.Inventory.DropAll() : 0;
         if (droppedCount > 0)
             Debug.Log($"[State] Dead — 소지품 {droppedCount}스택 드롭");
 
-        bool restoring = Main.Save != null && Main.Save.IsRestoring;
+        // 일반 월드에서 새로 사망한 경우 최신 사망 위치 마커를 기록한다.
+        // (보스 아레나 사망과 세이브 복원 진입은 제외)
+        if (!restoring && !Entity.InBossArena)
+            Entity.SetDeathMarker(Entity.transform.position);
+
         _prevGameState = restoring ? GameState.Playing : GameScene.GameState;
         _prevProcessing = restoring ? GameProcessing.Processing : GameScene.GameProcessing;
         _hasNotifiedGameOver = true;

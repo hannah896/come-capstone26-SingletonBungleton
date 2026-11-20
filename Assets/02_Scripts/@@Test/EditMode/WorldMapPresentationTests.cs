@@ -775,6 +775,97 @@ public class WorldMapPresentationTests : InputTestFixture
         Invoke(restoredData, "Dispose");
     }
 
+    [Test]
+    public void DeathMarker_UsesSkullIconTracksViewportOverwritesLatestAndClearsOnArrival()
+    {
+        var expectedSkull = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(
+            "Assets/00_Externals/PremiumAssets/UI/Artsystack - Fantasy RPG GUI/ResourcesData/Sprites/flaticon/white/btn_skull.png");
+        Assert.That(expectedSkull, Is.Not.Null);
+        Assert.That(Field(_map, "_deathMarkerIcon"), Is.SameAs(expectedSkull));
+
+        var deathMarker = (RectTransform)Field(_map, "_deathMarker");
+        var localMarker = (RectTransform)Field(_map, "_playerMarker");
+        Assert.That(deathMarker, Is.Not.Null);
+        Assert.That(deathMarker.gameObject.activeSelf, Is.False);
+        Assert.That(deathMarker.parent, Is.SameAs(_navigation.transform));
+        Assert.That(deathMarker.GetSiblingIndex(), Is.LessThan(localMarker.GetSiblingIndex()));
+        var skullImage = deathMarker.GetComponent<Image>();
+        Assert.That(skullImage, Is.Not.Null);
+        Assert.That(skullImage.raycastTarget, Is.False);
+        Assert.That(skullImage.preserveAspect, Is.True);
+        Assert.That(skullImage.maskable, Is.True);
+
+        var target = CreateMapTarget("DeathMarkerPlayer", new Vector3(500f, 0f, 500f));
+        var player = target.gameObject.AddComponent(FindType("Player"));
+        Assert.That((float)Property(player, "DeathMarkerArrivalRadius"), Is.EqualTo(3f).Within(0.001f));
+        Invoke(_hud, "SetTarget", target);
+        Layout();
+        Assert.That(deathMarker.gameObject.activeSelf, Is.False);
+
+        // 첫 사망 위치 기록 시 btn_skull 마커가 미니맵에 표시된다.
+        Vector3 firstDeath = new Vector3(480f, 12f, 520f);
+        Invoke(player, "SetDeathMarker", firstDeath);
+        Assert.That(deathMarker.gameObject.activeSelf, Is.True);
+        Assert.That(skullImage.sprite, Is.SameAs(expectedSkull));
+        Assert.That(deathMarker.sizeDelta, Is.EqualTo(Vector2.one * 20f));
+        AssertMarkerWorldPosition(deathMarker, firstDeath);
+
+        // 전체 지도 전환 및 드래그·줌에서도 위치가 동기화되고 확대 크기가 유지된다.
+        Invoke(_hud, "ToggleMap");
+        Layout();
+        Assert.That(deathMarker.sizeDelta, Is.EqualTo(Vector2.one * 52f));
+        AssertMarkerWorldPosition(deathMarker, firstDeath);
+
+        var eventsObject = new GameObject("DeathMarkerMapEvents", typeof(EventSystem));
+        eventsObject.transform.SetParent(_root.transform, false);
+        var pointer = new PointerEventData(eventsObject.GetComponent<EventSystem>())
+        {
+            button = PointerEventData.InputButton.Left,
+            position = RectTransformUtility.WorldToScreenPoint(null, _navigation.transform.position),
+            scrollDelta = Vector2.up * 2f,
+            pointerId = -1
+        };
+        ((IScrollHandler)_navigation).OnScroll(pointer);
+        ((IBeginDragHandler)_navigation).OnBeginDrag(pointer);
+        pointer.delta = new Vector2(18f, -10f);
+        pointer.position += pointer.delta;
+        ((IDragHandler)_navigation).OnDrag(pointer);
+        AssertMarkerWorldPosition(deathMarker, firstDeath);
+        Assert.That(deathMarker.sizeDelta, Is.EqualTo(Vector2.one * 52f));
+
+        // 재사망 시 최신 사망 위치 1개만 유지한다.
+        Vector3 secondDeath = new Vector3(250f, 5f, 750f);
+        Invoke(player, "SetDeathMarker", secondDeath);
+        Assert.That((Vector3)Property(player, "DeathMarkerPosition"), Is.EqualTo(secondDeath));
+        AssertMarkerWorldPosition(deathMarker, secondDeath);
+
+        // 도착 반경(수평 3m) 밖에서는 유지되고, 안으로 진입하면 Y 차이와 무관하게 해제된다.
+        Assert.That(Invoke(player, "TryClearDeathMarkerOnArrival", new Vector3(253.1f, 5f, 750f)), Is.False);
+        Assert.That(Property(player, "HasDeathMarker"), Is.True);
+        Assert.That(deathMarker.gameObject.activeSelf, Is.True);
+
+        Assert.That(Invoke(player, "TryClearDeathMarkerOnArrival", new Vector3(252.9f, 45f, 750f)), Is.True);
+        Assert.That(Property(player, "HasDeathMarker"), Is.False);
+        Assert.That(deathMarker.gameObject.activeSelf, Is.False);
+
+        // 월드 밖 좌표는 숨김, ClearView에서도 숨김 처리된다.
+        Invoke(player, "SetDeathMarker", new Vector3(-5f, 0f, 500f));
+        Assert.That(deathMarker.gameObject.activeSelf, Is.False);
+        Invoke(player, "SetDeathMarker", secondDeath);
+        Assert.That(deathMarker.gameObject.activeSelf, Is.True);
+        Invoke(_map, "ClearView");
+        Assert.That(deathMarker.gameObject.activeSelf, Is.False);
+    }
+
+    private void AssertMarkerWorldPosition(RectTransform marker, Vector3 worldPosition)
+    {
+        var image = (Component)Property(_navigation, "MapImage");
+        var content = (RectTransform)image.transform;
+        Vector2 normalized = new Vector2(worldPosition.x, worldPosition.z) / 1000f;
+        Vector3 expected = content.TransformPoint(Vector2.Scale(normalized - Vector2.one * 0.5f, content.rect.size));
+        Assert.That(Vector3.Distance(marker.position, expected), Is.LessThan(0.01f));
+    }
+
     private Transform CreateMapTarget(string name, Vector3 position)
     {
         var target = new GameObject(name).transform;

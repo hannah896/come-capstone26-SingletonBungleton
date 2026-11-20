@@ -47,6 +47,12 @@ public class Player : MonoBehaviour, IDamageable
     [SerializeField] private bool previewHandItemOnBody;
     #endregion
 
+    #region Death Marker
+    [Header("Death Marker")]
+    [Tooltip("부활 후 사망 지점에 이 수평(XZ) 거리 이내로 도착하면 미니맵 사망 마커를 해제한다.")]
+    [SerializeField, Min(0.5f)] private float deathMarkerArrivalRadius = 3f;
+    #endregion
+
     #region Properties
     public Animator Animator => animator;
     public PlayerMotor Motor => motor;
@@ -79,6 +85,55 @@ public class Player : MonoBehaviour, IDamageable
     /// 아레나 안에서 죽으면 소지품을 떨구지 않는다.
     /// </summary>
     public bool InBossArena { get; set; }
+
+    /// <summary>미니맵/전체 지도에 표시할 최신 사망 위치 마커가 활성화되어 있는지.</summary>
+    public bool HasDeathMarker { get; private set; }
+
+    /// <summary>최신 사망 위치 월드 좌표 (<see cref="HasDeathMarker"/>가 true일 때 유효).</summary>
+    public Vector3 DeathMarkerPosition { get; private set; }
+
+    /// <summary>사망 마커 도착 해제 판정 수평(XZ) 반경(m).</summary>
+    public float DeathMarkerArrivalRadius => Mathf.Max(0.5f, deathMarkerArrivalRadius);
+
+    /// <summary>사망 마커가 설정·갱신·해제될 때 발행된다.</summary>
+    public event System.Action OnDeathMarkerChanged;
+
+    /// <summary>최신 사망 위치 마커를 기록한다. 기존 마커가 있으면 새 위치로 덮어쓴다.</summary>
+    public void SetDeathMarker(Vector3 worldPosition)
+    {
+        if (!IsFiniteVector3(worldPosition)) return;
+        HasDeathMarker = true;
+        DeathMarkerPosition = worldPosition;
+        OnDeathMarkerChanged?.Invoke();
+    }
+
+    /// <summary>사망 위치 마커를 해제한다.</summary>
+    public void ClearDeathMarker()
+    {
+        if (!HasDeathMarker) return;
+        HasDeathMarker = false;
+        DeathMarkerPosition = Vector3.zero;
+        OnDeathMarkerChanged?.Invoke();
+    }
+
+    /// <summary>현재 위치와의 수평(XZ) 거리가 도착 반경 이내이면 사망 마커를 해제한다.</summary>
+    public bool TryClearDeathMarkerOnArrival(Vector3 currentPosition)
+    {
+        if (!HasDeathMarker) return false;
+
+        float dx = currentPosition.x - DeathMarkerPosition.x;
+        float dz = currentPosition.z - DeathMarkerPosition.z;
+        float radius = DeathMarkerArrivalRadius;
+        if ((dx * dx) + (dz * dz) > radius * radius) return false;
+
+        ClearDeathMarker();
+        return true;
+    }
+
+    private static bool IsFiniteVector3(Vector3 v) =>
+        !float.IsNaN(v.x) && !float.IsInfinity(v.x) &&
+        !float.IsNaN(v.y) && !float.IsInfinity(v.y) &&
+        !float.IsNaN(v.z) && !float.IsInfinity(v.z);
 
     /// <summary>
     /// 월문 이동 등으로 이 캐릭터를 지정 좌표로 옮긴다. 소유자 피어에서 호출한다.
@@ -324,6 +379,8 @@ public class Player : MonoBehaviour, IDamageable
         {
             playerInventory?.Tick();
             inputData?.ConsumeEventInputs();
+            if (HasDeathMarker && !IsDead && IsAlive && !InBossArena)
+                TryClearDeathMarkerOnArrival(transform.position);
         }
 
         // 허기·Ego는 일시정지(Stopping) 외에는 항상 소모 (GameProcessing.None인 테스트 씬 포함)

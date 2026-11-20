@@ -83,6 +83,33 @@ public class SavePersistenceTests
     }
 
     [Test]
+    public void DeathMarker_RoundTripsInPlayerSaveData_AndRejectsNonFinitePosition()
+    {
+        object data = NewGame();
+        object player = ((IList)Get(data, "players"))[0];
+        Vector3 savedPos = new Vector3(123.5f, 12f, 456.25f);
+        Set(player, "hasDeathMarker", true);
+        Set(player, "deathMarkerPosition", savedPos);
+
+        string json = (string)Static("SaveFileStore", "Serialize", data);
+        object restored = Static("SaveFileStore", "Deserialize", json);
+        object restoredPlayer = ((IList)Get(restored, "players"))[0];
+        Assert.That(Get(restoredPlayer, "hasDeathMarker"), Is.True);
+        Assert.That((Vector3)Get(restoredPlayer, "deathMarkerPosition"), Is.EqualTo(savedPos));
+
+        // 사망 마커가 활성화된 상태에서 비유한 좌표는 저장 전에 거부한다.
+        Set(player, "deathMarkerPosition", new Vector3(float.NaN, 0f, 0f));
+        AssertFailure<InvalidDataException>(() => Static("SaveFileStore", "Serialize", data));
+
+        // 마커가 없는 기본/구버전 데이터는 정상 직렬화·역직렬화된다.
+        Set(player, "hasDeathMarker", false);
+        Set(player, "deathMarkerPosition", Vector3.zero);
+        object emptyRestored = Static("SaveFileStore", "Deserialize",
+            (string)Static("SaveFileStore", "Serialize", data));
+        Assert.That(Get(((IList)Get(emptyRestored, "players"))[0], "hasDeathMarker"), Is.False);
+    }
+
+    [Test]
     public void DuplicateInventorySlots_AreRejectedBeforeWriting()
     {
         object inventory = NewInventory("Resource", true);

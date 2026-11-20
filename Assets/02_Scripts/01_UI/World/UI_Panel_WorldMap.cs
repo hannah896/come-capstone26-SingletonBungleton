@@ -24,6 +24,13 @@ public class UI_Panel_WorldMap : UI_Panel
     [SerializeField, Min(1f)] private float _compactMarkerSize = 30f;
     [SerializeField, Min(1f)] private float _expandedMarkerSize = 60f;
 
+    [Header("Death Marker")]
+    [Tooltip("로컬 플레이어 사망 위치에 표시할 아이콘 스프라이트다.")]
+    [SerializeField] private Sprite _deathMarkerIcon;
+    [SerializeField] private Color _deathMarkerColor = new Color32(235, 64, 56, 255);
+    [SerializeField, Min(1f)] private float _compactDeathMarkerSize = 20f;
+    [SerializeField, Min(1f)] private float _expandedDeathMarkerSize = 52f;
+
     [Header("Resource Node Icons")]
     [SerializeField] private Sprite _branchIcon;
     [SerializeField] private Sprite _bushIcon;
@@ -43,10 +50,14 @@ public class UI_Panel_WorldMap : UI_Panel
 
     private UI_MapViewport _navigation;
     private UI_TeleportMarkerGraphic _teleportMarkers;
+    private RectTransform _deathMarker;
+    private Image _deathMarkerImage;
     private Image _fogOverlayImage;
     private WorldMap _worldMap;
     private WorldMapData _mapData;
     private Transform _target;
+    private Player _targetPlayer;
+    private bool _subscribedDeathMarker;
     private float _nextTargetSearchTime;
     private float _nextRemoteSearchTime;
     private bool _isExpanded;
@@ -133,6 +144,7 @@ public class UI_Panel_WorldMap : UI_Panel
             rect.offsetMin = rect.offsetMax = Vector2.zero;
             if (_playerMarker != null) rect.SetSiblingIndex(_playerMarker.GetSiblingIndex());
             _teleportMarkers = markerObject.GetComponent<UI_TeleportMarkerGraphic>();
+            CreateDeathMarker();
         }
         if (_playerMarker != null && !_playerMarker.TryGetComponent<Canvas>(out _))
             _playerMarker.gameObject.AddComponent<Canvas>();
@@ -156,6 +168,8 @@ public class UI_Panel_WorldMap : UI_Panel
         }
         foreach (RectTransform marker in _remoteMarkers.Values)
             if (marker != null) marker.sizeDelta = Vector2.one * markerSize;
+        if (_deathMarker != null)
+            _deathMarker.sizeDelta = Vector2.one * (expanded ? _expandedDeathMarkerSize : _compactDeathMarkerSize);
         float resourceSize = expanded ? _expandedResourceIconSize : _compactResourceIconSize;
         foreach (ResourceColumn column in _resourceColumns.Values)
             foreach (UI_ResourceMarkerGraphic graphic in column.Graphics) graphic.SetIconSize(resourceSize);
@@ -173,6 +187,7 @@ public class UI_Panel_WorldMap : UI_Panel
                 _navigation.Refresh();
             }
         }
+        UpdateDeathMarker();
         RefreshResourceMarkers();
     }
 
@@ -181,6 +196,8 @@ public class UI_Panel_WorldMap : UI_Panel
         Initialize();
         TryBind();
         TryFindLocalPlayer();
+        BindTargetPlayer(_target);
+        UpdateDeathMarker();
         _nextRemoteSearchTime = 0f;
         // Cinemachine이 카메라 회전을 마친 뒤, UI를 그리기 직전에 방향을 반영한다.
         Canvas.willRenderCanvases += HandleWillRenderCanvases;
@@ -189,6 +206,7 @@ public class UI_Panel_WorldMap : UI_Panel
     private void OnDisable()
     {
         Canvas.willRenderCanvases -= HandleWillRenderCanvases;
+        UnbindTargetPlayer();
         Unbind();
     }
 
@@ -196,6 +214,7 @@ public class UI_Panel_WorldMap : UI_Panel
     {
         if (_navigation != null) _navigation.OnViewChanged -= HandleMapViewChanged;
         SpriteAtlasManager.atlasRegistered -= HandleResourceAtlasRegistered;
+        UnbindTargetPlayer();
         ClearResourceChunkCache();
     }
 
@@ -246,9 +265,11 @@ public class UI_Panel_WorldMap : UI_Panel
     {
         bool targetChanged = _target != target;
         _target = target;
+        BindTargetPlayer(target);
         RefreshVisibility();
         UpdatePlayerMarker();
         if (targetChanged) _navigation?.ResetView();
+        UpdateDeathMarker();
     }
 
     /// <summary>현재 플레이어 위치를 중앙에 놓고 기본 확대 배율과 위치 추적을 복구한다.</summary>
@@ -312,6 +333,7 @@ public class UI_Panel_WorldMap : UI_Panel
         if (_fogOverlayImage != null) _fogOverlayImage.sprite = _mapData?.FogSprite;
         RefreshVisibility();
         UpdatePlayerMarker();
+        UpdateDeathMarker();
         UpdateFogOfWarState();
         if (mapChanged) _navigation?.ResetView();
         if (mapChanged) _nextRemoteSearchTime = 0f;
@@ -337,6 +359,8 @@ public class UI_Panel_WorldMap : UI_Panel
         _lastFogExplorationVersion = -1;
         _lastFogVisionVersion = -1;
         _teleportMarkers?.Configure(null, _navigation, _isExpanded);
+        if (_deathMarker != null && _deathMarker.gameObject.activeSelf)
+            _deathMarker.gameObject.SetActive(false);
         if (_mapImage != null) _mapImage.Sprite = null;
         if (_fogOverlayImage != null) _fogOverlayImage.sprite = null;
         _navigation?.ResetView();
@@ -422,7 +446,7 @@ public class UI_Panel_WorldMap : UI_Panel
         Instantiate(_remoteMarkerTemplate, marker, false).gameObject.SetActive(true);
         foreach (Graphic graphic in marker.GetComponentsInChildren<Graphic>(true))
             graphic.raycastTarget = false;
-        marker.SetSiblingIndex(_playerMarker.GetSiblingIndex());
+        marker.SetSiblingIndex(_deathMarker != null ? _deathMarker.GetSiblingIndex() : _playerMarker.GetSiblingIndex());
         _remoteMarkers.Add(target, marker);
     }
 
@@ -471,9 +495,106 @@ public class UI_Panel_WorldMap : UI_Panel
         _nextRemoteSearchTime = 0f;
     }
 
+    private void CreateDeathMarker()
+    {
+        if (_navigation == null || _deathMarker != null) return;
+
+        var markerObject = new GameObject("DeathMarker", typeof(RectTransform), typeof(Canvas), typeof(Image), typeof(Outline));
+        markerObject.layer = _playerMarker != null ? _playerMarker.gameObject.layer : gameObject.layer;
+        _deathMarker = (RectTransform)markerObject.transform;
+        _deathMarker.SetParent(_navigation.Viewport, false);
+        _deathMarker.anchorMin = _deathMarker.anchorMax = Vector2.one * 0.5f;
+        _deathMarker.pivot = Vector2.one * 0.5f;
+        _deathMarker.localScale = Vector3.one;
+        _deathMarker.localRotation = Quaternion.identity;
+        _deathMarker.sizeDelta = Vector2.one * (_isExpanded ? _expandedDeathMarkerSize : _compactDeathMarkerSize);
+
+        _deathMarkerImage = markerObject.GetComponent<Image>();
+        _deathMarkerImage.sprite = _deathMarkerIcon;
+        _deathMarkerImage.color = _deathMarkerColor;
+        _deathMarkerImage.preserveAspect = true;
+        _deathMarkerImage.raycastTarget = false;
+        _deathMarkerImage.maskable = true;
+
+        Outline outline = markerObject.GetComponent<Outline>();
+        outline.effectColor = new Color32(20, 14, 14, 230);
+        outline.effectDistance = new Vector2(1f, -1f);
+        outline.useGraphicAlpha = true;
+
+        if (_playerMarker != null) _deathMarker.SetSiblingIndex(_playerMarker.GetSiblingIndex());
+        _deathMarker.gameObject.SetActive(false);
+    }
+
+    private void BindTargetPlayer(Transform target)
+    {
+        Player nextPlayer = target != null ? target.GetComponent<Player>() : null;
+        if (_targetPlayer == nextPlayer)
+        {
+            if (isActiveAndEnabled && _targetPlayer != null && !_subscribedDeathMarker)
+            {
+                _targetPlayer.OnDeathMarkerChanged += HandleDeathMarkerChanged;
+                _subscribedDeathMarker = true;
+            }
+            return;
+        }
+
+        UnbindTargetPlayer();
+        _targetPlayer = nextPlayer;
+        if (isActiveAndEnabled && _targetPlayer != null)
+        {
+            _targetPlayer.OnDeathMarkerChanged += HandleDeathMarkerChanged;
+            _subscribedDeathMarker = true;
+        }
+    }
+
+    private void UnbindTargetPlayer()
+    {
+        if (_targetPlayer != null && _subscribedDeathMarker)
+            _targetPlayer.OnDeathMarkerChanged -= HandleDeathMarkerChanged;
+        _subscribedDeathMarker = false;
+        _targetPlayer = null;
+    }
+
+    private void HandleDeathMarkerChanged()
+    {
+        UpdateDeathMarker();
+    }
+
+    private void UpdateDeathMarker()
+    {
+        if (_deathMarker == null) return;
+
+        bool hasMarker = _mapData?.Sprite != null && _navigation != null
+            && _targetPlayer != null && _targetPlayer.HasDeathMarker;
+        if (!hasMarker)
+        {
+            if (_deathMarker.gameObject.activeSelf) _deathMarker.gameObject.SetActive(false);
+            return;
+        }
+
+        Vector3 position = _targetPlayer.DeathMarkerPosition;
+        bool outsideWorld = position.x < 0f || position.z < 0f
+            || position.x > _mapData.TerrainSize.x || position.z > _mapData.TerrainSize.y;
+        bool visible = !_hideMarkerOutsideWorld || !outsideWorld;
+        if (_deathMarker.gameObject.activeSelf != visible)
+            _deathMarker.gameObject.SetActive(visible);
+        if (!visible) return;
+
+        if (_deathMarkerImage != null)
+        {
+            if (_deathMarkerImage.sprite != _deathMarkerIcon)
+                _deathMarkerImage.sprite = _deathMarkerIcon;
+            _deathMarkerImage.color = _deathMarkerColor;
+        }
+
+        _deathMarker.anchoredPosition = _navigation.NormalizedToViewportPosition(
+            _mapData.NormalizeWorldPosition(position));
+    }
+
     private void HandleMapViewChanged()
     {
         _teleportMarkers?.RefreshPositions();
+        UpdateDeathMarker();
         if (_mapData?.LogicData == null || _navigation == null) return;
         Rect visible = _navigation.VisibleNormalizedRect;
         if (!_hasResourceCoverage || _resourceCoverageZoom != _navigation.Zoom

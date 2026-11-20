@@ -12,6 +12,8 @@ public class PlayerSaveData
     public PlayerStatusSaveData status = new();
     public InventorySaveData inventory = new();
     public CraftingSaveData crafting = new();
+    public bool hasDeathMarker;
+    public Vector3 deathMarkerPosition;
     // 구버전의 피어별 건축 저장 호환용. 현재 멀티 건축은 WorldSaveData.structures에 공유 상태로 저장한다.
     public bool hasLocalStructures;
     public List<StructureSaveData> localStructures = new();

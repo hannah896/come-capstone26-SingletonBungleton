@@ -20,7 +20,9 @@ public static class PlayerSaveAdapter
             hasLocalStructures = hasLocalStructures,
             localStructures = hasLocalStructures ? WorldSaveAdapter.CaptureStructures() : new(),
             crafting = CraftingManager.Instance != null
-                ? CraftingManager.Instance.CaptureSaveData() : new CraftingSaveData()
+                ? CraftingManager.Instance.CaptureSaveData() : new CraftingSaveData(),
+            hasDeathMarker = player.HasDeathMarker,
+            deathMarkerPosition = player.HasDeathMarker ? player.DeathMarkerPosition : Vector3.zero
         };
     }
 
@@ -49,6 +51,10 @@ public static class PlayerSaveAdapter
         player.transform.rotation = Quaternion.Euler(0f, data.yaw, 0f);
         player.FPCameraController?.RestoreYaw(data.yaw);
         CraftingManager.Instance?.RestoreSaveData(data.crafting);
+        if (data.hasDeathMarker)
+            player.SetDeathMarker(data.deathMarkerPosition);
+        else
+            player.ClearDeathMarker();
         player.RefreshStateAfterLoad();
     }
 }
