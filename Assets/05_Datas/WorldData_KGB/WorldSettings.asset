@@ -61,7 +61,7 @@ MonoBehaviour:
     InitialMonsterDespawnDistance: 120
     AdditionalMonsterDespawnDistance: 140
     MaxSpawnSlots: 30
-    MaxAnimalSpawnSlots: 20
+    MaxAnimalSpawnSlots: 30
     TargetRefreshInterval: 1
     DespawnDistanceFromPlayers: 60
     MaxPositionAttempts: 12

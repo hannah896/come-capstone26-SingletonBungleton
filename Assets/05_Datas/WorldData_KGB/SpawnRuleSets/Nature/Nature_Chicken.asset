@@ -17,6 +17,6 @@ MonoBehaviour:
   spawnInterval: 30
   stayDuration: 30
   spawnChance: 0.5
-  minSpawnCount: 2
-  maxSpawnCount: 4
+  minSpawnCount: 1
+  maxSpawnCount: 2
   slotCost: 1

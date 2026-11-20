@@ -291,7 +291,7 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
                 if (sourcePlayer == null || !sourcePlayer.isActiveAndEnabled)
                     break;
 
-                if (!TryFindSpawnPosition(sourcePlayer, sourceRuleSet, out Vector3 spawnPosition))
+                if (!TryFindSpawnPosition(sourcePlayer, sourceRuleSet, isAnimal, out Vector3 spawnPosition))
                     continue;
 
                 Mob spawnedMob;
@@ -360,6 +360,7 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
     private bool TryFindSpawnPosition(
         Player sourcePlayer,
         SpawnRuleSet sourceRuleSet,
+        bool isAnimal,
         out Vector3 spawnPosition)
     {
         spawnPosition = default;
@@ -409,6 +410,10 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
             if (IsTooCloseToAnyPlayer(candidate, minDistanceSqr))
                 continue;
 
+            // 동물은 이미 스폰된 다른 동물과 최소 간격을 둔다 (한곳에 몰려 나오지 않고 길 가다 몇 마리씩 만나도록)
+            if (isAnimal && IsTooCloseToSpawnedAnimal(candidate, MinAnimalSpacing * MinAnimalSpacing))
+                continue;
+
             if (_settings.SpawnBlockingMask.value != 0 && _settings.CollisionCheckRadius > 0f)
             {
                 Vector3 checkCenter = candidate + Vector3.up * _settings.CollisionCheckRadius;
@@ -454,6 +459,26 @@ public sealed class DynamicSpawnDirector : MonoBehaviour
         Node node = _graphData.Nodes[regionIndex];
         biomeData = node?.BiomeData;
         return biomeData != null;
+    }
+
+    // 동물끼리 스폰 위치 최소 간격(m). 지역이 좁아 후보가 한 구역에 몰려도 뭉치지 않게 한다. (제안값)
+    private const float MinAnimalSpacing = 30f;
+
+    private bool IsTooCloseToSpawnedAnimal(Vector3 position, float minDistanceSqr)
+    {
+        for (int i = 0; i < _spawnedMobs.Count; i++)
+        {
+            SpawnedMobRecord record = _spawnedMobs[i];
+            if (!record.IsAnimal || record.Mob == null)
+                continue;
+
+            Vector3 delta = record.Mob.transform.position - position;
+            delta.y = 0f;
+            if (delta.sqrMagnitude < minDistanceSqr)
+                return true;
+        }
+
+        return false;
     }
 
     private bool IsTooCloseToAnyPlayer(Vector3 position, float minDistanceSqr)
