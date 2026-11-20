@@ -36,5 +36,5 @@ MonoBehaviour:
     maxCount: 18
   SpawnerRules:
   - prefabKey: TreeantMinionEvergreenSpawner
-    minCount: 5
-    maxCount: 9
+    minCount: 9
+    maxCount: 14
