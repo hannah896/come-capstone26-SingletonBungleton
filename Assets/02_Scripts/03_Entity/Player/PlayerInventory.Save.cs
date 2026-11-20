@@ -30,6 +30,21 @@ public partial class PlayerInventory
         return Mathf.Clamp01(durability / Mathf.Max(0.001f, slots[index].maxDurability));
     }
 
+    /// <summary>
+    /// 인벤토리 슬롯 음식의 신선도 비율(0~1, 1 = 갓 만든 상태, 0 = 곧 부패). 비었거나 소비기한이 없는 아이템이면 -1.
+    /// 기한이 기록되지 않은 슬롯(시작 인벤토리 등)도 -1이라 바를 숨긴다.
+    /// </summary>
+    public float GetSlotSpoilPercent(int index)
+    {
+        if (!IsValidSlot(index) || slots[index] == null || stackCounts[index] <= 0) return -1f;
+
+        float totalSeconds = slots[index].expirationTime * 60f;
+        if (totalSeconds <= 0f || expirationTimestamps[index] <= 0f) return -1f;
+
+        float remaining = Mathf.Max(0f, expirationTimestamps[index] - SavePlayClock.Now);
+        return Mathf.Clamp01(remaining / totalSeconds);
+    }
+
     /// <summary>장착 중인 아이템의 내구도 비율(0~1). 비었거나 내구도가 없는 아이템이면 -1.</summary>
     public float GetEquippedDurabilityPercent(EquipSlot slot)
     {

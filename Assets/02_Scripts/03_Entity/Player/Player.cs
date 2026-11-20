@@ -751,6 +751,9 @@ public class Player : MonoBehaviour, IDamageable
 
     private NetworkObject _networkObject;
     private bool _networkObjectCached;
+    // 네트워크 오브젝트가 유효했을 때 마지막으로 확인한 입력 권한 (디스폰 중에는 IsValid가 false가 되므로 기억해 둔다)
+    private bool _hadValidNetworkObject;
+    private bool _lastHadInputAuthority;
 
     // Host 모드: 자기 캐릭터(InputAuthority 보유)만 로컬 시뮬레이션을 돌린다.
     // 원격 캐릭터는 NetworkPlayerSync가 호스트 확정 값으로 transform을 복제한다.
@@ -765,9 +768,19 @@ public class Player : MonoBehaviour, IDamageable
         // 프리팹에 NetworkObject가 붙어 있어도 Runner.Spawn을 거치지 않으면 러너에 등록되지 않아 IsValid가 false다.
         // (싱글플레이는 WorldGenManager가 프리팹을 그대로 Instantiate한다)
         // 이때는 네트워크에 참여하지 않는 로컬 캐릭터이므로 로컬로 취급한다.
-        if (_networkObject == null || !_networkObject.IsValid)
-            return true;
+        if (_networkObject != null && _networkObject.IsValid)
+        {
+            _hadValidNetworkObject = true;
+            _lastHadInputAuthority = _networkObject.HasInputAuthority;
+            return _lastHadInputAuthority;
+        }
 
-        return _networkObject.HasInputAuthority;
+        // 러너에 등록돼 있던 오브젝트가 디스폰되는 중(IsValid == false)이다. 이때 '로컬'로 취급하면
+        // 다른 플레이어(예: 나간 게스트)의 캐릭터가 파괴될 때 호스트의 입력 핸들러까지 제거해 호스트 화면이 멈춘다.
+        // 마지막으로 확인한 권한을 그대로 쓴다.
+        if (_hadValidNetworkObject)
+            return _lastHadInputAuthority;
+
+        return true;
     }
 }
