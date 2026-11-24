@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 /// <summary>
@@ -112,9 +113,13 @@ public sealed class InputActions_PlayerInputHandler : InputActions
         p.ScrollWheel.canceled -= OnScrollCanceled;
         p.InventorySlot.performed -= OnInventorySlot;
 
-        // 홀드 상태가 true로 남으면 다음 액션이 저절로 반복된다.
+        // 홀드 상태가 true로 남으면 다음 액션이 저절로 반복되거나 시야 회전이 고정된다.
         if (inputData != null)
+        {
             inputData.ToolUseHeld = false;
+            inputData.RotateViewHeld = false;
+            inputData.LookInput = Vector2.zero;
+        }
 
         isConnected = false;
 
@@ -190,9 +195,31 @@ public sealed class InputActions_PlayerInputHandler : InputActions
     // 스크롤
     private void OnScrollWheel(InputAction.CallbackContext ctx)
     {
+        if (inputData == null) return;
+        if (ShouldBlockQuickSlotScroll()) return;
+
         float y = ctx.ReadValue<Vector2>().y;
         if (Mathf.Abs(y) > 0.01f)
             inputData.QuickSlotScrollDelta = y > 0f ? -1 : 1;
+    }
+
+    private bool ShouldBlockQuickSlotScroll()
+    {
+        // 우클릭 시점 회전 중 커서가 화면 중앙에 잠겨 있을 때는 퀵슬롯 스크롤을 허용한다.
+        if (Cursor.lockState == CursorLockMode.Locked) return false;
+        if (Manager == null || Mouse.current == null) return false;
+        if (!Manager.TryGetTopUIHit(Mouse.current.position.ReadValue(), out RaycastResult topHit))
+            return false;
+
+        GameObject hitObject = topHit.gameObject;
+        if (hitObject == null) return false;
+
+        // 크래프팅/작업대/요리솥/미니맵 등 스크롤 가능한 UI 위에서는 UI 스크롤만 동작하도록 차단한다.
+        if (ExecuteEvents.GetEventHandler<IScrollHandler>(hitObject) != null)
+            return true;
+
+        // 플레이어 인벤토리 바 위에서만 퀵슬롯 스크롤을 허용하고 다른 UI 패널 위에서는 차단한다.
+        return hitObject.GetComponentInParent<UI_Panel_PlayerInventory>() == null;
     }
 
     // 슬롯 직접 선택
@@ -246,10 +273,18 @@ public sealed class InputActions_PlayerInputHandler : InputActions
         inputData.ToolUseHeld = false;
     }
 
-    // Ctrl 키를 누르는 동안 시야 회전 활성화
+    // 우클릭(RotateView)을 누르는 동안 시야 회전 활성화
     private void OnRotateViewStarted(InputAction.CallbackContext ctx)
     {
         if (inputData == null) return;
+
+        // UI 위에서 우클릭한 경우(아이템 우클릭 사용, UI 조작 등) 시야 회전을 시작하지 않는다.
+        if (Cursor.lockState != CursorLockMode.Locked
+            && Manager != null
+            && Mouse.current != null
+            && Manager.IsPointerOverUI(Mouse.current.position.ReadValue()))
+            return;
+
         inputData.RotateViewHeld = true;
     }
 

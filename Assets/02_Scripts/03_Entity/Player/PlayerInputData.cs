@@ -15,7 +15,7 @@ public class PlayerInputData
     // 도구 사용 키를 누르고 있는 동안 true. 벌목/채굴을 누르는 동안 반복하는 데 쓴다.
     public bool ToolUseHeld { get; set; }
 
-    // Ctrl 키(RotateView)를 누르고 있는 동안에만 LookInput으로 시야를 회전시킨다.
+    // 우클릭(RotateView)을 누르고 있는 동안에만 LookInput으로 시야를 회전시킨다.
     public bool RotateViewHeld { get; set; }
 
     #endregion

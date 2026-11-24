@@ -41,6 +41,29 @@ public class UI_Panel_WorldMap : UI_Panel
     [SerializeField, Min(1f)] private float _expandedResourceIconSize = 60f;
     [SerializeField, Min(0)] private int _maxPooledResourceGraphics = 32;
 
+    [Header("Structure Icons")]
+    [SerializeField] private Sprite _bonfireIcon;
+    [SerializeField] private Sprite _chestIcon;
+    [SerializeField] private Sprite _cookingPotIcon;
+    [SerializeField] private Sprite _lunarForgeIcon;
+    [SerializeField] private Sprite _moonGateIcon;
+    [SerializeField] private Sprite _refrigeratorIcon;
+    [SerializeField] private Sprite _workbenchIcon;
+    [SerializeField] private Sprite _startSofaIcon;
+    [SerializeField] private Color _startSofaColor = new Color32(255, 224, 128, 255);
+    [SerializeField] private Sprite _monsterSpawnerIcon;
+    [SerializeField] private Color _monsterSpawnerColor = new Color32(240, 96, 56, 255);
+    [SerializeField, Min(1f)] private float _compactStructureIconSize = 22f;
+    [SerializeField, Min(1f)] private float _expandedStructureIconSize = 56f;
+    [SerializeField, Min(1f)] private float _compactLandmarkIconSize = 16f;
+    [SerializeField, Min(1f)] private float _expandedLandmarkIconSize = 38f;
+
+    [Header("Icon Outline")]
+    [SerializeField] private bool _enableIconOutline = true;
+    [SerializeField] private Color _iconOutlineColor = new Color32(18, 14, 14, 235);
+    [SerializeField, Min(0f)] private float _compactIconOutlineWidth = 1f;
+    [SerializeField, Min(0f)] private float _expandedIconOutlineWidth = 1.8f;
+
     [Header("Viewport Settings")]
     [Tooltip("인게임 진입 및 더블클릭 시 플레이어 주변을 보여 주는 기본 확대 배율이다.")]
     [SerializeField, Min(1f)] private float _zoom = 6f;
@@ -85,8 +108,45 @@ public class UI_Panel_WorldMap : UI_Panel
     private Vector2 _resourceViewportSize;
     private bool _resourceGraphicOrderDirty;
     private bool _resourceAtlasDirty;
+    private RectTransform _structureMarkerLayer;
+    private readonly List<UI_StructureMarkerGraphic> _activeStructureGraphics = new();
+    private readonly Stack<UI_StructureMarkerGraphic> _structureGraphicPool = new();
+    private readonly List<StructureMarkerEntry> _structureMarkerBuffer = new();
+    private readonly List<UI_StructureMarkerGraphic.Icon> _structureBatchBuffer = new();
+    private readonly List<SpawnerMarkerEntry> _monsterSpawnerEntries = new();
+    private readonly HashSet<ChunkData> _spawnerWatchedChunks = new();
+    private readonly HashSet<Transform> _seenPlacedStructureTransforms = new();
+    private readonly List<TrackedStructurePosition> _trackedPlacedStructures = new();
+    private bool _structuresDirty;
+    private bool _hasLastStartSofaPosition;
+    private Vector3 _lastStartSofaPosition;
     private static readonly IComparer<ResourceMarkerData> ResourceOrder =
         Comparer<ResourceMarkerData>.Create((left, right) => CompareResourcePositions(left.Dispose, right.Dispose));
+    private static readonly IComparer<StructureMarkerEntry> StructureOrder =
+        Comparer<StructureMarkerEntry>.Create(CompareStructureEntries);
+
+    private struct StructureMarkerEntry
+    {
+        public int LayerBucket;
+        public Texture Texture;
+        public float SortX;
+        public float SortZ;
+        public UI_StructureMarkerGraphic.Icon Icon;
+    }
+
+    private struct SpawnerMarkerEntry
+    {
+        public DisposeData Dispose;
+        public ChunkData Chunk;
+        public Vector3 Position;
+        public Vector2 Normalized;
+    }
+
+    private struct TrackedStructurePosition
+    {
+        public Transform Transform;
+        public Vector3 Position;
+    }
 
     // 고정 배치는 캐시하고, 파괴/재생성과 스폰 배제는 청크의 변경 알림으로만 반영한다.
     private sealed class ResourceMarkerData
@@ -144,6 +204,7 @@ public class UI_Panel_WorldMap : UI_Panel
             rect.offsetMin = rect.offsetMax = Vector2.zero;
             if (_playerMarker != null) rect.SetSiblingIndex(_playerMarker.GetSiblingIndex());
             _teleportMarkers = markerObject.GetComponent<UI_TeleportMarkerGraphic>();
+            CreateStructureMarkerLayer();
             CreateDeathMarker();
         }
         if (_playerMarker != null && !_playerMarker.TryGetComponent<Canvas>(out _))
@@ -171,8 +232,13 @@ public class UI_Panel_WorldMap : UI_Panel
         if (_deathMarker != null)
             _deathMarker.sizeDelta = Vector2.one * (expanded ? _expandedDeathMarkerSize : _compactDeathMarkerSize);
         float resourceSize = expanded ? _expandedResourceIconSize : _compactResourceIconSize;
+        float outlineWidth = CurrentIconOutlineWidth;
         foreach (ResourceColumn column in _resourceColumns.Values)
-            foreach (UI_ResourceMarkerGraphic graphic in column.Graphics) graphic.SetIconSize(resourceSize);
+            foreach (UI_ResourceMarkerGraphic graphic in column.Graphics)
+            {
+                graphic.SetIconSize(resourceSize);
+                graphic.SetOutline(_enableIconOutline, outlineWidth, _iconOutlineColor);
+            }
         if (_navigation != null)
         {
             _navigation.ZoomAroundTarget = !expanded;
@@ -189,15 +255,20 @@ public class UI_Panel_WorldMap : UI_Panel
         }
         UpdateDeathMarker();
         RefreshResourceMarkers();
+        _structuresDirty = true;
+        RefreshStructureMarkers();
     }
 
     private void OnEnable()
     {
         Initialize();
+        PlacedStructure.OnRegistryChanged -= HandleStructuresChanged;
+        PlacedStructure.OnRegistryChanged += HandleStructuresChanged;
         TryBind();
         TryFindLocalPlayer();
         BindTargetPlayer(_target);
         UpdateDeathMarker();
+        _structuresDirty = true;
         _nextRemoteSearchTime = 0f;
         // Cinemachine이 카메라 회전을 마친 뒤, UI를 그리기 직전에 방향을 반영한다.
         Canvas.willRenderCanvases += HandleWillRenderCanvases;
@@ -205,6 +276,7 @@ public class UI_Panel_WorldMap : UI_Panel
 
     private void OnDisable()
     {
+        PlacedStructure.OnRegistryChanged -= HandleStructuresChanged;
         Canvas.willRenderCanvases -= HandleWillRenderCanvases;
         UnbindTargetPlayer();
         Unbind();
@@ -212,10 +284,12 @@ public class UI_Panel_WorldMap : UI_Panel
 
     private void OnDestroy()
     {
+        PlacedStructure.OnRegistryChanged -= HandleStructuresChanged;
         if (_navigation != null) _navigation.OnViewChanged -= HandleMapViewChanged;
         SpriteAtlasManager.atlasRegistered -= HandleResourceAtlasRegistered;
         UnbindTargetPlayer();
         ClearResourceChunkCache();
+        ClearMonsterSpawnerCache();
     }
 
     private void HandleWillRenderCanvases()
@@ -223,6 +297,7 @@ public class UI_Panel_WorldMap : UI_Panel
         UpdatePlayerMarkerRotation();
         // 레이아웃이 LateUpdate 뒤에 바뀐 경우에도 렌더 전에 한 번만 반영한다.
         FlushResourceChanges();
+        FlushStructureChanges();
     }
 
     private void OnTransformParentChanged()
@@ -258,6 +333,8 @@ public class UI_Panel_WorldMap : UI_Panel
         UpdateRemotePlayerMarkers();
         UpdateFogOfWarState();
         FlushResourceChanges();
+        CheckMovedPlacedStructures();
+        FlushStructureChanges();
     }
 
     /// <summary>외부에서 추적 대상을 명시적으로 지정할 때 사용한다.</summary>
@@ -341,8 +418,11 @@ public class UI_Panel_WorldMap : UI_Panel
         {
             ClearResourceMarkers();
             ClearResourceChunkCache();
+            RebuildMonsterSpawnerCache();
         }
         RefreshResourceMarkers();
+        _structuresDirty = true;
+        RefreshStructureMarkers();
     }
 
     private void HandleDataCleared()
@@ -355,6 +435,8 @@ public class UI_Panel_WorldMap : UI_Panel
         ClearRemoteMarkers();
         ClearResourceMarkers();
         ClearResourceChunkCache();
+        ClearStructureMarkers();
+        ClearMonsterSpawnerCache();
         _mapData = null;
         _lastFogExplorationVersion = -1;
         _lastFogVisionVersion = -1;
@@ -594,6 +676,7 @@ public class UI_Panel_WorldMap : UI_Panel
     private void HandleMapViewChanged()
     {
         _teleportMarkers?.RefreshPositions();
+        RefreshStructureGraphicPositions();
         UpdateDeathMarker();
         if (_mapData?.LogicData == null || _navigation == null) return;
         Rect visible = _navigation.VisibleNormalizedRect;
@@ -618,6 +701,9 @@ public class UI_Panel_WorldMap : UI_Panel
             || (_grassIcon != null && atlas.CanBindTo(_grassIcon))
             || (_rockIcon != null && atlas.CanBindTo(_rockIcon)))
             _resourceAtlasDirty = true;
+
+        if (IsStructureIconInAtlas(atlas))
+            _structuresDirty = true;
     }
 
     private void FlushResourceChanges()
@@ -685,6 +771,7 @@ public class UI_Panel_WorldMap : UI_Panel
             foreach (ChunkData chunk in _watchedResourceChunks)
                 _dirtyResourceChunks.Add(chunk);
         }
+        _structuresDirty = true;
         _teleportMarkers?.RefreshPositions();
     }
 
@@ -929,8 +1016,10 @@ public class UI_Panel_WorldMap : UI_Panel
                     column.Graphics.Add(RentResourceGraphic());
                     _resourceGraphicOrderDirty = true;
                 }
-                column.Graphics[used++].SetIcons(column.Icons, start, end - start, texture,
+                UI_ResourceMarkerGraphic graphic = column.Graphics[used++];
+                graphic.SetIcons(column.Icons, start, end - start, texture,
                     _isExpanded ? _expandedResourceIconSize : _compactResourceIconSize);
+                graphic.SetOutline(_enableIconOutline, CurrentIconOutlineWidth, _iconOutlineColor);
                 start = end;
             }
             for (int i = column.Graphics.Count - 1; i >= used; i--)
@@ -966,6 +1055,435 @@ public class UI_Panel_WorldMap : UI_Panel
         _resourceViewDirty = false;
         _watchedResourceChunks.Clear();
         _dirtyResourceChunks.Clear();
+    }
+
+    private float CurrentIconOutlineWidth => _isExpanded ? _expandedIconOutlineWidth : _compactIconOutlineWidth;
+
+    private void CreateStructureMarkerLayer()
+    {
+        if (_navigation == null || _structureMarkerLayer != null) return;
+
+        var layerObject = new GameObject("StructureMarkers", typeof(RectTransform), typeof(Canvas));
+        layerObject.layer = _playerMarker != null ? _playerMarker.gameObject.layer : gameObject.layer;
+        _structureMarkerLayer = (RectTransform)layerObject.transform;
+        _structureMarkerLayer.SetParent(_navigation.Viewport, false);
+        _structureMarkerLayer.anchorMin = Vector2.zero;
+        _structureMarkerLayer.anchorMax = Vector2.one;
+        _structureMarkerLayer.offsetMin = _structureMarkerLayer.offsetMax = Vector2.zero;
+        _structureMarkerLayer.pivot = Vector2.one * 0.5f;
+        if (_playerMarker != null)
+            _structureMarkerLayer.SetSiblingIndex(_playerMarker.GetSiblingIndex());
+    }
+
+    private void HandleStructuresChanged() => _structuresDirty = true;
+
+    private void HandleSpawnerStateChanged(ChunkData chunk) => _structuresDirty = true;
+
+    private bool IsStructureIconInAtlas(SpriteAtlas atlas)
+    {
+        if (atlas == null) return false;
+        return (_bonfireIcon != null && atlas.CanBindTo(_bonfireIcon))
+            || (_chestIcon != null && atlas.CanBindTo(_chestIcon))
+            || (_cookingPotIcon != null && atlas.CanBindTo(_cookingPotIcon))
+            || (_lunarForgeIcon != null && atlas.CanBindTo(_lunarForgeIcon))
+            || (_moonGateIcon != null && atlas.CanBindTo(_moonGateIcon))
+            || (_refrigeratorIcon != null && atlas.CanBindTo(_refrigeratorIcon))
+            || (_workbenchIcon != null && atlas.CanBindTo(_workbenchIcon))
+            || (_startSofaIcon != null && atlas.CanBindTo(_startSofaIcon))
+            || (_monsterSpawnerIcon != null && atlas.CanBindTo(_monsterSpawnerIcon));
+    }
+
+    private void ClearMonsterSpawnerCache()
+    {
+        foreach (ChunkData chunk in _spawnerWatchedChunks)
+            chunk.OnResourceStateChanged -= HandleSpawnerStateChanged;
+        _spawnerWatchedChunks.Clear();
+        _monsterSpawnerEntries.Clear();
+    }
+
+    private void RebuildMonsterSpawnerCache()
+    {
+        ClearMonsterSpawnerCache();
+        if (_mapData?.LogicData == null) return;
+
+        foreach (ChunkData chunk in _mapData.LogicData.GetAllChunks())
+        {
+            if (chunk?.DisposeDatas == null) continue;
+
+            bool chunkHasSpawner = false;
+            for (int i = 0; i < chunk.DisposeDatas.Count; i++)
+            {
+                DisposeData dispose = chunk.DisposeDatas[i];
+                if (dispose == null || !IsMonsterSpawnerPrefab(dispose.prefabName)) continue;
+
+                Vector3 position = new Vector3(
+                    dispose.tilePosition.x + dispose.localOffset.x,
+                    0f,
+                    dispose.tilePosition.y + dispose.localOffset.y);
+                if (position.x < 0f || position.z < 0f
+                    || position.x > _mapData.TerrainSize.x || position.z > _mapData.TerrainSize.y)
+                    continue;
+
+                _monsterSpawnerEntries.Add(new SpawnerMarkerEntry
+                {
+                    Dispose = dispose,
+                    Chunk = chunk,
+                    Position = position,
+                    Normalized = _mapData.NormalizeWorldPosition(position)
+                });
+                chunkHasSpawner = true;
+            }
+
+            if (chunkHasSpawner && _spawnerWatchedChunks.Add(chunk))
+                chunk.OnResourceStateChanged += HandleSpawnerStateChanged;
+        }
+    }
+
+    private static bool IsMonsterSpawnerPrefab(string prefabName) =>
+        !string.IsNullOrEmpty(prefabName)
+        && prefabName.EndsWith("Spawner", System.StringComparison.OrdinalIgnoreCase);
+
+    private void CheckMovedPlacedStructures()
+    {
+        if (_structuresDirty || _mapData?.Sprite == null) return;
+
+        for (int i = 0; i < _trackedPlacedStructures.Count; i++)
+        {
+            TrackedStructurePosition tracked = _trackedPlacedStructures[i];
+            if (tracked.Transform == null || !tracked.Transform.gameObject.activeInHierarchy
+                || (tracked.Transform.position - tracked.Position).sqrMagnitude > 0.0001f)
+            {
+                _structuresDirty = true;
+                return;
+            }
+        }
+
+        if (TryGetStartSofaPosition(out Vector3 sofaPosition))
+        {
+            if (!_hasLastStartSofaPosition || (sofaPosition - _lastStartSofaPosition).sqrMagnitude > 0.0001f)
+                _structuresDirty = true;
+        }
+        else if (_hasLastStartSofaPosition)
+        {
+            _structuresDirty = true;
+        }
+    }
+
+    private void FlushStructureChanges()
+    {
+        if (!_structuresDirty) return;
+        RefreshStructureMarkers();
+    }
+
+    private void RefreshStructureGraphicPositions()
+    {
+        for (int i = 0; i < _activeStructureGraphics.Count; i++)
+            _activeStructureGraphics[i]?.RefreshPositions();
+    }
+
+    private void RefreshStructureMarkers()
+    {
+        if (_structureMarkerLayer == null) return;
+        _structuresDirty = false;
+
+        if (_mapData?.Sprite == null || _navigation == null)
+        {
+            ReleaseActiveStructureGraphics();
+            _trackedPlacedStructures.Clear();
+            _hasLastStartSofaPosition = false;
+            return;
+        }
+
+        _structureMarkerBuffer.Clear();
+        _seenPlacedStructureTransforms.Clear();
+        _trackedPlacedStructures.Clear();
+
+        float landmarkSize = _isExpanded ? _expandedLandmarkIconSize : _compactLandmarkIconSize;
+        float structureSize = _isExpanded ? _expandedStructureIconSize : _compactStructureIconSize;
+
+        // 0: 몬스터 스포너(집/둥지) — 탐사 완료 영역만 표시하고 파괴/배제 시 숨긴다.
+        if (_monsterSpawnerIcon != null && _monsterSpawnerIcon.texture != null && _monsterSpawnerEntries.Count > 0)
+        {
+            WorldObjectSpawner spawner = _mapData.LogicData != null ? GetResourceSpawner() : null;
+            for (int i = 0; i < _monsterSpawnerEntries.Count; i++)
+            {
+                SpawnerMarkerEntry entry = _monsterSpawnerEntries[i];
+                if (!_mapData.IsNormalizedPositionExplored(entry.Normalized)) continue;
+                if (entry.Chunk.IsObjectDestroyed(entry.Dispose.instanceId)) continue;
+                if (spawner != null && spawner.IsSpawnExcluded(entry.Dispose.instanceId)) continue;
+                if (_mapData.LogicData != null
+                    && (WorldSpawnArea.Contains(_mapData.LogicData, entry.Position)
+                        || WorldTeleportPlacement.Contains(_mapData.LogicData, entry.Position)))
+                    continue;
+
+                Color32 tint = ApplyBrightness(_monsterSpawnerColor, _mapData.GetMarkerBrightness(entry.Normalized));
+                _structureMarkerBuffer.Add(new StructureMarkerEntry
+                {
+                    LayerBucket = 0,
+                    Texture = _monsterSpawnerIcon.texture,
+                    SortX = entry.Position.x,
+                    SortZ = entry.Position.z,
+                    Icon = new UI_StructureMarkerGraphic.Icon(_monsterSpawnerIcon, entry.Normalized, landmarkSize, tint)
+                });
+            }
+        }
+
+        // 1: 시작 제단(StartSofa)
+        if (TryGetStartSofaPosition(out Vector3 sofaPosition))
+        {
+            _lastStartSofaPosition = sofaPosition;
+            _hasLastStartSofaPosition = true;
+
+            if (_startSofaIcon != null && _startSofaIcon.texture != null
+                && (!_hideMarkerOutsideWorld || !IsOutsideWorld(sofaPosition)))
+            {
+                Vector2 normalized = _mapData.NormalizeWorldPosition(sofaPosition);
+                if (_mapData.IsNormalizedPositionExplored(normalized))
+                {
+                    float brightness = Mathf.Max(0.75f, _mapData.GetMarkerBrightness(normalized));
+                    Color32 tint = ApplyBrightness(_startSofaColor, brightness);
+                    _structureMarkerBuffer.Add(new StructureMarkerEntry
+                    {
+                        LayerBucket = 1,
+                        Texture = _startSofaIcon.texture,
+                        SortX = sofaPosition.x,
+                        SortZ = sofaPosition.z,
+                        Icon = new UI_StructureMarkerGraphic.Icon(_startSofaIcon, normalized, landmarkSize, tint)
+                    });
+                }
+            }
+        }
+        else
+        {
+            _hasLastStartSofaPosition = false;
+        }
+
+        // 2: 플레이어 설치 구조물(싱글·멀티 공통) — 고스트 미리보기는 PlacedStructure/PersistentStructure에 등록되지 않는다.
+        IReadOnlyList<PlacedStructure> placedList = PlacedStructure.All;
+        for (int i = 0; i < placedList.Count; i++)
+        {
+            PlacedStructure placed = placedList[i];
+            if (placed == null || !placed.gameObject.activeInHierarchy) continue;
+
+            Transform tr = placed.transform;
+            if (!_seenPlacedStructureTransforms.Add(tr)) continue;
+            AddPlacedStructureMarker(tr, placed.ItemKey, structureSize);
+        }
+
+        foreach (PersistentStructure persistent in PersistentStructure.All)
+        {
+            if (persistent == null || !persistent.gameObject.activeInHierarchy) continue;
+
+            Transform tr = persistent.transform;
+            if (!_seenPlacedStructureTransforms.Add(tr)) continue;
+            AddPlacedStructureMarker(
+                tr,
+                persistent.SourceItem != null ? persistent.SourceItem.name : null,
+                structureSize,
+                persistent.SourceItem);
+        }
+
+        ReleaseActiveStructureGraphics();
+        if (_structureMarkerBuffer.Count == 0) return;
+
+        _structureMarkerBuffer.Sort(StructureOrder);
+        float outlineWidth = CurrentIconOutlineWidth;
+        int count = _structureMarkerBuffer.Count;
+        for (int start = 0; start < count;)
+        {
+            int bucket = _structureMarkerBuffer[start].LayerBucket;
+            Texture texture = _structureMarkerBuffer[start].Texture;
+            int end = start + 1;
+            while (end < count
+                && end - start < UI_StructureMarkerGraphic.MaxIcons
+                && _structureMarkerBuffer[end].LayerBucket == bucket
+                && _structureMarkerBuffer[end].Texture == texture)
+            {
+                end++;
+            }
+
+            _structureBatchBuffer.Clear();
+            for (int i = start; i < end; i++)
+                _structureBatchBuffer.Add(_structureMarkerBuffer[i].Icon);
+
+            UI_StructureMarkerGraphic graphic = RentStructureGraphic();
+            graphic.SetIcons(
+                _navigation,
+                texture,
+                _structureBatchBuffer,
+                _enableIconOutline,
+                outlineWidth,
+                _iconOutlineColor);
+            start = end;
+        }
+    }
+
+    private bool TryGetStartSofaPosition(out Vector3 position)
+    {
+        WorldGenManager world = WorldGenManager.Instance;
+        if (world != null && world.SpawnSofa != null && world.SpawnSofa.gameObject.activeInHierarchy
+            && (_mapData.LogicData == null || world.CurrentLogicData == _mapData.LogicData))
+        {
+            position = world.SpawnSofa.transform.position;
+            return true;
+        }
+
+        if (_mapData.LogicData != null && _mapData.LogicData.SpawnTile.x >= 0 && _mapData.LogicData.SpawnTile.y >= 0)
+        {
+            position = new Vector3(_mapData.LogicData.SpawnTile.x, 0f, _mapData.LogicData.SpawnTile.y);
+            return true;
+        }
+
+        position = Vector3.zero;
+        return false;
+    }
+
+    private void AddPlacedStructureMarker(
+        Transform structureTransform,
+        string itemKey,
+        float structureSize,
+        ItemDataSO sourceItem = null)
+    {
+        Vector3 position = structureTransform.position;
+        _trackedPlacedStructures.Add(new TrackedStructurePosition
+        {
+            Transform = structureTransform,
+            Position = position
+        });
+
+        if (_hideMarkerOutsideWorld && IsOutsideWorld(position)) return;
+
+        Sprite icon = ResolvePlacedStructureIcon(structureTransform, itemKey, sourceItem);
+        if (icon == null || icon.texture == null) return;
+
+        Vector2 normalized = _mapData.NormalizeWorldPosition(position);
+        float brightness = Mathf.Max(0.75f, _mapData.GetMarkerBrightness(normalized));
+        Color32 tint = ApplyBrightness(Color.white, brightness);
+        _structureMarkerBuffer.Add(new StructureMarkerEntry
+        {
+            LayerBucket = 2,
+            Texture = icon.texture,
+            SortX = position.x,
+            SortZ = position.z,
+            Icon = new UI_StructureMarkerGraphic.Icon(icon, normalized, structureSize, tint)
+        });
+    }
+
+    private Sprite ResolvePlacedStructureIcon(Transform structureTransform, string itemKey, ItemDataSO sourceItem)
+    {
+        Sprite icon = GetStructureIconByKey(itemKey);
+        if (icon != null) return icon;
+
+        if (structureTransform.GetComponentInChildren<Bonfire>(true) != null) return _bonfireIcon;
+        if (structureTransform.GetComponentInChildren<Refrigerator>(true) != null) return _refrigeratorIcon;
+        if (structureTransform.GetComponentInChildren<CookingPot>(true) != null) return _cookingPotIcon;
+        if (structureTransform.GetComponentInChildren<Chest>(true) != null) return _chestIcon;
+        if (structureTransform.GetComponentInChildren<LunarForge>(true) != null) return _lunarForgeIcon;
+        if (structureTransform.GetComponentInChildren<Workbench>(true) != null) return _workbenchIcon;
+        if (structureTransform.GetComponentInChildren<MoonGate>(true) != null) return _moonGateIcon;
+
+        if (sourceItem != null && sourceItem.icon != null) return sourceItem.icon;
+
+        PersistentStructure persistent = structureTransform.GetComponentInParent<PersistentStructure>();
+        return persistent?.SourceItem != null ? persistent.SourceItem.icon : null;
+    }
+
+    private Sprite GetStructureIconByKey(string itemKey)
+    {
+        if (string.IsNullOrEmpty(itemKey)) return null;
+        return itemKey switch
+        {
+            "Tool_Bonfire" => _bonfireIcon,
+            "Tool_Chest" => _chestIcon,
+            "Tool_CookingPot" => _cookingPotIcon,
+            "Tool_LunarForge" => _lunarForgeIcon,
+            "Tool_MoonGate" => _moonGateIcon,
+            "Tool_Refrigerator" => _refrigeratorIcon,
+            "Tool_Workbench" => _workbenchIcon,
+            _ => null
+        };
+    }
+
+    private UI_StructureMarkerGraphic RentStructureGraphic()
+    {
+        UI_StructureMarkerGraphic graphic = _structureGraphicPool.Count > 0
+            ? _structureGraphicPool.Pop()
+            : new GameObject("StructureMarkerBatch", typeof(RectTransform), typeof(UI_StructureMarkerGraphic))
+                .GetComponent<UI_StructureMarkerGraphic>();
+
+        graphic.gameObject.layer = _structureMarkerLayer.gameObject.layer;
+        RectTransform rect = graphic.rectTransform;
+        if (rect.parent != _structureMarkerLayer) rect.SetParent(_structureMarkerLayer, false);
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = rect.offsetMax = Vector2.zero;
+        rect.pivot = Vector2.one * 0.5f;
+        rect.localScale = Vector3.one;
+        rect.localRotation = Quaternion.identity;
+        graphic.gameObject.SetActive(true);
+        rect.SetAsLastSibling();
+        _activeStructureGraphics.Add(graphic);
+        return graphic;
+    }
+
+    private void ReturnStructureGraphic(UI_StructureMarkerGraphic graphic)
+    {
+        if (graphic == null) return;
+        graphic.gameObject.SetActive(false);
+        graphic.ClearIcons();
+        graphic.transform.SetAsLastSibling();
+        int poolCap = Mathf.Max(8, _maxPooledResourceGraphics);
+        if (_structureGraphicPool.Count < poolCap) _structureGraphicPool.Push(graphic);
+        else if (Application.isPlaying) Destroy(graphic.gameObject);
+        else DestroyImmediate(graphic.gameObject);
+    }
+
+    private void ReleaseActiveStructureGraphics()
+    {
+        for (int i = 0; i < _activeStructureGraphics.Count; i++)
+            ReturnStructureGraphic(_activeStructureGraphics[i]);
+        _activeStructureGraphics.Clear();
+    }
+
+    private void ClearStructureMarkers()
+    {
+        ReleaseActiveStructureGraphics();
+        _structureMarkerBuffer.Clear();
+        _structureBatchBuffer.Clear();
+        _seenPlacedStructureTransforms.Clear();
+        _trackedPlacedStructures.Clear();
+        _structuresDirty = false;
+        _hasLastStartSofaPosition = false;
+    }
+
+    private bool IsOutsideWorld(Vector3 position) =>
+        _mapData == null || position.x < 0f || position.z < 0f
+        || position.x > _mapData.TerrainSize.x || position.z > _mapData.TerrainSize.y;
+
+    private static int CompareStructureEntries(StructureMarkerEntry left, StructureMarkerEntry right)
+    {
+        int layerCompare = left.LayerBucket.CompareTo(right.LayerBucket);
+        if (layerCompare != 0) return layerCompare;
+
+        int leftTex = left.Texture != null ? left.Texture.GetInstanceID() : 0;
+        int rightTex = right.Texture != null ? right.Texture.GetInstanceID() : 0;
+        int texCompare = leftTex.CompareTo(rightTex);
+        if (texCompare != 0) return texCompare;
+
+        int xCompare = left.SortX.CompareTo(right.SortX);
+        if (xCompare != 0) return xCompare;
+
+        return left.SortZ.CompareTo(right.SortZ);
+    }
+
+    private static Color32 ApplyBrightness(Color32 color, float brightness)
+    {
+        if (brightness >= 0.999f) return color;
+        return new Color32(
+            (byte)Mathf.Clamp(Mathf.RoundToInt(color.r * brightness), 0, 255),
+            (byte)Mathf.Clamp(Mathf.RoundToInt(color.g * brightness), 0, 255),
+            (byte)Mathf.Clamp(Mathf.RoundToInt(color.b * brightness), 0, 255),
+            color.a);
     }
 
     private void UpdatePlayerMarkerRotation()

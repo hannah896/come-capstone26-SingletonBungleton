@@ -297,14 +297,25 @@ public class InputManager : CoreManager
     /// </summary>
     public bool IsPointerOverUI(Vector2 screenPos)
     {
+        return TryGetTopUIHit(screenPos, out _);
+    }
+
+    /// <summary>
+    /// 지정한 스크린 좌표에서 가장 위에 있는 UI Raycast 결과를 반환합니다.
+    /// </summary>
+    public bool TryGetTopUIHit(Vector2 screenPos, out RaycastResult topHit)
+    {
+        topHit = default;
         if (EventSystem.current == null) return false;
 
         _pointerData ??= new PointerEventData(EventSystem.current);
         _pointerData.position = screenPos;
         _raycastResults.Clear();
         EventSystem.current.RaycastAll(_pointerData, _raycastResults);
+        if (_raycastResults.Count == 0) return false;
 
-        return _raycastResults.Count > 0;
+        topHit = _raycastResults[0];
+        return true;
     }
 
     /// <summary>

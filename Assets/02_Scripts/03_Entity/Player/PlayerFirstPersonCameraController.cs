@@ -147,6 +147,10 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
     private Vector3 toolPivotRestPosition;
     private Quaternion toolPivotRestRotation;
     private bool toolPivotRestCaptured;
+    private bool isCursorHiddenForRotate;
+    private Vector2 savedCursorPosition;
+    private bool hasSavedCursorPosition;
+    private int ignoreLookDeltaFrames;
     private PlayerInputData inputData;
     private Transform playerBody;
     private PlayerInventory playerInventory;
@@ -212,9 +216,11 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
             s_localView = this;
             shakeSeed = Random.value * 100f;
         }
-        else if (s_localView == this)
+        else
         {
-            s_localView = null;
+            RestoreRotateCursor();
+            if (s_localView == this)
+                s_localView = null;
         }
         ApplyBodyVisibility();
     }
@@ -406,16 +412,30 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
             playerInventory.OnBlockingChanged -= OnBlockingChanged;
         }
 
+        RestoreRotateCursor();
         ResetAimFov();
         ClearEquippedToolView();
         RemoveToolCameraFromStack();
     }
 
-#if UNITY_EDITOR
     private void OnDestroy()
     {
+        RestoreRotateCursor();
+#if UNITY_EDITOR
         RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
+#endif
     }
+
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        if (hasFocus) return;
+
+        if (inputData != null)
+            inputData.RotateViewHeld = false;
+        RestoreRotateCursor();
+    }
+
+#if UNITY_EDITOR
 
     /// <summary>
     /// 씬 뷰에서만 몸을 그린다. (에디터 전용)
@@ -492,17 +512,52 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
 
     private void OnLateUpdateLoop(float deltaTime)
     {
-        if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing)) return;
-        if (!isLocalView) return;
-        if (inputData == null || playerBody == null || eyePivot == null) return;
+        if (Main.Save != null && (Main.Save.IsRestoring || Main.Save.IsCapturing))
+        {
+            RestoreRotateCursor();
+            return;
+        }
+        if (!isLocalView || inputData == null || playerBody == null || eyePivot == null)
+        {
+            RestoreRotateCursor();
+            return;
+        }
 
         if (toolCamera == null)
             ConfigureToolCamera();
 
         UpdateBowAim(deltaTime);
 
-        // Ctrl 키(RotateView)를 누르고 있는 동안에만 마우스 이동값으로 시야를 회전시킨다.
-        Vector2 look = inputData.RotateViewHeld ? inputData.LookInput : Vector2.zero;
+        // 우클릭(RotateView)을 누르고 있는 동안에만 커서를 숨기고 마우스 이동값으로 시야를 회전시킨다.
+        bool shouldRotate = inputData.RotateViewHeld
+            && !UI_Popup_Pause.IsOpen
+            && GameScene.GameProcessing != GameProcessing.Stopping;
+
+        Vector2 look = Vector2.zero;
+        if (shouldRotate)
+        {
+            bool enteredRotate = !isCursorHiddenForRotate;
+            HideCursorForRotate();
+
+            if (enteredRotate)
+            {
+                // Locked 전환 직후 첫 프레임의 커서 워프 델타 튐을 방지한다.
+                ignoreLookDeltaFrames = 1;
+            }
+            else if (ignoreLookDeltaFrames > 0)
+            {
+                ignoreLookDeltaFrames--;
+            }
+            else
+            {
+                look = inputData.LookInput;
+            }
+        }
+        else
+        {
+            RestoreRotateCursor();
+        }
+
         float sensitivity = IsAiming ? mouseSensitivity * aimSensitivityScale : mouseSensitivity;
 
         // Yaw: 플레이어 몸체를 좌우 회전 (1인칭에서 몸이 카메라 방향과 일치)
@@ -513,6 +568,44 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         pitch -= look.y * sensitivity;
         pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
         eyePivot.localRotation = Quaternion.Euler(pitch + pitchOffset, 0f, 0f) * ShakeRotation(deltaTime);
+    }
+
+    private void HideCursorForRotate()
+    {
+        if (isCursorHiddenForRotate) return;
+
+        if (Mouse.current != null)
+        {
+            savedCursorPosition = Mouse.current.position.ReadValue();
+            hasSavedCursorPosition = true;
+        }
+
+        isCursorHiddenForRotate = true;
+        ignoreLookDeltaFrames = 1;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    private void RestoreRotateCursor()
+    {
+        if (!isCursorHiddenForRotate) return;
+
+        isCursorHiddenForRotate = false;
+        ignoreLookDeltaFrames = 0;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        if (Application.isPlaying && hasSavedCursorPosition && Mouse.current != null
+            && !float.IsNaN(savedCursorPosition.x) && !float.IsInfinity(savedCursorPosition.x)
+            && !float.IsNaN(savedCursorPosition.y) && !float.IsInfinity(savedCursorPosition.y))
+        {
+            Vector2 clamped = new Vector2(
+                Mathf.Clamp(savedCursorPosition.x, 0f, Mathf.Max(0f, Screen.width)),
+                Mathf.Clamp(savedCursorPosition.y, 0f, Mathf.Max(0f, Screen.height)));
+            Mouse.current.WarpCursorPosition(clamped);
+        }
+
+        hasSavedCursorPosition = false;
     }
 
     #region 카메라 흔들림
@@ -574,8 +667,9 @@ public class PlayerFirstPersonCameraController : MonoBehaviour
         bool bowEquipped = hand != null && hand.itemType == ItemType.CombatGear && hand.combatGearType == CombatGearType.Bow;
 
         Mouse mouse = Mouse.current;
-        IsAiming = bowEquipped && mouse != null && mouse.rightButton.isPressed
-            && !(Main.Input != null && Main.Input.IsPointerOverUI(mouse.position.ReadValue()));
+        bool pointerOverUI = Cursor.lockState != CursorLockMode.Locked
+            && mouse != null && Main.Input != null && Main.Input.IsPointerOverUI(mouse.position.ReadValue());
+        IsAiming = bowEquipped && mouse != null && mouse.rightButton.isPressed && !pointerOverUI;
 
         if (!baseFovCaptured)
         {

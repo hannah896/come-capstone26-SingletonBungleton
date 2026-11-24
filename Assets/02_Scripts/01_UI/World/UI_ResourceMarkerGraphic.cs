@@ -8,8 +8,22 @@ using UnityEngine.UI;
 [RequireComponent(typeof(CanvasRenderer))]
 public sealed class UI_ResourceMarkerGraphic : MaskableGraphic
 {
-    // UGUI의 메시 정점 제한보다 충분히 작게 나눈다(아이콘당 정점 4개).
+    // UGUI의 메시 정점 제한보다 충분히 작게 나눈다(아이콘당 외곽선 포함 최대 정점 36개).
     public const int MaxIcons = 1024;
+
+    private const float InvSqrt2 = 0.70710678f;
+
+    internal static readonly Vector2[] SilhouetteOutlineDirections =
+    {
+        new Vector2( 1f,       0f),
+        new Vector2( InvSqrt2, InvSqrt2),
+        new Vector2( 0f,       1f),
+        new Vector2(-InvSqrt2, InvSqrt2),
+        new Vector2(-1f,       0f),
+        new Vector2(-InvSqrt2,-InvSqrt2),
+        new Vector2( 0f,      -1f),
+        new Vector2( InvSqrt2,-InvSqrt2),
+    };
 
     public readonly struct Icon
     {
@@ -25,7 +39,7 @@ public sealed class UI_ResourceMarkerGraphic : MaskableGraphic
         }
     }
 
-    private struct SpriteGeometry
+    internal struct SpriteGeometry
     {
         public Vector4 Uv;
         public Vector4 Padding;
@@ -35,9 +49,15 @@ public sealed class UI_ResourceMarkerGraphic : MaskableGraphic
     private readonly Dictionary<Sprite, SpriteGeometry> _spriteGeometry = new();
     private Texture _texture;
     private float _iconSize = 16f;
+    private bool _outlineEnabled = true;
+    private float _outlineWidth = 1f;
+    private Color32 _outlineColor = new Color32(18, 14, 14, 235);
 
     public int IconCount => _icons.Count;
     public float IconSize => _iconSize;
+    public bool OutlineEnabled => _outlineEnabled;
+    public float OutlineWidth => _outlineWidth;
+    public Color32 OutlineColor => _outlineColor;
     public override Texture mainTexture => _texture != null ? _texture : Texture2D.whiteTexture;
 
     public void SetIcons(List<Icon> icons, int start, int count, Texture texture, float iconSize)
@@ -51,6 +71,23 @@ public sealed class UI_ResourceMarkerGraphic : MaskableGraphic
         SetIconSize(iconSize);
         SetVerticesDirty();
         SetMaterialDirty();
+    }
+
+    public void SetOutline(bool enabled, float width, Color32 color)
+    {
+        float clampedWidth = Mathf.Max(0f, width);
+        if (_outlineEnabled == enabled
+            && Mathf.Approximately(_outlineWidth, clampedWidth)
+            && _outlineColor.r == color.r
+            && _outlineColor.g == color.g
+            && _outlineColor.b == color.b
+            && _outlineColor.a == color.a)
+            return;
+
+        _outlineEnabled = enabled;
+        _outlineWidth = clampedWidth;
+        _outlineColor = color;
+        SetVerticesDirty();
     }
 
     public void SetIconSize(float size)
@@ -80,6 +117,12 @@ public sealed class UI_ResourceMarkerGraphic : MaskableGraphic
         bool pixelPerfect = canvas != null && canvas.renderMode != RenderMode.WorldSpace
             && canvas.scaleFactor != 0f && canvas.pixelPerfect;
         Color32 baseTint = color;
+        Color32 outlineTint = new Color32(
+            _outlineColor.r,
+            _outlineColor.g,
+            _outlineColor.b,
+            (byte)(_outlineColor.a * baseTint.a / 255));
+
         foreach (Icon icon in _icons)
         {
             Sprite sprite = icon.Sprite;
@@ -92,19 +135,7 @@ public sealed class UI_ResourceMarkerGraphic : MaskableGraphic
                     (byte)(baseTint.g * shade / 255),
                     (byte)(baseTint.b * shade / 255),
                     baseTint.a);
-            if (!_spriteGeometry.TryGetValue(sprite, out SpriteGeometry geometry))
-            {
-                Vector4 padding = DataUtility.GetPadding(sprite);
-                float width = Mathf.Max(1, Mathf.RoundToInt(sprite.rect.width));
-                float height = Mathf.Max(1, Mathf.RoundToInt(sprite.rect.height));
-                geometry = new SpriteGeometry
-                {
-                    Uv = DataUtility.GetOuterUV(sprite),
-                    Padding = new Vector4(padding.x / width, padding.y / height,
-                        1f - padding.z / width, 1f - padding.w / height)
-                };
-                _spriteGeometry.Add(sprite, geometry);
-            }
+            SpriteGeometry geometry = GetSpriteGeometry(sprite, _spriteGeometry);
 
             Vector2 center = rect.center + Vector2.Scale(icon.NormalizedPosition - Vector2.one * 0.5f, contentSize);
             Vector2 min = center - Vector2.one * (_iconSize * 0.5f);
@@ -120,14 +151,71 @@ public sealed class UI_ResourceMarkerGraphic : MaskableGraphic
             float bottom = min.y + size.y * p.y;
             float right = min.x + size.x * p.z;
             float top = min.y + size.y * p.w;
-            Vector4 uv = geometry.Uv;
-            int vertex = vh.currentVertCount;
-            vh.AddVert(new Vector3(left, bottom), tint, new Vector2(uv.x, uv.y));
-            vh.AddVert(new Vector3(left, top), tint, new Vector2(uv.x, uv.w));
-            vh.AddVert(new Vector3(right, top), tint, new Vector2(uv.z, uv.w));
-            vh.AddVert(new Vector3(right, bottom), tint, new Vector2(uv.z, uv.y));
-            vh.AddTriangle(vertex, vertex + 1, vertex + 2);
-            vh.AddTriangle(vertex + 2, vertex + 3, vertex);
+            AddOutlinedSpriteQuad(
+                vh, left, bottom, right, top, geometry.Uv, tint,
+                _outlineEnabled, _outlineWidth, outlineTint);
         }
+    }
+
+    internal static SpriteGeometry GetSpriteGeometry(Sprite sprite, Dictionary<Sprite, SpriteGeometry> cache)
+    {
+        if (!cache.TryGetValue(sprite, out SpriteGeometry geometry))
+        {
+            Vector4 padding = DataUtility.GetPadding(sprite);
+            float width = Mathf.Max(1, Mathf.RoundToInt(sprite.rect.width));
+            float height = Mathf.Max(1, Mathf.RoundToInt(sprite.rect.height));
+            geometry = new SpriteGeometry
+            {
+                Uv = DataUtility.GetOuterUV(sprite),
+                Padding = new Vector4(padding.x / width, padding.y / height,
+                    1f - padding.z / width, 1f - padding.w / height)
+            };
+            cache.Add(sprite, geometry);
+        }
+        return geometry;
+    }
+
+    internal static Color32 ScaleColor(Color32 baseColor, Color32 tint)
+    {
+        return new Color32(
+            (byte)(baseColor.r * tint.r / 255),
+            (byte)(baseColor.g * tint.g / 255),
+            (byte)(baseColor.b * tint.b / 255),
+            (byte)(baseColor.a * tint.a / 255));
+    }
+
+    internal static void AddSpriteQuad(VertexHelper vh, float left, float bottom, float right, float top, Vector4 uv, Color32 tint)
+    {
+        int vertex = vh.currentVertCount;
+        vh.AddVert(new Vector3(left, bottom), tint, new Vector2(uv.x, uv.y));
+        vh.AddVert(new Vector3(left, top), tint, new Vector2(uv.x, uv.w));
+        vh.AddVert(new Vector3(right, top), tint, new Vector2(uv.z, uv.w));
+        vh.AddVert(new Vector3(right, bottom), tint, new Vector2(uv.z, uv.y));
+        vh.AddTriangle(vertex, vertex + 1, vertex + 2);
+        vh.AddTriangle(vertex + 2, vertex + 3, vertex);
+    }
+
+    internal static void AddOutlinedSpriteQuad(
+        VertexHelper vh,
+        float left,
+        float bottom,
+        float right,
+        float top,
+        Vector4 uv,
+        Color32 mainTint,
+        bool outlineEnabled,
+        float outlineWidth,
+        Color32 outlineTint)
+    {
+        if (outlineEnabled && outlineWidth > 0f && outlineTint.a > 0)
+        {
+            for (int i = 0; i < SilhouetteOutlineDirections.Length; i++)
+            {
+                Vector2 offset = SilhouetteOutlineDirections[i] * outlineWidth;
+                AddSpriteQuad(vh, left + offset.x, bottom + offset.y, right + offset.x, top + offset.y, uv, outlineTint);
+            }
+        }
+
+        AddSpriteQuad(vh, left, bottom, right, top, uv, mainTint);
     }
 }

@@ -178,6 +178,7 @@ public static class WorldSaveAdapter
                 instance.SetActive(true);
                 Physics.SyncTransforms();
             }
+            Extensions.GetOrAddComponent<PlacedStructure>(instance).ItemKey = source.name;
             Extensions.GetOrAddComponent<PersistentStructure>(instance).Initialize(source, saved.id);
             StorageStation storage = instance.GetComponentInChildren<StorageStation>(true);
             if (saved.slotCount > 0)
