@@ -288,13 +288,18 @@ public class UI_Popup_Workbench : UI_Popup
         foreach (Transform child in ingredientContainer)
             Destroy(child.gameObject);
 
+        var createdSlots = new System.Collections.Generic.List<GameObject>();
         foreach (var ingredient in selectedRecipe.ingredients)
         {
             var go = Instantiate(ingredientSlotPrefab, ingredientContainer);
             var slot = go.GetComponent<CraftingIngredientSlotUI>() ?? go.AddComponent<CraftingIngredientSlotUI>();
             int haveCount = playerInventory != null ? playerInventory.GetItemCount(ingredient.itemData) : 0;
             slot.Bind(ingredient, haveCount);
+            createdSlots.Add(go);
         }
+
+        // 재료가 많아도 팝업 가로폭 안에 다 들어가도록 슬롯 너비를 맞춘다
+        IngredientRowFitter.Fit(ingredientContainer, createdSlots);
     }
 
     private void RefreshCraftButton()

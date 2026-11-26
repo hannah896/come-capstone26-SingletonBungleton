@@ -99,6 +99,7 @@ MonoBehaviour:
   stackCount: 1
   _torchLight: {fileID: 0}
   plantedScaleMultiplier: {x: 2, y: 2, z: 2}
+  plantedBuryFraction: 0.1
 --- !u!1001 &5770057350149585089
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -121,7 +122,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1922773605599711825, guid: 2d92fe1acdcfcb244bcbcfb357dc9548, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.04
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1922773605599711825, guid: 2d92fe1acdcfcb244bcbcfb357dc9548, type: 3}
       propertyPath: m_LocalPosition.z

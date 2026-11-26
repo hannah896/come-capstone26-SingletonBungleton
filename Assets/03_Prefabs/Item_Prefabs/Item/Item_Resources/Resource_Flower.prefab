@@ -99,6 +99,7 @@ MonoBehaviour:
   stackCount: 1
   _torchLight: {fileID: 0}
   placedRespawnSeconds: 2160
+  plantedScaleMultiplier: {x: 0.8, y: 0.8, z: 0.8}
 --- !u!1001 &7735973362635715788
 PrefabInstance:
   m_ObjectHideFlags: 0
