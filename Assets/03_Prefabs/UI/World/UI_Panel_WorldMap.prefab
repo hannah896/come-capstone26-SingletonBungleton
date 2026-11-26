@@ -112,6 +112,25 @@ MonoBehaviour:
   _compactResourceIconSize: 30
   _expandedResourceIconSize: 70
   _maxPooledResourceGraphics: 32
+  _bonfireIcon: {fileID: 21300000, guid: d02e50950306d6d4e8407332965c8ab0, type: 3}
+  _chestIcon: {fileID: 21300000, guid: 9f2424195d5d54743858c8a89609fb8b, type: 3}
+  _cookingPotIcon: {fileID: 21300000, guid: 1e70c93b00b636149b148ad338f1d29a, type: 3}
+  _lunarForgeIcon: {fileID: 21300000, guid: d7bd6bf14e2f7f648bd9621bde7c1d54, type: 3}
+  _moonGateIcon: {fileID: 21300000, guid: 9844010945c4dce4d8cebdaef273c0a8, type: 3}
+  _refrigeratorIcon: {fileID: 21300000, guid: 87e7e2054dcb1154c8f5e7c77bbe9cd4, type: 3}
+  _workbenchIcon: {fileID: 21300000, guid: 2c3713783f457ab48a6554f0ad56d1d0, type: 3}
+  _startSofaIcon: {fileID: 21300000, guid: 28b95d469a037304684270f3d97f13ee, type: 3}
+  _startSofaColor: {r: 1, g: 0.8784314, b: 0.5019608, a: 1}
+  _monsterSpawnerIcon: {fileID: 21300000, guid: 296300ed3f074c541a93e58a71345932, type: 3}
+  _monsterSpawnerColor: {r: 0.9411765, g: 0.3764706, b: 0.21960784, a: 1}
+  _compactStructureIconSize: 22
+  _expandedStructureIconSize: 56
+  _compactLandmarkIconSize: 16
+  _expandedLandmarkIconSize: 38
+  _enableIconOutline: 1
+  _iconOutlineColor: {r: 0.07058824, g: 0.05490196, b: 0.05490196, a: 0.92156863}
+  _compactIconOutlineWidth: 1
+  _expandedIconOutlineWidth: 1.8
   _zoom: 6
   _maxZoom: 16
   _zoomStep: 0.2

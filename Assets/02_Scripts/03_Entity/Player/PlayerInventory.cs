@@ -1630,6 +1630,9 @@ public partial class PlayerInventory : MonoBehaviour
 
     private bool IsPointerOverUI()
     {
+        if (Cursor.lockState == CursorLockMode.Locked)
+            return false;
+
         if (Main.Instance == null || Main.Input == null || Mouse.current == null)
             return false;
 

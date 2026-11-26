@@ -679,6 +679,18 @@ public class WorldMapPresentationTests : InputTestFixture
         _map.GetComponentsInChildren(FindType("UI_ResourceMarkerGraphic"), true),
         graphic => graphic.gameObject.activeInHierarchy);
 
+    private Component[] StructureGraphics => Array.FindAll(
+        _map.GetComponentsInChildren(FindType("UI_StructureMarkerGraphic"), true),
+        graphic => graphic.gameObject.activeInHierarchy);
+
+    private int TotalStructureIconCount()
+    {
+        int total = 0;
+        foreach (Component graphic in StructureGraphics)
+            total += (int)Property(graphic, "IconCount");
+        return total;
+    }
+
     private System.Collections.Generic.List<object> OrderedResourceDisposes()
     {
         var result = new System.Collections.Generic.List<object>();
@@ -855,6 +867,240 @@ public class WorldMapPresentationTests : InputTestFixture
         Assert.That(deathMarker.gameObject.activeSelf, Is.True);
         Invoke(_map, "ClearView");
         Assert.That(deathMarker.gameObject.activeSelf, Is.False);
+    }
+
+    [Test]
+    public void StructureMarkers_DisplayPlacedStructuresStartSofaAndMonsterSpawnersWithFogAndCleanup()
+    {
+        var expectedGuids = new[]
+        {
+            "d02e50950306d6d4e8407332965c8ab0", // Tool_Bonefire_icon
+            "9f2424195d5d54743858c8a89609fb8b", // Chest_icon
+            "1e70c93b00b636149b148ad338f1d29a", // Tool_CookingPot_icon
+            "d7bd6bf14e2f7f648bd9621bde7c1d54", // Tool_LunarForge_icon
+            "9844010945c4dce4d8cebdaef273c0a8", // Tool_MoonGate_icon
+            "87e7e2054dcb1154c8f5e7c77bbe9cd4", // Refrigerator_icon
+            "2c3713783f457ab48a6554f0ad56d1d0", // Workbench_icon
+            "28b95d469a037304684270f3d97f13ee", // btn_home_1
+            "296300ed3f074c541a93e58a71345932"  // btn_danger
+        };
+        var boundSprites = new System.Collections.Generic.HashSet<Sprite>();
+        var serializedMap = new UnityEditor.SerializedObject(_map);
+        var iterator = serializedMap.GetIterator();
+        while (iterator.NextVisible(true))
+        {
+            if (iterator.propertyType == UnityEditor.SerializedPropertyType.ObjectReference &&
+                iterator.objectReferenceValue is Sprite boundSprite)
+            {
+                boundSprites.Add(boundSprite);
+            }
+        }
+        foreach (string guid in expectedGuids)
+        {
+            string assetPath = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+            var expectedSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
+            Assert.That(expectedSprite, Is.Not.Null, $"스프라이트 로드 실패: {guid}");
+            Assert.That(boundSprites.Contains(expectedSprite), Is.True, $"프리팹 바인딩 누락: {assetPath}");
+        }
+        var outlineProp = serializedMap.FindProperty("_enableIconOutline");
+        Assert.That(outlineProp, Is.Not.Null);
+        Assert.That(outlineProp.boolValue, Is.True);
+
+        var structureLayer = (RectTransform)Field(_map, "_structureMarkerLayer");
+        Assert.That(structureLayer, Is.Not.Null);
+        var viewportTransform = (Transform)Property(_navigation, "Viewport");
+        Assert.That(structureLayer.parent, Is.SameAs(viewportTransform));
+        var teleportTransform = viewportTransform.Find("TeleportMarkers");
+        Assert.That(teleportTransform, Is.Not.Null);
+        var deathMarker = (RectTransform)Field(_map, "_deathMarker");
+        var playerMarker = (RectTransform)Field(_map, "_playerMarker");
+        Assert.That(structureLayer.GetSiblingIndex(), Is.GreaterThan(teleportTransform.GetSiblingIndex()));
+        Assert.That(structureLayer.GetSiblingIndex(), Is.LessThan(deathMarker.GetSiblingIndex()));
+        Assert.That(structureLayer.GetSiblingIndex(), Is.LessThan(playerMarker.GetSiblingIndex()));
+
+        // Bonfire 등 Awake/OnEnable이 Main을 호출하지 않도록 PlacedStructure 컴포넌트만 사용해 7종을 등록한다.
+        var logic = Activator.CreateInstance(FindType("WorldLogicData"), new Vector2Int(100, 100), 10);
+        logic.GetType().GetProperty("SpawnTile").SetValue(logic, new Vector2Int(50, 50));
+        var chunk5 = Invoke(logic, "GetOrCreateChunk", new Vector2Int(5, 5));
+        var placements5 = (System.Collections.IList)Property(chunk5, "DisposeDatas");
+        var chunk6 = Invoke(logic, "GetOrCreateChunk", new Vector2Int(6, 5));
+        var placements6 = (System.Collections.IList)Property(chunk6, "DisposeDatas");
+
+        // WorldSpawnArea.DefaultClearRadius(6m) 밖이면서 시야(10m) 안인 (58, 50)에 근거리 스포너를 배치한다.
+        var nearSpawner = Activator.CreateInstance(FindType("DisposeData"));
+        nearSpawner.GetType().GetField("instanceId").SetValue(nearSpawner, 901);
+        nearSpawner.GetType().GetField("prefabName").SetValue(nearSpawner, "TreeantMinionAutmnSpawner");
+        nearSpawner.GetType().GetField("tilePosition").SetValue(nearSpawner, new Vector2Int(58, 50));
+        placements5.Add(nearSpawner);
+
+        var farSpawner = Activator.CreateInstance(FindType("DisposeData"));
+        farSpawner.GetType().GetField("instanceId").SetValue(farSpawner, 902);
+        farSpawner.GetType().GetField("prefabName").SetValue(farSpawner, "TreeantMinionAutmnSpawner");
+        farSpawner.GetType().GetField("tilePosition").SetValue(farSpawner, new Vector2Int(65, 50));
+        placements6.Add(farSpawner);
+
+        string[] placedKeys =
+        {
+            "Tool_Bonfire",
+            "Tool_Chest",
+            "Tool_CookingPot",
+            "Tool_LunarForge",
+            "Tool_MoonGate",
+            "Tool_Refrigerator",
+            "Tool_Workbench"
+        };
+        var placedType = FindType("PlacedStructure");
+        var placedObjects = new GameObject[placedKeys.Length];
+        for (int i = 0; i < placedKeys.Length; i++)
+        {
+            var go = new GameObject($"TestPlaced_{placedKeys[i]}");
+            go.transform.SetParent(_root.transform, false);
+            go.transform.position = new Vector3(49f + i * 0.25f, 0f, 50f);
+            var placed = go.AddComponent(placedType);
+            placedType.GetProperty("ItemKey").SetValue(placed, placedKeys[i]);
+            placedObjects[i] = go;
+        }
+
+        // 배치 컴포넌트가 없는 고스트/프리뷰 오브젝트는 지도에 표시하지 않는다.
+        var ghostObject = new GameObject("Tool_Chest");
+        ghostObject.transform.SetParent(_root.transform, false);
+        ghostObject.transform.position = new Vector3(50f, 0f, 50f);
+
+        var data = Activator.CreateInstance(FindType("WorldMapData"), _texture, _sprite, new Vector2Int(100, 100), logic);
+        Invoke(data, "InitializeFogOfWar", 10f);
+        var target = CreateMapTarget("StructureTarget", new Vector3(50f, 0f, 50f));
+        Invoke(_map, "SetTarget", target);
+        Invoke(_map, "HandleDataChanged", data);
+        Layout();
+        Invoke(_map, "UpdatePlayerMarker");
+        Invoke(_map, "LateUpdate");
+
+        // 7종 PlacedStructure + StartSofa(50,50) + 시야 내 몬스터 스포너(58,50) = 9개 (미탐사 스포너 65,50 제외)
+        Assert.That(TotalStructureIconCount(), Is.EqualTo(9));
+        var initialGraphics = StructureGraphics;
+        Assert.That(initialGraphics.Length, Is.GreaterThan(0));
+        float compactOutlineWidth = (float)Property(initialGraphics[0], "OutlineWidth");
+        Assert.That(compactOutlineWidth, Is.GreaterThan(0f));
+        foreach (Component graphic in initialGraphics)
+        {
+            Assert.That((bool)Property(graphic, "OutlineEnabled"), Is.True);
+            Assert.That((float)Property(graphic, "OutlineWidth"), Is.EqualTo(compactOutlineWidth));
+        }
+
+        // 미탐사 스포너(65, 50) 방향으로 이동하면 시야에 들어온 스포너가 추가되어 10개가 된다.
+        target.position = new Vector3(65f, 0f, 50f);
+        Invoke(_map, "UpdatePlayerMarker");
+        Invoke(_map, "LateUpdate");
+        Assert.That(TotalStructureIconCount(), Is.EqualTo(10));
+
+        // 파괴된 몬스터 스포너 및 비활성화된 배치 구조물은 즉시 제외된다.
+        Invoke(chunk5, "MarkObjectDestroyed", 901, 100f);
+        Invoke(_map, "FlushResourceChanges");
+        Invoke(_map, "LateUpdate");
+        Assert.That(TotalStructureIconCount(), Is.EqualTo(9));
+
+        placedObjects[1].SetActive(false);
+        Invoke(_map, "LateUpdate");
+        Assert.That(TotalStructureIconCount(), Is.EqualTo(8));
+
+        // 확장 지도 전환 시 테두리 두께가 커지고 ClearView 호출 시 구조물 마커가 정리된다.
+        Invoke(_hud, "ToggleMap");
+        Layout();
+        Invoke(_map, "LateUpdate");
+        Assert.That(TotalStructureIconCount(), Is.EqualTo(8));
+        foreach (Component graphic in StructureGraphics)
+        {
+            Assert.That((bool)Property(graphic, "OutlineEnabled"), Is.True);
+            Assert.That((float)Property(graphic, "OutlineWidth"), Is.GreaterThan(compactOutlineWidth));
+        }
+
+        Invoke(_hud, "ToggleMap");
+        Layout();
+        Invoke(_map, "ClearView");
+        Assert.That(TotalStructureIconCount(), Is.Zero);
+        Invoke(data, "Dispose");
+    }
+
+    [Test]
+    public void MapIconOutline_GeneratesSilhouetteOutlineVerticesForResourcesAndStructures()
+    {
+        var content = ((Component)Property(_navigation, "MapImage")).transform;
+        var resourceObj = new GameObject("OutlineTestResourceGraphic", typeof(RectTransform));
+        resourceObj.transform.SetParent(content, false);
+        var resRect = (RectTransform)resourceObj.transform;
+        resRect.anchorMin = Vector2.zero;
+        resRect.anchorMax = Vector2.one;
+        resRect.pivot = Vector2.one * 0.5f;
+        resRect.anchoredPosition = Vector2.zero;
+        var resourceGraphic = resourceObj.AddComponent(FindType("UI_ResourceMarkerGraphic"));
+        var resIconType = FindType("UI_ResourceMarkerGraphic+Icon");
+        var resListType = typeof(System.Collections.Generic.List<>).MakeGenericType(resIconType);
+        var resList = (System.Collections.IList)Activator.CreateInstance(resListType);
+        resList.Add(Activator.CreateInstance(resIconType, _sprite, new Vector2(0.5f, 0.5f), (byte)255));
+
+        Invoke(resourceGraphic, "SetOutline", true, 1.5f, new Color32(18, 14, 14, 235));
+        Invoke(resourceGraphic, "SetIcons", resList, 0, 1, _texture, 16f);
+        Canvas.ForceUpdateCanvases();
+        Assert.That(resRect.sizeDelta, Is.EqualTo(Vector2.one * 16f));
+        Assert.That(resRect.rect.size, Is.EqualTo(((RectTransform)content).rect.size + Vector2.one * 16f));
+
+        using (var vh = new VertexHelper())
+        {
+            Invoke(resourceGraphic, "OnPopulateMesh", vh);
+            Assert.That(vh.currentVertCount, Is.EqualTo(36), "테두리 ON 시 8방향 실루엣(32) + 원본(4) = 36 정점이어야 한다.");
+            UIVertex outlineVert = default;
+            vh.PopulateUIVertex(ref outlineVert, 0);
+            Assert.That(outlineVert.color.r, Is.EqualTo(18));
+            UIVertex mainVert = default;
+            vh.PopulateUIVertex(ref mainVert, 32);
+            Assert.That(mainVert.color.r, Is.EqualTo(255));
+        }
+
+        Invoke(resourceGraphic, "SetOutline", false, 0f, new Color32(18, 14, 14, 235));
+        using (var vh = new VertexHelper())
+        {
+            Invoke(resourceGraphic, "OnPopulateMesh", vh);
+            Assert.That(vh.currentVertCount, Is.EqualTo(4), "테두리 OFF 시 원본 4 정점만 생성해야 한다.");
+        }
+
+        string bonfirePath = UnityEditor.AssetDatabase.GUIDToAssetPath("d02e50950306d6d4e8407332965c8ab0");
+        var bonfireSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(bonfirePath);
+        Assert.That(bonfireSprite, Is.Not.Null);
+
+        var viewportTransform = (Transform)Property(_navigation, "Viewport");
+        var structureObj = new GameObject("OutlineTestStructureGraphic", typeof(RectTransform));
+        structureObj.transform.SetParent(viewportTransform, false);
+        var structureRect = (RectTransform)structureObj.transform;
+        structureRect.anchorMin = Vector2.zero;
+        structureRect.anchorMax = Vector2.one;
+        structureRect.offsetMin = structureRect.offsetMax = Vector2.zero;
+        var structureGraphic = structureObj.AddComponent(FindType("UI_StructureMarkerGraphic"));
+        var structIconType = FindType("UI_StructureMarkerGraphic+Icon");
+        var structListType = typeof(System.Collections.Generic.List<>).MakeGenericType(structIconType);
+        var structList = (System.Collections.IList)Activator.CreateInstance(structListType);
+        structList.Add(Activator.CreateInstance(structIconType, bonfireSprite, new Vector2(0.5f, 0.5f), 24f, new Color32(255, 255, 255, 255)));
+
+        Invoke(structureGraphic, "SetIcons", _navigation, bonfireSprite.texture, structList, true, 1.5f, new Color32(18, 14, 14, 235));
+        Canvas.ForceUpdateCanvases();
+        using (var vh = new VertexHelper())
+        {
+            Invoke(structureGraphic, "OnPopulateMesh", vh);
+            Assert.That(vh.currentVertCount, Is.EqualTo(36));
+            UIVertex bl = default, tr = default;
+            vh.PopulateUIVertex(ref bl, 32);
+            vh.PopulateUIVertex(ref tr, 34);
+            float quadWidth = Mathf.Abs(tr.position.x - bl.position.x);
+            float quadHeight = Mathf.Abs(tr.position.y - bl.position.y);
+            float expectedRatio = bonfireSprite.rect.width / bonfireSprite.rect.height;
+            Assert.That(quadWidth / quadHeight, Is.EqualTo(expectedRatio).Within(0.01f), "구조물 아이콘 종횡비가 유지되어야 한다.");
+        }
+
+        Invoke(structureGraphic, "SetIcons", _navigation, bonfireSprite.texture, structList, false, 0f, new Color32(18, 14, 14, 235));
+        using (var vh = new VertexHelper())
+        {
+            Invoke(structureGraphic, "OnPopulateMesh", vh);
+            Assert.That(vh.currentVertCount, Is.EqualTo(4));
+        }
     }
 
     private void AssertMarkerWorldPosition(RectTransform marker, Vector3 worldPosition)

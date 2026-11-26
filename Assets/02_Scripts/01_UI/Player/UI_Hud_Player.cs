@@ -71,6 +71,12 @@ public class UI_Hud_Player : UI_Hud
         UI_PlayerStatus ??= GetComponentInChildren<UI_Panel_PlayerStatus>(true);
         UI_PlayerInventory ??= GetComponentInChildren<UI_Panel_PlayerInventory>(true);
         UI_Image_Focus ??= gameObject.FindChild<UI_Image>("UI_Image_Focus");
+        if (UI_Image_Focus != null)
+        {
+            UI_Image_Focus.Initialize();
+            if (UI_Image_Focus.Image != null)
+                UI_Image_Focus.Image.raycastTarget = false;
+        }
     }
 
     private void SetInitialPanelState()
