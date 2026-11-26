@@ -33,6 +33,9 @@ public class MoonGate : Structure
 
     public static MoonGate Instance { get; private set; }
 
+    /// <summary>월문 안에서 최종 보스전이 진행 중인지. (미니맵/월드맵 숨김 등 UI가 참고한다)</summary>
+    public static bool IsBossFightActive => Instance != null && Instance.State == GateState.InProgress;
+
     [Header("개방 / 입장")]
     [Tooltip("이 반경(m) 안의 생존 플레이어가 함께 입장한다")]
     [SerializeField] private float gatherRadius = 6f;
@@ -300,10 +303,17 @@ public class MoonGate : Structure
 
     private void OnEncounterCleared() => HostFinish(true);
 
+    // 아레나 바닥(y)보다 이만큼 아래로 내려가면 '떨어졌다'고 본다 (m)
+    private const float FallRecoverDepth = 8f;
+
+    // 생존자 0명 판정이 이 횟수(초) 연속으로 이어져야 도전 실패로 처리한다 (한순간의 오판으로 아레나가 닫히지 않게)
+    private const int EmptyChecksToFail = 3;
+
     // 1초마다 아레나 안 생존자를 확인한다. 아무도 없으면 실패.
     private async UniTaskVoid MonitorAsync()
     {
         var token = this.GetCancellationTokenOnDestroy();
+        int emptyChecks = 0;
         while (State == GateState.InProgress)
         {
             bool cancelled = await UniTask.Delay(1000, cancellationToken: token).SuppressCancellationThrow();
@@ -311,17 +321,57 @@ public class MoonGate : Structure
             if (State != GateState.InProgress) return;
 
             int alive = 0;
-            foreach (Player player in participants)
+            for (int i = 0; i < participants.Count; i++)
             {
-                if (player != null && player.IsAlive && arena != null && arena.Contains(player.transform.position))
+                Player player = participants[i];
+                if (player == null || !player.IsAlive || arena == null) continue;
+
+                Vector3 position = player.transform.position;
+
+                // [안전장치] 바닥 아래로 떨어졌으면 입장 위치로 되돌린다 (끝없이 추락하는 것 방지)
+                if (position.y < arena.transform.position.y - FallRecoverDepth)
+                {
+                    Debug.LogWarning($"[MoonGate] 플레이어 추락 감지(y={position.y:0.0}, 아레나 y={arena.transform.position.y:0.0}) → 입장 위치로 복귀");
+                    Teleport(player, arena.GetPlayerSpawn(i), true);
+                    alive++;
+                    continue;
+                }
+
+                if (arena.Contains(position))
                     alive++;
             }
 
-            if (alive == 0)
+            // 보스가 바닥 밖으로 떨어진 경우도 되돌린다
+            if (arena != null && encounter != null
+                && encounter.RecoverFallenBoss(arena.transform.position.y - FallRecoverDepth))
+                Debug.LogWarning("[MoonGate] 보스 추락 감지 → 등장 위치로 복귀");
+
+            if (alive > 0)
             {
+                emptyChecks = 0;
+                continue;
+            }
+
+            emptyChecks++;
+            LogEmptyArena(emptyChecks);
+            if (emptyChecks >= EmptyChecksToFail)
+            {
+                Debug.LogWarning($"[MoonGate] 아레나 안 생존자 0명이 {emptyChecks}초 이어져 도전 실패 처리 (참가자 {participants.Count}명)");
                 HostFinish(false);
                 return;
             }
+        }
+    }
+
+    // 생존자 0명 판정의 이유(위치, 생사)를 남긴다. 아레나가 닫히는 원인을 추적하기 위한 로그.
+    private void LogEmptyArena(int count)
+    {
+        for (int i = 0; i < participants.Count; i++)
+        {
+            Player p = participants[i];
+            if (p == null) { Debug.LogWarning($"[MoonGate] 생존자 없음 {count}회: 참가자[{i}] 사라짐(null)"); continue; }
+            Debug.LogWarning($"[MoonGate] 생존자 없음 {count}회: 참가자[{i}] 생존={p.IsAlive} 위치={p.transform.position} " +
+                             $"아레나 중심={(arena != null ? arena.transform.position : Vector3.zero)} 아레나 안={(arena != null && arena.Contains(p.transform.position))}");
         }
     }
 
@@ -450,6 +500,7 @@ public class MoonGate : Structure
                 break;
 
             case PortalEvent.ArenaClosed:
+                Debug.Log("[MoonGate] 아레나 제거 이벤트 수신");
                 DestroyArena();
                 break;
         }

@@ -76,6 +76,16 @@ public class FinalBossEncounter : MonoBehaviour
     /// <summary>2페이즈 보스를 잡았을 때 (월식의 눈 드랍·엔딩 연결 지점).</summary>
     public event Action Cleared;
 
+    /// <summary>[안전장치] 보스가 아레나 바닥 아래(minY 미만)로 떨어졌으면 1페이즈 등장 위치로 되돌린다. 되돌렸으면 true.</summary>
+    public bool RecoverFallenBoss(float minY)
+    {
+        if (currentBoss == null || !currentBoss.isActiveAndEnabled) return false;
+        if (currentBoss.transform.position.y >= minY) return false;
+
+        currentBoss.transform.position = Phase1Position;
+        return true;
+    }
+
     private Vector3 CenterPosition
         => arenaCenter != null ? arenaCenter.position : bossArena != null ? bossArena.transform.position : transform.position;
     private Quaternion CenterRotation => arenaCenter != null ? arenaCenter.rotation : transform.rotation;

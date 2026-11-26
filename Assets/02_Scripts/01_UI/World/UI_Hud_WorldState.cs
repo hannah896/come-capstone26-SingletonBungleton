@@ -53,6 +53,8 @@ public class UI_Hud_WorldState : UI_Hud
 
     private void LateUpdate()
     {
+        ApplyBossFightVisibility();
+
         if (_worldMapView == null || _target != null) return;
         if (Time.unscaledTime < _nextTargetSearchTime) return;
 
@@ -67,7 +69,30 @@ public class UI_Hud_WorldState : UI_Hud
         _worldMapView?.SetTarget(_target);
     }
 
-    public void ToggleMap() => SetMapExpanded(!IsMapExpanded);
+    // 최종 보스전 중에는 미니맵/월드맵과 Day 표시(시계 패널)를 숨기고 지도 열기(탭)도 막는다. 전투가 끝나면 원래대로 보인다.
+    private bool _mapHiddenForBossFight;
+
+    private void ApplyBossFightVisibility()
+    {
+        bool hide = MoonGate.IsBossFightActive;
+        if (hide == _mapHiddenForBossFight) return;
+        _mapHiddenForBossFight = hide;
+
+        if (_worldMapView != null)
+        {
+            if (hide && IsMapExpanded) SetMapExpanded(false);
+            _worldMapView.gameObject.SetActive(!hide);
+        }
+
+        if (_worldClockView != null)
+            _worldClockView.gameObject.SetActive(!hide);
+    }
+
+    public void ToggleMap()
+    {
+        if (_mapHiddenForBossFight) return;
+        SetMapExpanded(!IsMapExpanded);
+    }
 
     public void SetMapExpanded(bool expanded)
     {
